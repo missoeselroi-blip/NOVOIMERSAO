@@ -414,6 +414,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           className="space-y-2"
         >
+          <h1 className="text-4xl md:text-6xl font-display font-black text-emerald-900 dark:text-emerald-400 tracking-tighter uppercase">
+            Início
+          </h1>
           <p className="text-blue-600 dark:text-blue-400 text-sm md:text-lg font-bold tracking-[0.3em]">
             {getGreeting()}
           </p>
