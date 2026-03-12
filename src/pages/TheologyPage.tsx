@@ -109,6 +109,22 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
 
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+        <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full flex items-center justify-center mb-6">
+          <GraduationCap size={40} />
+        </div>
+        <h2 className="text-3xl font-display font-bold text-stone-900 dark:text-zinc-100 mb-4">
+          Acesso Restrito
+        </h2>
+        <p className="text-stone-500 dark:text-zinc-400 max-w-md mb-8">
+          Faça login para acessar o Curso de Teologia Básica e acompanhar seu progresso.
+        </p>
+      </div>
+    );
+  }
+
   useEffect(() => {
     if (!user) return;
     
@@ -149,13 +165,12 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     setShowSubjectModal(true);
   };
 
-  const updateDetailedProgress = async (subject: string, field: string, points: number) => {
+  const updateDetailedProgress = async (subject: string, field: string) => {
     if (!user) return;
     const current = theologyProgress[subject] || {};
     const newSubjectProgress = {
       ...current,
-      [field]: true,
-      [`${field}_points`]: points
+      [field]: true
     };
     
     const progressDocRef = doc(db, 'theologyProgress', user.id);
@@ -163,7 +178,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       [subject]: newSubjectProgress
     });
 
-    showToast(`Atividade concluída! +${points} pontos. ✨`, 'success');
+    showToast(`Atividade acessada! ✨`, 'success');
   };
 
   const handleSubjectSelect = async (subject: string) => {
@@ -454,6 +469,31 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
     setSummaryEvaluation({ score, criteria, message, aiFeedback });
     setIsEvaluatingSummary(false);
+
+    if (user && selectedSubject) {
+      const fieldMap: Record<string, string> = {
+        'Matéria básica': 'redacaoMateria',
+        'Aprofundamento': 'redacaoAprofundamento',
+        'Vídeo': 'redacaoVideo',
+        'Slides': 'redacaoSlide',
+        'Podcast': 'redacaoPodcast'
+      };
+      const field = fieldMap[summaryType];
+      if (field) {
+        const current = theologyProgress[selectedSubject] || {};
+        // Only update if the new score is higher
+        if (score > (current[field] || 0)) {
+          const newSubjectProgress = {
+            ...current,
+            [field]: score
+          };
+          const progressDocRef = doc(db, 'theologyProgress', user.id);
+          updateDoc(progressDocRef, {
+            [selectedSubject]: newSubjectProgress
+          }).catch(console.error);
+        }
+      }
+    }
   };
 
   const startAssessment = async () => {
@@ -956,7 +996,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
                       </button>
                     </div>
 
@@ -972,22 +1012,22 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                           <Sparkles size={24} />
                         </div>
                         <div className="text-left">
-                          <div className="font-bold">Imersão IA</div>
-                          <div className="text-xs text-stone-500">Aprofundamento com IA</div>
+                          <div className="font-bold">Aprofundamento</div>
+                          <div className="text-xs text-stone-500">Imersão Teológica Aprofundada</div>
                         </div>
                       </button>
                       <button
-                        onClick={() => openSummaryModal('Imersão IA')}
+                        onClick={() => openSummaryModal('Aprofundamento')}
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
                       </button>
                     </div>
 
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => updateDetailedProgress(selectedSubject, 'video', 10)}
+                        onClick={() => updateDetailedProgress(selectedSubject, 'video')}
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-red-50 dark:hover:bg-red-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl group-hover:scale-110 transition-transform">
@@ -995,7 +1035,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         </div>
                         <div className="text-left">
                           <div className="font-bold">Vídeo</div>
-                          <div className="text-xs text-stone-500">Assista à vídeo-aula (+10 pts)</div>
+                          <div className="text-xs text-stone-500">Assista à vídeo-aula</div>
                         </div>
                       </button>
                       <button
@@ -1003,13 +1043,13 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
                       </button>
                     </div>
 
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => updateDetailedProgress(selectedSubject, 'slides', 10)}
+                        onClick={() => updateDetailedProgress(selectedSubject, 'slides')}
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-xl group-hover:scale-110 transition-transform">
@@ -1017,7 +1057,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         </div>
                         <div className="text-left">
                           <div className="font-bold">Slides</div>
-                          <div className="text-xs text-stone-500">Apresentação visual (+10 pts)</div>
+                          <div className="text-xs text-stone-500">Apresentação visual</div>
                         </div>
                       </button>
                       <button
@@ -1025,13 +1065,13 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
                       </button>
                     </div>
 
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => updateDetailedProgress(selectedSubject, 'podcast', 10)}
+                        onClick={() => updateDetailedProgress(selectedSubject, 'podcast')}
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
@@ -1039,7 +1079,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         </div>
                         <div className="text-left">
                           <div className="font-bold">Podcast</div>
-                          <div className="text-xs text-stone-500">Ouça o resumo em áudio (+10 pts)</div>
+                          <div className="text-xs text-stone-500">Ouça o resumo em áudio</div>
                         </div>
                       </button>
                       <button
@@ -1047,7 +1087,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
                       </button>
                     </div>
                   </div>
@@ -1264,8 +1304,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                   className="flex-1 min-w-[140px] py-3 md:py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                 >
                   <Brain size={20} />
-                  <span className="hidden sm:inline">AVALIAÇÃO</span>
-                  <span className="sm:hidden">AVALIAÇÃO</span>
+                  <span className="hidden sm:inline">AVALIAÇÃO (+50 pts)</span>
+                  <span className="sm:hidden">AVALIAÇÃO (+50 pts)</span>
                 </button>
                 <button 
                   onClick={saveToNotebook}

@@ -94,9 +94,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     showToast("Carregando a sua benção... 🙏", 'info');
     
     try {
-      const prompt = `Procure no banco de dados para armazenagem de devocionais (arquivo "Paste March 07,2026 - 9:08PM") e apresente o devocional para o dia ${testDay} com o filtro "${testFilter}". Apresente o resultado de forma clara e formatada em Markdown.`;
+      const prompt = `Gere um devocional inspirador e profundo para o dia ${testDay} com o foco especial em "${testFilter}". Apresente o resultado de forma clara, acolhedora e formatada em Markdown.`;
       
-      const response = await geminiService.generateTextWithThought(prompt, "Você é um assistente que acessa o banco de dados de devocionais.", deepThinking);
+      const response = await geminiService.generateTextWithThought(prompt, "Você é um mentor espiritual e devocional experiente.", deepThinking);
       setTestResult(response.text);
       setTestResultThought(response.thought);
       showToast("Devocional encontrado! 🙌✨");
@@ -521,15 +521,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         </div>
       </div>
 
-      <div className="flex justify-center -mt-2 mb-4">
-        <button 
-          onClick={() => setIsTestModalOpen(true)}
-          className="px-6 py-3 bg-stone-800 text-white font-bold rounded-2xl hover:bg-stone-900 transition-all shadow-lg shadow-stone-800/20 flex items-center gap-2"
-        >
-          <Sparkles size={20} />
-          Devocional Imersão
-        </button>
-      </div>
+
 
       {/* Quick Actions - Minimalist & Compact */}
       <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -600,22 +592,21 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         </button>
       </section>
 
-      {/* News Section - Patterned like others */}
       <section className="bg-orange-50 dark:bg-orange-900/10 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 border border-orange-100 dark:border-orange-900/20">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
             <Newspaper className="text-white" size={32} />
           </div>
           <div>
-            <h3 className="text-xl font-bold text-orange-950 dark:text-orange-400">Notícias do Reino</h3>
-            <p className="text-orange-800/60 dark:text-orange-200/40 text-sm">Fique por dentro do que acontece no mundo cristão.</p>
+            <h3 className="text-xl font-bold text-orange-950 dark:text-orange-400">Sinais da Vinda de Cristo</h3>
+            <p className="text-orange-800/60 dark:text-orange-200/40 text-sm">Acompanhe os sinais proféticos: guerras, fome, epidemias e desastres naturais.</p>
           </div>
         </div>
         <button 
           onClick={() => setIsNewsModalOpen(true)}
           className="w-full md:w-auto px-10 py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-orange-600/20"
         >
-          VER NOTÍCIAS <ArrowRight size={18} />
+          VER SINAIS <ArrowRight size={18} />
         </button>
       </section>
 

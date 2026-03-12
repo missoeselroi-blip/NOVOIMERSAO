@@ -30,7 +30,8 @@ import {
   Globe,
   Calendar,
   Pencil,
-  Anchor
+  Anchor,
+  LogIn
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -66,15 +67,40 @@ import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
 import { OfflineProvider, useOffline } from './contexts/OfflineContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { Coins, WifiOff, Coffee } from 'lucide-react';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import AuthModal from './components/AuthModal';
+import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 
 function AppContent() {
+  const { user, logout } = useAuth();
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { theme, setTheme } = useTheme();
   const [activeTab, setActiveTab] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [deepThinking, setDeepThinking] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingTab, setPendingTab] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (user && pendingTab) {
+      setActiveTab(pendingTab);
+      setPendingTab(null);
+    }
+  }, [user, pendingTab]);
+
+  const handleNavigate = (tabId: string) => {
+    const protectedTabs = ['theology', 'career', 'notebook'];
+    if (protectedTabs.includes(tabId) && !user) {
+      setPendingTab(tabId);
+      setIsAuthModalOpen(true);
+      showToast("Faça login para acessar este recurso.", "info");
+      return;
+    }
+    setPendingTab(null);
+    setActiveTab(tabId);
+    setIsMenuOpen(false);
+  };
 
   const isDarkMode = theme === 'dark';
   const isDevotionalMode = theme === 'devotional';
@@ -85,26 +111,26 @@ function AppContent() {
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];  const navItems = [
-    { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={setActiveTab} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
-    { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={setActiveTab} /> },
-    { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={setActiveTab} /> },
-    { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={setActiveTab} /> },
-    { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { setActiveTab('study'); }} /> },
-    { id: 'posts', label: 'Post', subtitle: 'Artes com IA', icon: <ImageIcon size={20} />, component: <PostsPage /> },
+    { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
+    { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
+    { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
+    { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} /> },
+    { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'donate', label: 'Doe', subtitle: 'Apoie este ministério', icon: <HeartHandshake size={20} />, component: <DonatePage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Trophy size={20} />, component: <CareerPage /> },
     { id: 'contact', label: 'Contato', subtitle: 'Fale conosco', icon: <Mail size={20} />, component: <ContactPage /> },
-    { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={setActiveTab} />, hidden: true },
+    { id: 'login-nav', label: 'Entrar', icon: <LogIn size={20} />, component: <div />, hidden: true },
+    { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'theology-search', label: 'Busca de Teologia', subtitle: 'Pesquisa avançada', icon: <Search size={20} />, component: <TheologySearchPage />, hidden: true },
-    { id: 'missionary', label: 'Missões', subtitle: 'Impacto Global', icon: <Globe size={20} />, component: <MissionaryPage onNavigate={setActiveTab} />, hidden: true },
-    { id: 'missionary-results', label: 'Resultados Missões', subtitle: 'Relatórios de campo', icon: <Calendar size={20} />, component: <MissionaryBulkResults onBack={() => setActiveTab('missionary')} />, hidden: true },
+    { id: 'missionary', label: 'Missões', subtitle: 'Impacto Global', icon: <Globe size={20} />, component: <MissionaryPage onNavigate={handleNavigate} />, hidden: true },
+    { id: 'missionary-results', label: 'Resultados Missões', subtitle: 'Relatórios de campo', icon: <Calendar size={20} />, component: <MissionaryBulkResults onBack={() => handleNavigate('missionary')} />, hidden: true },
     { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
   ];
 
   const activeItem = navItems.find(item => item.id === activeTab);
-  const activeComponent = activeItem?.component || <HomePage onNavigate={setActiveTab} deepThinking={deepThinking} setDeepThinking={setDeepThinking} />;
+  const activeComponent = activeItem?.component || <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} />;
 
   return (
     <div className={cn(
@@ -171,32 +197,47 @@ function AppContent() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            {navItems.filter(item => !item.hidden).map((item) => (
-              <button
-                key={item.id}
-                onClick={() => setActiveTab(item.id)}
-                className={cn(
-                  "flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 relative py-2 group",
-                  activeTab === item.id ? "text-emerald-600" : "text-zinc-500"
-                )}
-              >
-                <div className="relative">
-                  {item.icon}
-                  {/* Tooltip */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[100] shadow-xl border border-white/10 translate-y-2 group-hover:translate-y-0 uppercase tracking-widest">
-                    {item.label}
-                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
+            {navItems.filter(item => !item.hidden || item.id === 'login-nav').map((item) => {
+              if (item.id === 'login-nav') {
+                if (user) return null;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setIsAuthModalOpen(true)}
+                    className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 text-zinc-500 py-2"
+                  >
+                    <LogIn size={18} />
+                    <span>Entrar</span>
+                  </button>
+                );
+              }
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleNavigate(item.id)}
+                  className={cn(
+                    "flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 relative py-2 group",
+                    activeTab === item.id ? "text-emerald-600" : "text-zinc-500"
+                  )}
+                >
+                  <div className="relative">
+                    {item.icon}
+                    {/* Tooltip */}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[100] shadow-xl border border-white/10 translate-y-2 group-hover:translate-y-0 uppercase tracking-widest">
+                      {item.label}
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
+                    </div>
                   </div>
-                </div>
-                <span className="hidden lg:block">{item.label}</span>
-                {activeTab === item.id && (
-                  <motion.div 
-                    layoutId="activeTabDesktop"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"
-                  />
-                )}
-              </button>
-            ))}
+                  <span className="hidden lg:block">{item.label}</span>
+                  {activeTab === item.id && (
+                    <motion.div 
+                      layoutId="activeTabDesktop"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"
+                    />
+                  )}
+                </button>
+              );
+            })}
             
             <div className="flex items-center gap-2 bg-stone-100 dark:bg-zinc-800 p-1 rounded-full">
               <button
@@ -221,6 +262,44 @@ function AppContent() {
                 <Coffee size={18} />
               </button>
             </div>
+
+            {user ? (
+              <div className="flex items-center gap-3 pl-4 border-l border-stone-200 dark:border-zinc-800">
+                <button
+                  onClick={() => handleNavigate('student-profile')}
+                  className="flex items-center gap-2 group"
+                >
+                  <img 
+                    src={user.photoURL} 
+                    alt={user.name} 
+                    className="w-8 h-8 rounded-full border-2 border-emerald-500 group-hover:scale-110 transition-transform"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="hidden lg:block text-left">
+                    <p className="text-xs font-bold leading-none">{user.name}</p>
+                    <p className="text-[10px] text-stone-400 uppercase tracking-widest">Membro</p>
+                  </div>
+                </button>
+                <button
+                  onClick={() => {
+                    logout();
+                    showToast("Sessão encerrada. Até logo! 👋");
+                  }}
+                  className="p-2 text-stone-400 hover:text-red-500 transition-colors"
+                  title="Sair"
+                >
+                  <LogOut size={18} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthModalOpen(true)}
+                className="ml-4 px-6 py-2 bg-emerald-600 text-white text-sm font-bold rounded-full hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
+              >
+                <LogIn size={18} />
+                Entrar
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Toggle - Simplified */}
@@ -241,10 +320,7 @@ function AppContent() {
           {mainNavItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => {
-                setActiveTab(item.id);
-                setIsMenuOpen(false);
-              }}
+              onClick={() => handleNavigate(item.id)}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative",
                 activeTab === item.id 
@@ -335,10 +411,7 @@ function AppContent() {
                 {navItems.filter(item => !item.hidden).map((item) => (
                   <button
                     key={item.id}
-                    onClick={() => {
-                      setActiveTab(item.id);
-                      setIsMenuOpen(false);
-                    }}
+                    onClick={() => handleNavigate(item.id)}
                     className={cn(
                       "w-full flex items-center gap-4 p-4 rounded-2xl text-sm font-bold transition-all",
                       activeTab === item.id 
@@ -394,7 +467,44 @@ function AppContent() {
               </div>
 
               <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50">
-                <p className="text-[10px] text-stone-400 dark:text-zinc-500 text-center uppercase tracking-widest">
+                {user ? (
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <img 
+                        src={user.photoURL} 
+                        alt={user.name} 
+                        className="w-10 h-10 rounded-full border-2 border-emerald-500"
+                        referrerPolicy="no-referrer"
+                      />
+                      <div>
+                        <p className="text-sm font-bold">{user.name}</p>
+                        <p className="text-[10px] text-stone-400 uppercase tracking-widest">Membro da Marinha</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        logout();
+                        setIsMenuOpen(false);
+                        showToast("Sessão encerrada. 👋");
+                      }}
+                      className="p-2 text-stone-400 hover:text-red-500 transition-colors"
+                    >
+                      <LogOut size={20} />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setIsMenuOpen(false);
+                      setIsAuthModalOpen(true);
+                    }}
+                    className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                  >
+                    <LogIn size={20} />
+                    Entrar na Conta
+                  </button>
+                )}
+                <p className="text-[10px] text-stone-400 dark:text-zinc-500 text-center uppercase tracking-widest mt-6">
                   Imersão Bíblica IA v2.5
                 </p>
               </div>
@@ -454,6 +564,11 @@ function AppContent() {
         </Suspense>
       </main>
 
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => setIsAuthModalOpen(false)} 
+      />
+
       <footer className={cn(
         "py-8 border-t text-center text-sm",
         isDarkMode ? "border-zinc-800 text-zinc-500" : "border-stone-200 text-stone-500"
@@ -480,14 +595,16 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ThemeProvider>
-      <OfflineProvider>
-        <ToastProvider>
-          <CreditProvider>
-            <AppContent />
-          </CreditProvider>
-        </ToastProvider>
-      </OfflineProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeProvider>
+        <OfflineProvider>
+          <ToastProvider>
+            <CreditProvider>
+              <AppContent />
+            </CreditProvider>
+          </ToastProvider>
+        </OfflineProvider>
+      </ThemeProvider>
+    </AuthProvider>
   );
 }

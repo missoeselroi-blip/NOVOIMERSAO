@@ -46,14 +46,14 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
   const { user, theologyProgress, certificates } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'redacao'>('profile');
 
-  const handleScoreChange = async (subject: string, field: 'evaluation' | 'redacao' | 'completion', value: string) => {
+  const handleScoreChange = async (subject: string, field: 'evaluation' | 'redacaoMateria' | 'redacaoAprofundamento' | 'redacaoSlide' | 'redacaoVideo' | 'redacaoPodcast', value: string) => {
     if (!user) return;
     
     const numValue = Math.max(0, parseInt(value) || 0);
-    const max = field === 'evaluation' ? 50 : field === 'redacao' ? 20 : 100;
+    const max = field === 'evaluation' ? 50 : 10;
     const finalValue = Math.min(numValue, max);
 
-    const current = theologyProgress[subject] || {};
+    const current = (theologyProgress && theologyProgress[subject]) || {};
     const newSubjectProgress = {
       ...current,
       [field]: finalValue
@@ -70,13 +70,14 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
   };
 
   const calculateTotal = (subject: string) => {
-    const data = theologyProgress[subject] || {};
+    const data = (theologyProgress && theologyProgress[subject]) || {};
     const evalScore = data.evaluation || 0;
-    const redScore = data.redacao || 0;
-    const videoScore = data.video ? 10 : 0;
-    const slidesScore = data.slides ? 10 : 0;
-    const podcastScore = data.podcast ? 10 : 0;
-    return evalScore + redScore + videoScore + slidesScore + podcastScore;
+    const redMateria = data.redacaoMateria || 0;
+    const redAprofundamento = data.redacaoAprofundamento || 0;
+    const redSlide = data.redacaoSlide || 0;
+    const redVideo = data.redacaoVideo || 0;
+    const redPodcast = data.redacaoPodcast || 0;
+    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast;
   };
 
   const totalPoints = theologyProgress ? Object.keys(theologyProgress).reduce((acc, subject) => {
@@ -91,8 +92,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
       name: subject.split(' ')[0], // Short name for the chart X-axis
       fullSubject: subject,
       Avaliação: data.evaluation || 0,
-      Redação: data.redacao || 0,
-      Extras: (data.video ? 10 : 0) + (data.slides ? 10 : 0) + (data.podcast ? 10 : 0),
+      Redação: (data.redacaoMateria || 0) + (data.redacaoAprofundamento || 0) + (data.redacaoSlide || 0) + (data.redacaoVideo || 0) + (data.redacaoPodcast || 0),
       Total: calculateTotal(subject)
     };
   });
@@ -118,15 +118,6 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
           )}
         >
           <GraduationCap size={18} /> Curso de Teologia
-        </button>
-        <button 
-          onClick={() => setActiveSubTab('redacao')}
-          className={cn(
-            "px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2",
-            activeSubTab === 'redacao' ? "bg-emerald-600 text-white shadow-lg" : "text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800"
-          )}
-        >
-          <Pencil size={18} /> Oficina de Redação
         </button>
       </div>
 
@@ -195,77 +186,86 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                       <tr className="text-stone-400 border-b border-stone-100 dark:border-zinc-800">
                         <th className="text-left py-4 font-bold uppercase tracking-wider text-[10px]">Matéria</th>
                         <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Avaliação (50)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação (20)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Conclusão (%)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Extras (30)</th>
-                        <th className="text-right py-4 font-bold uppercase tracking-wider text-[10px]">Nota Final</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Matéria (10)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Aprof. (10)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Slide (10)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Vídeo (10)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Podcast (10)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Nota Final</th>
+                        <th className="text-right py-4 font-bold uppercase tracking-wider text-[10px]">A/R</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-stone-50 dark:divide-zinc-800">
                       {THEOLOGY_SUBJECTS.map((subject, i) => {
                         const data = (theologyProgress && theologyProgress[subject]) || {};
-                        const extras = (data.video ? 10 : 0) + (data.slides ? 10 : 0) + (data.podcast ? 10 : 0);
                         const total = calculateTotal(subject);
 
                         return (
                           <tr key={i} className="group hover:bg-stone-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                             <td className="py-4 font-bold text-stone-700 dark:text-zinc-300">{subject}</td>
                             <td className="py-4 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <button className="p-2 bg-stone-100 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-stone-500 hover:bg-emerald-100 hover:text-emerald-600 transition-colors">
-                                  Avaliação
-                                </button>
-                                <input 
-                                  type="number"
-                                  value={data.evaluation || ''}
-                                  onChange={(e) => handleScoreChange(subject, 'evaluation', e.target.value)}
-                                  placeholder="0"
-                                  className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                />
-                              </div>
+                              <input 
+                                type="number"
+                                value={data.evaluation || ''}
+                                onChange={(e) => handleScoreChange(subject, 'evaluation', e.target.value)}
+                                placeholder="0"
+                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                              />
                             </td>
                             <td className="py-4 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <button className="p-2 bg-stone-100 dark:bg-zinc-800 rounded-lg text-[10px] font-bold uppercase text-stone-500 hover:bg-emerald-100 hover:text-emerald-600 transition-colors">
-                                  Redação
-                                </button>
-                                <input 
-                                  type="number"
-                                  value={data.redacao || ''}
-                                  onChange={(e) => handleScoreChange(subject, 'redacao', e.target.value)}
-                                  placeholder="0"
-                                  className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
-                                />
-                              </div>
+                              <input 
+                                type="number"
+                                value={data.redacaoMateria || ''}
+                                onChange={(e) => handleScoreChange(subject, 'redacaoMateria', e.target.value)}
+                                placeholder="0"
+                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                              />
                             </td>
                             <td className="py-4 text-center">
-                              <div className="flex items-center justify-center gap-2">
-                                <input 
-                                  type="number"
-                                  value={data.completion || ''}
-                                  onChange={(e) => handleScoreChange(subject, 'completion', e.target.value)}
-                                  placeholder="0"
-                                  className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-bold text-emerald-600"
-                                />
-                                <span className="text-xs font-bold text-stone-400">%</span>
-                              </div>
+                              <input 
+                                type="number"
+                                value={data.redacaoAprofundamento || ''}
+                                onChange={(e) => handleScoreChange(subject, 'redacaoAprofundamento', e.target.value)}
+                                placeholder="0"
+                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                              />
                             </td>
                             <td className="py-4 text-center">
-                              <div className="flex items-center justify-center gap-1 text-[10px] font-bold text-stone-400">
-                                <span className={data.video ? "text-emerald-500" : ""}>V</span>
-                                <span>•</span>
-                                <span className={data.slides ? "text-emerald-500" : ""}>S</span>
-                                <span>•</span>
-                                <span className={data.podcast ? "text-emerald-500" : ""}>P</span>
-                                <span className="ml-2 text-emerald-600">({extras} pts)</span>
-                              </div>
+                              <input 
+                                type="number"
+                                value={data.redacaoSlide || ''}
+                                onChange={(e) => handleScoreChange(subject, 'redacaoSlide', e.target.value)}
+                                placeholder="0"
+                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                              />
+                            </td>
+                            <td className="py-4 text-center">
+                              <input 
+                                type="number"
+                                value={data.redacaoVideo || ''}
+                                onChange={(e) => handleScoreChange(subject, 'redacaoVideo', e.target.value)}
+                                placeholder="0"
+                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                              />
+                            </td>
+                            <td className="py-4 text-center">
+                              <input 
+                                type="number"
+                                value={data.redacaoPodcast || ''}
+                                onChange={(e) => handleScoreChange(subject, 'redacaoPodcast', e.target.value)}
+                                placeholder="0"
+                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                              />
+                            </td>
+                            <td className="py-4 text-center">
+                              <span className="font-bold text-lg">{total}</span>
                             </td>
                             <td className="py-4 text-right">
                               <span className={cn(
-                                "font-bold text-lg px-4 py-1 rounded-full",
-                                total >= 70 ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" : "text-stone-400 bg-stone-50 dark:bg-zinc-800"
+                                "font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider",
+                                total >= 70 ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" : "text-red-600 bg-red-50 dark:bg-red-900/20"
                               )}>
-                                {total}
+                                {total >= 70 ? 'Aprovado' : 'Reprovado'}
                               </span>
                             </td>
                           </tr>
@@ -306,8 +306,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                         />
                         <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
                         <Bar dataKey="Avaliação" stackId="a" fill="#059669" radius={[0, 0, 4, 4]} />
-                        <Bar dataKey="Redação" stackId="a" fill="#3b82f6" />
-                        <Bar dataKey="Extras" stackId="a" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="Redação" stackId="a" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>
@@ -380,15 +379,19 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                   <div className="space-y-4">
                     <div className="flex justify-between items-center py-3 border-b border-stone-50 dark:border-zinc-800">
                       <span className="text-sm text-stone-500">Média de Notas</span>
-                      <span className="font-bold text-emerald-600">9.2</span>
+                      <span className="font-bold text-emerald-600">
+                        {completedSubjects.length > 0 
+                          ? (completedSubjects.reduce((acc, sub) => acc + calculateTotal(sub), 0) / completedSubjects.length).toFixed(1)
+                          : '0.0'}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-b border-stone-50 dark:border-zinc-800">
                       <span className="text-sm text-stone-500">Tempo de Estudo</span>
-                      <span className="font-bold text-blue-600">42h</span>
+                      <span className="font-bold text-blue-600">0h</span>
                     </div>
                     <div className="flex justify-between items-center py-3">
                       <span className="text-sm text-stone-500">Rank Global</span>
-                      <span className="font-bold text-amber-500">#12</span>
+                      <span className="font-bold text-amber-500">-</span>
                     </div>
                   </div>
                 </div>
@@ -405,17 +408,6 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
             exit={{ opacity: 0, x: -20 }}
           >
             <TheologyPage onNavigate={onNavigate} />
-          </motion.div>
-        )}
-
-        {activeSubTab === 'redacao' && (
-          <motion.div 
-            key="redacao"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
-            <RedacaoPage />
           </motion.div>
         )}
       </AnimatePresence>

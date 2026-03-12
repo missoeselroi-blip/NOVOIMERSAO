@@ -27,6 +27,7 @@ import {
   Hourglass,
   Pencil,
   ExternalLink,
+  Image as ImageIcon,
   GraduationCap,
   Layout,
   Cross,
@@ -50,6 +51,7 @@ import { GOSPEL_AUTHORS } from '../constants/authors';
 import { useCredits } from '../contexts/CreditContext';
 
 import { useToast } from '../components/Toast';
+import PostsPage from './PostsPage';
 import { useOffline } from '../contexts/OfflineContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { WifiOff } from 'lucide-react';
@@ -138,6 +140,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'authors', label: 'Visão do Autor', icon: <User size={18} /> },
     { id: 'religions', label: 'Outras Religiões', icon: <Cross size={18} className="rotate-180" /> },
     { id: 'creation-tool', label: 'Ferramenta de Criação', icon: <Sparkles size={18} /> },
+    { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
     { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
@@ -393,6 +396,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       } else if (messageType === 'funeral') {
         prompt = `Gere uma Mensagem de Velório sobre o tema: ${topic}.
           Estruture a mensagem para os vivos e não para os mortos. Traga consolo a família e amigos, seja gentil, empático e amoroso. Fale da eternidade com Deus, plano de salvação, da realidade que todos vivemos que um dia também enfrentaremos a morte. Não julgue, não fale de inferno, não critique a família. Formate em Markdown.`;
+      } else if (messageType === 'children') {
+        prompt = `Gere uma Mensagem Infantil sobre o tema: ${topic}.
+          Estruture a mensagem de forma básica, clara e com linguagem adequada para crianças. Utilize exemplos e ilustrações que façam parte do universo infantil (brincadeiras, escola, família, animais, natureza). Sugira termos e abordagens interativas para prender a atenção desse público. A mensagem deve ser curta (5 a 10 minutos) e transmitir um ensinamento bíblico prático e positivo. Formate em Markdown.`;
       }
 
       const response = await geminiService.generateTextWithThought(prompt, undefined, deepThinking);
@@ -2154,6 +2160,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <option value="graduation">Mensagem Formatura</option>
                           <option value="devotional">Mensagem Devocional</option>
                           <option value="funeral">Mensagem Velório</option>
+                          <option value="children">Mensagem Infantil</option>
                         </select>
                       )}
                       <button
@@ -2458,6 +2465,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
                   </div>
                 )}
+              </div>
+            )}
+
+            {activeTab === 'posts' && (
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                <PostsPage />
               </div>
             )}
 

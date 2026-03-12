@@ -33,9 +33,9 @@ export default function NewsPage() {
 
   const fetchNews = async () => {
     setIsLoadingNews(true);
-    showToast("Buscando as últimas notícias do Reino... 🌍📖", 'info');
+    showToast("Buscando os sinais da vinda de Cristo... 🌍📖", 'info');
     try {
-      const query = "notícias cristianismo gospel brasil mundo missões evangelismo obras sociais";
+      const query = "sinais da vinda de Cristo: guerras, fome, epidemias, desastres naturais, notícias cristianismo profecias bíblicas";
       const result = await geminiService.searchNews(query);
       setNews(result);
     } catch (error) {
@@ -103,7 +103,7 @@ export default function NewsPage() {
               className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen"
               referrerPolicy="no-referrer"
             />
-            <h2 className="text-3xl font-display font-bold">Notícias & Missões</h2>
+            <h2 className="text-3xl font-display font-bold">Sinais da Vinda de Cristo</h2>
             <img 
               src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
               alt="Logo" 
@@ -111,7 +111,7 @@ export default function NewsPage() {
               referrerPolicy="no-referrer"
             />
           </div>
-          <p className="text-stone-500 dark:text-zinc-400">Fique por dentro do que acontece no Reino de Deus.</p>
+          <p className="text-stone-500 dark:text-zinc-400">Acompanhe os sinais proféticos: guerras, fome, epidemias e desastres naturais.</p>
         </div>
         <button 
           onClick={fetchNews}

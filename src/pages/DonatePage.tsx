@@ -10,9 +10,10 @@ import {
   Instagram,
   Youtube,
   QrCode,
-  Copy
+  Copy,
+  X
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useToast } from '../components/Toast';
 import { cn } from '../types';
@@ -32,6 +33,7 @@ export default function DonatePage() {
   const [frequency, setFrequency] = useState('monthly');
   const [isProcessing, setIsProcessing] = useState(false);
   const [showPix, setShowPix] = useState(false);
+  const [showPaypalModal, setShowPaypalModal] = useState(false);
 
   const handleCopyPix = () => {
     const pixKey = "22981588428";
@@ -40,14 +42,19 @@ export default function DonatePage() {
   };
 
   const handleDonate = () => {
+    setShowPaypalModal(true);
+  };
+
+  const confirmPaypalRedirect = () => {
+    setShowPaypalModal(false);
     setIsProcessing(true);
     showToast("Redirecionando para o PayPal... 🙏✨", 'info');
     
-    // Simulate PayPal redirect
     setTimeout(() => {
       setIsProcessing(false);
+      window.open('https://www.paypal.com/donate', '_blank');
       showToast("Obrigado pela sua generosidade! Que Deus o abençoe ricamente. 🙌❤️");
-    }, 2000);
+    }, 1500);
   };
 
   return (
@@ -225,6 +232,58 @@ export default function DonatePage() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showPaypalModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-stone-200 dark:border-zinc-800"
+            >
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-display font-bold flex items-center gap-2">
+                  <CreditCard className="text-blue-500" size={24} />
+                  Doação via PayPal
+                </h3>
+                <button 
+                  onClick={() => setShowPaypalModal(false)}
+                  className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300 bg-stone-100 dark:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-2xl text-sm leading-relaxed">
+                  <p className="font-bold mb-2">Dica: Vincule sua conta Google ao PayPal!</p>
+                  <p>Para uma experiência mais rápida e segura nas próximas vezes, você pode vincular sua conta do Google ao seu PayPal durante o processo de pagamento.</p>
+                </div>
+
+                <p className="text-stone-600 dark:text-zinc-400 text-sm">
+                  Você será redirecionado para o ambiente seguro do PayPal para concluir sua doação de <strong className="text-emerald-600 dark:text-emerald-400">R$ {amount || 0},00</strong>.
+                </p>
+
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    onClick={() => setShowPaypalModal(false)}
+                    className="flex-1 py-4 font-bold text-stone-500 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button 
+                    onClick={confirmPaypalRedirect}
+                    className="flex-1 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2"
+                  >
+                    Continuar <ArrowRight size={18} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

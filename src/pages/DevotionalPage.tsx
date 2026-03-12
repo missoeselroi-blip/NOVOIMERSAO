@@ -385,22 +385,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                   referrerPolicy="no-referrer"
                 />
               </div>
-              <div className="flex flex-wrap justify-center gap-3">
-                <button 
-                  onClick={() => setIsSeriesModalOpen(true)}
-                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-2xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2"
-                >
-                  <ChallengeIcon size={20} />
-                  Devocional em Série (Mensal)
-                </button>
-                <button 
-                  onClick={() => setShowMissionary(true)}
-                  className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
-                >
-                  <Globe size={20} />
-                  Missões & Impacto
-                </button>
-              </div>
+
             </div>
             <p className="text-stone-500 dark:text-zinc-400">Escolha o tema para o Devocional de hoje</p>
           </header>

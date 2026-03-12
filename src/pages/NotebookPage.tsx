@@ -51,6 +51,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [activeCategory, setActiveCategory] = useState<'Todos' | 'Anotações' | 'Pregações' | 'Estudos'>('Todos');
   const [headerText, setHeaderText] = useState('');
   const [footerText, setFooterText] = useState('');
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     // Notes are now handled by AuthContext and Firestore
@@ -95,15 +96,21 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
     }
   };
 
-  const deleteNote = async (id: string) => {
-    if (window.confirm("Deseja realmente excluir esta página?")) {
+  const confirmDelete = (id: string) => {
+    setNoteToDelete(id);
+  };
+
+  const deleteNote = async () => {
+    if (noteToDelete) {
       try {
-        const noteDocRef = doc(db, 'notes', id);
+        const noteDocRef = doc(db, 'notes', noteToDelete);
         await deleteDoc(noteDocRef);
         showToast("Página removida. 🗑️", 'info');
       } catch (error) {
         console.error("Error deleting note:", error);
         showToast("Erro ao excluir página.", 'error');
+      } finally {
+        setNoteToDelete(null);
       }
     }
   };
@@ -485,7 +492,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                       </button>
                     )}
                     <button 
-                      onClick={() => deleteNote(note.id)}
+                      onClick={() => confirmDelete(note.id)}
                       className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-xl transition-colors"
                       title="Excluir"
                     >
@@ -522,6 +529,43 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           </div>
         )}
       </div>
+
+      <AnimatePresence>
+        {noteToDelete && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-md rounded-[2.5rem] p-8 shadow-2xl border border-stone-200 dark:border-zinc-800 text-center"
+            >
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Trash2 size={32} />
+              </div>
+              <h2 className="text-2xl font-display font-bold text-stone-900 dark:text-zinc-100 mb-2">
+                Excluir Página
+              </h2>
+              <p className="text-stone-500 dark:text-zinc-400 mb-8">
+                Tem certeza que deseja excluir esta página do seu caderno? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-4">
+                <button
+                  onClick={() => setNoteToDelete(null)}
+                  className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={deleteNote}
+                  className="flex-1 py-3 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+                >
+                  Excluir
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <footer className="pt-12 pb-6 border-t border-stone-200 dark:border-zinc-800 flex flex-col items-center gap-4">
         <div className="flex items-center justify-center gap-3">
