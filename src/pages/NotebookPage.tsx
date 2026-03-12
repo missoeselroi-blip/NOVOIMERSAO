@@ -29,6 +29,7 @@ interface Note {
   title: string;
   content: string;
   date: string;
+  createdAt?: string;
   category: 'Anotações' | 'Pregações' | 'Estudos';
 }
 
@@ -36,9 +37,13 @@ interface NotebookPageProps {
   onSearchWiki?: (query: string) => void;
 }
 
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, addDoc, updateDoc, deleteDoc, collection } from 'firebase/firestore';
+
 export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
+  const { user, notes, isInitialLoading } = useAuth();
   const { showToast } = useToast();
-  const [notes, setNotes] = useState<Note[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [currentNote, setCurrentNote] = useState<{ title: string, content: string, category: 'Anotações' | 'Pregações' | 'Estudos' }>({ title: '', content: '', category: 'Anotações' });
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -48,47 +53,58 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [footerText, setFooterText] = useState('');
 
   useEffect(() => {
-    const saved = localStorage.getItem('preacher_notes');
-    if (saved) {
-      setNotes(JSON.parse(saved));
-    }
+    // Notes are now handled by AuthContext and Firestore
   }, []);
 
-  const saveNote = () => {
+  const saveNote = async () => {
     if (!currentNote.title || !currentNote.content) {
       showToast("Preencha o título e o conteúdo! ✍️", 'info');
       return;
     }
+
+    if (!user) return;
     
-    let updatedNotes;
-    if (editingNoteId) {
-      updatedNotes = notes.map(n => n.id === editingNoteId ? { ...n, title: currentNote.title, content: currentNote.content, category: currentNote.category } : n);
-      showToast("Página atualizada! 📝✨");
-    } else {
-      const newNote: Note = {
-        id: Date.now().toString(),
-        title: currentNote.title,
-        content: currentNote.content,
-        category: currentNote.category,
-        date: new Date().toLocaleDateString('pt-BR')
-      };
-      updatedNotes = [newNote, ...notes];
-      showToast("Página guardada com sucesso! 📝✅");
+    try {
+      if (editingNoteId) {
+        const noteDocRef = doc(db, 'notes', editingNoteId);
+        await updateDoc(noteDocRef, {
+          title: currentNote.title,
+          content: currentNote.content,
+          category: currentNote.category,
+          updatedAt: new Date().toISOString()
+        });
+        showToast("Página atualizada! 📝✨");
+      } else {
+        const notesCollectionRef = collection(db, 'notes');
+        await addDoc(notesCollectionRef, {
+          userId: user.id,
+          title: currentNote.title,
+          content: currentNote.content,
+          category: currentNote.category,
+          createdAt: new Date().toISOString()
+        });
+        showToast("Página guardada com sucesso! 📝✅");
+      }
+      
+      setCurrentNote({ title: '', content: '', category: 'Anotações' });
+      setEditingNoteId(null);
+      setIsFormOpen(false);
+    } catch (error) {
+      console.error("Error saving note:", error);
+      showToast("Erro ao salvar página.", 'error');
     }
-    
-    setNotes(updatedNotes);
-    localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
-    setCurrentNote({ title: '', content: '', category: 'Anotações' });
-    setEditingNoteId(null);
-    setIsFormOpen(false);
   };
 
-  const deleteNote = (id: string) => {
+  const deleteNote = async (id: string) => {
     if (window.confirm("Deseja realmente excluir esta página?")) {
-      const updatedNotes = notes.filter(n => n.id !== id);
-      setNotes(updatedNotes);
-      localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
-      showToast("Página removida. 🗑️", 'info');
+      try {
+        const noteDocRef = doc(db, 'notes', id);
+        await deleteDoc(noteDocRef);
+        showToast("Página removida. 🗑️", 'info');
+      } catch (error) {
+        console.error("Error deleting note:", error);
+        showToast("Erro ao excluir página.", 'error');
+      }
     }
   };
 
@@ -99,7 +115,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
 
   const handleDownload = (note: Note) => {
     const element = document.createElement("a");
-    const file = new Blob([`# ${note.title}\n\n${note.content}\n\nData: ${note.date}`], {type: 'text/plain'});
+    const file = new Blob([`# ${note.title}\n\n${note.content}\n\nData: ${note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : note.date}`], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
     element.download = `${note.title.replace(/\s+/g, '_')}.txt`;
     document.body.appendChild(element);
@@ -172,7 +188,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
             <div class="category-tag">${note.category}</div>
             <h1>${note.title}</h1>
             <div class="meta">
-              Data: ${note.date}<br/>
+              Data: ${note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : note.date}<br/>
               <div style="display: flex; align-items: center; gap: 5px;">
                 <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="16" height="16" style="object-fit: contain;" />
                 Fonte: Imersão Bíblica IA
@@ -207,6 +223,23 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       handleCopy(`${note.title}\n\n${note.content}`);
     }
   };
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold mb-4">Acesse sua conta para ver seu caderno</h2>
+        <p className="text-stone-500">Guarde seus estudos e reflexões com segurança.</p>
+      </div>
+    );
+  }
 
   const filteredNotes = notes.filter(n => {
     const matchesSearch = n.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -398,7 +431,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                     <h4 className="text-3xl font-serif font-bold text-stone-800 dark:text-zinc-100 mb-1">{note.title}</h4>
                     <p className="text-xs font-mono text-stone-400 uppercase tracking-widest flex items-center gap-2">
                       <Calendar size={12} />
-                      Criado em: {note.date}
+                      Criado em: {note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : 'Data desconhecida'}
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -475,7 +508,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                     referrerPolicy="no-referrer"
                   />
                   <p className="text-[10px] font-mono text-stone-300 uppercase tracking-[0.2em]">
-                    Imersão Bíblica IA — {note.date}
+                    Imersão Bíblica IA — {note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : note.date}
                   </p>
                   <img 
                     src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 

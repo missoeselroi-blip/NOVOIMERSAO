@@ -6,21 +6,27 @@ import { cn } from '../types';
 import { auth } from '../lib/firebase';
 
 export const LoginPage: React.FC = () => {
-  const { loginWithGoogle, loginWithEmail } = useAuth();
-  const [isEmailLogin, setIsEmailLogin] = useState(false);
+  const { loginWithGoogle, loginWithEmail, registerWithEmail } = useAuth();
+  const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const isFirebaseConfigured = !!auth;
 
-  const handleEmailSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !name) return;
+    if (!email || !password || (isRegistering && !name)) return;
     setIsLoading(true);
     try {
-      await loginWithEmail(email, name);
+      if (isRegistering) {
+        await registerWithEmail(email, password, name);
+      } else {
+        await loginWithEmail(email, password);
+      }
     } catch (error) {
       console.error(error);
+      alert(isRegistering ? "Erro ao criar conta." : "Erro ao entrar. Verifique suas credenciais.");
     } finally {
       setIsLoading(false);
     }
@@ -53,39 +59,14 @@ export const LoginPage: React.FC = () => {
           <div className="flex items-center justify-center gap-4 mb-6">
             <h1 className="text-3xl font-display font-bold tracking-tight">Imersão Bíblica IA</h1>
           </div>
-          <p className="text-stone-500 dark:text-zinc-400 text-sm">Sua jornada única no estudo da Palavra começa aqui.</p>
+          <p className="text-stone-500 dark:text-zinc-400 text-sm">
+            {isRegistering ? 'Crie sua conta para começar sua jornada.' : 'Sua jornada única no estudo da Palavra começa aqui.'}
+          </p>
         </div>
 
         <div className="space-y-6">
-          {!isEmailLogin ? (
-            <>
-              <button 
-                onClick={loginWithGoogle}
-                className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
-              >
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                Entrar com Google
-              </button>
-              
-              <div className="relative py-4">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-stone-100 dark:border-zinc-800"></div>
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-white dark:bg-zinc-900 px-4 text-stone-400">Ou use seu e-mail</span>
-                </div>
-              </div>
-
-              <button 
-                onClick={() => setIsEmailLogin(true)}
-                className="w-full py-4 px-6 bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all font-bold shadow-lg shadow-emerald-600/20"
-              >
-                <Mail size={20} />
-                Entrar com E-mail
-              </button>
-            </>
-          ) : (
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {isRegistering && (
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-stone-400 ml-2">Seu Nome</label>
                 <div className="relative">
@@ -100,40 +81,72 @@ export const LoginPage: React.FC = () => {
                   />
                 </div>
               </div>
+            )}
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-stone-400 ml-2">E-mail</label>
-                <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-                  <input 
-                    type="email" 
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    className="w-full pl-12 pr-4 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                  />
-                </div>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-400 ml-2">E-mail</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+                <input 
+                  type="email" 
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="w-full pl-12 pr-4 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
               </div>
+            </div>
 
-              <button 
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-4 px-6 bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all font-bold shadow-lg shadow-emerald-600/20 disabled:opacity-50 mt-4"
-              >
-                {isLoading ? <Sparkles className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                Iniciar Jornada
-              </button>
+            <div className="space-y-2">
+              <label className="text-xs font-bold uppercase tracking-wider text-stone-400 ml-2">Senha</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+                <input 
+                  type="password" 
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-12 pr-4 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                />
+              </div>
+            </div>
 
-              <button 
-                type="button"
-                onClick={() => setIsEmailLogin(false)}
-                className="w-full py-2 text-stone-400 text-sm hover:text-emerald-600 transition-colors"
-              >
-                Voltar para opções
-              </button>
-            </form>
-          )}
+            <button 
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-4 px-6 bg-emerald-600 text-white rounded-2xl flex items-center justify-center gap-3 hover:bg-emerald-700 transition-all font-bold shadow-lg shadow-emerald-600/20 disabled:opacity-50 mt-4"
+            >
+              {isLoading ? <Sparkles className="animate-spin" size={20} /> : <Sparkles size={20} />}
+              {isRegistering ? 'Criar Conta' : 'Iniciar Jornada'}
+            </button>
+
+            <button 
+              type="button"
+              onClick={() => setIsRegistering(!isRegistering)}
+              className="w-full py-2 text-stone-400 text-sm hover:text-emerald-600 transition-colors"
+            >
+              {isRegistering ? 'Já tem uma conta? Entre aqui' : 'Não tem uma conta? Cadastre-se'}
+            </button>
+          </form>
+
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-stone-100 dark:border-zinc-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-zinc-900 px-4 text-stone-400">Ou continue com</span>
+            </div>
+          </div>
+
+          <button 
+            onClick={loginWithGoogle}
+            className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
+          >
+            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+            Google
+          </button>
         </div>
 
         <div className="mt-12 grid grid-cols-3 gap-4">
@@ -154,3 +167,4 @@ export const LoginPage: React.FC = () => {
     </div>
   );
 };
+

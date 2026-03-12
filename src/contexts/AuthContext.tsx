@@ -5,7 +5,8 @@ import {
   GoogleAuthProvider, 
   signOut,
   User as FirebaseUser,
-  signInAnonymously,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   updateProfile
 } from 'firebase/auth';
 import { 
@@ -13,7 +14,11 @@ import {
   getDoc, 
   setDoc, 
   updateDoc, 
-  onSnapshot 
+  onSnapshot,
+  collection,
+  query,
+  where,
+  getDocs
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
@@ -23,8 +28,7 @@ interface User {
   email: string;
   photoURL?: string;
   joinDate: string;
-  theology_progress?: any;
-  preacher_notes?: any;
+  role: 'admin' | 'user';
 }
 
 interface Metrics {
@@ -39,8 +43,13 @@ interface Metrics {
 interface AuthContextType {
   user: User | null;
   metrics: Metrics;
+  theologyProgress: any;
+  careerProgress: any;
+  notes: any[];
+  certificates: any[];
   loginWithGoogle: () => Promise<void>;
-  loginWithEmail: (email: string, name: string) => Promise<void>;
+  loginWithEmail: (email: string, password: string) => Promise<void>;
+  registerWithEmail: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   updateMetrics: (updates: Partial<Metrics>) => void;
   isInitialLoading: boolean;
@@ -51,6 +60,10 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [theologyProgress, setTheologyProgress] = useState<any>(null);
+  const [careerProgress, setCareerProgress] = useState<any>(null);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [certificates, setCertificates] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<Metrics>({
     accesses: 0,
     totalTime: 0,
@@ -78,34 +91,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         if (userDoc.exists()) {
           userData = userDoc.data() as User;
-          
-          // Sync cloud data down to local storage on login
-          if (userData.theology_progress) {
-            localStorage.setItem('theology_progress', JSON.stringify(userData.theology_progress));
-          }
-          if (userData.preacher_notes) {
-            localStorage.setItem('preacher_notes', JSON.stringify(userData.preacher_notes));
-          }
         } else {
-          // Create new user doc
+          // Create new user doc if it doesn't exist (e.g. Google login first time)
           userData = {
             id: firebaseUser.uid,
             name: firebaseUser.displayName || 'Usuário',
             email: firebaseUser.email || '',
             photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
             joinDate: new Date().toISOString(),
+            role: 'user'
           };
-          
-          // If there's existing local data, upload it on first login
-          const localProgress = localStorage.getItem('theology_progress');
-          const localNotes = localStorage.getItem('preacher_notes');
-          if (localProgress) userData.theology_progress = JSON.parse(localProgress);
-          if (localNotes) userData.preacher_notes = JSON.parse(localNotes);
-
           await setDoc(userDocRef, userData);
         }
         
         setUser(userData);
+
+        // Listen for theology progress
+        const theologyUnsub = onSnapshot(doc(db, 'theologyProgress', firebaseUser.uid), (doc) => {
+          if (doc.exists()) setTheologyProgress(doc.data());
+        });
+
+        // Listen for career progress
+        const careerUnsub = onSnapshot(doc(db, 'careerProgress', firebaseUser.uid), (doc) => {
+          if (doc.exists()) setCareerProgress(doc.data());
+        });
+
+        // Listen for notes
+        const notesQuery = query(collection(db, 'notes'), where('userId', '==', firebaseUser.uid));
+        const notesUnsub = onSnapshot(notesQuery, (snapshot) => {
+          const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setNotes(notesData);
+        });
+
+        // Listen for certificates
+        const certsQuery = query(collection(db, 'theologyCertificates'), where('userId', '==', firebaseUser.uid));
+        const certsUnsub = onSnapshot(certsQuery, (snapshot) => {
+          const certsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          setCertificates(certsData);
+        });
 
         // Listen for metrics changes
         const metricsDocRef = doc(db, 'metrics', firebaseUser.uid);
@@ -113,7 +136,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           if (doc.exists()) {
             setMetrics(doc.data() as Metrics);
           } else {
-            // Initialize metrics in Firestore
             const initialMetrics: Metrics = {
               accesses: 1,
               totalTime: 0,
@@ -127,10 +149,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         });
 
-        return () => unsubscribeMetrics();
+        setIsInitialLoading(false);
+
+        return () => {
+          theologyUnsub();
+          careerUnsub();
+          notesUnsub();
+          certsUnsub();
+          unsubscribeMetrics();
+        };
       } else {
-        // User is signed out
         setUser(null);
+        setTheologyProgress(null);
+        setCareerProgress(null);
+        setNotes([]);
+        setCertificates([]);
         setMetrics({
           accesses: 0,
           totalTime: 0,
@@ -139,8 +172,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hasContributed: false,
           membershipMonths: 0,
         });
+        setIsInitialLoading(false);
       }
-      setIsInitialLoading(false);
     });
 
     return () => unsubscribe();
@@ -153,23 +186,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const interval = setInterval(async () => {
       setMetrics(prev => {
         const newTime = prev.totalTime + 1;
-        // Sync to Firestore every 30 seconds
         if (newTime % 30 === 0 && db) {
           const metricsDocRef = doc(db, 'metrics', user.id);
           updateDoc(metricsDocRef, { totalTime: newTime }).catch(console.error);
-
-          // Sync local storage data up to Firestore
-          const userDocRef = doc(db, 'users', user.id);
-          const localProgress = localStorage.getItem('theology_progress');
-          const localNotes = localStorage.getItem('preacher_notes');
-          
-          const updates: any = {};
-          if (localProgress) updates.theology_progress = JSON.parse(localProgress);
-          if (localNotes) updates.preacher_notes = JSON.parse(localNotes);
-          
-          if (Object.keys(updates).length > 0) {
-            updateDoc(userDocRef, updates).catch(console.error);
-          }
         }
         return { ...prev, totalTime: newTime };
       });
@@ -179,10 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [user]);
 
   const loginWithGoogle = async () => {
-    if (!auth) {
-      alert("Firebase não configurado. Por favor, adicione as chaves em Settings > Environment Variables.");
-      return;
-    }
+    if (!auth) return;
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
@@ -192,17 +208,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithEmail = async (email: string, name: string) => {
-    if (!auth || !db) {
-      alert("Firebase não configurado. Por favor, adicione as chaves em Settings > Environment Variables.");
-      return;
-    }
+  const loginWithEmail = async (email: string, password: string) => {
+    if (!auth) return;
     try {
-      // For simplicity in this demo/app, we'll use anonymous auth and update profile
-      // or you could implement full email/password. 
-      // Given the previous mock implementation, let's use anonymous auth for now
-      // but store the email and name in Firestore.
-      const result = await signInAnonymously(auth);
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (error) {
+      console.error("Error logging in with email:", error);
+      throw error;
+    }
+  };
+
+  const registerWithEmail = async (email: string, password: string, name: string) => {
+    if (!auth || !db) return;
+    try {
+      const result = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = result.user;
       
       await updateProfile(firebaseUser, { displayName: name });
@@ -214,12 +233,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: email,
         photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
         joinDate: new Date().toISOString(),
+        role: 'user'
       };
       await setDoc(userDocRef, userData);
-      
       setUser(userData);
     } catch (error) {
-      console.error("Error logging in with email:", error);
+      console.error("Error registering with email:", error);
       throw error;
     }
   };
@@ -241,7 +260,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, metrics, loginWithGoogle, loginWithEmail, logout, updateMetrics, isInitialLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      metrics, 
+      theologyProgress,
+      careerProgress,
+      notes,
+      certificates,
+      loginWithGoogle, 
+      loginWithEmail, 
+      registerWithEmail, 
+      logout, 
+      updateMetrics, 
+      isInitialLoading 
+    }}>
       {children}
     </AuthContext.Provider>
   );

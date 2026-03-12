@@ -38,34 +38,35 @@ const THEOLOGY_SUBJECTS = [
   'Hermenêutica Bíblica', 'Homilética'
 ];
 
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, updateDoc } from 'firebase/firestore';
+
 export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  const { user, theologyProgress, certificates } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'redacao'>('profile');
-  const [theologyProgress, setTheologyProgress] = useState<Record<string, any>>({});
-  const [certificates, setCertificates] = useState<any[]>([]);
 
-  useEffect(() => {
-    const savedProgress = localStorage.getItem('theology_progress');
-    if (savedProgress) setTheologyProgress(JSON.parse(savedProgress));
-
-    const savedCerts = localStorage.getItem('theology_certificates');
-    if (savedCerts) setCertificates(JSON.parse(savedCerts));
-  }, []);
-
-  const handleScoreChange = (subject: string, field: 'evaluation' | 'redacao' | 'completion', value: string) => {
+  const handleScoreChange = async (subject: string, field: 'evaluation' | 'redacao' | 'completion', value: string) => {
+    if (!user) return;
+    
     const numValue = Math.max(0, parseInt(value) || 0);
     const max = field === 'evaluation' ? 50 : field === 'redacao' ? 20 : 100;
     const finalValue = Math.min(numValue, max);
 
     const current = theologyProgress[subject] || {};
-    const newProgress = {
-      ...theologyProgress,
-      [subject]: {
-        ...current,
-        [field]: finalValue
-      }
+    const newSubjectProgress = {
+      ...current,
+      [field]: finalValue
     };
-    setTheologyProgress(newProgress);
-    localStorage.setItem('theology_progress', JSON.stringify(newProgress));
+    
+    try {
+      const progressDocRef = doc(db, 'theologyProgress', user.id);
+      await updateDoc(progressDocRef, {
+        [subject]: newSubjectProgress
+      });
+    } catch (error) {
+      console.error("Error updating score:", error);
+    }
   };
 
   const calculateTotal = (subject: string) => {
@@ -78,14 +79,14 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
     return evalScore + redScore + videoScore + slidesScore + podcastScore;
   };
 
-  const totalPoints = Object.keys(theologyProgress).reduce((acc, subject) => {
+  const totalPoints = theologyProgress ? Object.keys(theologyProgress).reduce((acc, subject) => {
     return acc + calculateTotal(subject);
-  }, 0);
+  }, 0) : 0;
 
-  const completedSubjects = Object.keys(theologyProgress).filter(k => theologyProgress[k]?.completed);
+  const completedSubjects = theologyProgress ? Object.keys(theologyProgress).filter(k => theologyProgress[k]?.completed) : [];
 
   const chartData = THEOLOGY_SUBJECTS.map(subject => {
-    const data = theologyProgress[subject] || {};
+    const data = (theologyProgress && theologyProgress[subject]) || {};
     return {
       name: subject.split(' ')[0], // Short name for the chart X-axis
       fullSubject: subject,
@@ -145,18 +146,22 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
               </div>
               
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
-                <div className="w-32 h-32 bg-emerald-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl shadow-emerald-600/20">
-                  <User size={64} />
-                </div>
-                <div className="text-center md:text-left space-y-2">
-                  <div className="flex items-center gap-4">
-                    <img 
-                      src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-                      alt="Logo" 
-                      className="w-10 h-10 object-contain mix-blend-screen"
-                      referrerPolicy="no-referrer"
-                    />
-                    <h2 className="text-4xl font-bold font-display">Página do Aluno</h2>
+                    <div className="w-32 h-32 bg-emerald-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl shadow-emerald-600/20 overflow-hidden">
+                      {user?.photoURL ? (
+                        <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <User size={64} />
+                      )}
+                    </div>
+                    <div className="text-center md:text-left space-y-2">
+                      <div className="flex items-center gap-4">
+                        <img 
+                          src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                          alt="Logo" 
+                          className="w-10 h-10 object-contain mix-blend-screen"
+                          referrerPolicy="no-referrer"
+                        />
+                        <h2 className="text-4xl font-bold font-display">{user?.name || 'Página do Aluno'}</h2>
                     <img 
                       src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                       alt="Logo" 
@@ -198,7 +203,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                     </thead>
                     <tbody className="divide-y divide-stone-50 dark:divide-zinc-800">
                       {THEOLOGY_SUBJECTS.map((subject, i) => {
-                        const data = theologyProgress[subject] || {};
+                        const data = (theologyProgress && theologyProgress[subject]) || {};
                         const extras = (data.video ? 10 : 0) + (data.slides ? 10 : 0) + (data.podcast ? 10 : 0);
                         const total = calculateTotal(subject);
 

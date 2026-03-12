@@ -1,0 +1,91 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "TheologyProgress": {
+      "title": "Theology Progress",
+      "description": "Tracks user progress in theology courses",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "courseId": { "type": "string" },
+        "completedLessons": { "type": "array", "items": { "type": "string" } },
+        "lastAccessed": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "courseId"]
+    },
+    "CareerProgress": {
+      "title": "Career Progress",
+      "description": "Tracks user career patents and points",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "points": { "type": "integer" },
+        "patent": { "type": "string" },
+        "history": { "type": "array", "items": { "type": "object" } }
+      },
+      "required": ["userId", "points", "patent"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "User notebook entries",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "title", "content"]
+    },
+    "TheologyCertificate": {
+      "title": "Theology Certificate",
+      "description": "User theology course certificates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "subject": { "type": "string" },
+        "date": { "type": "string" },
+        "issuedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "subject", "date"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile documents"
+    },
+    "/theologyProgress/{progressId}": {
+      "schema": "TheologyProgress",
+      "description": "Theology progress records"
+    },
+    "/careerProgress/{careerId}": {
+      "schema": "CareerProgress",
+      "description": "Career progress records"
+    },
+    "/notes/{noteId}": {
+      "schema": "Note",
+      "description": "User notes"
+    },
+    "/theologyCertificates/{certId}": {
+      "schema": "TheologyCertificate",
+      "description": "Theology certificates"
+    }
+  }
+}

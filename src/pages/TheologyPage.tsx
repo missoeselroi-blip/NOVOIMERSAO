@@ -46,6 +46,9 @@ import { useAuth } from '../contexts/AuthContext';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import jsPDF from 'jspdf';
 
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+
 const THEOLOGY_SUBJECTS = [
   { title: 'Bibliologia', desc: 'A Doutrina das Escrituras', topics: ['Origem e Natureza', 'Inspiração', 'Inerrância', 'Panorama'], prereq: null, icon: Book },
   { title: 'Teontologia', desc: 'A Doutrina de Deus', topics: ['Atributos', 'A Trindade', 'Panorama'], prereq: 'Bibliologia', icon: Crown },
@@ -107,13 +110,30 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
 
   useEffect(() => {
-    const savedProgress = localStorage.getItem('theology_progress');
-    if (savedProgress) setTheologyProgress(JSON.parse(savedProgress));
-  }, []);
+    if (!user) return;
+    
+    const progressDocRef = doc(db, 'theologyProgress', user.id);
+    const unsubscribe = onSnapshot(progressDocRef, (doc) => {
+      if (doc.exists()) {
+        setTheologyProgress(doc.data());
+      }
+    });
 
-  const handleEnroll = () => {
+    return () => unsubscribe();
+  }, [user]);
+
+  const handleEnroll = async () => {
+    if (!user) return;
     setIsEnrolled(true);
     localStorage.setItem('theology_enrolled', 'true');
+    
+    // Initialize progress in Firestore if it doesn't exist
+    const progressDocRef = doc(db, 'theologyProgress', user.id);
+    const progressDoc = await getDoc(progressDocRef);
+    if (!progressDoc.exists()) {
+      await setDoc(progressDocRef, { userId: user.id, enrolled: true });
+    }
+
     setShowSummary(false);
     showToast("Inscrição realizada com sucesso! Bem-vindo ao curso. 🎓", 'success');
     onNavigate('student-profile');
@@ -129,18 +149,20 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     setShowSubjectModal(true);
   };
 
-  const updateDetailedProgress = (subject: string, field: string, points: number) => {
+  const updateDetailedProgress = async (subject: string, field: string, points: number) => {
+    if (!user) return;
     const current = theologyProgress[subject] || {};
-    const newProgress = {
-      ...theologyProgress,
-      [subject]: {
-        ...current,
-        [field]: true,
-        [`${field}_points`]: points
-      }
+    const newSubjectProgress = {
+      ...current,
+      [field]: true,
+      [`${field}_points`]: points
     };
-    setTheologyProgress(newProgress);
-    localStorage.setItem('theology_progress', JSON.stringify(newProgress));
+    
+    const progressDocRef = doc(db, 'theologyProgress', user.id);
+    await updateDoc(progressDocRef, {
+      [subject]: newSubjectProgress
+    });
+
     showToast(`Atividade concluída! +${points} pontos. ✨`, 'success');
   };
 
@@ -181,15 +203,17 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
   };
 
-  const markAsRead = () => {
+  const markAsRead = async () => {
+    if (!user) return;
     if (currentChapter === 5) {
       const current = theologyProgress[selectedSubject!] || {};
-      const newProgress = { 
-        ...theologyProgress, 
-        [selectedSubject!]: { ...current, completed: true } 
-      };
-      setTheologyProgress(newProgress);
-      localStorage.setItem('theology_progress', JSON.stringify(newProgress));
+      const newSubjectProgress = { ...current, completed: true };
+      
+      const progressDocRef = doc(db, 'theologyProgress', user.id);
+      await updateDoc(progressDocRef, {
+        [selectedSubject!]: newSubjectProgress
+      });
+      
       showToast(`Parabéns! Você concluiu ${selectedSubject}! 🎓✨`, 'success');
     } else {
       showToast(`Capítulo ${currentChapter} lido! Continue para o próximo. 📖`, 'info');
@@ -197,15 +221,17 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
   };
 
-  const markSubjectAsCompleted = (e: React.MouseEvent, subjectTitle: string) => {
+  const markSubjectAsCompleted = async (e: React.MouseEvent, subjectTitle: string) => {
     e.stopPropagation();
+    if (!user) return;
     const current = theologyProgress[subjectTitle] || {};
-    const newProgress = { 
-      ...theologyProgress, 
-      [subjectTitle]: { ...current, completed: true } 
-    };
-    setTheologyProgress(newProgress);
-    localStorage.setItem('theology_progress', JSON.stringify(newProgress));
+    const newSubjectProgress = { ...current, completed: true };
+    
+    const progressDocRef = doc(db, 'theologyProgress', user.id);
+    await updateDoc(progressDocRef, {
+      [subjectTitle]: newSubjectProgress
+    });
+    
     showToast(`Matéria ${subjectTitle} marcada como concluída! ✅`, 'success');
   };
 
@@ -217,21 +243,26 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = (category: 'Anotações' | 'Pregações' | 'Estudos') => {
-    if (!pendingNote) return;
-    const saved = localStorage.getItem('preacher_notes');
-    const entries = saved ? JSON.parse(saved) : [];
-    const newEntry = {
-      id: Date.now().toString(),
-      title: pendingNote.title,
-      content: pendingNote.content,
-      category,
-      date: new Date().toLocaleDateString('pt-BR'),
-    };
-    localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
-    showToast(`Salvo em ${category}! 📖✅`, 'success');
-    setIsNotebookModalOpen(false);
-    setPendingNote(null);
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+    if (!pendingNote || !user) return;
+    
+    try {
+      const notesCollectionRef = collection(db, 'notes');
+      await addDoc(notesCollectionRef, {
+        userId: user.id,
+        title: pendingNote.title,
+        content: pendingNote.content,
+        category,
+        createdAt: new Date().toISOString()
+      });
+      
+      showToast(`Salvo em ${category}! 📖✅`, 'success');
+      setIsNotebookModalOpen(false);
+      setPendingNote(null);
+    } catch (error) {
+      console.error("Error saving note:", error);
+      showToast("Erro ao salvar no caderno.", 'error');
+    }
   };
 
   const handleOpenConclusion = async () => {
@@ -254,94 +285,106 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
   };
 
-  const handleGenerateCertificate = () => {
-    showToast("Gerando certificado em PDF e enviando por e-mail...", 'info');
-    setTimeout(() => {
-      try {
-        const doc = new jsPDF('l', 'mm', 'a4');
-        const width = doc.internal.pageSize.getWidth();
-        const height = doc.internal.pageSize.getHeight();
+  const handleGenerateCertificate = async () => {
+    if (!user) return;
+    
+    showToast("Gerando certificado em PDF e salvando no seu perfil...", 'info');
+    
+    try {
+      // Save to Firestore first
+      const certData = {
+        userId: user.id,
+        subject: selectedSubject,
+        date: new Date().toLocaleDateString('pt-BR'),
+        issuedAt: new Date().toISOString()
+      };
+      
+      await addDoc(collection(db, 'theologyCertificates'), certData);
 
-        // Border
-        doc.setLineWidth(2);
-        doc.setDrawColor(29, 78, 216); // navy blue
-        doc.rect(10, 10, width - 20, height - 20);
-        doc.setLineWidth(0.5);
-        doc.rect(12, 12, width - 24, height - 24);
+      // Generate PDF
+      const docPdf = new jsPDF('l', 'mm', 'a4');
+      const width = docPdf.internal.pageSize.getWidth();
+      const height = docPdf.internal.pageSize.getHeight();
 
-        // Title
-        doc.setFont('helvetica', 'bold');
-        doc.setFontSize(36);
-        doc.setTextColor(29, 78, 216);
-        doc.text("CERTIFICADO DE CONCLUSÃO", width / 2, 40, { align: 'center' });
+      // Border
+      docPdf.setLineWidth(2);
+      docPdf.setDrawColor(29, 78, 216); // navy blue
+      docPdf.rect(10, 10, width - 20, height - 20);
+      docPdf.setLineWidth(0.5);
+      docPdf.rect(12, 12, width - 24, height - 24);
 
-        // Subtitle
-        doc.setFontSize(20);
-        doc.setTextColor(100, 100, 100);
-        doc.text("Curso de Teologia Básica", width / 2, 55, { align: 'center' });
+      // Title
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setFontSize(36);
+      docPdf.setTextColor(29, 78, 216);
+      docPdf.text("CERTIFICADO DE CONCLUSÃO", width / 2, 40, { align: 'center' });
 
-        // Body
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(14);
-        doc.setTextColor(50, 50, 50);
-        const studentName = user?.name || 'Aluno';
-        const bodyText = `Certificamos que ${studentName} concluiu com êxito o Curso de Teologia Básica do App Imersão Bíblia IA.`;
-        doc.text(bodyText, width / 2, 75, { align: 'center', maxWidth: width - 40 });
+      // Subtitle
+      docPdf.setFontSize(20);
+      docPdf.setTextColor(100, 100, 100);
+      docPdf.text("Curso de Teologia Básica", width / 2, 55, { align: 'center' });
 
-        // Subjects & Hours
-        doc.setFontSize(12);
-        doc.text("Matérias concluídas:", 20, 100);
-        doc.setFontSize(10);
-        const subjects = THEOLOGY_SUBJECTS.map(s => s.title).join(', ');
-        doc.text(subjects, 20, 108, { maxWidth: width - 40 });
-        
-        doc.setFont('helvetica', 'bold');
-        doc.text("Carga Horária Aproximada: 120 horas", 20, 125);
+      // Body
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.setFontSize(14);
+      docPdf.setTextColor(50, 50, 50);
+      const studentName = user?.name || 'Aluno';
+      const bodyText = `Certificamos que ${studentName} concluiu com êxito o Curso de Teologia Básica do App Imersão Bíblia IA.`;
+      docPdf.text(bodyText, width / 2, 75, { align: 'center', maxWidth: width - 40 });
 
-        // Verse
-        doc.setFont('helvetica', 'italic');
-        doc.setFontSize(12);
-        doc.setTextColor(100, 100, 100);
-        const verse = '"Procura apresentar-te a Deus aprovado, como obreiro que não tem de que se envergonhar, que maneja bem a palavra da verdade." (2 Timóteo 2:15)';
-        doc.text(verse, width / 2, 145, { align: 'center', maxWidth: width - 60 });
+      // Subjects & Hours
+      docPdf.setFontSize(12);
+      docPdf.text("Matérias concluídas:", 20, 100);
+      docPdf.setFontSize(10);
+      const subjects = THEOLOGY_SUBJECTS.map(s => s.title).join(', ');
+      docPdf.text(subjects, 20, 108, { maxWidth: width - 40 });
+      
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.text("Carga Horária Aproximada: 120 horas", 20, 125);
 
-        // Signatures
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        const sigY = 180;
-        
-        // Aluno
-        doc.line(30, sigY, 90, sigY);
-        doc.text("Assinatura do Aluno", 60, sigY + 5, { align: 'center' });
-        doc.text(studentName, 60, sigY + 10, { align: 'center' });
+      // Verse
+      docPdf.setFont('helvetica', 'italic');
+      docPdf.setFontSize(12);
+      docPdf.setTextColor(100, 100, 100);
+      const verse = '"Procura apresentar-te a Deus aprovado, como obreiro que não tem de que se envergonhar, que maneja bem a palavra da verdade." (2 Timóteo 2:15)';
+      docPdf.text(verse, width / 2, 145, { align: 'center', maxWidth: width - 60 });
 
-        // Monitor
-        doc.line(118, sigY, 178, sigY);
-        doc.text("Monitor", 148, sigY + 5, { align: 'center' });
-        doc.text("wreis29@gmail.com", 148, sigY + 10, { align: 'center' });
+      // Signatures
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.setFontSize(10);
+      docPdf.setTextColor(0, 0, 0);
+      const sigY = 180;
+      
+      // Aluno
+      docPdf.line(30, sigY, 90, sigY);
+      docPdf.text("Assinatura do Aluno", 60, sigY + 5, { align: 'center' });
+      docPdf.text(studentName, 60, sigY + 10, { align: 'center' });
 
-        // Coordenador
-        doc.line(206, sigY, 266, sigY);
-        doc.text("Coordenador Pedagógico", 236, sigY + 5, { align: 'center' });
-        doc.text("missoeselroi@gmail.com", 236, sigY + 10, { align: 'center' });
+      // Monitor
+      docPdf.line(118, sigY, 178, sigY);
+      docPdf.text("Monitor", 148, sigY + 5, { align: 'center' });
+      docPdf.text("wreis29@gmail.com", 148, sigY + 10, { align: 'center' });
 
-        doc.save("Certificado_Teologia_Basica.pdf");
-        showToast("Certificado baixado e cliente de e-mail aberto!", 'success');
-        setShowCertificatePaymentModal(false);
+      // Coordenador
+      docPdf.line(206, sigY, 266, sigY);
+      docPdf.text("Coordenador Pedagógico", 236, sigY + 5, { align: 'center' });
+      docPdf.text("missoeselroi@gmail.com", 236, sigY + 10, { align: 'center' });
 
-        // Open email client
-        const emailBody = `Olá, ${studentName}!\n\nParabéns por toda a sua dedicação a conhecer mais de Deus e aprender ferramentas para melhor servi-lo! É uma alegria ver você concluir o Curso de Teologia Básica.\n\nSegue em anexo o seu certificado de conclusão (que você acabou de baixar no aplicativo).\n\nNota: O certificado estará sendo assinado pelo Monitor e pelo Coordenador Pedagógico.\n\nDeus abençoe sua jornada!`;
-        const mailtoLink = `mailto:${user?.email || ''}?cc=wreis29@gmail.com,missoeselroi@gmail.com&subject=Certificado de Conclusão - Teologia Básica&body=${encodeURIComponent(emailBody)}`;
-        setTimeout(() => {
-          window.location.href = mailtoLink;
-        }, 500);
-        
-      } catch (error) {
-        console.error("Error generating PDF:", error);
-        showToast("Erro ao gerar certificado.", 'error');
-      }
-    }, 1500);
+      docPdf.save("Certificado_Teologia_Basica.pdf");
+      showToast("Certificado baixado e cliente de e-mail aberto!", 'success');
+      setShowCertificatePaymentModal(false);
+
+      // Open email client
+      const emailBody = `Olá, ${studentName}!\n\nParabéns por toda a sua dedicação a conhecer mais de Deus e aprender ferramentas para melhor servi-lo! É uma alegria ver você concluir o Curso de Teologia Básica.\n\nSegue em anexo o seu certificado de conclusão (que você acabou de baixar no aplicativo).\n\nNota: O certificado estará sendo assinado pelo Monitor e pelo Coordenador Pedagógico.\n\nDeus abençoe sua jornada!`;
+      const mailtoLink = `mailto:${user?.email || ''}?cc=wreis29@gmail.com,missoeselroi@gmail.com&subject=Certificado de Conclusão - Teologia Básica&body=${encodeURIComponent(emailBody)}`;
+      setTimeout(() => {
+        window.location.href = mailtoLink;
+      }, 500);
+      
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showToast("Erro ao gerar certificado.", 'error');
+    }
   };
 
   const openSummaryModal = (type: string) => {
@@ -464,7 +507,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
   };
 
-  const finishAssessment = () => {
+  const finishAssessment = async () => {
+    if (!user) return;
     let correctAnswers = 0;
     assessmentQuestions.forEach((q, i) => {
       if (userAnswers[i] === q.correctIndex) correctAnswers++;
@@ -482,22 +526,19 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
     setAssessmentResult({ score, message });
 
-    // Save to student profile
-    const savedProgress = localStorage.getItem('theology_progress');
-    const progress = savedProgress ? JSON.parse(savedProgress) : {};
-    const current = progress[selectedSubject!] || {};
-    
-    const newProgress = {
-      ...progress,
-      [selectedSubject!]: {
-        ...current,
-        evaluation: score,
-        completed: score >= 35 // Mark as completed if score is 35 or more
-      }
+    // Save to student profile in Firestore
+    const current = theologyProgress[selectedSubject!] || {};
+    const newSubjectProgress = {
+      ...current,
+      evaluation: score,
+      completed: score >= 35
     };
     
-    setTheologyProgress(newProgress);
-    localStorage.setItem('theology_progress', JSON.stringify(newProgress));
+    const progressDocRef = doc(db, 'theologyProgress', user.id);
+    await updateDoc(progressDocRef, {
+      [selectedSubject!]: newSubjectProgress
+    });
+    
     showToast(`Avaliação concluída! Nota: ${score}/50`, 'success');
   };
 

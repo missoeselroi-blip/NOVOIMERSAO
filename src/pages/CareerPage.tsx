@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Trophy, 
   Star, 
@@ -45,18 +45,99 @@ const LEADERBOARD: UserProfile[] = [
   { id: '4', name: 'Ana Costa', nickname: 'Ana Pregadora', avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=High2&clothesColor=1e331e&hat=military&hairColor=d1d1d1&accessories=sunglasses', rankId: 10, stars: 2, membershipMonths: 10, accessPerWeek: 8, hoursPerMonth: 9, shares: 40, forumParticipations: 30, contributions: 100, authorized: true, trend: 'stable' },
 ];
 
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+
 export default function CareerPage() {
+  const { user, careerProgress, metrics, isInitialLoading } = useAuth();
   const { showToast } = useToast();
-  const [user, setUser] = useState<UserProfile>(MOCK_USER);
   const [activeTab, setActiveTab] = useState<'profile' | 'ranks' | 'leaderboard'>('profile');
-  const [showAuthModal, setShowAuthModal] = useState(!MOCK_USER.authorized);
+  const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(true);
 
-  const currentRank = RANKS.find(r => r.id === user.rankId) || RANKS[0];
-  const nextRank = RANKS.find(r => r.id === user.rankId + 1);
+  // Initialize career progress if it doesn't exist
+  useEffect(() => {
+    if (user && !careerProgress && !isInitialLoading) {
+      const initCareer = async () => {
+        const careerDocRef = doc(db, 'careerProgress', user.id);
+        await setDoc(careerDocRef, {
+          userId: user.id,
+          rankId: 1,
+          stars: 0,
+          authorized: false,
+          points: 0,
+          updatedAt: new Date().toISOString()
+        });
+      };
+      initCareer();
+    }
+  }, [user, careerProgress, isInitialLoading]);
 
-  const handleAuthorize = () => {
-    setUser({ ...user, authorized: true });
-    setShowAuthModal(false);
+  // Fetch leaderboard
+  useEffect(() => {
+    if (activeTab === 'leaderboard') {
+      const fetchLeaderboard = async () => {
+        setLoadingLeaderboard(true);
+        try {
+          const q = query(collection(db, 'careerProgress'), orderBy('points', 'desc'), limit(10));
+          const snapshot = await getDocs(q);
+          const data = snapshot.docs.map(doc => {
+            const progressData = doc.data();
+            return {
+              id: progressData.userId || doc.id,
+              name: progressData.name || 'Membro da Marinha',
+              nickname: progressData.nickname || 'Recruta',
+              avatar: progressData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${progressData.userId || doc.id}`,
+              rankId: progressData.rankId || 1,
+              stars: progressData.stars || 0,
+              points: progressData.points || 0,
+              trend: progressData.trend || 'stable',
+              authorized: progressData.authorized || false,
+              membershipMonths: progressData.membershipMonths || 0,
+              accessPerWeek: progressData.accessPerWeek || 0,
+              hoursPerMonth: progressData.hoursPerMonth || 0,
+              shares: progressData.shares || 0,
+              forumParticipations: progressData.forumParticipations || 0,
+              contributions: progressData.contributions || 0
+            } as UserProfile;
+          });
+          setLeaderboard(data);
+        } catch (error) {
+          console.error("Error fetching leaderboard:", error);
+        } finally {
+          setLoadingLeaderboard(false);
+        }
+      };
+      fetchLeaderboard();
+    }
+  }, [activeTab]);
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold mb-4">Acesse sua conta para ver sua carreira</h2>
+        <p className="text-stone-500">Acompanhe sua evolução na Marinha Celestial.</p>
+      </div>
+    );
+  }
+
+  const currentCareer = careerProgress || { rankId: 1, stars: 0, authorized: false, trend: 'stable' };
+  const currentRank = RANKS.find(r => r.id === currentCareer.rankId) || RANKS[0];
+  const nextRank = RANKS.find(r => r.id === currentCareer.rankId + 1);
+
+  const handleAuthorize = async () => {
+    const careerDocRef = doc(db, 'careerProgress', user.id);
+    await updateDoc(careerDocRef, { authorized: true });
     showToast("Autorização concedida! Bem-vindo à carreira militar celestial. 🙏✨");
   };
 
@@ -128,7 +209,7 @@ export default function CareerPage() {
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 p-6">
                 <div className="flex gap-1">
-                  {[...Array(user.stars)].map((_, i) => (
+                  {[...Array(currentCareer.stars || 0)].map((_, i) => (
                     <Star key={i} size={20} className="fill-amber-400 text-amber-400" />
                   ))}
                 </div>
@@ -145,8 +226,8 @@ export default function CareerPage() {
                   </div>
                 
                 <div>
-                  <h3 className="text-2xl font-bold">{user.nickname}</h3>
-                  <p className="text-stone-500 dark:text-zinc-400 text-sm">{user.name}</p>
+                  <h3 className="text-2xl font-bold">{user.name}</h3>
+                  <p className="text-stone-500 dark:text-zinc-400 text-sm">{user.email}</p>
                 </div>
 
                 <div className="px-6 py-2 bg-emerald-800 text-white rounded-full font-bold text-sm uppercase tracking-widest">
@@ -161,8 +242,8 @@ export default function CareerPage() {
                   <div className="bg-stone-50 dark:bg-zinc-800 p-4 rounded-3xl text-center">
                     <p className="text-[10px] uppercase font-bold text-stone-400 mb-1">Tendência</p>
                     <div className="flex items-center justify-center gap-1">
-                      {user.trend === 'up' ? <TrendingUp className="text-emerald-500" size={16} /> : <TrendingDown className="text-red-500" size={16} />}
-                      <p className="font-bold text-sm">{user.trend === 'up' ? 'Evoluindo' : 'Regredindo'}</p>
+                      {(currentCareer.trend || 'stable') === 'up' ? <TrendingUp className="text-emerald-500" size={16} /> : <TrendingDown className="text-red-500" size={16} />}
+                      <p className="font-bold text-sm">{(currentCareer.trend || 'stable') === 'up' ? 'Evoluindo' : 'Regredindo'}</p>
                     </div>
                   </div>
                 </div>
@@ -211,12 +292,12 @@ export default function CareerPage() {
           {/* Stats Grid */}
           <div className="lg:col-span-2 space-y-8">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <StatCard icon={<Calendar className="text-blue-500" />} label="Tempo de Membro" value={`${user.membershipMonths} meses`} />
-              <StatCard icon={<Clock className="text-purple-500" />} label="Tempo de Uso" value={`${user.hoursPerMonth}h / mês`} />
-              <StatCard icon={<Users className="text-emerald-500" />} label="Acessos Semanais" value={`${user.accessPerWeek} vezes`} />
-              <StatCard icon={<Share2 className="text-pink-500" />} label="Compartilhamentos" value={user.shares} />
-              <StatCard icon={<MessageSquare className="text-indigo-500" />} label="Participação Fórum" value={`${user.forumParticipations} vezes`} />
-              <StatCard icon={<Heart className="text-red-500" />} label="Contribuições" value={`R$ ${user.contributions.toFixed(2)}`} />
+              <StatCard icon={<Calendar className="text-blue-500" />} label="Acessos" value={metrics.accesses} />
+              <StatCard icon={<Clock className="text-purple-500" />} label="Tempo de Uso" value={`${(metrics.totalTime / 3600).toFixed(1)}h`} />
+              <StatCard icon={<Users className="text-emerald-500" />} label="Participação Fórum" value={metrics.forumParticipations} />
+              <StatCard icon={<Share2 className="text-pink-500" />} label="Compartilhamentos" value={metrics.shares} />
+              <StatCard icon={<Award className="text-amber-500" />} label="Pontos" value={currentCareer.points || 0} />
+              <StatCard icon={<Heart className="text-red-500" />} label="Contribuição" value={metrics.hasContributed ? 'Sim' : 'Não'} />
             </div>
 
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
@@ -228,7 +309,7 @@ export default function CareerPage() {
                 <div className="relative h-4 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${(user.rankId / 12) * 100}%` }}
+                    animate={{ width: `${(currentCareer.rankId / 12) * 100}%` }}
                     className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-blue-500"
                   />
                 </div>
@@ -257,12 +338,12 @@ export default function CareerPage() {
 
       {activeTab === 'ranks' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {RANKS.map((rank) => (
+              {RANKS.map((rank) => (
             <div 
               key={rank.id}
               className={cn(
                 "bg-white dark:bg-zinc-900 p-6 rounded-3xl border transition-all",
-                user.rankId === rank.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-stone-200 dark:border-zinc-800"
+                currentCareer.rankId === rank.id ? "border-emerald-500 ring-2 ring-emerald-500/20" : "border-stone-200 dark:border-zinc-800"
               )}
             >
               <div className="flex justify-between items-start mb-4">
@@ -285,7 +366,7 @@ export default function CareerPage() {
                   </div>
                 ))}
               </div>
-              {user.rankId >= rank.id && (
+              {currentCareer.rankId >= rank.id && (
                 <div className="mt-4 pt-4 border-t border-stone-100 dark:border-zinc-800 flex items-center gap-2 text-emerald-600 font-bold text-xs">
                   <ShieldCheck size={14} />
                   Conquistado
@@ -316,14 +397,22 @@ export default function CareerPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-zinc-800">
-                {LEADERBOARD.map((member) => {
-                  const rank = RANKS.find(r => r.id === member.rankId)!;
+                {leaderboard.map((member) => {
+                  const rank = RANKS.find(r => r.id === member.rankId) || RANKS[0];
                   return (
                     <tr key={member.id} className="hover:bg-stone-50 dark:hover:bg-zinc-800/30 transition-colors">
                       <td className="px-8 py-4">
-                        <div>
-                          <p className="font-bold text-sm">{member.nickname}</p>
-                          <p className="text-xs text-stone-400">{member.name}</p>
+                        <div className="flex items-center gap-3">
+                          <img 
+                            src={member.avatar} 
+                            alt={member.name} 
+                            className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-800"
+                            referrerPolicy="no-referrer"
+                          />
+                          <div>
+                            <p className="font-bold text-sm">{member.name}</p>
+                            <p className="text-xs text-stone-400">ID: {member.id.substring(0, 8)}</p>
+                          </div>
                         </div>
                       </td>
                       <td className="px-8 py-4">
@@ -339,9 +428,9 @@ export default function CareerPage() {
                         </div>
                       </td>
                       <td className="px-8 py-4">
-                        {member.trend === 'up' && <TrendingUp className="text-emerald-500" size={20} />}
-                        {member.trend === 'down' && <TrendingDown className="text-red-500" size={20} />}
-                        {member.trend === 'stable' && <div className="w-5 h-1 bg-stone-300 rounded-full" />}
+                        {(member.trend || 'stable') === 'up' && <TrendingUp className="text-emerald-500" size={20} />}
+                        {(member.trend || 'stable') === 'down' && <TrendingDown className="text-red-500" size={20} />}
+                        {(member.trend || 'stable') === 'stable' && <div className="w-5 h-1 bg-stone-300 rounded-full" />}
                       </td>
                       <td className="px-8 py-4">
                         <button className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl text-stone-400 transition-colors">
@@ -359,7 +448,7 @@ export default function CareerPage() {
 
       {/* Auth Modal */}
       <AnimatePresence>
-        {showAuthModal && (
+        {showAuthModal && !currentCareer.authorized && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0, scale: 0.9 }}
