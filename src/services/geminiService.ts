@@ -1,9 +1,11 @@
 import { GoogleGenAI, Modality, ThinkingLevel } from "@google/genai";
 
 const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY || "";
-  if (!apiKey || apiKey === "undefined") {
-    throw new Error("Configuração Necessária: A chave da API do Gemini não foi encontrada. \n\nSe você estiver rodando localmente: Crie um arquivo .env na raiz do projeto e adicione GEMINI_API_KEY=sua_chave.\n\nSe você estiver em produção: Configure a variável de ambiente GEMINI_API_KEY no seu provedor de hospedagem (Vercel, Netlify, Cloud Run, etc). 🔑");
+  // Try to get from build-time env or runtime global
+  const apiKey = (import.meta.env.VITE_GEMINI_API_KEY) || (window as any).GEMINI_API_KEY || "";
+  
+  if (!apiKey || apiKey === "undefined" || apiKey === "") {
+    throw new Error("Configuração Necessária: A chave da API do Gemini não foi encontrada. \n\n1. No AI Studio: Verifique em Settings > Secrets.\n2. Na Hostinger: Adicione GEMINI_API_KEY nas Variáveis de Ambiente e RODE O BUILD NOVAMENTE.\n3. Local: Crie um arquivo .env com VITE_GEMINI_API_KEY=sua_chave. 🔑");
   }
   return new GoogleGenAI({ apiKey });
 };

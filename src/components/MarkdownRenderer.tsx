@@ -41,7 +41,6 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onS
       urlTransform={uriTransformer}
       rehypePlugins={[rehypeRaw]}
       components={{
-        text: ({ node, ...props }) => <>{HighlightText(props.children as string)}</>,
         a: ({ node, ...props }) => {
           const isSearch = props.href?.startsWith('search:');
           const isTheologySearch = props.href?.startsWith('theology-search:');
