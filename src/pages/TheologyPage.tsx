@@ -522,7 +522,15 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       }`;
 
       const response = await geminiService.generateText(prompt, "Você é um professor de teologia rigoroso e acadêmico.");
-      const data = JSON.parse(response.replace(/```json|```/g, '').trim());
+      
+      let data;
+      try {
+        data = JSON.parse(response.replace(/```json|```/g, '').trim());
+      } catch (parseError) {
+        console.error("Failed to parse assessment JSON:", response);
+        throw new Error("A IA retornou um formato inválido. Tente novamente.");
+      }
+      
       setAssessmentQuestions(data.questions);
     } catch (error) {
       console.error("Erro ao gerar avaliação:", error);

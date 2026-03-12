@@ -120,8 +120,18 @@ export const geminiService = {
         });
         const text = response.text || "{}";
         // Clean up markdown code blocks if present
-        const jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
-        return JSON.parse(jsonStr) as T;
+        let jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
+        
+        if (!jsonStr) {
+          jsonStr = "{}";
+        }
+
+        try {
+          return JSON.parse(jsonStr) as T;
+        } catch (parseError) {
+          console.error("Failed to parse JSON from AI:", jsonStr);
+          throw new Error("A IA retornou um formato inválido ou incompleto. Por favor, tente novamente.");
+        }
       } catch (error) {
         return handleApiError(error);
       }
