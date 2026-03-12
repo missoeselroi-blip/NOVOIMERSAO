@@ -1,0 +1,766 @@
+import React, { useState, useEffect } from 'react';
+import { 
+  Calendar as CalendarIcon, 
+  ChevronLeft, 
+  ChevronRight, 
+  Sparkles, 
+  Loader2, 
+  Volume2, 
+  Download, 
+  Printer, 
+  X, 
+  Save, 
+  ArrowLeft,
+  BookOpen,
+  Baby,
+  UserPlus,
+  Users,
+  Star,
+  GraduationCap,
+  Briefcase,
+  Globe,
+  Heart,
+  Facebook,
+  Instagram,
+  MessageCircle,
+  Bookmark,
+  BookmarkCheck,
+  Share2 as ShareIcon,
+  Zap as ChallengeIcon
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { geminiService } from '../services/geminiService';
+import { MarkdownRenderer } from '../components/MarkdownRenderer';
+import { useToast } from '../components/Toast';
+import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { useOffline } from '../contexts/OfflineContext';
+import { cn } from '../types';
+import { DEVOTIONAL_MATRIX } from '../constants/devotionals';
+import { getRandomWaitingMessage } from '../constants/waitingMessages';
+import MissionaryPage from './MissionaryPage';
+
+type DevotionalTheme = 'Criança' | 'Novo Convertido' | 'Discípulo' | 'Líder' | 'Teólogo' | 'Pastor' | 'Missionário' | 'Afastado';
+
+interface ThemeConfig {
+  id: DevotionalTheme;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  prompt: string;
+}
+
+const THEMES: ThemeConfig[] = [
+  { 
+    id: 'Criança', 
+    label: 'Criança', 
+    icon: <Baby size={20} />, 
+    color: 'bg-blue-500',
+    prompt: 'Gere uma mensagem com linguagem infantil (7-9 anos). Foco no amor de Deus e obediência. Use parábolas de Jesus. Linguagem simples e direta.'
+  },
+  { 
+    id: 'Novo Convertido', 
+    label: 'Novo Convertido', 
+    icon: <UserPlus size={20} />, 
+    color: 'bg-emerald-500',
+    prompt: 'Mensagens simplificadas focadas em João, Salmos e Provérbios. Base para os primeiros passos na fé.'
+  },
+  { 
+    id: 'Discípulo', 
+    label: 'Discípulo', 
+    icon: <Users size={20} />, 
+    color: 'bg-indigo-500',
+    prompt: 'Foco na vida cristã prática (família, trabalho). Use as cartas de Paulo e Provérbios. Mensagem de motivação e fé.'
+  },
+  { 
+    id: 'Líder', 
+    label: 'Líder', 
+    icon: <Star size={20} />, 
+    color: 'bg-amber-500',
+    prompt: 'Foco em liderança, serviço e caráter. Mensagens sobre dons espirituais e ganhar almas. Use exemplos de líderes bíblicos.'
+  },
+  { 
+    id: 'Teólogo', 
+    label: 'Teólogo', 
+    icon: <GraduationCap size={20} />, 
+    color: 'bg-stone-800',
+    prompt: 'Abordagem acadêmica: termos originais (grego/hebraico), exegese e hermenêutica. Use as principais Bíblias de Estudo e Comentários.'
+  },
+  { 
+    id: 'Pastor', 
+    label: 'Pastor', 
+    icon: <Briefcase size={20} />, 
+    color: 'bg-zinc-700',
+    prompt: 'Mensagens estruturadas (esboços). Foco em cuidado pastoral, revelação bíblica e combate a heresias. Prático e profundo.'
+  },
+  { 
+    id: 'Missionário', 
+    label: 'Missionário', 
+    icon: <Globe size={20} />, 
+    color: 'bg-cyan-600',
+    prompt: 'Foco em missões, evangelismo e heróis da fé. Mensagens motivadoras para o campo missionário.'
+  },
+  { 
+    id: 'Afastado', 
+    label: 'Afastado', 
+    icon: <Heart size={20} />, 
+    color: 'bg-rose-500',
+    prompt: 'Mensagem de arrependimento e retorno ao primeiro amor. Foco no perdão de Deus e vida eterna.'
+  },
+];
+
+export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  const { showToast } = useToast();
+  const { isOffline } = useOffline();
+  const [showMissionary, setShowMissionary] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState<DevotionalTheme | null>(null);
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [isLoading, setIsLoading] = useState(false);
+  const [devotionalResult, setDevotionalResult] = useState<string | null>(null);
+  const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [favorites, setFavorites] = useState<any[]>(() => {
+    const saved = localStorage.getItem('devotional_favorites');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [verseOfDay, setVerseOfDay] = useState<{ text: string, ref: string, bg: string } | null>(null);
+  const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false);
+  const [seriesResult, setSeriesResult] = useState<string | null>(null);
+  const [isGeneratingSeries, setIsGeneratingSeries] = useState(false);
+  const [seriesSelectedMonth, setSeriesSelectedMonth] = useState<number>(new Date().getMonth());
+  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+
+  useEffect(() => {
+    const fetchVerse = async () => {
+      if (isOffline) return;
+      try {
+        const data = await geminiService.generateJSON<{ text: string, ref: string }>(
+          "Gere um versículo bíblico inspirador para hoje em português, com a referência. Retorne apenas o versículo e a referência em formato JSON: { \"text\": \"...\", \"ref\": \"...\" }"
+        );
+        
+        const fallbackImg = "https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=1200";
+        setVerseOfDay({ ...data, bg: fallbackImg });
+      } catch (error: any) {
+        console.warn("Error fetching verse:", error?.message || error);
+        // Fallback to a default verse if API fails (e.g., quota exceeded)
+        setVerseOfDay({
+          text: "O Senhor é o meu pastor; nada me faltará.",
+          ref: "Salmos 23:1",
+          bg: "https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=1200"
+        });
+      }
+    };
+    fetchVerse();
+  }, []);
+
+  const toggleFavorite = (devotional: string) => {
+    const isFav = favorites.some(f => f.content === devotional);
+    let newFavs;
+    if (isFav) {
+      newFavs = favorites.filter(f => f.content !== devotional);
+      showToast("Removido dos favoritos 💔");
+    } else {
+      newFavs = [...favorites, { 
+        id: Date.now(), 
+        content: devotional, 
+        theme: selectedTheme,
+        date: new Date().toLocaleDateString() 
+      }];
+      showToast("Adicionado aos favoritos! ❤️✨");
+    }
+    setFavorites(newFavs);
+    localStorage.setItem('devotional_favorites', JSON.stringify(newFavs));
+  };
+
+  const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
+  const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay();
+
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+  };
+
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+  };
+
+  const generateDevotional = async (day: number) => {
+    if (!selectedTheme) {
+      showToast("Por favor, escolha um tema primeiro! 🙏", "info");
+      return;
+    }
+
+    if (isOffline) {
+      showToast("Você está offline. Conecte-se para gerar novos devocionais.", "error");
+      return;
+    }
+
+    setIsLoading(true);
+    setDevotionalResult(null);
+    showToast(getRandomWaitingMessage(), 'info');
+
+    try {
+      const themeConfig = THEMES.find(t => t.id === selectedTheme)!;
+      const dayStr = String(day).padStart(2, '0');
+      const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
+      const matrixKey = `${dayStr}/${monthStr}`;
+      const bookOfDay = DEVOTIONAL_MATRIX[matrixKey] || "Bíblia Sagrada";
+      
+      const dateStr = `${day}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
+      
+      const prompt = `Gere um devocional para o dia ${dateStr}. 
+        Tema/Público: ${selectedTheme}. 
+        Livro/Base do Dia: ${bookOfDay}.
+        Instruções específicas: ${themeConfig.prompt}
+        Formate a resposta com as seguintes seções em Markdown:
+        1. # [Título Inspirador]
+        2. **Versículo Chave:** [Referência e Texto]
+        3. ## Meditação
+        [Texto da meditação baseada no livro do dia: ${bookOfDay}]
+        4. ## Desafio do Dia
+        [Um desafio prático e acionável relacionado à mensagem]
+        5. ## Oração Final
+        [Uma oração curta e poderosa]`;
+
+      const response = await geminiService.generateText(prompt);
+
+      setDevotionalResult(response || "Não foi possível gerar o devocional.");
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao conectar com a sabedoria divina. Tente novamente.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handlePlayAudio = async () => {
+    if (!devotionalResult) return;
+    setIsAudioLoading(true);
+    try {
+      const audioUrl = await geminiService.generateSpeech(devotionalResult);
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.play();
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar áudio.", "error");
+    } finally {
+      setIsAudioLoading(false);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!devotionalResult) return;
+    const element = document.createElement("a");
+    const file = new Blob([devotionalResult], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `devocional-${selectedTheme}-${currentDate.getDate()}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    showToast("Baixando devocional... 📄");
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const saveToNotebook = () => {
+    if (!devotionalResult) return;
+    
+    setPendingNote({
+      title: `Devocional: ${selectedTheme} - ${new Date().toLocaleDateString('pt-BR')}`,
+      content: devotionalResult
+    });
+    setIsNotebookModalOpen(true);
+  };
+
+  const shareSocial = (platform: 'whatsapp' | 'facebook' | 'instagram') => {
+    if (!devotionalResult) return;
+    const text = `Confira este devocional: ${devotionalResult.substring(0, 100)}...`;
+    const url = window.location.href;
+    
+    let shareUrl = '';
+    switch(platform) {
+      case 'whatsapp':
+        shareUrl = `https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`;
+        break;
+      case 'facebook':
+        shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+        break;
+      case 'instagram':
+        showToast("Copiado para o clipboard! Poste no seu Story. 📸");
+        navigator.clipboard.writeText(text);
+        return;
+    }
+    window.open(shareUrl, '_blank');
+  };
+
+  const generateSeriesDevotional = async () => {
+    if (!selectedTheme) {
+      showToast("Por favor, escolha um tema primeiro! 🙏", "info");
+      return;
+    }
+    setIsGeneratingSeries(true);
+    setSeriesResult(null);
+    showToast("Preparando devocionais para o mês inteiro... Isso pode levar um momento. ⏳✨", 'info');
+    
+    try {
+      const themeConfig = THEMES.find(t => t.id === selectedTheme)!;
+      const targetDate = new Date(currentDate.getFullYear(), seriesSelectedMonth, 1);
+      const targetDaysInMonth = new Date(targetDate.getFullYear(), targetDate.getMonth() + 1, 0).getDate();
+      const monthName = targetDate.toLocaleString('pt-BR', { month: 'long' });
+      const prompt = `Gere uma série de devocionais curtos para todos os dias do mês de ${monthName}. 
+        Tema/Público: ${selectedTheme}. 
+        Instruções: ${themeConfig.prompt}
+        Formate como uma lista numerada de 1 a ${targetDaysInMonth}. Cada dia deve ter:
+        - Título
+        - Versículo Curto
+        - Mensagem de 2-3 parágrafos
+        - Oração curta`;
+      
+      const response = await geminiService.generateText(prompt, "Você é um mentor espiritual experiente.", true);
+      setSeriesResult(response);
+      showToast("Série mensal gerada com sucesso! 🙌✨");
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar série de devocionais.", 'error');
+    } finally {
+      setIsGeneratingSeries(false);
+    }
+  };
+
+  const saveSeriesToNotebook = () => {
+    if (!seriesResult) return;
+    const targetDate = new Date(currentDate.getFullYear(), seriesSelectedMonth, 1);
+    setPendingNote({
+      title: `Série Devocional: ${selectedTheme} - ${targetDate.toLocaleString('pt-BR', { month: 'long' })}`,
+      content: seriesResult
+    });
+    setIsNotebookModalOpen(true);
+  };
+
+  const confirmSaveToNotebook = (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+    if (!pendingNote) return;
+    const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
+    const newNote = {
+      id: Date.now().toString(),
+      title: pendingNote.title,
+      content: pendingNote.content,
+      category,
+      date: new Date().toLocaleDateString('pt-BR')
+    };
+    localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
+    showToast(`Série salva em ${category}! 📓✨`);
+    setIsNotebookModalOpen(false);
+    setPendingNote(null);
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+      {showMissionary ? (
+        <div className="space-y-6">
+          <button 
+            onClick={() => setShowMissionary(false)}
+            className="flex items-center gap-2 text-stone-500 hover:text-emerald-600 transition-colors font-bold"
+          >
+            <ArrowLeft size={20} /> VOLTAR PARA DEVOCIONAL
+          </button>
+          <MissionaryPage onNavigate={onNavigate} />
+        </div>
+      ) : (
+        <>
+          <header className="text-center space-y-4">
+            <div className="flex flex-col items-center gap-4">
+              <div className="flex items-center justify-center gap-4">
+                <img 
+                  src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                  alt="Logo" 
+                  className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen"
+                  referrerPolicy="no-referrer"
+                />
+                <h2 className="text-3xl font-display font-bold text-emerald-900 dark:text-emerald-400">Devocional Diário</h2>
+                <img 
+                  src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                  alt="Logo" 
+                  className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="flex flex-wrap justify-center gap-3">
+                <button 
+                  onClick={() => setIsSeriesModalOpen(true)}
+                  className="px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-2xl hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-500/20 flex items-center gap-2"
+                >
+                  <ChallengeIcon size={20} />
+                  Devocional em Série (Mensal)
+                </button>
+                <button 
+                  onClick={() => setShowMissionary(true)}
+                  className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
+                >
+                  <Globe size={20} />
+                  Missões & Impacto
+                </button>
+              </div>
+            </div>
+            <p className="text-stone-500 dark:text-zinc-400">Escolha o tema para o Devocional de hoje</p>
+          </header>
+
+      {/* Theme Selection */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
+        {THEMES.map((theme) => (
+          <button
+            key={theme.id}
+            onClick={() => setSelectedTheme(theme.id)}
+            className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
+              selectedTheme === theme.id 
+                ? `${theme.color} text-white border-transparent shadow-lg scale-105` 
+                : 'bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:border-emerald-300'
+            }`}
+          >
+            <div className={`p-2 rounded-xl ${selectedTheme === theme.id ? 'bg-white/20' : 'bg-stone-50 dark:bg-zinc-800'}`}>
+              {theme.icon}
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider">{theme.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Calendar */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-lg flex items-center gap-2">
+                <CalendarIcon size={20} className="text-emerald-600" />
+                {currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+              </h3>
+              <div className="flex gap-2">
+                <button onClick={handlePrevMonth} className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full"><ChevronLeft size={20} /></button>
+                <button onClick={handleNextMonth} className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full"><ChevronRight size={20} /></button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-7 gap-2 text-center">
+              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+                <div key={d} className="text-[10px] font-bold text-stone-400 uppercase py-2">{d}</div>
+              ))}
+              {[...Array(firstDayOfMonth)].map((_, i) => (
+                <div key={`empty-${i}`} />
+              ))}
+              {[...Array(daysInMonth)].map((_, i) => {
+                const day = i + 1;
+                const isToday = day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth();
+                const dayStr = String(day).padStart(2, '0');
+                const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const book = DEVOTIONAL_MATRIX[`${dayStr}/${monthStr}`];
+                
+                return (
+                  <button
+                    key={day}
+                    onClick={() => generateDevotional(day)}
+                    title={book ? `Leitura: ${book}` : undefined}
+                    className={`aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-bold transition-all relative group ${
+                      isToday 
+                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' 
+                        : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-stone-700 dark:text-zinc-300'
+                    }`}
+                  >
+                    {day}
+                    {book && (
+                      <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {selectedTheme && (
+            <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm">
+              <h4 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <BookOpen size={16} />
+                Leitura do Dia
+              </h4>
+              <p className="text-lg font-bold text-emerald-700 dark:text-emerald-400">
+                {DEVOTIONAL_MATRIX[`${String(new Date().getDate()).padStart(2, '0')}/${String(new Date().getMonth() + 1).padStart(2, '0')}`] || "Bíblia Sagrada"}
+              </p>
+              <p className="text-xs text-stone-500 mt-1">Base para a meditação de hoje.</p>
+            </div>
+          )}
+
+          <div className="bg-emerald-50 dark:bg-emerald-900/10 p-6 rounded-3xl border border-emerald-100 dark:border-emerald-900/20">
+            <p className="text-sm text-emerald-800 dark:text-emerald-300 leading-relaxed italic">
+              "Lâmpada para os meus pés é tua palavra, e luz para o meu caminho." - Salmos 119:105
+            </p>
+          </div>
+        </div>
+
+        {/* Result Area */}
+        <div className="lg:col-span-7">
+          <AnimatePresence mode="wait">
+            {isLoading ? (
+              <motion.div 
+                initial={{ opacity: 0 }} 
+                animate={{ opacity: 1 }} 
+                exit={{ opacity: 0 }}
+                className="h-full min-h-[400px] flex flex-col items-center justify-center bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 p-12 text-center space-y-6"
+              >
+                <Loader2 className="animate-spin text-emerald-600" size={48} />
+                <div className="space-y-2">
+                  <h4 className="text-xl font-bold">Gerando sua meditação...</h4>
+                  <p className="text-stone-500">Buscando inspiração para o seu dia.</p>
+                </div>
+              </motion.div>
+            ) : devotionalResult ? (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }} 
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl overflow-hidden flex flex-col h-full"
+              >
+                <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center bg-stone-50 dark:bg-zinc-800/50">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-600 text-white rounded-xl">
+                      <BookOpen size={20} />
+                    </div>
+                    <span className="font-bold text-sm">Devocional: {selectedTheme}</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={() => toggleFavorite(devotionalResult)} 
+                      className={cn(
+                        "p-2 rounded-full transition-colors",
+                        favorites.some(f => f.content === devotionalResult)
+                          ? "text-rose-500 bg-rose-50 dark:bg-rose-900/20"
+                          : "hover:bg-stone-200 dark:hover:bg-zinc-700"
+                      )}
+                      title="Favoritar"
+                    >
+                      {favorites.some(f => f.content === devotionalResult) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+                    </button>
+                    <button onClick={handlePrint} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors" title="Imprimir"><Printer size={20} /></button>
+                    <button onClick={() => setDevotionalResult(null)} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors" title="Fechar"><X size={20} /></button>
+                  </div>
+                </div>
+                
+                <div className="flex-1 p-10 overflow-y-auto custom-scrollbar prose dark:prose-invert max-w-none">
+                  <div className="font-serif text-lg leading-relaxed">
+                    <MarkdownRenderer content={devotionalResult} />
+                  </div>
+                </div>
+
+                <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex flex-wrap gap-3">
+                  <div className="flex gap-2 mr-auto">
+                    <button onClick={() => shareSocial('whatsapp')} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors" title="WhatsApp">
+                      <MessageCircle size={20} />
+                    </button>
+                    <button onClick={() => shareSocial('facebook')} className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors" title="Facebook">
+                      <Facebook size={20} />
+                    </button>
+                    <button onClick={() => shareSocial('instagram')} className="p-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors" title="Instagram">
+                      <Instagram size={20} />
+                    </button>
+                  </div>
+                  <button onClick={handleDownload} className="px-4 py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm">
+                    <Download size={18} />
+                  </button>
+                  <button onClick={saveToNotebook} className="px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/20">
+                    <Save size={18} />
+                  </button>
+                  <button onClick={() => setDevotionalResult(null)} className="px-6 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-xl hover:bg-stone-300 transition-all text-sm">
+                    Retornar
+                  </button>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-stone-50/50 dark:bg-zinc-800/20 rounded-[2.5rem] border border-dashed border-stone-200 dark:border-zinc-800 p-12 text-center">
+                <Sparkles size={48} className="text-stone-200 mb-6" />
+                <h4 className="text-xl font-bold mb-2">Selecione um dia no calendário</h4>
+                <p className="text-stone-500 max-w-xs">Escolha um tema acima e clique em um dia para receber sua palavra diária.</p>
+              </div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+        </>
+      )}
+
+      {/* Series Modal */}
+      <AnimatePresence>
+        {isSeriesModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-4xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl border border-stone-200 dark:border-zinc-800 flex flex-col"
+            >
+              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center bg-stone-50 dark:bg-zinc-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-amber-500 text-white rounded-xl">
+                    <ChallengeIcon size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-bold">Devocional em Série</h3>
+                    <p className="text-xs text-stone-500">Gere mensagens para o mês inteiro</p>
+                  </div>
+                </div>
+                <button onClick={() => setIsSeriesModalOpen(false)} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors">
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-8 space-y-6">
+                {!seriesResult && !isGeneratingSeries && (
+                  <div className="text-center space-y-6 py-12">
+                    <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-3xl flex items-center justify-center mx-auto">
+                      <CalendarIcon size={40} />
+                    </div>
+                    <div className="space-y-4">
+                      <h4 className="text-xl font-bold">Pronto para gerar sua série mensal?</h4>
+                      <p className="text-stone-500 max-w-md mx-auto">
+                        Esta ferramenta irá gerar uma série completa de devocionais baseada no tema selecionado: 
+                        <span className="font-bold text-emerald-600 ml-1">{selectedTheme || 'Nenhum tema selecionado'}</span>
+                      </p>
+                      
+                      <div className="max-w-xs mx-auto text-left space-y-2">
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300">
+                          Selecione o Mês:
+                        </label>
+                        <select
+                          value={seriesSelectedMonth}
+                          onChange={(e) => setSeriesSelectedMonth(Number(e.target.value))}
+                          className="w-full p-4 bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium"
+                        >
+                          {Array.from({ length: 12 }, (_, i) => {
+                            const date = new Date(currentDate.getFullYear(), i, 1);
+                            return (
+                              <option key={i} value={i}>
+                                {date.toLocaleString('pt-BR', { month: 'long' }).charAt(0).toUpperCase() + date.toLocaleString('pt-BR', { month: 'long' }).slice(1)}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={generateSeriesDevotional}
+                      disabled={!selectedTheme}
+                      className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 shadow-lg shadow-emerald-600/20 transition-all mt-4"
+                    >
+                      Gerar Série Mensal
+                    </button>
+                  </div>
+                )}
+
+                {isGeneratingSeries && (
+                  <div className="flex flex-col items-center justify-center py-20 space-y-6">
+                    <Loader2 className="animate-spin text-emerald-600" size={64} />
+                    <div className="text-center space-y-2">
+                      <h4 className="text-xl font-bold">Gerando Série de Devocionais...</h4>
+                      <p className="text-stone-500 animate-pulse">Buscando inspiração para cada dia do mês.</p>
+                    </div>
+                  </div>
+                )}
+
+                {seriesResult && (
+                  <div className="prose dark:prose-invert max-w-none">
+                    <MarkdownRenderer content={seriesResult} />
+                  </div>
+                )}
+              </div>
+
+              {seriesResult && (
+                <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex justify-end gap-3">
+                  <button 
+                    onClick={() => {
+                      const element = document.createElement("a");
+                      const file = new Blob([seriesResult], {type: 'text/plain'});
+                      element.href = URL.createObjectURL(file);
+                      element.download = `serie-devocional-${selectedTheme}-${seriesSelectedMonth + 1}.txt`;
+                      document.body.appendChild(element);
+                      element.click();
+                    }}
+                    className="px-6 py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2"
+                  >
+                    <Download size={18} /> Baixar Texto
+                  </button>
+                  <button 
+                    onClick={saveSeriesToNotebook}
+                    className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center gap-2 shadow-lg shadow-emerald-600/20"
+                  >
+                    <Save size={18} /> Salvar no Caderno
+                  </button>
+                </div>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Favorites Section */}
+      {favorites.length > 0 && (
+        <section className="space-y-6">
+          <h3 className="text-2xl font-bold flex items-center gap-2">
+            <BookmarkCheck className="text-rose-500" />
+            Meus Favoritos
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {favorites.map((fav) => (
+              <motion.div
+                key={fav.id}
+                layout
+                className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm relative group"
+              >
+                <button 
+                  onClick={() => toggleFavorite(fav.content)}
+                  className="absolute top-4 right-4 text-rose-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X size={18} />
+                </button>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                    <span>{fav.theme}</span>
+                    <span>•</span>
+                    <span>{fav.date}</span>
+                  </div>
+                  <div className="line-clamp-4 text-sm text-stone-600 dark:text-zinc-400">
+                    <MarkdownRenderer content={fav.content} />
+                  </div>
+                  <button 
+                    onClick={() => setDevotionalResult(fav.content)}
+                    className="text-emerald-600 font-bold text-xs hover:underline"
+                  >
+                    Ler completo
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <footer className="mt-12 pt-8 border-t border-stone-200 dark:border-zinc-800 text-center space-y-4">
+        <div className="bg-stone-100 dark:bg-zinc-800/50 p-6 rounded-3xl inline-block max-w-2xl">
+          <h4 className="font-bold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center justify-center gap-2">
+            <BookOpen size={18} />
+            Leitura Recomendada da Semana
+          </h4>
+          <p className="text-sm text-stone-600 dark:text-zinc-400">
+            Além da Bíblia Sagrada, recomendamos a leitura de obras clássicas e contemporâneas que aprofundam nossa visão missionária e teológica. 
+            Cada dia do ano possui uma indicação especial baseada em grandes autores como Rick Warren, John Piper, Ronaldo Lidório e muitos outros.
+          </p>
+        </div>
+        <p className="text-xs text-stone-400">
+          Consulte o calendário para ver o livro base de cada dia.
+        </p>
+      </footer>
+
+      <SaveToNotebookModal
+        isOpen={isNotebookModalOpen}
+        onClose={() => setIsNotebookModalOpen(false)}
+        onConfirm={confirmSaveToNotebook}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,493 @@
+import React, { useState, useEffect, lazy, Suspense } from 'react';
+import { 
+  Home, 
+  BookOpen, 
+  FileText, 
+  GraduationCap, 
+  Image as ImageIcon, 
+  Mail, 
+  Moon, 
+  Sun, 
+  Menu, 
+  X,
+  ExternalLink,
+  Share2,
+  Heart,
+  HeartHandshake,
+  Library,
+  Gift,
+  MessageSquare,
+  Trophy,
+  DollarSign,
+  Newspaper,
+  Brain,
+  Zap,
+  StickyNote,
+  HelpCircle,
+  Loader2,
+  Search,
+  User,
+  Globe,
+  Calendar,
+  Pencil,
+  Anchor
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { cn } from './types';
+
+declare global {
+  interface Window {
+    aistudio: {
+      hasSelectedApiKey: () => Promise<boolean>;
+      openSelectKey: () => Promise<void>;
+    };
+  }
+}
+
+// Lazy loaded pages
+const HomePage = lazy(() => import('./pages/HomePage'));
+const BibleStudyPage = lazy(() => import('./pages/BibleStudyPage'));
+const StorePage = lazy(() => import('./pages/StorePage'));
+const PostsPage = lazy(() => import('./pages/PostsPage'));
+const ContactPage = lazy(() => import('./pages/ContactPage'));
+const ForumPage = lazy(() => import('./pages/ForumPage'));
+const CareerPage = lazy(() => import('./pages/CareerPage'));
+const DonatePage = lazy(() => import('./pages/DonatePage'));
+const NotebookPage = lazy(() => import('./pages/NotebookPage'));
+const DevotionalPage = lazy(() => import('./pages/DevotionalPage'));
+const RedacaoPage = lazy(() => import('./pages/RedacaoPage'));
+const StudentPage = lazy(() => import('./pages/StudentPage'));
+const TheologySearchPage = lazy(() => import('./pages/TheologySearchPage'));
+const TheologyPage = lazy(() => import('./pages/TheologyPage'));
+const MissionaryPage = lazy(() => import('./pages/MissionaryPage'));
+const MissionaryBulkResults = lazy(() => import('./pages/MissionaryBulkResults'));
+
+import { ToastProvider, useToast } from './components/Toast';
+import { CreditProvider, useCredits } from './contexts/CreditContext';
+import { OfflineProvider, useOffline } from './contexts/OfflineContext';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { Coins, WifiOff, Coffee } from 'lucide-react';
+
+function AppContent() {
+  const { showToast } = useToast();
+  const { isOffline } = useOffline();
+  const { theme, setTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState('home');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [deepThinking, setDeepThinking] = useState(false);
+
+  const isDarkMode = theme === 'dark';
+  const isDevotionalMode = theme === 'devotional';
+
+  const mainNavItems = [
+    { id: 'home', label: 'Início', icon: <Home size={22} /> },
+    { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
+    { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
+    { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
+  ];  const navItems = [
+    { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={setActiveTab} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
+    { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={setActiveTab} /> },
+    { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={setActiveTab} /> },
+    { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={setActiveTab} /> },
+    { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { setActiveTab('study'); }} /> },
+    { id: 'posts', label: 'Post', subtitle: 'Artes com IA', icon: <ImageIcon size={20} />, component: <PostsPage /> },
+    { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
+    { id: 'donate', label: 'Doe', subtitle: 'Apoie este ministério', icon: <HeartHandshake size={20} />, component: <DonatePage /> },
+    { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
+    { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Trophy size={20} />, component: <CareerPage /> },
+    { id: 'contact', label: 'Contato', subtitle: 'Fale conosco', icon: <Mail size={20} />, component: <ContactPage /> },
+    { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={setActiveTab} />, hidden: true },
+    { id: 'theology-search', label: 'Busca de Teologia', subtitle: 'Pesquisa avançada', icon: <Search size={20} />, component: <TheologySearchPage />, hidden: true },
+    { id: 'missionary', label: 'Missões', subtitle: 'Impacto Global', icon: <Globe size={20} />, component: <MissionaryPage onNavigate={setActiveTab} />, hidden: true },
+    { id: 'missionary-results', label: 'Resultados Missões', subtitle: 'Relatórios de campo', icon: <Calendar size={20} />, component: <MissionaryBulkResults onBack={() => setActiveTab('missionary')} />, hidden: true },
+    { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
+  ];
+
+  const activeItem = navItems.find(item => item.id === activeTab);
+  const activeComponent = activeItem?.component || <HomePage onNavigate={setActiveTab} deepThinking={deepThinking} setDeepThinking={setDeepThinking} />;
+
+  return (
+    <div className={cn(
+      "min-h-screen transition-colors duration-700 relative overflow-hidden",
+      isDarkMode ? "bg-app-bg text-app-text" : "bg-app-bg text-app-text"
+    )}>
+      {/* Background Image for non-home pages */}
+      {activeTab !== 'home' && (
+        <div 
+          className="fixed inset-0 pointer-events-none z-[-1] opacity-20"
+          style={{ 
+            backgroundImage: 'url("https://i.postimg.cc/Jzf9BJfF/1773015053108.png")',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundAttachment: 'fixed'
+          }}
+        />
+      )}
+
+      {/* Decorative Background Elements */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {/* Transparent Anchor Background */}
+        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] dark:opacity-[0.02] z-0">
+          <Anchor size={800} className="text-emerald-900 dark:text-emerald-100 -rotate-12" />
+        </div>
+
+        <div className={cn(
+          "absolute -top-[10%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[160px] opacity-20 transition-all duration-1000",
+          isDarkMode ? "bg-emerald-900/40" : "bg-emerald-100"
+        )} />
+        <div className={cn(
+          "absolute top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full blur-[160px] opacity-10 transition-all duration-1000",
+          isDarkMode ? "bg-blue-900/30" : "bg-blue-50"
+        )} />
+        <div className={cn(
+          "absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] rounded-full blur-[160px] opacity-15 transition-all duration-1000",
+          isDarkMode ? "bg-purple-900/20" : "bg-purple-50"
+        )} />
+      </div>
+
+      {/* Navigation */}
+      <nav className={cn(
+        "fixed top-0 w-full z-50 border-b backdrop-blur-md",
+        isDarkMode ? "bg-zinc-900/80 border-zinc-800" : "bg-white/80 border-stone-200"
+      )}>
+        {isOffline && (
+          <div className="bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest py-1 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <WifiOff size={12} />
+              Modo Offline Ativo • Apenas conteúdos baixados disponíveis
+            </div>
+          </div>
+        )}
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img 
+              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+              alt="Logo" 
+              className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen"
+              referrerPolicy="no-referrer"
+            />
+            <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Imersão Bíblica IA</span>
+          </div>
+
+          {/* Desktop Nav */}
+          <div className="hidden md:flex items-center gap-6">
+            {navItems.filter(item => !item.hidden).map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                className={cn(
+                  "flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 relative py-2 group",
+                  activeTab === item.id ? "text-emerald-600" : "text-zinc-500"
+                )}
+              >
+                <div className="relative">
+                  {item.icon}
+                  {/* Tooltip */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[100] shadow-xl border border-white/10 translate-y-2 group-hover:translate-y-0 uppercase tracking-widest">
+                    {item.label}
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
+                  </div>
+                </div>
+                <span className="hidden lg:block">{item.label}</span>
+                {activeTab === item.id && (
+                  <motion.div 
+                    layoutId="activeTabDesktop"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"
+                  />
+                )}
+              </button>
+            ))}
+            
+            <div className="flex items-center gap-2 bg-stone-100 dark:bg-zinc-800 p-1 rounded-full">
+              <button
+                onClick={() => setTheme('light')}
+                className={cn("p-1.5 rounded-full transition-all", theme === 'light' ? "bg-white shadow-sm text-amber-500" : "text-stone-400 hover:text-stone-600")}
+                title="Modo Claro"
+              >
+                <Sun size={18} />
+              </button>
+              <button
+                onClick={() => setTheme('dark')}
+                className={cn("p-1.5 rounded-full transition-all", theme === 'dark' ? "bg-zinc-700 shadow-sm text-blue-400" : "text-stone-400 hover:text-stone-600")}
+                title="Modo Escuro"
+              >
+                <Moon size={18} />
+              </button>
+              <button
+                onClick={() => setTheme('devotional')}
+                className={cn("p-1.5 rounded-full transition-all", theme === 'devotional' ? "bg-amber-100 shadow-sm text-amber-700" : "text-stone-400 hover:text-stone-600")}
+                title="Momento Devocional"
+              >
+                <Coffee size={18} />
+              </button>
+            </div>
+          </div>
+
+          {/* Mobile Menu Toggle - Simplified */}
+          <div className="md:hidden flex items-center">
+            <div className="w-8 h-8 rounded-lg overflow-hidden bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+              <Menu size={18} className="text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
+        <div className={cn(
+          "flex items-center justify-around h-16 border-t backdrop-blur-lg px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]",
+          isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white/90 border-stone-200"
+        )}>
+          {mainNavItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => {
+                setActiveTab(item.id);
+                setIsMenuOpen(false);
+              }}
+              className={cn(
+                "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative",
+                activeTab === item.id 
+                  ? "text-emerald-600" 
+                  : isDarkMode ? "text-zinc-500" : "text-stone-400"
+              )}
+            >
+              {activeTab === item.id && (
+                <motion.div 
+                  layoutId="activeTab"
+                  className="absolute top-0 w-12 h-1 bg-emerald-600 rounded-b-full"
+                />
+              )}
+              <div className={cn(
+                "transition-transform duration-200",
+                activeTab === item.id ? "scale-110" : "scale-100"
+              )}>
+                {item.icon}
+              </div>
+              <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
+            </button>
+          ))}
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className={cn(
+              "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all",
+              isMenuOpen 
+                ? "text-emerald-600" 
+                : isDarkMode ? "text-zinc-500" : "text-stone-400"
+            )}
+          >
+            <div className={cn(
+              "transition-transform duration-200",
+              isMenuOpen ? "scale-110 rotate-90" : "scale-100"
+            )}>
+              {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-tighter">Menu</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Side Drawer */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsMenuOpen(false)}
+              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[55] md:hidden"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className={cn(
+                "fixed top-0 right-0 bottom-0 w-[80%] max-w-sm z-[60] md:hidden shadow-2xl flex flex-col",
+                isDarkMode ? "bg-zinc-900" : "bg-white"
+              )}
+            >
+              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                    <img 
+                      src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                      alt="Logo" 
+                      className="w-6 h-6 object-contain mix-blend-multiply dark:mix-blend-screen"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                  <span className="font-bold text-lg">Menu</span>
+                </div>
+                <button 
+                  onClick={() => setIsMenuOpen(false)}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-1">
+                <div className="px-3 py-2 text-[10px] font-bold text-stone-400 dark:text-zinc-500 uppercase tracking-widest">
+                  Navegação
+                </div>
+                {navItems.filter(item => !item.hidden).map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      setActiveTab(item.id);
+                      setIsMenuOpen(false);
+                    }}
+                    className={cn(
+                      "w-full flex items-center gap-4 p-4 rounded-2xl text-sm font-bold transition-all",
+                      activeTab === item.id 
+                        ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" 
+                        : isDarkMode ? "hover:bg-zinc-800 text-zinc-300" : "hover:bg-stone-50 text-stone-600"
+                    )}
+                  >
+                    <div className={cn(
+                      "p-2 rounded-xl transition-colors",
+                      activeTab === item.id ? "bg-white/20" : isDarkMode ? "bg-zinc-800" : "bg-stone-100"
+                    )}>
+                      {item.icon}
+                    </div>
+                    {item.label}
+                  </button>
+                ))}
+                
+                <div className="pt-6 px-3 py-2 text-[10px] font-bold text-stone-400 dark:text-zinc-500 uppercase tracking-widest">
+                  Temas
+                </div>
+                <div className="grid grid-cols-3 gap-2 p-2">
+                  <button
+                    onClick={() => setTheme('light')}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all",
+                      theme === 'light' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
+                    )}
+                  >
+                    <Sun size={20} />
+                    <span className="text-[10px] font-bold">Claro</span>
+                  </button>
+                  <button
+                    onClick={() => setTheme('dark')}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all",
+                      theme === 'dark' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
+                    )}
+                  >
+                    <Moon size={20} />
+                    <span className="text-[10px] font-bold">Escuro</span>
+                  </button>
+                  <button
+                    onClick={() => setTheme('devotional')}
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all",
+                      theme === 'devotional' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
+                    )}
+                  >
+                    <Coffee size={20} />
+                    <span className="text-[10px] font-bold">Devocional</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50">
+                <p className="text-[10px] text-stone-400 dark:text-zinc-500 text-center uppercase tracking-widest">
+                  Imersão Bíblica IA v2.5
+                </p>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Main Content */}
+      <main className="pt-24 pb-24 md:pb-12 px-4 max-w-7xl mx-auto">
+        {activeTab !== 'home' && (
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="mb-12 relative flex justify-center overflow-hidden rounded-[2.5rem] group shadow-2xl"
+          >
+            <img 
+              src="https://i.postimg.cc/1Rqjh4bB/Screenshot-2026-03-09-12-08-27-022-com-google-android-googlequicksearchbox-edit.jpg" 
+              alt="Banner" 
+              className="w-full h-auto max-h-[350px] object-cover rounded-[2.5rem] transition-transform duration-1000 group-hover:scale-105"
+              referrerPolicy="no-referrer"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col items-center justify-center p-6 text-center">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-3"
+              >
+                <h2 className="text-4xl md:text-7xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
+                  {activeItem?.label || 'Página'}
+                </h2>
+                <div className="h-1.5 w-24 bg-emerald-500 mx-auto rounded-full shadow-lg shadow-emerald-500/50" />
+                <p className="text-white/90 text-xs md:text-base font-black tracking-[0.4em] uppercase drop-shadow-lg">
+                  {activeItem?.subtitle || 'Imersão Bíblica IA'}
+                </p>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+        <Suspense fallback={
+          <div className="flex items-center justify-center min-h-[60vh]">
+            <Loader2 className="animate-spin text-emerald-600" size={48} />
+          </div>
+        }>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {activeComponent}
+            </motion.div>
+          </AnimatePresence>
+        </Suspense>
+      </main>
+
+      <footer className={cn(
+        "py-8 border-t text-center text-sm",
+        isDarkMode ? "border-zinc-800 text-zinc-500" : "border-stone-200 text-stone-500"
+      )}>
+        <div className="flex items-center justify-center gap-3">
+          <img 
+            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+            alt="Logo" 
+            className="w-5 h-5 object-contain mix-blend-multiply dark:mix-blend-screen"
+            referrerPolicy="no-referrer"
+          />
+          <p>© {new Date().getFullYear()} Imersão Bíblica IA • Mergulhando na Palavra</p>
+          <img 
+            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+            alt="Logo" 
+            className="w-5 h-5 object-contain mix-blend-multiply dark:mix-blend-screen"
+            referrerPolicy="no-referrer"
+          />
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <OfflineProvider>
+        <ToastProvider>
+          <CreditProvider>
+            <AppContent />
+          </CreditProvider>
+        </ToastProvider>
+      </OfflineProvider>
+    </ThemeProvider>
+  );
+}
