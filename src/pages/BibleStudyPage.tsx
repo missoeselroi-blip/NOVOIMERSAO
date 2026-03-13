@@ -91,8 +91,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [selectedWork, setSelectedWork] = useState('');
   const [compareVersion, setCompareVersion] = useState('Almeida');
   const [previousTab, setPreviousTab] = useState<string | null>(null);
-  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message'>('lesson');
-  const [messageType, setMessageType] = useState<'outline' | 'birthday' | 'wedding' | 'newyear' | 'graduation' | 'devotional' | 'funeral'>('outline');
+  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook'>('lesson');
+  const [messageType, setMessageType] = useState<'outline' | 'birthday' | 'wedding' | 'newyear' | 'graduation' | 'devotional' | 'funeral' | 'children'>('outline');
   const [messageResult, setMessageResult] = useState('');
   const [messageResultThought, setMessageResultThought] = useState('');
   const [meaningSource, setMeaningSource] = useState('Dicionário Aurélio');
@@ -2333,7 +2333,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </div>
                 )}
 
-                {outline && creationType === 'outline' && (
+                {outline && (creationType === 'outline' || (creationType === 'message' && messageType === 'outline')) && (
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-6">
                       {outlineThought && (
