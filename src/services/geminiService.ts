@@ -10,23 +10,39 @@ const getAI = () => {
     if (typeof key !== 'string') return null;
     const trimmed = key.trim();
     if (!trimmed || trimmed === "undefined" || trimmed === "null") return null;
+    // Detect if the user put a description instead of a key
+    if (trimmed.length < 20 || trimmed.includes(" ") || trimmed.toLowerCase().includes("free tier")) {
+      return "__INVALID_FORMAT__";
+    }
     return trimmed;
   };
 
-  let apiKey = getValidKey((process.env as any).GEMINI_API_KEY) || 
-               getValidKey(import.meta.env.VITE_GEMINI_API_KEY) ||
-               getValidKey((import.meta.env as any).GEMINI_API_KEY);
+  let apiKey = "";
+  try {
+    apiKey = process.env.GEMINI_API_KEY || "";
+  } catch (e) {}
+
+  if (!apiKey || apiKey === "undefined" || apiKey === "null") {
+    apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+  }
+
+  const validatedKey = getValidKey(apiKey);
   
-  let source = "Environment/Vite";
-  
-  if (!apiKey) {
-    apiKey = getValidKey((window as any).GEMINI_API_KEY);
-    source = "Window Global (index.html)";
+  if (!validatedKey || validatedKey === "__INVALID_FORMAT__") {
+    const windowKey = getValidKey((window as any).GEMINI_API_KEY);
+    if (windowKey && windowKey !== "__INVALID_FORMAT__") {
+      apiKey = windowKey;
+    } else if (validatedKey === "__INVALID_FORMAT__" || windowKey === "__INVALID_FORMAT__") {
+       throw new Error("O valor da chave GEMINI_API_KEY parece ser um texto descritivo (ex: 'AI Studio free tier'). Você deve colar o CÓDIGO da chave (ex: AIza...). Obtenha em: aistudio.google.com/app/apikey 🔑");
+    } else {
+      apiKey = "";
+    }
+  } else {
+    apiKey = validatedKey;
   }
   
   if (!apiKey) {
-    console.error("Gemini API Key not found in any source.");
-    throw new Error("Chave de API não encontrada. Verifique se a chave GEMINI_API_KEY está configurada corretamente no seu ambiente (Settings > Secrets). 🔑");
+    throw new Error("Chave de API não encontrada. Clique no ícone de engrenagem (Settings) > Secrets e adicione GEMINI_API_KEY com seu código AIza... 🔑");
   }
   
   return new GoogleGenAI({ apiKey });
