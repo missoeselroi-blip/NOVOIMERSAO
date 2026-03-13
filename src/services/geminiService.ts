@@ -6,26 +6,28 @@ const getAI = () => {
   // 2. import.meta.env.VITE_GEMINI_API_KEY (Vite standard)
   // 3. window.GEMINI_API_KEY (Fallback for manual entry in index.html)
 
-  let apiKey = (process.env as any).GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+  const getValidKey = (key: any) => {
+    if (typeof key !== 'string') return null;
+    const trimmed = key.trim();
+    if (!trimmed || trimmed === "undefined" || trimmed === "null") return null;
+    return trimmed;
+  };
+
+  let apiKey = getValidKey((process.env as any).GEMINI_API_KEY) || 
+               getValidKey(import.meta.env.VITE_GEMINI_API_KEY) ||
+               getValidKey((import.meta.env as any).GEMINI_API_KEY);
+  
   let source = "Environment/Vite";
   
-  // If it's a string "undefined", empty, or not set, try the window global
-  if (!apiKey || apiKey === "undefined" || apiKey === "" || typeof apiKey === 'undefined') {
-    apiKey = (window as any).GEMINI_API_KEY;
+  if (!apiKey) {
+    apiKey = getValidKey((window as any).GEMINI_API_KEY);
     source = "Window Global (index.html)";
   }
   
-  // Final check to see if we have a valid-looking key
-  if (!apiKey || apiKey === "undefined" || apiKey === "" || typeof apiKey === 'undefined') {
+  if (!apiKey) {
     console.error("Gemini API Key not found in any source.");
-    throw new Error("Chave de API não encontrada. Se você estiver no AI Studio, a chave deveria ser detectada automaticamente. Se estiver rodando localmente, verifique seu arquivo .env ou o arquivo index.html. 🔑");
+    throw new Error("Chave de API não encontrada. Verifique se a chave GEMINI_API_KEY está configurada corretamente no seu ambiente (Settings > Secrets). 🔑");
   }
-  
-  // Log masked key for debugging (only first 4 and last 4 chars)
-  const maskedKey = apiKey.length > 8 
-    ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`
-    : "***";
-  console.log(`Gemini API Key detected from ${source}: ${maskedKey}`);
   
   return new GoogleGenAI({ apiKey });
 };
@@ -44,11 +46,11 @@ const handleApiError = (error: any) => {
   }
 
   if (errorMessage.includes("API_KEY_INVALID") || errorMessage.includes("key is not valid")) {
-    throw new Error("Chave de API Inválida: A chave que você inseriu no index.html não é válida ou foi digitada incorretamente. 🔑");
+    throw new Error("Chave de API Inválida. Verifique se a chave GEMINI_API_KEY em 'Settings > Secrets' está correta. 🔑");
   }
 
   if (errorMessage.includes("PERMISSION_DENIED")) {
-    throw new Error("Acesso Negado: Verifique se a sua chave de API tem permissão para usar o Gemini (Generative Language API). 🚫");
+    throw new Error("Acesso Negado: Verifique se a sua chave de API tem permissão para usar o Gemini. 🚫");
   }
 
   console.error("Gemini API Error:", error);
@@ -57,7 +59,6 @@ const handleApiError = (error: any) => {
     throw new Error("Erro de conexão: Não foi possível falar com o servidor do Gemini. Verifique sua internet. 🌐");
   }
 
-  // Show the actual error message to help debugging
   throw new Error(`Erro na IA: ${errorMessage}`);
 };
 
@@ -76,7 +77,6 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promis
 
     if (isRetryable) {
       console.warn(`Retrying API call due to ${error?.status || 'error'}... (${MAX_RETRIES - retries + 1}/${MAX_RETRIES})`);
-      // Use exponential backoff for 429
       const delay = error?.status === 429 ? RETRY_DELAY * 2 * (MAX_RETRIES - retries + 1) : RETRY_DELAY * (MAX_RETRIES - retries + 1);
       await sleep(delay);
       return withRetry(fn, retries - 1);
@@ -98,7 +98,7 @@ export const geminiService = {
             thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
           },
         });
-        return response.text;
+        return response.text || "";
       } catch (error) {
         return handleApiError(error);
       }
@@ -119,10 +119,11 @@ export const geminiService = {
         });
 
         let thought = "";
-        if (response.candidates?.[0]?.content?.parts) {
-          for (const part of response.candidates[0].content.parts) {
-            if ((part as any).thought) {
-              thought = (part as any).text;
+        const parts = response.candidates?.[0]?.content?.parts;
+        if (parts && Array.isArray(parts)) {
+          for (const part of parts) {
+            if ((part as any).thought === true) {
+              thought = (part as any).text || "";
             }
           }
         }

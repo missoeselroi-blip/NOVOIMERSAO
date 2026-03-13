@@ -2434,7 +2434,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </div>
                 )}
 
-                {devotionalResult && creationType === 'devotional' && (
+                {(devotionalResult && (creationType === 'devotional' || (creationType === 'message' && messageType === 'devotional'))) && (
                   <div className="space-y-6">
                     {devotionalResultThought && (
                       <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4">
