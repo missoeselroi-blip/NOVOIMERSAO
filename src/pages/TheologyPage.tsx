@@ -69,9 +69,17 @@ interface TheologyPageProps {
 }
 
 export default function TheologyPage({ onNavigate }: TheologyPageProps) {
-  const { user } = useAuth();
+  const { user, isInitialLoading } = useAuth();
   const { showToast } = useToast();
-  const [isEnrolled, setIsEnrolled] = useState(() => localStorage.getItem('theology_enrolled') === 'true');
+  
+  // Initial state from localStorage with safety
+  const [isEnrolled, setIsEnrolled] = useState(() => {
+    try {
+      return localStorage.getItem('theology_enrolled') === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
   const [showSummary, setShowSummary] = useState(!isEnrolled);
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
   const [showSubjectModal, setShowSubjectModal] = useState(false);
@@ -99,6 +107,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [summaryType, setSummaryType] = useState('');
   const [summaryText, setSummaryText] = useState('');
   const [isEvaluatingSummary, setIsEvaluatingSummary] = useState(false);
+  const [isEnrolling, setIsEnrolling] = useState(false);
   const [summaryEvaluation, setSummaryEvaluation] = useState<{
     score: number;
     criteria: { label: string, penalty: number, met: boolean }[];
@@ -108,6 +117,15 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="animate-spin text-emerald-600 mb-4" size={48} />
+        <p className="text-stone-500 font-medium animate-pulse">Carregando seu perfil...</p>
+      </div>
+    );
+  }
 
   if (!user) {
     return (
@@ -140,19 +158,27 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
   const handleEnroll = async () => {
     if (!user) return;
-    setIsEnrolled(true);
-    localStorage.setItem('theology_enrolled', 'true');
-    
-    // Initialize progress in Firestore if it doesn't exist
-    const progressDocRef = doc(db, 'theologyProgress', user.id);
-    const progressDoc = await getDoc(progressDocRef);
-    if (!progressDoc.exists()) {
-      await setDoc(progressDocRef, { userId: user.id, enrolled: true });
-    }
+    setIsEnrolling(true);
+    try {
+      setIsEnrolled(true);
+      localStorage.setItem('theology_enrolled', 'true');
+      
+      // Initialize progress in Firestore if it doesn't exist
+      const progressDocRef = doc(db, 'theologyProgress', user.id);
+      const progressDoc = await getDoc(progressDocRef);
+      if (!progressDoc.exists()) {
+        await setDoc(progressDocRef, { userId: user.id, enrolled: true });
+      }
 
-    setShowSummary(false);
-    showToast("Inscrição realizada com sucesso! Bem-vindo ao curso. 🎓", 'success');
-    onNavigate('student-profile');
+      setShowSummary(false);
+      showToast("Inscrição realizada com sucesso! Bem-vindo ao curso. 🎓", 'success');
+      onNavigate('student-profile');
+    } catch (error) {
+      console.error("Error enrolling:", error);
+      showToast("Erro ao realizar inscrição.", 'error');
+    } finally {
+      setIsEnrolling(false);
+    }
   };
 
   const handleSubjectClick = (subject: string) => {
@@ -532,9 +558,9 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       }
       
       setAssessmentQuestions(data.questions);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro ao gerar avaliação:", error);
-      showToast("Erro ao gerar avaliação. Tente novamente.", 'error');
+      showToast(error.message || "Erro ao gerar avaliação. Tente novamente.", 'error');
       setShowAssessmentModal(false);
     } finally {
       setIsGeneratingAssessment(false);
@@ -632,9 +658,10 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
           <div className="flex flex-col sm:flex-row gap-4 pt-4">
             <button 
               onClick={handleEnroll}
-              className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2"
+              disabled={isEnrolling}
+              className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <CheckCircle size={20} />
+              {isEnrolling ? <Loader2 className="animate-spin" size={20} /> : <CheckCircle size={20} />}
               INSCREVER-SE AGORA
             </button>
             <button 
@@ -710,7 +737,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {THEOLOGY_SUBJECTS.map((subject, idx) => {
-              const isLocked = subject.prereq && (!theologyProgress[subject.prereq] || !theologyProgress[subject.prereq].completed);
+              const prereqProgress = subject.prereq ? theologyProgress[subject.prereq] : null;
+              const isLocked = subject.prereq && (!prereqProgress || !prereqProgress.completed);
               const isCompleted = theologyProgress[subject.title]?.completed;
               const Icon = subject.icon;
 

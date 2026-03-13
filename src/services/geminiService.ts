@@ -2,11 +2,22 @@ import { GoogleGenAI, Modality, ThinkingLevel } from "@google/genai";
 
 const getAI = () => {
   // Try to get from build-time env or runtime global
-  const apiKey = (import.meta.env.VITE_GEMINI_API_KEY) || (window as any).GEMINI_API_KEY || "";
+  let apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+  let source = "Vite Env";
   
-  if (!apiKey || apiKey === "undefined" || apiKey === "") {
-    throw new Error("Configuração Necessária: A chave da API do Gemini não foi encontrada. \n\n1. No AI Studio: Verifique em Settings > Secrets.\n2. Na Hostinger: Adicione GEMINI_API_KEY nas Variáveis de Ambiente e RODE O BUILD NOVAMENTE.\n3. Local: Crie um arquivo .env com VITE_GEMINI_API_KEY=sua_chave. 🔑");
+  // If it's a string "undefined", empty, or not set, try the window global
+  if (!apiKey || apiKey === "undefined" || apiKey === "" || typeof apiKey === 'undefined') {
+    apiKey = (window as any).GEMINI_API_KEY;
+    source = "Window Global";
   }
+  
+  // Final check to see if we have a valid-looking key
+  if (!apiKey || apiKey === "undefined" || apiKey === "" || typeof apiKey === 'undefined') {
+    console.error("Gemini API Key not found in any source.");
+    throw new Error("Configuração Necessária: A chave da API do Gemini não foi encontrada no sistema. Por favor, verifique o arquivo index.html. 🔑");
+  }
+  
+  console.log(`Gemini API Key detected from ${source}.`);
   return new GoogleGenAI({ apiKey });
 };
 
@@ -16,18 +27,29 @@ const RETRY_DELAY = 1000; // 1 second
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 const handleApiError = (error: any) => {
-  if (error?.status === 429 || error?.message?.includes("RESOURCE_EXHAUSTED")) {
+  const errorMessage = error?.message || String(error);
+  
+  if (error?.status === 429 || errorMessage.includes("RESOURCE_EXHAUSTED")) {
     console.warn("Gemini API Quota Exceeded (429).");
     throw new Error("Limite de cota do Gemini excedido. Por favor, aguarde um momento ou tente novamente mais tarde. ⏳");
   }
 
-  console.error("Gemini API Error:", error);
-
-  if (error?.message?.includes("Rpc failed due to xhr error")) {
-    throw new Error("Erro de conexão temporário com o servidor do Gemini. Por favor, tente novamente. 🔄");
+  if (errorMessage.includes("API_KEY_INVALID") || errorMessage.includes("key is not valid")) {
+    throw new Error("Chave de API Inválida: A chave que você inseriu no index.html não é válida ou foi digitada incorretamente. 🔑");
   }
 
-  throw error;
+  if (errorMessage.includes("PERMISSION_DENIED")) {
+    throw new Error("Acesso Negado: Verifique se a sua chave de API tem permissão para usar o Gemini (Generative Language API). 🚫");
+  }
+
+  console.error("Gemini API Error:", error);
+
+  if (errorMessage.includes("Rpc failed due to xhr error") || errorMessage.includes("Failed to fetch")) {
+    throw new Error("Erro de conexão: Não foi possível falar com o servidor do Gemini. Verifique sua internet. 🌐");
+  }
+
+  // Show the actual error message to help debugging
+  throw new Error(`Erro na IA: ${errorMessage}`);
 };
 
 const withRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promise<T> => {

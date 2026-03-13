@@ -175,6 +175,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [creationPopup, setCreationPopup] = useState<{ show: boolean, title: string, content: string } | null>(null);
 
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+  const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
 
   const [studyHistory, setStudyHistory] = useState<StudyHistoryItem[]>(() => {
@@ -233,22 +235,33 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
     if (!pendingNote) return;
     
-    const saved = localStorage.getItem('preacher_notes');
-    const entries = saved ? JSON.parse(saved) : [];
-    const newEntry = {
-      id: Date.now().toString(),
-      title: pendingNote.title,
-      content: pendingNote.content,
-      category,
-      date: new Date().toLocaleDateString('pt-BR'),
-    };
-    localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
-    showToast(`Salvo em ${category}! 📖✅`);
-    setIsNotebookModalOpen(false);
-    setPendingNote(null);
+    setIsSavingToNotebook(true);
+    try {
+      // Small delay to simulate saving and show feedback
+      await new Promise(resolve => setTimeout(resolve, 800));
+
+      const saved = localStorage.getItem('preacher_notes');
+      const entries = saved ? JSON.parse(saved) : [];
+      const newEntry = {
+        id: Date.now().toString(),
+        title: pendingNote.title,
+        content: pendingNote.content,
+        category,
+        date: new Date().toLocaleDateString('pt-BR'),
+      };
+      localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
+      showToast(`Salvo em ${category}! 📖✅`, 'success');
+      setIsNotebookModalOpen(false);
+      setPendingNote(null);
+    } catch (error) {
+      console.error("Error saving to notebook:", error);
+      showToast("Erro ao salvar no caderno.", 'error');
+    } finally {
+      setIsSavingToNotebook(false);
+    }
   };
 
   const saveNote = () => {
@@ -619,6 +632,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     const element = document.getElementById('booklet-content');
     if (!element) return;
 
+    setIsGeneratingPDF(true);
     showToast("Gerando seu Ebook PDF... Isso pode levar um momento. 📄💎", 'info');
     try {
       const canvas = await html2canvas(element, { 
@@ -664,6 +678,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       showToast("Erro ao gerar PDF.", 'error');
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -1136,9 +1152,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         tab: 'creation-tool',
         creationType: 'lesson'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao gerar lição.", 'error');
+      showToast(error.message || "Erro ao gerar lição.", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -1179,9 +1195,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         tab: 'creation-tool',
         creationType: 'study'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao gerar estudo.", 'error');
+      showToast(error.message || "Erro ao gerar estudo.", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -1216,9 +1232,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         tab: 'creation-tool',
         creationType: 'debate'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao gerar debate.", 'error');
+      showToast(error.message || "Erro ao gerar debate.", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -1266,9 +1282,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         tab: 'creation-tool',
         creationType: 'devotional'
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao gerar devocional.", 'error');
+      showToast(error.message || "Erro ao gerar devocional.", 'error');
     } finally {
       setIsLoading(false);
     }
@@ -1346,6 +1362,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const exportPDF = async () => {
     if (!outlineRef.current) return;
+    setIsGeneratingPDF(true);
     showToast("Gerando seu PDF... Quase pronto! 📄💎", 'info');
     try {
       const canvas = await html2canvas(outlineRef.current, { 
@@ -1371,8 +1388,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`esboco-${topic.slice(0, 20)}.pdf`);
+      showToast("PDF gerado com sucesso! 📄🎉", 'success');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
+      showToast("Erro ao gerar PDF.", 'error');
+    } finally {
+      setIsGeneratingPDF(false);
     }
   };
 
@@ -2298,7 +2319,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           ) : (
                             <button onClick={() => setIsEditingOutline(true)} className="w-full py-3 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold rounded-xl hover:opacity-90 flex items-center justify-center gap-2"><Edit size={18} /> Editar Esboço</button>
                           )}
-                          <button onClick={exportPDF} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Download size={18} /> Baixar PDF</button>
+                          <button 
+                            onClick={exportPDF} 
+                            disabled={isGeneratingPDF}
+                            className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isGeneratingPDF ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                            Baixar PDF
+                          </button>
                           <button onClick={() => handleWikiSearch(topic)} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2"><Globe size={18} /> Pesquisa Wiki</button>
                           <button onClick={() => handleSaveToNotebook('Esboço', outline)} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                           <button onClick={handleCreateSlides} disabled={isGeneratingSlides} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50">{isGeneratingSlides ? <Loader2 className="animate-spin" size={18} /> : <Layout size={18} />} Criar Slides IA</button>
@@ -2456,7 +2484,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <>
                           <button onClick={() => { setIsEditingOutline(true); setEditedOutline(bookletResult); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Edit size={18} /> Editar</button>
                           <button onClick={() => { navigator.clipboard.writeText(bookletResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
-                          <button onClick={handleDownloadBookletPDF} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar PDF</button>
+                          <button 
+                            onClick={handleDownloadBookletPDF} 
+                            disabled={isGeneratingPDF}
+                            className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isGeneratingPDF ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                            Baixar PDF
+                          </button>
                           <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                           <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
                           <button onClick={() => handleSaveToNotebook('Apostila Completa', bookletResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -3396,6 +3431,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}
+        isLoading={isSavingToNotebook}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
       />

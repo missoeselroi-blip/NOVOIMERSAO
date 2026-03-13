@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
+import ErrorBoundary from './components/ErrorBoundary';
 
 declare global {
   interface Window {
@@ -72,10 +73,11 @@ import AuthModal from './components/AuthModal';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 
 function AppContent() {
-  const { user, logout } = useAuth();
+  const { user, logout, isInitialLoading } = useAuth();
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { theme, setTheme } = useTheme();
+
   const [activeTab, setActiveTab] = useState('home');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [deepThinking, setDeepThinking] = useState(false);
@@ -88,6 +90,19 @@ function AppContent() {
       setPendingTab(null);
     }
   }, [user, pendingTab]);
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">
+        <div className="text-center space-y-4">
+          <Loader2 className="animate-spin text-emerald-600 mx-auto" size={48} />
+          <p className="text-stone-500 font-medium animate-pulse uppercase tracking-[0.3em] text-[10px]">
+            Carregando Imersão Bíblica IA...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const handleNavigate = (tabId: string) => {
     const protectedTabs = ['theology', 'career', 'notebook'];
@@ -550,17 +565,19 @@ function AppContent() {
             <Loader2 className="animate-spin text-emerald-600" size={48} />
           </div>
         }>
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.2 }}
-            >
-              {activeComponent}
-            </motion.div>
-          </AnimatePresence>
+          <ErrorBoundary>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -20 }}
+                transition={{ duration: 0.2 }}
+              >
+                {activeComponent}
+              </motion.div>
+            </AnimatePresence>
+          </ErrorBoundary>
         </Suspense>
       </main>
 

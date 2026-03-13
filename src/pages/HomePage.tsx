@@ -100,9 +100,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       setTestResult(response.text);
       setTestResultThought(response.thought);
       showToast("Devocional encontrado! 🙌✨");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao buscar devocional.", 'error');
+      showToast(error.message || "Erro ao buscar devocional.", 'error');
     } finally {
       setIsGeneratingTest(false);
     }
@@ -179,9 +179,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       const response = await geminiService.generateTextWithThought(config.prompt, config.instruction, deepThinking);
       setGeneratedMessage(response.text);
       setGeneratedMessageThought(response.thought);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao gerar mensagem.", 'error');
+      showToast(error.message || "Erro ao gerar mensagem.", 'error');
     } finally {
       setIsGeneratingMessage(false);
     }
@@ -323,9 +323,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       
       const response = await geminiService.generateText(prompt, "Você é um conselheiro espiritual sábio e acolhedor.", deepThinking);
       setGeneratedMessage(response);
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao gerar mensagem.", 'error');
+      showToast(error.message || "Erro ao gerar mensagem.", 'error');
     } finally {
       setIsGeneratingMessage(false);
     }
@@ -337,9 +337,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       const response = await geminiService.generateSpeech(text, 'Zephyr');
       const audio = new Audio(`data:audio/mp3;base64,${response}`);
       audio.play();
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao gerar áudio.", 'error');
+      showToast(error.message || "Erro ao gerar áudio.", 'error');
     } finally {
       setIsAudioLoading(false);
     }

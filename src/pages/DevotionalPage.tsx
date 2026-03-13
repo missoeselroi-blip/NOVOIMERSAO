@@ -223,9 +223,9 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       const response = await geminiService.generateText(prompt);
 
       setDevotionalResult(response || "Não foi possível gerar o devocional.");
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      showToast("Erro ao conectar com a sabedoria divina. Tente novamente.", "error");
+      showToast(error.message || "Erro ao conectar com a sabedoria divina. Tente novamente.", "error");
     } finally {
       setIsLoading(false);
     }

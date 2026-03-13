@@ -14,7 +14,8 @@ import {
   Book,
   ArrowLeft,
   Calendar,
-  Anchor
+  Anchor,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
@@ -52,6 +53,8 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [headerText, setHeaderText] = useState('');
   const [footerText, setFooterText] = useState('');
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     // Notes are now handled by AuthContext and Firestore
@@ -65,6 +68,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
 
     if (!user) return;
     
+    setIsSaving(true);
     try {
       if (editingNoteId) {
         const noteDocRef = doc(db, 'notes', editingNoteId);
@@ -93,6 +97,8 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
     } catch (error) {
       console.error("Error saving note:", error);
       showToast("Erro ao salvar página.", 'error');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -102,6 +108,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
 
   const deleteNote = async () => {
     if (noteToDelete) {
+      setIsDeleting(true);
       try {
         const noteDocRef = doc(db, 'notes', noteToDelete);
         await deleteDoc(noteDocRef);
@@ -111,6 +118,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
         showToast("Erro ao excluir página.", 'error');
       } finally {
         setNoteToDelete(null);
+        setIsDeleting(false);
       }
     }
   };
@@ -382,14 +390,16 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
               <div className="flex gap-4">
                 <button
                   onClick={saveNote}
-                  className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
+                  disabled={isSaving}
+                  className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
                 >
-                  <Save size={20} />
+                  {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                   Salvar no Caderno
                 </button>
                 <button
                   onClick={() => setIsFormOpen(false)}
-                  className="px-8 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 transition-all"
+                  disabled={isSaving}
+                  className="px-8 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 transition-all disabled:opacity-50"
                 >
                   Cancelar
                 </button>
@@ -551,14 +561,17 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
               <div className="flex gap-4">
                 <button
                   onClick={() => setNoteToDelete(null)}
-                  className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
+                  disabled={isDeleting}
+                  className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={deleteNote}
-                  className="flex-1 py-3 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+                  disabled={isDeleting}
+                  className="flex-1 py-3 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20 disabled:opacity-50 flex items-center justify-center gap-2"
                 >
+                  {isDeleting ? <Loader2 className="animate-spin" size={20} /> : <Trash2 size={20} />}
                   Excluir
                 </button>
               </div>

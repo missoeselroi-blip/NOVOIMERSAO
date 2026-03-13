@@ -1,14 +1,15 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Book, BookOpen, PenTool } from 'lucide-react';
+import { X, Book, BookOpen, PenTool, Loader2 } from 'lucide-react';
 
 interface SaveToNotebookModalProps {
   isOpen: boolean;
+  isLoading?: boolean;
   onClose: () => void;
   onConfirm: (category: 'Anotações' | 'Pregações' | 'Estudos') => void;
 }
 
-export function SaveToNotebookModal({ isOpen, onClose, onConfirm }: SaveToNotebookModalProps) {
+export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: SaveToNotebookModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
@@ -17,7 +18,7 @@ export function SaveToNotebookModal({ isOpen, onClose, onConfirm }: SaveToNotebo
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
+            onClick={isLoading ? undefined : onClose}
             className="absolute inset-0 bg-black/60 backdrop-blur-sm"
           />
           <motion.div
@@ -32,20 +33,29 @@ export function SaveToNotebookModal({ isOpen, onClose, onConfirm }: SaveToNotebo
               </h3>
               <button
                 onClick={onClose}
-                className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors"
+                disabled={isLoading}
+                className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-stone-300 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-50"
               >
                 <X size={20} />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 relative">
+              {isLoading && (
+                <div className="absolute inset-0 bg-white/80 dark:bg-zinc-900/80 z-10 flex flex-col items-center justify-center space-y-4 backdrop-blur-[2px]">
+                  <Loader2 className="animate-spin text-emerald-600" size={40} />
+                  <p className="text-emerald-900 dark:text-emerald-400 font-bold animate-pulse">Guardando no caderno...</p>
+                </div>
+              )}
+
               <p className="text-stone-600 dark:text-zinc-400 mb-4">
                 Em qual caderno você deseja salvar este conteúdo?
               </p>
 
               <button
                 onClick={() => onConfirm('Anotações')}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all group"
+                disabled={isLoading}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all group disabled:opacity-50"
               >
                 <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 group-hover:scale-110 transition-transform">
                   <PenTool size={24} />
@@ -58,7 +68,8 @@ export function SaveToNotebookModal({ isOpen, onClose, onConfirm }: SaveToNotebo
 
               <button
                 onClick={() => onConfirm('Pregações')}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group"
+                disabled={isLoading}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group disabled:opacity-50"
               >
                 <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
                   <BookOpen size={24} />
@@ -71,7 +82,8 @@ export function SaveToNotebookModal({ isOpen, onClose, onConfirm }: SaveToNotebo
 
               <button
                 onClick={() => onConfirm('Estudos')}
-                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group"
+                disabled={isLoading}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-purple-500 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group disabled:opacity-50"
               >
                 <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400 group-hover:scale-110 transition-transform">
                   <Book size={24} />
