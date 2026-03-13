@@ -84,6 +84,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [resultThought, setResultThought] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [loadingSource, setLoadingSource] = useState<string | null>(null);
   const [selectedBible, setSelectedBible] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
@@ -756,15 +757,28 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const handleListen = async (text: string) => {
     if (!text) return;
+    
+    // Stop previous audio if playing
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+
     setIsGeneratingSpeech(true);
+    showToast("Preparando a voz da IA... 🔊📖", 'info');
     try {
       const audioUrl = await geminiService.generateSpeech(text);
       if (audioUrl) {
         const audio = new Audio(audioUrl);
+        audioRef.current = audio;
         audio.play();
-        showToast("Iniciando leitura... 🎙️", 'success');
+        showToast("Iniciando leitura... Ouça com atenção! 🔊✨", 'success');
+        
+        audio.onended = () => {
+          audioRef.current = null;
+        };
       } else {
-        showToast("Erro ao gerar áudio.", 'error');
+        showToast("Erro ao gerar áudio. Tente um texto mais curto.", 'error');
       }
     } catch (error) {
       console.error(error);
@@ -960,26 +974,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const handleCopy = () => {
     navigator.clipboard.writeText(result);
     showToast("Copiado! Agora é só colar onde quiser! 📋✨");
-  };
-
-  const handleSpeak = async () => {
-    setIsGeneratingSpeech(true);
-    showToast("Preparando a voz da IA... 🔊📖", 'info');
-    try {
-      const audio = await geminiService.generateSpeech(result.slice(0, 1000));
-      if (audio) {
-        const audioObj = new Audio(audio);
-        audioObj.play();
-        showToast("Iniciando leitura... Ouça com atenção! 🔊✨");
-      } else {
-        showToast("Erro ao gerar áudio.", 'error');
-      }
-    } catch (error) {
-      console.error(error);
-      showToast("Erro ao gerar áudio.", 'error');
-    } finally {
-      setIsGeneratingSpeech(false);
-    }
   };
 
   const handleDownloadResult = async () => {

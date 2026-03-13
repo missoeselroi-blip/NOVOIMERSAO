@@ -231,9 +231,25 @@ export const geminiService = {
     return withRetry(async () => {
       try {
         const ai = getAI();
+        // Clean text: remove markdown and limit length for stability
+        const cleanText = text
+          .replace(/#+\s/g, '') 
+          .replace(/\*\*/g, '') 
+          .replace(/\*/g, '')   
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') 
+          .replace(/```[\s\S]*?```/g, '') 
+          .replace(/`([^`]+)`/g, '$1') 
+          .replace(/>\s/g, '') 
+          .replace(/-\s/g, '') 
+          .replace(/\n+/g, ' ') 
+          .slice(0, 2000)
+          .trim();
+
+        if (!cleanText) return null;
+
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash-preview-tts",
-          contents: [{ parts: [{ text }] }],
+          contents: [{ parts: [{ text: cleanText }] }],
           config: {
             responseModalities: ["AUDIO"],
             speechConfig: {
@@ -290,14 +306,8 @@ export const geminiService = {
     wavData.set(new Uint8Array(wavHeader), 0);
     wavData.set(pcmData, wavHeader.byteLength);
 
-    // Convert to base64
-    let binary = '';
-    const bytes = new Uint8Array(wavData);
-    const len = bytes.byteLength;
-    for (let i = 0; i < len; i++) {
-      binary += String.fromCharCode(bytes[i]);
-    }
-    return `data:audio/wav;base64,${btoa(binary)}`;
+    const blob = new Blob([wavData], { type: 'audio/wav' });
+    return URL.createObjectURL(blob);
   },
 
   async searchNews(query: string) {
