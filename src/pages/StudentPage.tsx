@@ -263,9 +263,10 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                             <td className="py-4 text-right">
                               <span className={cn(
                                 "font-bold text-xs px-3 py-1 rounded-full uppercase tracking-wider",
+                                total === 0 ? "text-stone-900 bg-stone-100 dark:text-zinc-100 dark:bg-zinc-800" :
                                 total >= 70 ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" : "text-red-600 bg-red-50 dark:bg-red-900/20"
                               )}>
-                                {total >= 70 ? 'Aprovado' : 'Reprovado'}
+                                {total === 0 ? 'Pendente' : total >= 70 ? 'Aprovado' : 'Reprovado'}
                               </span>
                             </td>
                           </tr>

@@ -124,7 +124,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   ];
 
   const quickActions = [
-    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsTestModalOpen(true) },
     { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'theology', label: 'Teologia', desc: 'Formação teológica.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'notebook', label: 'Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-amber-600" />, color: 'bg-amber-50 dark:bg-amber-900/20 shadow-amber-100/50', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -536,7 +536,10 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             {/* Action Button */}
             <button 
               onClick={() => {
-                if (action.id === 'generate-message') {
+                const actionWithClick = action as any;
+                if (actionWithClick.onClick) {
+                  actionWithClick.onClick();
+                } else if (action.id === 'generate-message') {
                   setIsMessageModalOpen(true);
                 } else {
                   onNavigate(action.id);

@@ -1,23 +1,32 @@
 import { GoogleGenAI, Modality, ThinkingLevel } from "@google/genai";
 
 const getAI = () => {
-  // Try to get from build-time env or runtime global
-  let apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  let source = "Vite Env";
+  // Priority order for API Key:
+  // 1. process.env.GEMINI_API_KEY (Defined in vite.config.ts from environment)
+  // 2. import.meta.env.VITE_GEMINI_API_KEY (Vite standard)
+  // 3. window.GEMINI_API_KEY (Fallback for manual entry in index.html)
+
+  let apiKey = (process.env as any).GEMINI_API_KEY || import.meta.env.VITE_GEMINI_API_KEY;
+  let source = "Environment/Vite";
   
   // If it's a string "undefined", empty, or not set, try the window global
   if (!apiKey || apiKey === "undefined" || apiKey === "" || typeof apiKey === 'undefined') {
     apiKey = (window as any).GEMINI_API_KEY;
-    source = "Window Global";
+    source = "Window Global (index.html)";
   }
   
   // Final check to see if we have a valid-looking key
   if (!apiKey || apiKey === "undefined" || apiKey === "" || typeof apiKey === 'undefined') {
     console.error("Gemini API Key not found in any source.");
-    throw new Error("Configuração Necessária: A chave da API do Gemini não foi encontrada no sistema. Por favor, verifique o arquivo index.html. 🔑");
+    throw new Error("Chave de API não encontrada. Se você estiver no AI Studio, a chave deveria ser detectada automaticamente. Se estiver rodando localmente, verifique seu arquivo .env ou o arquivo index.html. 🔑");
   }
   
-  console.log(`Gemini API Key detected from ${source}.`);
+  // Log masked key for debugging (only first 4 and last 4 chars)
+  const maskedKey = apiKey.length > 8 
+    ? `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`
+    : "***";
+  console.log(`Gemini API Key detected from ${source}: ${maskedKey}`);
+  
   return new GoogleGenAI({ apiKey });
 };
 

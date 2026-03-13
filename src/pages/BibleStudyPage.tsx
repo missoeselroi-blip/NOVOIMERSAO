@@ -754,6 +754,26 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
+  const handleListen = async (text: string) => {
+    if (!text) return;
+    setIsGeneratingSpeech(true);
+    try {
+      const audioUrl = await geminiService.generateSpeech(text);
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.play();
+        showToast("Iniciando leitura... 🎙️", 'success');
+      } else {
+        showToast("Erro ao gerar áudio.", 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar áudio.", 'error');
+    } finally {
+      setIsGeneratingSpeech(false);
+    }
+  };
+
   const handleGenerateMeaning = async () => {
     if (!meaningQuery.trim()) return;
     setIsGeneratingMeaning(true);
@@ -1942,6 +1962,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         Wiki
                       </button>
                       <button
+                        onClick={() => handleListen(result)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
+                      <button
                         onClick={() => {
                           handleShareResult();
                           showToast("Compartilhando a benção! 🕊️✨");
@@ -2042,6 +2070,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
                     
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(result)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={handleCopy} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={handleDownloadResult} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
@@ -2120,6 +2156,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleListen(result)}
+                        disabled={isGeneratingSpeech}
+                        className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={14} className="animate-spin" /> : <Volume2 size={14} />}
+                        Ouvir
+                      </button>
                       {result && !isOffline && (
                         <button 
                           onClick={handleDownloadOffline}
@@ -2232,6 +2276,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={showLeaderGuide ? leaderGuide : lessonResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(showLeaderGuide ? leaderGuide : lessonResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={() => { navigator.clipboard.writeText(showLeaderGuide ? leaderGuide : lessonResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
@@ -2265,6 +2317,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={studyResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(studyResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={() => { navigator.clipboard.writeText(studyResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
@@ -2328,7 +2388,17 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             Baixar PDF
                           </button>
                           <button onClick={() => handleWikiSearch(topic)} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2"><Globe size={18} /> Pesquisa Wiki</button>
-                          <button onClick={() => handleSaveToNotebook('Esboço', outline)} className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => handleListen(outline)}
+                            disabled={isGeneratingSpeech}
+                            className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                            Ouvir
+                          </button>
+                          <button onClick={() => handleSaveToNotebook('Esboço', outline)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
+                        </div>
                           <button onClick={handleCreateSlides} disabled={isGeneratingSlides} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2 disabled:opacity-50">{isGeneratingSlides ? <Loader2 className="animate-spin" size={18} /> : <Layout size={18} />} Criar Slides IA</button>
                         </div>
                       </div>
@@ -2355,6 +2425,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={debateResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(debateResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={() => { navigator.clipboard.writeText(debateResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleSaveToNotebook('Debate Teológico', debateResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -2381,6 +2459,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={devotionalResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(devotionalResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={() => { navigator.clipboard.writeText(devotionalResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
@@ -2410,6 +2496,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={messageResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(messageResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={() => { navigator.clipboard.writeText(messageResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
@@ -2482,6 +2576,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         </>
                       ) : (
                         <>
+                          <button
+                            onClick={() => handleListen(bookletResult)}
+                            disabled={isGeneratingSpeech}
+                            className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                            Ouvir
+                          </button>
                           <button onClick={() => { setIsEditingOutline(true); setEditedOutline(bookletResult); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Edit size={18} /> Editar</button>
                           <button onClick={() => { navigator.clipboard.writeText(bookletResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                           <button 
@@ -2694,6 +2796,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={result} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex gap-3">
+                      <button
+                        onClick={() => handleListen(result)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button
                         onClick={() => handleSaveToNotebook(activeTab === 'compare' ? 'Comparação de Versões' : 'Comentário Bíblico', result)}
                         className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"
@@ -3118,6 +3228,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={meaningResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex gap-3">
+                      <button
+                        onClick={() => handleListen(meaningResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={() => { navigator.clipboard.writeText(meaningResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
                       <button onClick={() => handleSaveToNotebook('Significado', meaningResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -3182,6 +3300,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={wikiResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(wikiResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
                       <button onClick={() => { navigator.clipboard.writeText(wikiResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
@@ -3372,6 +3498,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                 </div>
 
                 <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex gap-3">
+                  <button
+                    onClick={() => handleListen(searchPopup.result)}
+                    disabled={isGeneratingSpeech}
+                    className="flex-1 py-2 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm disabled:opacity-50"
+                  >
+                    {isGeneratingSpeech ? <Loader2 size={16} className="animate-spin" /> : <Volume2 size={16} />}
+                    Ouvir
+                  </button>
                   <button
                     onClick={() => { navigator.clipboard.writeText(searchPopup.result); showToast("Copiado! 📋✨"); }}
                     className="flex-1 py-2 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm"
