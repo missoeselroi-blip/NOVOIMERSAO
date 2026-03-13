@@ -33,13 +33,12 @@ service cloud.firestore {
     // Collection: notes
     // Document ID: {noteId}
     // Fields:
-    //   - id: string (required)
     //   - userId: string (required)
-    //   - title: string
-    //   - content: string
+    //   - title: string (required)
+    //   - content: string (required)
     //   - category: string
-    //   - createdAt: timestamp
-    //   - updatedAt: timestamp
+    //   - createdAt: string|timestamp
+    //   - updatedAt: string|timestamp
     //
     // ===============================================================
 
@@ -66,10 +65,10 @@ service cloud.firestore {
     }
 
     function isValidNote(data) {
-      return data.keys().hasAll(['id', 'userId', 'title', 'content']) &&
+      return data.keys().hasAll(['userId', 'title', 'content']) &&
              data.userId == request.auth.uid &&
-             data.title is string && data.title.size() < 200 &&
-             data.content is string && data.content.size() < 10000;
+             data.title is string && data.title.size() < 500 &&
+             data.content is string && data.content.size() < 50000;
     }
 
     // Rules

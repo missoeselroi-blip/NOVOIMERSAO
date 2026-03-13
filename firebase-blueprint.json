@@ -5,13 +5,13 @@
       "description": "User profile and settings",
       "type": "object",
       "properties": {
-        "uid": { "type": "string" },
+        "id": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "user"] },
         "createdAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["uid", "email", "role"]
+      "required": ["id", "email", "role"]
     },
     "TheologyProgress": {
       "title": "Theology Progress",
@@ -50,7 +50,7 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "updatedAt": { "type": "string", "format": "date-time" }
       },
-      "required": ["id", "userId", "title", "content"]
+      "required": ["userId", "title", "content"]
     },
     "TheologyCertificate": {
       "title": "Theology Certificate",

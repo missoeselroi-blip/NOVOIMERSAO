@@ -56,6 +56,9 @@ import { useOffline } from '../contexts/OfflineContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { WifiOff } from 'lucide-react';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 interface BibleStudyPageProps {
   deepThinking: boolean;
@@ -75,6 +78,7 @@ interface StudyHistoryItem {
 }
 
 export default function BibleStudyPage({ deepThinking, setDeepThinking, onNavigate }: BibleStudyPageProps) {
+  const { user, notes: firestoreNotes } = useAuth();
   const { showToast } = useToast();
   const { isOffline, downloadedChapters, downloadedMaterials, downloadChapter, downloadMaterial } = useOffline();
   const { balance, consumeCredits, estimateCredits } = useCredits();
@@ -122,12 +126,15 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isFavorited, setIsFavorited] = useState(false);
   const outlineRef = useRef<HTMLDivElement>(null);
   const bibleResultRef = useRef<HTMLDivElement>(null);
+  const verseResultRef = useRef<HTMLDivElement>(null);
 
   // General Notes state
-  const [notes, setNotes] = useState<{ id: string, title: string, content: string, date: string }[]>(() => {
+  const [localNotes, setLocalNotes] = useState<{ id: string, title: string, content: string, date: string }[]>(() => {
     const saved = localStorage.getItem('preacher_notes');
     return saved ? JSON.parse(saved) : [];
   });
+
+  const notes = user ? firestoreNotes : localNotes;
 
   // Pagination for Notes
   const [currentPage, setCurrentPage] = useState(1);
@@ -138,6 +145,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const tabs = [
     { id: 'bibles', label: 'Bíblias de Estudo', icon: <Book size={18} /> },
+    { id: 'verse-search', label: 'Busca de Versículo', icon: <Search size={18} /> },
     { id: 'authors', label: 'Visão do Autor', icon: <User size={18} /> },
     { id: 'religions', label: 'Outras Religiões', icon: <Cross size={18} className="rotate-180" /> },
     { id: 'creation-tool', label: 'Ferramenta de Criação', icon: <Sparkles size={18} /> },
@@ -241,19 +249,26 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     
     setIsSavingToNotebook(true);
     try {
-      // Small delay to simulate saving and show feedback
-      await new Promise(resolve => setTimeout(resolve, 800));
-
-      const saved = localStorage.getItem('preacher_notes');
-      const entries = saved ? JSON.parse(saved) : [];
-      const newEntry = {
-        id: Date.now().toString(),
-        title: pendingNote.title,
-        content: pendingNote.content,
-        category,
-        date: new Date().toLocaleDateString('pt-BR'),
-      };
-      localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
+      if (user) {
+        await addDoc(collection(db, 'notes'), {
+          userId: user.id,
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        const saved = localStorage.getItem('preacher_notes');
+        const entries = saved ? JSON.parse(saved) : [];
+        const newEntry = {
+          id: Date.now().toString(),
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          date: new Date().toLocaleDateString('pt-BR'),
+        };
+        localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
+      }
       showToast(`Salvo em ${category}! 📖✅`, 'success');
       setIsNotebookModalOpen(false);
       setPendingNote(null);
@@ -265,35 +280,73 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const saveNote = () => {
+  const saveNote = async () => {
     if (!currentNote.title || !currentNote.content) return;
     
-    let updatedNotes;
-    if (editingNoteId) {
-      updatedNotes = notes.map(n => n.id === editingNoteId ? { ...n, title: currentNote.title, content: currentNote.content } : n);
-      showToast("Página atualizada! 📝✨");
-    } else {
-      const newNote = {
-        id: Date.now().toString(),
-        title: currentNote.title,
-        content: currentNote.content,
-        date: new Date().toLocaleDateString('pt-BR')
-      };
-      updatedNotes = [newNote, ...notes];
-      showToast("Página guardada com sucesso! 📝✅");
+    setIsLoading(true);
+    try {
+      if (user) {
+        if (editingNoteId) {
+          const noteDocRef = doc(db, 'notes', editingNoteId);
+          await updateDoc(noteDocRef, {
+            title: currentNote.title,
+            content: currentNote.content,
+            updatedAt: new Date().toISOString()
+          });
+          showToast("Página atualizada! 📝✨");
+        } else {
+          await addDoc(collection(db, 'notes'), {
+            userId: user.id,
+            title: currentNote.title,
+            content: currentNote.content,
+            category: 'Anotações',
+            createdAt: new Date().toISOString()
+          });
+          showToast("Página guardada com sucesso! 📝✅");
+        }
+      } else {
+        let updatedNotes;
+        if (editingNoteId) {
+          updatedNotes = localNotes.map(n => n.id === editingNoteId ? { ...n, title: currentNote.title, content: currentNote.content } : n);
+          showToast("Página atualizada localmente! 📝✨");
+        } else {
+          const newNote = {
+            id: Date.now().toString(),
+            title: currentNote.title,
+            content: currentNote.content,
+            date: new Date().toLocaleDateString('pt-BR')
+          };
+          updatedNotes = [newNote, ...localNotes];
+          showToast("Página guardada localmente! 📝✅");
+        }
+        setLocalNotes(updatedNotes);
+        localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
+      }
+      
+      setCurrentNote({ title: '', content: '' });
+      setEditingNoteId(null);
+    } catch (error) {
+      console.error("Error saving note:", error);
+      showToast("Erro ao salvar nota.", 'error');
+    } finally {
+      setIsLoading(false);
     }
-    
-    setNotes(updatedNotes);
-    localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
-    setCurrentNote({ title: '', content: '' });
-    setEditingNoteId(null);
   };
 
-  const deleteNote = (id: string) => {
-    const updatedNotes = notes.filter(n => n.id !== id);
-    setNotes(updatedNotes);
-    localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
-    showToast("Página removida. 🗑️", 'info');
+  const deleteNote = async (id: string) => {
+    try {
+      if (user) {
+        await deleteDoc(doc(db, 'notes', id));
+      } else {
+        const updatedNotes = localNotes.filter(n => n.id !== id);
+        setLocalNotes(updatedNotes);
+        localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
+      }
+      showToast("Página removida. 🗑️", 'info');
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      showToast("Erro ao remover página.", 'error');
+    }
   };
 
   const handleAuthorSearch = async () => {
@@ -1015,16 +1068,17 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(result);
+  const handleCopy = (text?: string) => {
+    const contentToCopy = text || result;
+    navigator.clipboard.writeText(contentToCopy);
     showToast("Copiado! Agora é só colar onde quiser! 📋✨");
   };
 
-  const handleDownloadResult = async () => {
-    if (!bibleResultRef.current) return;
+  const handleDownloadElement = async (element: HTMLElement | null, title: string) => {
+    if (!element) return;
     showToast("Preparando seu arquivo... Ficou lindo! 📄💎", 'info');
     try {
-      const canvas = await html2canvas(bibleResultRef.current, { 
+      const canvas = await html2canvas(element, { 
         scale: 2,
         useCORS: true,
         onclone: (clonedDoc) => {
@@ -1049,34 +1103,34 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
       
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`estudo-biblico-${searchQuery.slice(0, 20) || 'comentario'}.pdf`);
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      // Fallback to text download
-      const element = document.createElement("a");
-      const file = new Blob([result], {type: 'text/plain'});
-      element.href = URL.createObjectURL(file);
-      element.download = "comentario-biblico.txt";
-      document.body.appendChild(element);
-      element.click();
+      pdf.save(`${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
+      showToast("Download concluído! 🙌✨");
+    } catch (err) {
+      console.error('Erro ao gerar PDF:', err);
+      showToast("Erro ao gerar PDF.", 'error');
     }
   };
 
-  const handleShareResult = async () => {
+  const handleDownloadResult = () => handleDownloadElement(bibleResultRef.current, 'Estudo_Biblico');
+
+  const handleShareContent = async (title: string, text: string) => {
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'Comentário Bíblico',
-          text: result,
+          title: title,
+          text: text,
         });
         showToast("Compartilhando a benção! 🕊️✨");
       } catch (err) {
         console.error('Erro ao compartilhar:', err);
       }
     } else {
-      handleCopy();
+      navigator.clipboard.writeText(text);
+      showToast("Copiado para a área de transferência! 📋✨");
     }
   };
+
+  const handleShareResult = () => handleShareContent('Comentário Bíblico', result);
 
   const handleSaveDraft = () => {
     const draft = {
@@ -1903,83 +1957,95 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             exit={{ opacity: 0, y: -10 }}
             className="space-y-6"
           >
-            {activeTab === 'bibles' && (
+            {activeTab === 'verse-search' && (
               <div className="space-y-6">
-                {/* Busca de Versículo Específico */}
-                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-3xl p-6 space-y-4">
-                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-bold">
-                    <BookOpen size={20} />
-                    <h3>Busca Rápida de Versículo</h3>
-                  </div>
-                  <div className="flex flex-col md:flex-row gap-3">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
-                      <input
-                        type="text"
-                        placeholder="Ex: João 3:16 ou Salmos 23"
-                        value={verseSearch}
-                        onChange={(e) => setVerseSearch(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleVerseSearch()}
-                        className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
-                      />
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
+                    <input
+                      type="text"
+                      placeholder="Busca Rápida: Digite o versículo (ex: João 3:16 ou Salmos 23)"
+                      value={verseSearch}
+                      onChange={(e) => setVerseSearch(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleVerseSearch()}
+                      className="w-full pl-12 pr-12 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                      <AudioSearchButton onResult={(text) => { setVerseSearch(text); handleVerseSearch(); }} />
                     </div>
-                    <button
-                      onClick={handleVerseSearch}
-                      disabled={isSearchingVerse || !verseSearch}
-                      className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
-                    >
-                      {isSearchingVerse ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                      Buscar Versículo
-                    </button>
                   </div>
-
-                  {verseContent && (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="mt-4 space-y-4"
-                    >
-                      {verseContentThought && (
-                        <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4">
-                          <details className="group">
-                            <summary className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer list-none">
-                              <Brain size={14} className="group-open:rotate-12 transition-transform" />
-                              CONTEXTO DO VERSÍCULO
-                            </summary>
-                            <div className="mt-3 text-xs text-amber-600/80 dark:text-amber-500/80 leading-relaxed italic">
-                              {verseContentThought}
-                            </div>
-                          </details>
-                        </div>
-                      )}
-                      <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 prose dark:prose-invert max-w-none shadow-sm">
-                        <MarkdownRenderer content={verseContent} onSearch={handleWikiSearch} />
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(verseContent);
-                            showToast("Versículo copiado! 📋");
-                          }}
-                          className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
-                          title="Copiar Versículo"
-                        >
-                          <Copy size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleSaveToNotebook(verseSearch, verseContent)}
-                          className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
-                          title="Salvar no Caderno"
-                        >
-                          <Save size={18} />
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
+                  <button
+                    onClick={handleVerseSearch}
+                    disabled={isSearchingVerse || !verseSearch}
+                    className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
+                  >
+                    {isSearchingVerse ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
+                    Buscar Versículo
+                  </button>
                 </div>
 
-                <div className="h-px bg-stone-100 dark:bg-zinc-800/50 my-2" />
+                {verseContent && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4"
+                  >
+                    {verseContentThought && (
+                      <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4">
+                        <details className="group">
+                          <summary className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer list-none">
+                            <Brain size={14} className="group-open:rotate-12 transition-transform" />
+                            CONTEXTO DO VERSÍCULO
+                          </summary>
+                          <div className="mt-3 text-xs text-amber-600/80 dark:text-amber-500/80 leading-relaxed italic">
+                            {verseContentThought}
+                          </div>
+                        </details>
+                      </div>
+                    )}
+                    <div 
+                      ref={verseResultRef}
+                      className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
+                    >
+                      <MarkdownRenderer content={verseContent} onSearch={handleWikiSearch} />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleSaveToNotebook(verseSearch, verseContent)}
+                        className="flex-1 min-w-[150px] py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Save size={18} />
+                        Salvar no Caderno
+                      </button>
+                      <button
+                        onClick={() => handleDownloadElement(verseResultRef.current, `Versiculo_${verseSearch}`)}
+                        className="flex-1 min-w-[150px] py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Download size={18} />
+                        Baixar
+                      </button>
+                      <button
+                        onClick={() => handleShareContent(verseSearch, verseContent)}
+                        className="flex-1 min-w-[150px] py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Share2 size={18} />
+                        Compartilhar
+                      </button>
+                      <button
+                        onClick={() => handleCopy(verseContent)}
+                        className="flex-1 min-w-[150px] py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 transition-all"
+                      >
+                        <Copy size={18} />
+                        Copiar
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </div>
+            )}
 
+            {activeTab === 'bibles' && (
+              <div className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-[2]">
                     <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
@@ -2051,7 +2117,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     
                     <div className="flex flex-wrap gap-3">
                       <button
-                        onClick={handleCopy}
+                        onClick={() => handleCopy()}
                         className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
                       >
                         <Copy size={18} />
@@ -2191,7 +2257,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={handleCopy} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => handleCopy()} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={handleDownloadResult} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
                       <button onClick={handleShareResult} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
@@ -2286,7 +2352,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <WifiOff size={14} /> Offline
                         </button>
                       )}
-                      <button onClick={handleCopy} className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"><Copy size={14} /> Copiar</button>
+                      <button onClick={() => handleCopy()} className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"><Copy size={14} /> Copiar</button>
                       <button onClick={handleDownloadResult} className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"><Download size={14} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(searchQuery)} className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 flex items-center gap-2 border border-blue-100 dark:border-blue-800/30 transition-all"><Globe size={14} /> Wiki</button>
                       <button onClick={handleShareResult} className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"><Share2 size={14} /> Compartilhar</button>
@@ -2925,7 +2991,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         Salvar no Caderno
                       </button>
                       <button
-                        onClick={handleCopy}
+                        onClick={() => handleCopy()}
                         className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
                       >
                         <Copy size={18} />
@@ -3667,6 +3733,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       <div className="mt-12 p-8 bg-stone-50 dark:bg-zinc-800/50 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 text-sm text-stone-600 dark:text-zinc-400 space-y-4">
         <h4 className="font-bold text-stone-900 dark:text-white text-lg mb-4">Recursos dessa página:</h4>
         <p><strong className="text-stone-900 dark:text-white">Bíblias de Estudo</strong> = Aqui você vai conseguir mergulhar em uma biblioteca bíblica com 50 Bíblias de Estudo; 10 Comentários bíblicos, 10 Enciclopédias bíblicas, 10 Dicionários bíblicos e 1 Concordância.</p>
+        <p><strong className="text-stone-900 dark:text-white">Busca de Verísculo</strong> = Nesta pesquisa além de duas versões do texto pesquisado, você terá um breve relato histórico e teológico que envolve o texto pesquisado.</p>
         <p><strong className="text-stone-900 dark:text-white">Visão do Autor</strong> = Neste recurso você vai conseguir pesquisar cerca de 50 escritores dos mais renomados, influentes da nossa época e de tempos antigos. Você poderá pesquisar palavras, termos, frases e até mesmo fazer uma pergunta como se fosse para o autor. A IA irá pesquisar em todos os seus livros e responder em uma síntese bem direta sobre o assunto específico ou assuntos correlacionados.</p>
         <p><strong className="text-stone-900 dark:text-white">Outras Religiões</strong> = Pesquise também nas principais religiões e seguimentos cristãos que possuem um cânon (livro sagrado ou principal livro doutrinário da religião).</p>
         <p><strong className="text-stone-900 dark:text-white">Ferramentas de Criação</strong> = Nesta versátil ferramenta você vai conseguir gerar vários materiais para a sua pesquisa, conhecimento ou utilização em seu ministério. São sete tipos de criação: Lição para células (pequenos grupos); Estudos bíblicos, Esboços, Devocional, Debate, Apostilas (chegam a 80 páginas) e Mensagens (dividas em Pregação, Aniversário, Casamento, Fim do ano, Formatura, Devocional e Velório).</p>

@@ -51,6 +51,8 @@ import { useToast } from '../components/Toast';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 import { AudioSearchButton } from '../components/AudioSearchButton';
 
@@ -277,20 +279,36 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
     if (!pendingNote) return;
-    const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
-    const newNote = {
-      id: Date.now().toString(),
-      title: pendingNote.title,
-      content: pendingNote.content,
-      category,
-      date: new Date().toLocaleDateString('pt-BR')
-    };
-    localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
-    showToast(`Salvo em ${category}! 📓✨`);
-    setIsNotebookModalOpen(false);
-    setPendingNote(null);
+    
+    try {
+      if (user) {
+        await addDoc(collection(db, 'notes'), {
+          userId: user.id,
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
+        const newNote = {
+          id: Date.now().toString(),
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          date: new Date().toLocaleDateString('pt-BR')
+        };
+        localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
+      }
+      showToast(`Salvo em ${category}! 📓✨`);
+      setIsNotebookModalOpen(false);
+      setPendingNote(null);
+    } catch (error) {
+      console.error("Error saving to notebook:", error);
+      showToast("Erro ao salvar no caderno.", 'error');
+    }
   };
 
   const sentiments = [

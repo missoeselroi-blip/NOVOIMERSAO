@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   Calendar,
   Anchor,
-  Loader2
+  Loader2,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
@@ -43,22 +44,23 @@ import { db } from '../lib/firebase';
 import { doc, addDoc, updateDoc, deleteDoc, collection } from 'firebase/firestore';
 
 export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
-  const { user, notes, isInitialLoading } = useAuth();
+  const { user, notes: firestoreNotes, isInitialLoading } = useAuth();
   const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentNote, setCurrentNote] = useState<{ title: string, content: string, category: 'Anotações' | 'Pregações' | 'Estudos' }>({ title: '', content: '', category: 'Anotações' });
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'Todos' | 'Anotações' | 'Pregações' | 'Estudos'>('Todos');
-  const [headerText, setHeaderText] = useState('');
-  const [footerText, setFooterText] = useState('');
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    // Notes are now handled by AuthContext and Firestore
-  }, []);
+  const [localNotes, setLocalNotes] = useState<any[]>(() => {
+    const saved = localStorage.getItem('preacher_notes');
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const notes = user ? firestoreNotes : localNotes;
 
   const saveNote = async () => {
     if (!currentNote.title || !currentNote.content) {
@@ -66,29 +68,54 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       return;
     }
 
-    if (!user) return;
-    
     setIsSaving(true);
     try {
-      if (editingNoteId) {
-        const noteDocRef = doc(db, 'notes', editingNoteId);
-        await updateDoc(noteDocRef, {
-          title: currentNote.title,
-          content: currentNote.content,
-          category: currentNote.category,
-          updatedAt: new Date().toISOString()
-        });
-        showToast("Página atualizada! 📝✨");
+      if (user) {
+        if (editingNoteId) {
+          const noteDocRef = doc(db, 'notes', editingNoteId);
+          await updateDoc(noteDocRef, {
+            title: currentNote.title,
+            content: currentNote.content,
+            category: currentNote.category,
+            updatedAt: new Date().toISOString()
+          });
+          showToast("Página atualizada! 📝✨");
+        } else {
+          const notesCollectionRef = collection(db, 'notes');
+          await addDoc(notesCollectionRef, {
+            userId: user.id,
+            title: currentNote.title,
+            content: currentNote.content,
+            category: currentNote.category,
+            createdAt: new Date().toISOString()
+          });
+          showToast("Página guardada com sucesso! 📝✅");
+        }
       } else {
-        const notesCollectionRef = collection(db, 'notes');
-        await addDoc(notesCollectionRef, {
-          userId: user.id,
-          title: currentNote.title,
-          content: currentNote.content,
-          category: currentNote.category,
-          createdAt: new Date().toISOString()
-        });
-        showToast("Página guardada com sucesso! 📝✅");
+        let updatedNotes;
+        if (editingNoteId) {
+          updatedNotes = localNotes.map(n => n.id === editingNoteId ? { 
+            ...n, 
+            title: currentNote.title, 
+            content: currentNote.content, 
+            category: currentNote.category,
+            updatedAt: new Date().toISOString() 
+          } : n);
+          showToast("Página atualizada localmente! 📝✨");
+        } else {
+          const newNote = {
+            id: Date.now().toString(),
+            title: currentNote.title,
+            content: currentNote.content,
+            category: currentNote.category,
+            date: new Date().toLocaleDateString('pt-BR'),
+            createdAt: new Date().toISOString()
+          };
+          updatedNotes = [newNote, ...localNotes];
+          showToast("Página guardada localmente! 📝✅");
+        }
+        setLocalNotes(updatedNotes);
+        localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
       }
       
       setCurrentNote({ title: '', content: '', category: 'Anotações' });
@@ -107,19 +134,25 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   };
 
   const deleteNote = async () => {
-    if (noteToDelete) {
-      setIsDeleting(true);
-      try {
-        const noteDocRef = doc(db, 'notes', noteToDelete);
-        await deleteDoc(noteDocRef);
-        showToast("Página removida. 🗑️", 'info');
-      } catch (error) {
-        console.error("Error deleting note:", error);
-        showToast("Erro ao excluir página.", 'error');
-      } finally {
-        setNoteToDelete(null);
-        setIsDeleting(false);
+    if (!noteToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      if (user) {
+        await deleteDoc(doc(db, 'notes', noteToDelete));
+        showToast("Página removida com sucesso! 🗑️");
+      } else {
+        const updatedNotes = localNotes.filter(n => n.id !== noteToDelete);
+        setLocalNotes(updatedNotes);
+        localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
+        showToast("Página removida localmente. 🗑️");
       }
+      setNoteToDelete(null);
+    } catch (error) {
+      console.error("Error deleting note:", error);
+      showToast("Erro ao remover página.", 'error');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -199,7 +232,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
             </style>
           </head>
           <body>
-            <div class="header">${headerText}</div>
             <div class="category-tag">${note.category}</div>
             <h1>${note.title}</h1>
             <div class="meta">
@@ -211,7 +243,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
               </div>
             </div>
             <div class="content">${note.content.replace(/\n/g, '<br/>')}</div>
-            <div class="footer">${footerText}</div>
           </body>
         </html>
       `);
@@ -243,15 +274,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-emerald-500"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold mb-4">Acesse sua conta para ver seu caderno</h2>
-        <p className="text-stone-500">Guarde seus estudos e reflexões com segurança.</p>
       </div>
     );
   }
@@ -306,27 +328,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
               {cat}
             </button>
           ))}
-        </div>
-
-        <div className="flex flex-wrap gap-4 w-full lg:w-auto">
-          <div className="flex-1 lg:flex-none relative">
-            <input 
-              type="text"
-              placeholder="Cabeçalho do PDF"
-              value={headerText}
-              onChange={(e) => setHeaderText(e.target.value)}
-              className="w-full px-4 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
-            />
-          </div>
-          <div className="flex-1 lg:flex-none relative">
-            <input 
-              type="text"
-              placeholder="Rodapé do PDF"
-              value={footerText}
-              onChange={(e) => setFooterText(e.target.value)}
-              className="w-full px-4 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl text-xs focus:ring-2 focus:ring-emerald-500 outline-none"
-            />
-          </div>
         </div>
       </div>
 
@@ -408,6 +409,18 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {!user && (
+        <div className="mb-8 p-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-3xl flex items-center gap-4">
+          <div className="w-12 h-12 bg-amber-100 dark:bg-amber-800 rounded-2xl flex items-center justify-center flex-shrink-0">
+            <Lock className="text-amber-600" size={24} />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-amber-900 dark:text-amber-200">Modo Offline / Local</h3>
+            <p className="text-sm text-amber-700 dark:text-amber-400">Suas notas estão sendo salvas apenas neste navegador. Faça login para sincronizar em todos os seus dispositivos.</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-12">
         {filteredNotes.length === 0 ? (

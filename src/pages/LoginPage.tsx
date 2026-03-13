@@ -147,6 +147,15 @@ export const LoginPage: React.FC = () => {
             <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
             Google
           </button>
+
+          <div className="mt-6 text-center">
+            <p className="text-[10px] text-stone-400 dark:text-zinc-500 uppercase tracking-widest mb-1">
+              Autenticação Segura
+            </p>
+            <p className="text-[9px] text-stone-300 dark:text-zinc-600 leading-tight">
+              O domínio <span className="font-mono">gen-lang-client...</span> é o servidor oficial de segurança do Google para este aplicativo.
+            </p>
+          </div>
         </div>
 
         <div className="mt-12 grid grid-cols-3 gap-4">

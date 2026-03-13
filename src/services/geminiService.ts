@@ -10,10 +10,6 @@ const getAI = () => {
     if (typeof key !== 'string') return null;
     const trimmed = key.trim();
     if (!trimmed || trimmed === "undefined" || trimmed === "null") return null;
-    // Detect if the user put a description instead of a key
-    if (trimmed.length < 20 || trimmed.includes(" ") || trimmed.toLowerCase().includes("free tier")) {
-      return "__INVALID_FORMAT__";
-    }
     return trimmed;
   };
 
@@ -28,12 +24,10 @@ const getAI = () => {
 
   const validatedKey = getValidKey(apiKey);
   
-  if (!validatedKey || validatedKey === "__INVALID_FORMAT__") {
+  if (!validatedKey) {
     const windowKey = getValidKey((window as any).GEMINI_API_KEY);
-    if (windowKey && windowKey !== "__INVALID_FORMAT__") {
+    if (windowKey) {
       apiKey = windowKey;
-    } else if (validatedKey === "__INVALID_FORMAT__" || windowKey === "__INVALID_FORMAT__") {
-       throw new Error("O valor da chave GEMINI_API_KEY parece ser um texto descritivo (ex: 'AI Studio free tier'). Você deve colar o CÓDIGO da chave (ex: AIza...). Obtenha em: aistudio.google.com/app/apikey 🔑");
     } else {
       apiKey = "";
     }
@@ -116,21 +110,6 @@ export const geminiService = {
         });
         return response.text || "";
       } catch (error: any) {
-        // Fallback to gemini-1.5-flash if 3-flash fails (except for key errors)
-        if (!error?.message?.includes("API_KEY_INVALID") && !error?.message?.includes("key is not valid")) {
-          try {
-            console.log("Falling back to gemini-1.5-flash...");
-            const ai = getAI();
-            const response = await ai.models.generateContent({
-              model: "gemini-1.5-flash",
-              contents: prompt,
-              config: { systemInstruction },
-            });
-            return response.text || "";
-          } catch (fallbackError) {
-            return handleApiError(fallbackError);
-          }
-        }
         return handleApiError(error);
       }
     });
@@ -164,24 +143,6 @@ export const geminiService = {
           thought: thought
         };
       } catch (error: any) {
-        // Fallback to gemini-1.5-flash (thought won't be available)
-        if (!error?.message?.includes("API_KEY_INVALID") && !error?.message?.includes("key is not valid")) {
-          try {
-            console.log("Falling back to gemini-1.5-flash...");
-            const ai = getAI();
-            const response = await ai.models.generateContent({
-              model: "gemini-1.5-flash",
-              contents: prompt,
-              config: { systemInstruction },
-            });
-            return {
-              text: response.text || "",
-              thought: ""
-            };
-          } catch (fallbackError) {
-            return handleApiError(fallbackError);
-          }
-        }
         return handleApiError(error);
       }
     });
@@ -204,27 +165,6 @@ export const geminiService = {
         if (!jsonStr) jsonStr = "{}";
         return JSON.parse(jsonStr) as T;
       } catch (error: any) {
-        // Fallback to gemini-1.5-flash
-        if (!error?.message?.includes("API_KEY_INVALID") && !error?.message?.includes("key is not valid")) {
-          try {
-            console.log("Falling back to gemini-1.5-flash for JSON...");
-            const ai = getAI();
-            const response = await ai.models.generateContent({
-              model: "gemini-1.5-flash",
-              contents: prompt,
-              config: {
-                systemInstruction,
-                responseMimeType: "application/json",
-              },
-            });
-            const text = response.text || "{}";
-            let jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
-            if (!jsonStr) jsonStr = "{}";
-            return JSON.parse(jsonStr) as T;
-          } catch (fallbackError) {
-            return handleApiError(fallbackError);
-          }
-        }
         return handleApiError(error);
       }
     });

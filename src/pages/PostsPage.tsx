@@ -19,8 +19,12 @@ import { cn } from '../types';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { Save } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 export default function PostsPage() {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
@@ -98,20 +102,36 @@ export default function PostsPage() {
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
     if (!pendingNote) return;
-    const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
-    const newNote = {
-      id: Date.now().toString(),
-      title: pendingNote.title,
-      content: pendingNote.content,
-      category,
-      date: new Date().toLocaleDateString('pt-BR')
-    };
-    localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
-    showToast(`Salvo em ${category}! 📓✨`);
-    setIsNotebookModalOpen(false);
-    setPendingNote(null);
+    
+    try {
+      if (user) {
+        await addDoc(collection(db, 'notes'), {
+          userId: user.id,
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
+        const newNote = {
+          id: Date.now().toString(),
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          date: new Date().toLocaleDateString('pt-BR')
+        };
+        localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
+      }
+      showToast(`Salvo em ${category}! 📓✨`);
+      setIsNotebookModalOpen(false);
+      setPendingNote(null);
+    } catch (error) {
+      console.error("Error saving to notebook:", error);
+      showToast("Erro ao salvar no caderno.", 'error');
+    }
   };
 
   return (
