@@ -115,7 +115,22 @@ export const geminiService = {
           },
         });
         return response.text || "";
-      } catch (error) {
+      } catch (error: any) {
+        // Fallback to gemini-1.5-flash if 3-flash fails (except for key errors)
+        if (!error?.message?.includes("API_KEY_INVALID") && !error?.message?.includes("key is not valid")) {
+          try {
+            console.log("Falling back to gemini-1.5-flash...");
+            const ai = getAI();
+            const response = await ai.models.generateContent({
+              model: "gemini-1.5-flash",
+              contents: prompt,
+              config: { systemInstruction },
+            });
+            return response.text || "";
+          } catch (fallbackError) {
+            return handleApiError(fallbackError);
+          }
+        }
         return handleApiError(error);
       }
     });
@@ -148,7 +163,25 @@ export const geminiService = {
           text: response.text || "",
           thought: thought
         };
-      } catch (error) {
+      } catch (error: any) {
+        // Fallback to gemini-1.5-flash (thought won't be available)
+        if (!error?.message?.includes("API_KEY_INVALID") && !error?.message?.includes("key is not valid")) {
+          try {
+            console.log("Falling back to gemini-1.5-flash...");
+            const ai = getAI();
+            const response = await ai.models.generateContent({
+              model: "gemini-1.5-flash",
+              contents: prompt,
+              config: { systemInstruction },
+            });
+            return {
+              text: response.text || "",
+              thought: ""
+            };
+          } catch (fallbackError) {
+            return handleApiError(fallbackError);
+          }
+        }
         return handleApiError(error);
       }
     });
@@ -167,20 +200,31 @@ export const geminiService = {
           },
         });
         const text = response.text || "{}";
-        // Clean up markdown code blocks if present
         let jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
-        
-        if (!jsonStr) {
-          jsonStr = "{}";
+        if (!jsonStr) jsonStr = "{}";
+        return JSON.parse(jsonStr) as T;
+      } catch (error: any) {
+        // Fallback to gemini-1.5-flash
+        if (!error?.message?.includes("API_KEY_INVALID") && !error?.message?.includes("key is not valid")) {
+          try {
+            console.log("Falling back to gemini-1.5-flash for JSON...");
+            const ai = getAI();
+            const response = await ai.models.generateContent({
+              model: "gemini-1.5-flash",
+              contents: prompt,
+              config: {
+                systemInstruction,
+                responseMimeType: "application/json",
+              },
+            });
+            const text = response.text || "{}";
+            let jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
+            if (!jsonStr) jsonStr = "{}";
+            return JSON.parse(jsonStr) as T;
+          } catch (fallbackError) {
+            return handleApiError(fallbackError);
+          }
         }
-
-        try {
-          return JSON.parse(jsonStr) as T;
-        } catch (parseError) {
-          console.error("Failed to parse JSON from AI:", jsonStr);
-          throw new Error("A IA retornou um formato inválido ou incompleto. Por favor, tente novamente.");
-        }
-      } catch (error) {
         return handleApiError(error);
       }
     });

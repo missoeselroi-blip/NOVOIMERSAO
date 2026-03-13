@@ -49,6 +49,11 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       showToast("Login com Google realizado com sucesso! 🚀✨");
       onClose();
     } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        // Just ignore or show a very subtle message since the user intentionally closed it
+        console.log("Login popup closed by user");
+        return;
+      }
       setError(err.message || "Erro ao fazer login com Google.");
     } finally {
       setLoading(false);

@@ -355,6 +355,50 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
+  const [verseSearch, setVerseSearch] = useState('');
+  const [verseContent, setVerseContent] = useState('');
+  const [isSearchingVerse, setIsSearchingVerse] = useState(false);
+  const [verseContentThought, setVerseContentThought] = useState('');
+
+  const handleVerseSearch = async () => {
+    if (!verseSearch) return;
+    
+    setIsSearchingVerse(true);
+    setVerseContent('');
+    setVerseContentThought('');
+    showToast("Buscando versículo nas Escrituras... 📖✨", 'info');
+    
+    try {
+      const prompt = `
+      Referência Bíblica: "${verseSearch}"
+      
+      Por favor, forneça o texto bíblico completo para esta referência.
+      Utilize a versão Almeida Corrigida Fiel (ACF) como base principal, mas também apresente a versão NVI para comparação se for um versículo curto.
+      Se for um capítulo inteiro, formate de maneira legível com os números dos versículos.
+      
+      Além do texto, adicione uma breve explicação do contexto histórico ou teológico desta passagem (máximo 3 parágrafos).
+      
+      IMPORTANTE: Transforme termos importantes em links clicáveis no formato [Termo](search:Termo).`;
+      
+      const response = await geminiService.generateTextWithThought(prompt, "Você é um bibliotecário bíblico preciso.", deepThinking);
+      setVerseContent(response.text);
+      setVerseContentThought(response.thought);
+      
+      addToHistory({
+        type: 'Versículo',
+        query: verseSearch,
+        result: response.text,
+        thought: response.thought,
+        tab: 'bibles'
+      });
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao buscar versículo. Verifique a referência.", "error");
+    } finally {
+      setIsSearchingVerse(false);
+    }
+  };
+
   const handleUnifiedCreation = () => {
     const cost = estimateCredits(creationType);
     
@@ -1861,6 +1905,81 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           >
             {activeTab === 'bibles' && (
               <div className="space-y-6">
+                {/* Busca de Versículo Específico */}
+                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-800/30 rounded-3xl p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-bold">
+                    <BookOpen size={20} />
+                    <h3>Busca Rápida de Versículo</h3>
+                  </div>
+                  <div className="flex flex-col md:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+                      <input
+                        type="text"
+                        placeholder="Ex: João 3:16 ou Salmos 23"
+                        value={verseSearch}
+                        onChange={(e) => setVerseSearch(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleVerseSearch()}
+                        className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={handleVerseSearch}
+                      disabled={isSearchingVerse || !verseSearch}
+                      className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
+                    >
+                      {isSearchingVerse ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
+                      Buscar Versículo
+                    </button>
+                  </div>
+
+                  {verseContent && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="mt-4 space-y-4"
+                    >
+                      {verseContentThought && (
+                        <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4">
+                          <details className="group">
+                            <summary className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer list-none">
+                              <Brain size={14} className="group-open:rotate-12 transition-transform" />
+                              CONTEXTO DO VERSÍCULO
+                            </summary>
+                            <div className="mt-3 text-xs text-amber-600/80 dark:text-amber-500/80 leading-relaxed italic">
+                              {verseContentThought}
+                            </div>
+                          </details>
+                        </div>
+                      )}
+                      <div className="bg-white dark:bg-zinc-900 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 prose dark:prose-invert max-w-none shadow-sm">
+                        <MarkdownRenderer content={verseContent} onSearch={handleWikiSearch} />
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(verseContent);
+                            showToast("Versículo copiado! 📋");
+                          }}
+                          className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
+                          title="Copiar Versículo"
+                        >
+                          <Copy size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleSaveToNotebook(verseSearch, verseContent)}
+                          className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
+                          title="Salvar no Caderno"
+                        >
+                          <Save size={18} />
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+
+                <div className="h-px bg-stone-100 dark:bg-zinc-800/50 my-2" />
+
                 <div className="flex flex-col md:flex-row gap-4">
                   <div className="relative flex-[2]">
                     <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
