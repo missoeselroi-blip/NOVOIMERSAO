@@ -112,7 +112,7 @@ export default function DonatePage() {
               <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-stone-400">R$</span>
               <input 
                 type="number"
-                placeholder="Outro valor"
+                placeholder="⚓ Outro valor"
                 value={typeof amount === 'number' && PRESET_VALUES.includes(amount) ? '' : amount}
                 onChange={(e) => setAmount(e.target.value)}
                 className="w-full pl-12 pr-4 py-4 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent rounded-2xl focus:border-emerald-500 outline-none font-bold text-lg"

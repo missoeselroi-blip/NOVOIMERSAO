@@ -15,6 +15,7 @@ import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { ForumPost, RANKS } from '../types/forum';
 import { cn } from '../types';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 
 const RULES = [
   "Proibido palavrões e linguagem ofensiva.",
@@ -55,6 +56,7 @@ const MOCK_POSTS: ForumPost[] = [
 ];
 
 export default function ForumPage() {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [posts, setPosts] = useState<ForumPost[]>(MOCK_POSTS);
   const [newPost, setNewPost] = useState('');
@@ -156,10 +158,22 @@ export default function ForumPage() {
           <div className="flex-1 space-y-4">
             <div className="relative">
               <textarea 
-                placeholder="O que deseja compartilhar com a comunidade?"
+                placeholder="⚓ O que deseja compartilhar com a comunidade?"
                 value={newPost}
                 onChange={(e) => setNewPost(e.target.value)}
-                className="w-full p-4 pr-12 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 min-h-[100px] resize-none"
+                className={cn(
+                  "w-full p-4 pr-12 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 min-h-[100px] resize-none",
+                  fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                  fontFamily === 'serif' ? 'font-serif' : 
+                  fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                  fontSize === 'xs' ? 'text-xs' :
+                  fontSize === 'sm' ? 'text-sm' :
+                  fontSize === 'base' ? 'text-base' :
+                  fontSize === 'lg' ? 'text-lg' :
+                  fontSize === 'xl' ? 'text-xl' :
+                  fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                )}
+                style={{ lineHeight }}
               />
               <div className="absolute right-3 top-3">
                 <AudioSearchButton onResult={(text) => setNewPost(text)} size={18} />

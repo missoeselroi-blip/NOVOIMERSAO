@@ -13,6 +13,7 @@ import {
   Pencil
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import { geminiService } from '../services/geminiService';
 import { useToast } from '../components/Toast';
 import { cn } from '../types';
@@ -26,6 +27,7 @@ import { useCredits } from '../contexts/CreditContext';
 import html2canvas from 'html2canvas';
 
 export default function PostsPage() {
+  const { fontFamily: accFontFamily, fontSize: accFontSize, lineHeight: accLineHeight } = useAccessibility();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { balance, consumeCredits, estimateCredits } = useCredits();
@@ -275,7 +277,19 @@ export default function PostsPage() {
               <textarea 
                 value={verse}
                 onChange={(e) => setVerse(e.target.value)}
-                className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none"
+                className={cn(
+                  "w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none",
+                  accFontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                  accFontFamily === 'serif' ? 'font-serif' : 
+                  accFontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                  accFontSize === 'xs' ? 'text-xs' :
+                  accFontSize === 'sm' ? 'text-sm' :
+                  accFontSize === 'base' ? 'text-base' :
+                  accFontSize === 'lg' ? 'text-lg' :
+                  accFontSize === 'xl' ? 'text-xl' :
+                  accFontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                )}
+                style={{ lineHeight: accLineHeight }}
               />
             </div>
 
@@ -336,8 +350,20 @@ export default function PostsPage() {
               <textarea 
                 value={imageDescription}
                 onChange={(e) => setImageDescription(e.target.value)}
-                placeholder="Ex: Uma bíblia aberta em uma mesa de madeira com luz suave do sol..."
-                className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-20 resize-none text-sm"
+                placeholder="⚓ Ex: Uma bíblia aberta em uma mesa de madeira com luz suave do sol..."
+                className={cn(
+                  "w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-20 resize-none",
+                  accFontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                  accFontFamily === 'serif' ? 'font-serif' : 
+                  accFontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                  accFontSize === 'xs' ? 'text-xs' :
+                  accFontSize === 'sm' ? 'text-sm' :
+                  accFontSize === 'base' ? 'text-base' :
+                  accFontSize === 'lg' ? 'text-lg' :
+                  accFontSize === 'xl' ? 'text-xl' :
+                  accFontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                )}
+                style={{ lineHeight: accLineHeight }}
               />
             </div>
 

@@ -11,6 +11,7 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
@@ -22,6 +23,7 @@ interface TheologySearchPageProps {
 }
 
 export default function TheologySearchPage({ initialQuery = '' }: TheologySearchPageProps) {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [query, setQuery] = useState(initialQuery);
   const [result, setResult] = useState('');
@@ -69,7 +71,7 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
           <Search className="absolute left-6 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-emerald-600 transition-colors" size={24} />
           <input 
             type="text"
-            placeholder="Ex: Soteriologia, Escatologia, Justificação..."
+            placeholder="⚓ Ex: Soteriologia, Escatologia, Justificação..."
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -80,9 +82,9 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
             <button 
               onClick={() => handleSearch()}
               disabled={isLoading || !query.trim()}
-              className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all disabled:opacity-50"
+              className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center gap-2"
             >
-              {isLoading ? <Loader2 className="animate-spin" size={20} /> : "BUSCAR"}
+              {isLoading ? <Loader2 className="animate-spin" size={20} /> : <><Search size={18} /> ⚓ BUSCAR</>}
             </button>
           </div>
         </div>

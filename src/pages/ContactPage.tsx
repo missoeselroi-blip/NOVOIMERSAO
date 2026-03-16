@@ -14,10 +14,13 @@ import {
   X
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { cn } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useToast } from '../components/Toast';
 
 export default function ContactPage() {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [formData, setFormData] = useState({
     name: '',
@@ -152,7 +155,7 @@ export default function ContactPage() {
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                      placeholder="Ex: João Silva"
+                      placeholder="⚓ Ex: João Silva"
                     />
                   </div>
                   <div className="space-y-2">
@@ -163,7 +166,7 @@ export default function ContactPage() {
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                       className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                      placeholder="Ex: joao@email.com"
+                      placeholder="⚓ Ex: joao@email.com"
                     />
                   </div>
                 </div>
@@ -193,8 +196,20 @@ export default function ContactPage() {
                     required
                     value={formData.message}
                     onChange={(e) => setFormData({...formData, message: e.target.value})}
-                    className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-40 resize-none"
-                    placeholder="Escreva sua mensagem aqui..."
+                    className={cn(
+                      "w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-40 resize-none",
+                      fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                      fontFamily === 'serif' ? 'font-serif' : 
+                      fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                      fontSize === 'xs' ? 'text-xs' :
+                      fontSize === 'sm' ? 'text-sm' :
+                      fontSize === 'base' ? 'text-base' :
+                      fontSize === 'lg' ? 'text-lg' :
+                      fontSize === 'xl' ? 'text-xl' :
+                      fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                    )}
+                    style={{ lineHeight }}
+                    placeholder="⚓ Escreva sua mensagem aqui..."
                   />
                 </div>
 

@@ -44,12 +44,14 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '../types';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import NewsPage from './NewsPage';
 import { useToast } from '../components/Toast';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -63,6 +65,7 @@ interface HomePageProps {
 }
 
 export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: HomePageProps) {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const { user } = useAuth();
   const [appSearchQuery, setAppSearchQuery] = useState('');
@@ -136,6 +139,8 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20 shadow-orange-100/50', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
     { id: 'contact', label: 'Contato', desc: 'Fale conosco.', icon: <Mail size={20} className="text-cyan-600" />, color: 'bg-cyan-50 dark:bg-cyan-900/20 shadow-cyan-100/50', image: 'https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'news', label: 'Notícias', desc: 'Sinais dos tempos.', icon: <Newspaper size={20} className="text-sky-600" />, color: 'bg-sky-50 dark:bg-sky-900/20 shadow-sky-100/50', onClick: () => setIsNewsModalOpen(true) },
+    { id: 'background', label: 'Fundo', desc: 'Personalize sua página.', icon: <ImageIcon size={20} className="text-stone-600" />, color: 'bg-stone-50 dark:bg-zinc-800 shadow-stone-100/50', onClick: () => setIsBgModalOpen(true) },
   ];
 
   const handleGenerateMessage = async () => {
@@ -258,7 +263,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
   const [isFavorited, setIsFavorited] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
-  const [currentBg, setCurrentBg] = useState("https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=1200&h=600");
+  const [currentBg, setCurrentBg] = useState("https://i.postimg.cc/1Rqjh4bB/Screenshot-2026-03-09-12-08-27-022-com-google-android-googlequicksearchbox-edit.jpg");
   const [isBgModalOpen, setIsBgModalOpen] = useState(false);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
   const [isSentimentModalOpen, setIsSentimentModalOpen] = useState(false);
@@ -270,9 +275,27 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [generatedMessage, setGeneratedMessage] = useState('');
   const [generatedMessageThought, setGeneratedMessageThought] = useState('');
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingAudioText, setPendingAudioText] = useState<string | null>(null);
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+  const [showQuickTips, setShowQuickTips] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const hasSeenTips = localStorage.getItem('has_seen_quick_tips');
+    if (!hasSeenTips) {
+      const timer = setTimeout(() => {
+        setShowQuickTips(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  const closeQuickTips = () => {
+    setShowQuickTips(false);
+    localStorage.setItem('has_seen_quick_tips', 'true');
+  };
 
   const handleSaveToNotebook = (title: string, content: string) => {
     setPendingNote({ title, content });
@@ -350,16 +373,27 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   };
 
   const handlePlayAudio = async (text: string) => {
+    if (!text) return;
+    setPendingAudioText(text);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmPlayAudio = async () => {
+    if (!pendingAudioText) return;
+    setIsAudioConfirmModalOpen(false);
     setIsAudioLoading(true);
     try {
-      const response = await geminiService.generateSpeech(text, 'Zephyr');
-      const audio = new Audio(`data:audio/mp3;base64,${response}`);
-      audio.play();
+      const audioUrl = await geminiService.generateSpeech(pendingAudioText, 'Zephyr');
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.play();
+      }
     } catch (error: any) {
       console.error(error);
       showToast(error.message || "Erro ao gerar áudio.", 'error');
     } finally {
       setIsAudioLoading(false);
+      setPendingAudioText(null);
     }
   };
 
@@ -415,32 +449,107 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   return (
     <div className="space-y-10 max-w-7xl mx-auto px-4">
       {/* Top Image Section */}
-      <div className="relative flex justify-center overflow-hidden rounded-[2rem] group shadow-2xl">
+      <div className="mb-12 relative flex justify-center overflow-hidden rounded-[2.5rem] group shadow-2xl">
         <img 
-          src="https://i.postimg.cc/htr28jj8/IMG_20260308_174330.png" 
-          alt="Logo Imersão" 
-          className="w-full h-auto object-cover rounded-[2rem] transition-transform duration-1000 group-hover:scale-105"
+          src={currentBg} 
+          alt="Banner Imersão" 
+          className="w-full h-auto max-h-[350px] object-cover rounded-[2.5rem] transition-transform duration-1000 group-hover:scale-105"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col items-center justify-center p-6 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="space-y-3"
+          >
+            <h1 className="text-4xl md:text-7xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
+              Início
+            </h1>
+            <div className="h-1.5 w-24 bg-emerald-500 mx-auto rounded-full shadow-lg shadow-emerald-500/50" />
+            <p className="text-white/90 text-xs md:text-base font-black tracking-[0.4em] uppercase drop-shadow-lg">
+              {getGreeting()}
+            </p>
+          </motion.div>
+        </div>
+        <button 
+          onClick={() => setIsBgModalOpen(true)}
+          className="absolute bottom-6 right-6 p-3 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100 z-10"
+          title="Alterar Fundo"
+        >
+          <ImageIcon size={20} />
+        </button>
       </div>
 
-      {/* Welcome Title Section */}
-      <div className="text-center space-y-4">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="space-y-2"
-        >
-          <h1 className="text-4xl md:text-6xl font-display font-black text-emerald-900 dark:text-emerald-400 tracking-tighter uppercase">
-            Início
-          </h1>
-          <p className="text-blue-600 dark:text-blue-400 text-sm md:text-lg font-bold tracking-[0.3em]">
-            {getGreeting()}
-          </p>
-          <div className="h-1 w-12 bg-blue-500/30 mx-auto rounded-full" />
-        </motion.div>
-      </div>
+      {/* Daily Verse Section */}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 shadow-xl p-8 md:p-12"
+      >
+        <div className="absolute top-0 right-0 p-8 opacity-5">
+          <Book size={120} className="text-emerald-600" />
+        </div>
+        
+        <div className="relative z-10 space-y-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest">
+              <Sparkles size={12} />
+              Pão Diário
+            </div>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => shareToSocial('whatsapp')}
+                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full text-stone-400 hover:text-emerald-600 transition-colors"
+                title="Compartilhar no WhatsApp"
+              >
+                <MessageCircle size={18} />
+              </button>
+              <button 
+                onClick={() => shareToSocial('facebook')}
+                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full text-stone-400 hover:text-blue-600 transition-colors"
+                title="Compartilhar no Facebook"
+              >
+                <Facebook size={18} />
+              </button>
+              <button 
+                onClick={() => shareToSocial('instagram')}
+                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full text-stone-400 hover:text-pink-600 transition-colors"
+                title="Compartilhar no Instagram"
+              >
+                <Instagram size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <p className="text-2xl md:text-3xl font-display font-medium text-stone-800 dark:text-white leading-tight italic">
+              "{dailyVerse.text}"
+            </p>
+            <p className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-xs">
+              — {dailyVerse.reference}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-3 pt-4">
+            <button 
+              onClick={() => handlePlayAudio(dailyVerse.text)}
+              disabled={isAudioLoading}
+              className="px-6 py-2.5 bg-stone-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {isAudioLoading ? <Loader2 className="animate-spin" size={14} /> : <Volume2 size={14} />}
+              Ouvir Versículo
+            </button>
+            <button 
+              onClick={() => handleSaveToNotebook(dailyVerse.reference, dailyVerse.text)}
+              className="px-6 py-2.5 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-105 transition-all"
+            >
+              <StickyNote size={14} />
+              Salvar no Caderno
+            </button>
+          </div>
+        </div>
+      </motion.div>
 
       {/* Sentiment Button - Modern Gradient */}
       <div className="grid grid-cols-1 gap-6">
@@ -475,13 +584,26 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400" size={20} />
             <input 
               type="text"
-              placeholder="Pesquisar no App, Meu Caderno e Fontes Bíblicas..."
+              placeholder="⚓ Pesquisar no App, Meu Caderno e Fontes Bíblicas..."
               value={appSearchQuery}
               onChange={(e) => handleAppSearch(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
               className="w-full pl-14 pr-24 py-5 bg-gradient-to-r from-white/90 to-emerald-50/90 dark:from-zinc-900/90 dark:to-emerald-900/10 backdrop-blur-xl border border-white/20 dark:border-zinc-800/50 rounded-[1.85rem] focus:outline-none shadow-xl text-sm transition-all"
             />
             <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
+              <button 
+                onClick={() => setDeepThinking(!deepThinking)}
+                className={cn(
+                  "p-2 rounded-xl transition-all flex items-center gap-2",
+                  deepThinking 
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+                    : "bg-stone-100 dark:bg-zinc-800 text-stone-400 hover:text-blue-600"
+                )}
+                title={deepThinking ? "Pensamento Profundo Ativado" : "Ativar Pensamento Profundo"}
+              >
+                <Brain size={18} />
+                {deepThinking && <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Deep Thinking</span>}
+              </button>
               <AudioSearchButton onResult={(text) => handleAppSearch(text)} />
               <button 
                 className="text-stone-300 hover:text-emerald-600 transition-colors"
@@ -674,26 +796,95 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
               { icon: <Globe size={24} />, href: "https://www.grupami.net", color: "text-emerald-600", label: "Site" },
               { icon: <Instagram size={24} />, href: "https://www.instagram.com/grupami.missoes?igsh=NHJpN3MybnhyYWVq", color: "text-pink-600", label: "Instagram" },
               { icon: <Youtube size={24} />, href: "https://www.youtube.com/channel/UCgtcECZWTx3pr4j0Pm0hlyQ", color: "text-red-600", label: "Youtube" },
-              { icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47-.13 3.1-.12 6.2-.13 9.3 0 1.29-.27 2.61-.95 3.71-.68 1.11-1.74 1.99-2.96 2.43-1.22.44-2.58.53-3.86.27-1.28-.27-2.48-.94-3.37-1.9-.89-.96-1.46-2.22-1.61-3.51-.15-1.29.11-2.63.75-3.77.64-1.14 1.69-2.06 2.93-2.55 1.24-.49 2.64-.58 3.94-.25.12.03.24.07.36.11v4.11c-.81-.24-1.7-.23-2.49.03-.79.26-1.48.81-1.9 1.52-.42.71-.56 1.57-.39 2.38.17.81.65 1.54 1.32 2.01.67.47 1.51.68 2.33.59.82-.09 1.59-.49 2.12-1.13.53-.64.8-1.47.76-2.31-.04-3.4-.02-6.81-.03-10.21-.01-4.53-.01-9.06-.01-13.59z"/></svg>, href: "https://www.tiktok.com/@grupamikids?is_from_webapp=1&sender_device=pc", color: "text-stone-900 dark:text-white", label: "Tiktok" }
+              { icon: <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.17-2.89-.6-4.13-1.47-.13 3.1-.12 6.2-.13 9.3 0 1.29-.27 2.61-.95 3.71-.68 1.11-1.74 1.99-2.96 2.43-1.22.44-2.58.53-3.86.27-1.28-.27-2.48-.94-3.37-1.9-.89-.96-1.46-2.22-1.61-3.51-.15-1.29.11-2.63.75-3.77.64-1.14 1.69-2.06 2.93-2.55 1.24-.49 2.64-.58 3.94-.25.12.03.24.07.36.11v4.11c-.81-.24-1.7-.23-2.49.03-.79.26-1.48.81-1.9 1.52-.42.71-.56 1.57-.39 2.38.17.81.65 1.54 1.32 2.01.67.47 1.51.68 2.33.59.82-.09 1.59-.49 2.12-1.13.53-.64.8-1.47.76-2.31-.04-3.4-.02-6.81-.03-10.21-.01-4.53-.01-9.06-.01-13.59z"/></svg>, href: "https://www.tiktok.com/@grupamikids?is_from_webapp=1&sender_device=pc", color: "text-stone-900 dark:text-white", label: "Tiktok" },
+              { icon: <Share2 size={24} />, onClick: () => {
+                const text = "Conheça o trabalho missionário do GRUPAMI! 🌍📖";
+                const url = "https://www.grupami.net";
+                window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+              }, color: "text-blue-600", label: "Compartilhar" }
             ].map((social, i) => (
-              <a 
-                key={i}
-                href={social.href} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="flex flex-col items-center gap-2 group"
-              >
-                <div className="p-5 bg-stone-50 dark:bg-zinc-800 rounded-3xl shadow-sm border border-stone-100 dark:border-zinc-800 group-hover:scale-110 group-hover:shadow-xl transition-all duration-300">
-                  <div className={social.color}>{social.icon}</div>
-                </div>
-                <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{social.label}</span>
-              </a>
+              social.href ? (
+                <a 
+                  key={i}
+                  href={social.href} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="flex flex-col items-center gap-2 group"
+                >
+                  <div className="p-5 bg-stone-50 dark:bg-zinc-800 rounded-3xl shadow-sm border border-stone-100 dark:border-zinc-800 group-hover:scale-110 group-hover:shadow-xl transition-all duration-300">
+                    <div className={social.color}>{social.icon}</div>
+                  </div>
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{social.label}</span>
+                </a>
+              ) : (
+                <button 
+                  key={i}
+                  onClick={social.onClick}
+                  className="flex flex-col items-center gap-2 group"
+                >
+                  <div className="p-5 bg-stone-50 dark:bg-zinc-800 rounded-3xl shadow-sm border border-stone-100 dark:border-zinc-800 group-hover:scale-110 group-hover:shadow-xl transition-all duration-300">
+                    <div className={social.color}>{social.icon}</div>
+                  </div>
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">{social.label}</span>
+                </button>
+              )
             ))}
           </div>
         </div>
       </section>
 
 
+
+      <AnimatePresence>
+        {showQuickTips && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border border-emerald-100 dark:border-emerald-900/30"
+            >
+              <div className="p-8 space-y-6">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-600/20">
+                    <Zap size={24} />
+                  </div>
+                  <h3 className="text-2xl font-bold font-display">Dicas Rápidas ⚓</h3>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="flex gap-4 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
+                    <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl h-fit">
+                      <Search size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">Busca Global ⚓</h4>
+                      <p className="text-xs text-stone-500 mt-1">Use a barra de busca no topo para encontrar qualquer coisa: ferramentas, suas anotações ou até pesquisas bíblicas profundas com IA.</p>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-4 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl h-fit">
+                      <BookOpen size={20} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">Imersão Bíblica</h4>
+                      <p className="text-xs text-stone-500 mt-1">Acesse estudos profundos, dicionários teológicos e ferramentas de exegese na aba Imersão.</p>
+                    </div>
+                  </div>
+                </div>
+
+                <button 
+                  onClick={closeQuickTips}
+                  className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                >
+                  Entendi, vamos lá!
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Sentiment Modal */}
       <AnimatePresence>
@@ -889,7 +1080,19 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                         value={messagePrompt}
                         onChange={(e) => setMessagePrompt(e.target.value)}
                         placeholder="Ex: Aniversário da Maria, 50 anos..."
-                        className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all min-h-[120px]"
+                        className={cn(
+                          "w-full p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-3xl focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all min-h-[120px]",
+                          fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                          fontFamily === 'serif' ? 'font-serif' : 
+                          fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                          fontSize === 'xs' ? 'text-xs' :
+                          fontSize === 'sm' ? 'text-sm' :
+                          fontSize === 'base' ? 'text-base' :
+                          fontSize === 'lg' ? 'text-lg' :
+                          fontSize === 'xl' ? 'text-xl' :
+                          fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                        )}
+                        style={{ lineHeight }}
                       />
                     </div>
 
@@ -900,7 +1103,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                         className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <Sparkles size={20} />
-                        Gerar Mensagem Profunda
+                        ⚓ Gerar Mensagem Profunda
                       </button>
                     )}
 
@@ -1137,7 +1340,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                           className="w-full mt-6 px-8 py-4 bg-stone-800 text-white font-bold rounded-2xl hover:bg-stone-900 shadow-lg shadow-stone-800/20 transition-all flex items-center justify-center gap-2"
                         >
                           <Sparkles size={20} />
-                          Gerar Devocional
+                          ⚓ Gerar Devocional
                         </button>
                       </div>
                     )}
@@ -1203,6 +1406,13 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         isOpen={isNotebookModalOpen}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
+      />
+
+      <AudioConfirmationModal
+        isOpen={isAudioConfirmModalOpen}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmPlayAudio}
+        isLoading={isAudioLoading}
       />
     </div>
   );

@@ -15,10 +15,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import { geminiService } from '../services/geminiService';
+import { cn } from '../types';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 
 export default function RedacaoPage() {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [text, setText] = useState('');
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -209,8 +212,20 @@ export default function RedacaoPage() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onPaste={handlePaste}
-            placeholder="Escreva sua redação aqui... (Mínimo 200 palavras para nota máxima)"
-            className="w-full min-h-[400px] p-8 bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700 rounded-3xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all text-lg leading-relaxed resize-none"
+            placeholder="⚓ Escreva sua redação aqui... (Mínimo 200 palavras para nota máxima)"
+            className={cn(
+              "w-full min-h-[400px] p-8 bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700 rounded-3xl outline-none focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 transition-all resize-none",
+              fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+              fontFamily === 'serif' ? 'font-serif' : 
+              fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+              fontSize === 'xs' ? 'text-xs' :
+              fontSize === 'sm' ? 'text-sm' :
+              fontSize === 'base' ? 'text-base' :
+              fontSize === 'lg' ? 'text-lg' :
+              fontSize === 'xl' ? 'text-xl' :
+              fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+            )}
+            style={{ lineHeight }}
           />
           <div className="absolute bottom-6 right-8 flex items-center gap-2 text-stone-400 text-xs font-mono">
             <FileText size={14} />

@@ -19,6 +19,7 @@ import {
   Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
@@ -45,6 +46,7 @@ import { doc, addDoc, updateDoc, deleteDoc, collection } from 'firebase/firestor
 
 export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const { user, notes: firestoreNotes, isInitialLoading } = useAuth();
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [currentNote, setCurrentNote] = useState<{ title: string, content: string, category: 'Anotações' | 'Pregações' | 'Estudos' }>({ title: '', content: '', category: 'Anotações' });
@@ -341,7 +343,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
         <input 
           type="text"
-          placeholder="Pesquisar em suas páginas..."
+          placeholder="⚓ Pesquisar em suas páginas..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-12 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"
@@ -372,7 +374,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   type="text"
-                  placeholder="Título da página (ex: Estudo sobre João 3:16)"
+                  placeholder="⚓ Título da página (ex: Estudo sobre João 3:16)"
                   value={currentNote.title}
                   onChange={(e) => setCurrentNote({ ...currentNote, title: e.target.value })}
                   className="p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold text-lg"
@@ -388,10 +390,24 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                 </select>
               </div>
               <textarea
-                placeholder="Escreva aqui suas reflexões, estudos e o que Deus falou ao seu coração..."
+                placeholder="⚓ Escreva aqui suas reflexões, estudos e o que Deus falou ao seu coração..."
                 value={currentNote.content}
                 onChange={(e) => setCurrentNote({ ...currentNote, content: e.target.value })}
-                className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none h-96 resize-none leading-relaxed"
+                className={cn(
+                  "w-full p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none h-96 resize-none leading-relaxed",
+                  fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                  fontFamily === 'serif' ? 'font-serif' : 
+                  fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                  fontSize === 'xs' ? 'text-xs' :
+                  fontSize === 'sm' ? 'text-sm' :
+                  fontSize === 'base' ? 'text-base' :
+                  fontSize === 'lg' ? 'text-lg' :
+                  fontSize === 'xl' ? 'text-xl' :
+                  fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                )}
+                style={{ 
+                  lineHeight: lineHeight
+                }}
               />
               <div className="flex gap-4">
                 <button

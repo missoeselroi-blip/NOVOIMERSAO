@@ -20,8 +20,10 @@ import { geminiService } from '../services/geminiService';
 import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { cn } from '../types';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 
 export default function NewsPage() {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [news, setNews] = useState('');
   const [isLoadingNews, setIsLoadingNews] = useState(false);
@@ -187,8 +189,20 @@ export default function NewsPage() {
                   <textarea 
                     value={factCheckInput}
                     onChange={(e) => setFactCheckInput(e.target.value)}
-                    placeholder="Cole aqui o texto ou notícia duvidosa..."
-                    className="w-full h-32 p-4 pr-12 bg-zinc-800 border border-zinc-700 rounded-2xl outline-none focus:border-blue-500 text-sm resize-none"
+                    placeholder="⚓ Cole aqui o texto ou notícia duvidosa..."
+                    className={cn(
+                      "w-full h-32 p-4 pr-12 bg-zinc-800 border border-zinc-700 rounded-2xl outline-none focus:border-blue-500 resize-none",
+                      fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                      fontFamily === 'serif' ? 'font-serif' : 
+                      fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                      fontSize === 'xs' ? 'text-xs' :
+                      fontSize === 'sm' ? 'text-sm' :
+                      fontSize === 'base' ? 'text-base' :
+                      fontSize === 'lg' ? 'text-lg' :
+                      fontSize === 'xl' ? 'text-xl' :
+                      fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                    )}
+                    style={{ lineHeight }}
                   />
                   <div className="absolute right-3 top-3">
                     <AudioSearchButton onResult={(text) => setFactCheckInput(text)} size={18} />
@@ -251,7 +265,7 @@ export default function NewsPage() {
                       </div>
                     )}
                   </div>
-                  <div className="text-xs text-zinc-300 leading-relaxed prose prose-invert prose-xs">
+                  <div className="text-zinc-300 prose prose-invert max-w-none">
                     <MarkdownRenderer content={factCheckResult} />
                   </div>
                 </motion.div>

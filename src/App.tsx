@@ -69,6 +69,8 @@ import { CreditProvider, useCredits } from './contexts/CreditContext';
 import { OfflineProvider, useOffline } from './contexts/OfflineContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AccessibilityProvider } from './contexts/AccessibilityContext';
+import { AccessibilityControls } from './components/AccessibilityControls';
 import AuthModal from './components/AuthModal';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 
@@ -586,6 +588,8 @@ function AppContent() {
         onClose={() => setIsAuthModalOpen(false)} 
       />
 
+      <AccessibilityControls />
+
       <footer className={cn(
         "py-8 border-t text-center text-sm",
         isDarkMode ? "border-zinc-800 text-zinc-500" : "border-stone-200 text-stone-500"
@@ -614,13 +618,15 @@ export default function App() {
   return (
     <AuthProvider>
       <ThemeProvider>
-        <OfflineProvider>
-          <ToastProvider>
-            <CreditProvider>
-              <AppContent />
-            </CreditProvider>
-          </ToastProvider>
-        </OfflineProvider>
+        <AccessibilityProvider>
+          <OfflineProvider>
+            <ToastProvider>
+              <CreditProvider>
+                <AppContent />
+              </CreditProvider>
+            </ToastProvider>
+          </OfflineProvider>
+        </AccessibilityProvider>
       </ThemeProvider>
     </AuthProvider>
   );

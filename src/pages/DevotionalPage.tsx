@@ -70,6 +70,8 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 };
 import { cn } from '../types';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { DEVOTIONAL_MATRIX } from '../constants/devotionals';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import MissionaryPage from './MissionaryPage';
@@ -147,12 +149,14 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { user } = useAuth();
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const [showMissionary, setShowMissionary] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<DevotionalTheme | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [isLoading, setIsLoading] = useState(false);
   const [devotionalResult, setDevotionalResult] = useState<string | null>(null);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [favorites, setFavorites] = useState<any[]>(() => {
     const saved = localStorage.getItem('devotional_favorites');
     return saved ? JSON.parse(saved) : [];
@@ -270,9 +274,14 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
   const handlePlayAudio = async () => {
     if (!devotionalResult) return;
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmPlayAudio = async () => {
+    setIsAudioConfirmModalOpen(false);
     setIsAudioLoading(true);
     try {
-      const audioUrl = await geminiService.generateSpeech(devotionalResult);
+      const audioUrl = await geminiService.generateSpeech(devotionalResult!);
       if (audioUrl) {
         const audio = new Audio(audioUrl);
         audio.play();
@@ -584,10 +593,8 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                   </div>
                 </div>
                 
-                <div className="flex-1 p-10 overflow-y-auto custom-scrollbar prose dark:prose-invert max-w-none">
-                  <div className="font-serif text-lg leading-relaxed">
-                    <MarkdownRenderer content={devotionalResult} />
-                  </div>
+                <div className="flex-1 p-10 overflow-y-auto custom-scrollbar">
+                  <MarkdownRenderer content={devotionalResult} />
                 </div>
 
                 <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex flex-wrap gap-3">
@@ -803,6 +810,13 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         isLoading={isSavingNote}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
+      />
+
+      <AudioConfirmationModal
+        isOpen={isAudioConfirmModalOpen}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmPlayAudio}
+        isLoading={isAudioLoading}
       />
     </div>
   );

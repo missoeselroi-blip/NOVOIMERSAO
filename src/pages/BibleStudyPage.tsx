@@ -46,6 +46,7 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { GOSPEL_AUTHORS } from '../constants/authors';
@@ -55,6 +56,7 @@ import { useToast } from '../components/Toast';
 import PostsPage from './PostsPage';
 import { useOffline } from '../contexts/OfflineContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { WifiOff } from 'lucide-react';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { useAuth } from '../contexts/AuthContext';
@@ -112,6 +114,7 @@ interface StudyHistoryItem {
 
 export default function BibleStudyPage({ deepThinking, setDeepThinking, onNavigate }: BibleStudyPageProps) {
   const { user, notes: firestoreNotes } = useAuth();
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const { isOffline, downloadedChapters, downloadedMaterials, downloadChapter, downloadMaterial } = useOffline();
   const { balance, consumeCredits, estimateCredits } = useCredits();
@@ -121,6 +124,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [resultThought, setResultThought] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingSpeechText, setPendingSpeechText] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [loadingSource, setLoadingSource] = useState<string | null>(null);
   const [selectedBible, setSelectedBible] = useState('');
@@ -890,6 +895,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const handleListen = async (text: string) => {
     if (!text) return;
+    setPendingSpeechText(text);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmGenerateSpeech = async () => {
+    if (!pendingSpeechText) return;
     
     // Stop previous audio if playing
     if (audioRef.current) {
@@ -897,10 +908,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       audioRef.current = null;
     }
 
+    setIsAudioConfirmModalOpen(false);
     setIsGeneratingSpeech(true);
     showToast("Preparando a voz da IA... 🔊📖", 'info');
     try {
-      const audioUrl = await geminiService.generateSpeech(text);
+      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
       if (audioUrl) {
         const audio = new Audio(audioUrl);
         audioRef.current = audio;
@@ -918,6 +930,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       showToast("Erro ao gerar áudio.", 'error');
     } finally {
       setIsGeneratingSpeech(false);
+      setPendingSpeechText(null);
     }
   };
 
@@ -2024,7 +2037,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
                     <input
                       type="text"
-                      placeholder="Busca Rápida: Digite o versículo (ex: João 3:16 ou Salmos 23)"
+                      placeholder="⚓ Busca Rápida: Digite o versículo (ex: João 3:16 ou Salmos 23)"
                       value={verseSearch}
                       onChange={(e) => setVerseSearch(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleVerseSearch()}
@@ -2111,7 +2124,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
                     <input
                       type="text"
-                      placeholder="Escreva um tema ou passagem neste campo e clique nos botões. O texto vai aparecer abaixo na página"
+                      placeholder="⚓ Escreva um tema ou passagem neste campo e clique nos botões. O texto vai aparecer abaixo na página"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-sm"
@@ -2146,7 +2159,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ) : (
                         <>
                           <Search size={18} />
-                          Pesquisar
+                          ⚓ Pesquisar
                         </>
                       )}
                     </button>
@@ -2198,7 +2211,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"
                       >
                         <Globe size={18} />
-                        Wiki
+                        ⚓ Wiki
                       </button>
                       <button
                         onClick={() => handleListen(result)}
@@ -2270,7 +2283,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
                     <input 
                       type="text"
-                      placeholder="Sobre o que você quer saber a visão do autor?"
+                      placeholder="⚓ Sobre o que você quer saber a visão do autor?"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
@@ -2282,7 +2295,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                    Consultar Visão
+                    ⚓ Consultar Visão
                   </button>
                 </div>
 
@@ -2319,7 +2332,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </button>
                       <button onClick={() => handleCopy()} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={handleDownloadResult} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
-                      <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
+                      <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={handleShareResult} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                       <button onClick={() => handleSaveToNotebook(selectedAuthor || 'Visão do Autor', result)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                     </div>
@@ -2335,7 +2348,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
                     <input
                       type="text"
-                      placeholder="Escreva um tema ou assunto para pesquisar em outras religiões..."
+                      placeholder="⚓ Escreva um tema ou assunto para pesquisar em outras religiões..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-sm"
@@ -2365,7 +2378,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ) : (
                         <>
                           <Search size={18} />
-                          Pesquisar
+                          ⚓ Pesquisar
                         </>
                       )}
                     </button>
@@ -2414,7 +2427,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       )}
                       <button onClick={() => handleCopy()} className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"><Copy size={14} /> Copiar</button>
                       <button onClick={handleDownloadResult} className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"><Download size={14} /> Baixar</button>
-                      <button onClick={() => handleWikiSearch(searchQuery)} className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 flex items-center gap-2 border border-blue-100 dark:border-blue-800/30 transition-all"><Globe size={14} /> Wiki</button>
+                      <button onClick={() => handleWikiSearch(searchQuery)} className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-bold rounded-xl hover:bg-blue-100 flex items-center gap-2 border border-blue-100 dark:border-blue-800/30 transition-all"><Globe size={14} /> ⚓ Wiki</button>
                       <button onClick={handleShareResult} className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"><Share2 size={14} /> Compartilhar</button>
                       <button onClick={handleSaveDraft} className="px-4 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 text-xs font-bold rounded-xl hover:bg-amber-100 flex items-center gap-2 border border-amber-100 dark:border-amber-800/30 transition-all"><Pencil size={14} /> Salvar Rascunho</button>
                       <button onClick={() => handleSaveToNotebook(selectedBible || 'Outras Religiões', result)} className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 flex items-center gap-2 shadow-sm transition-all"><Save size={14} /> Salvar no Caderno</button>
@@ -2431,7 +2444,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <div className="relative flex-[2]">
                       <input
                         type="text"
-                        placeholder="Digite o tema (ex: A Graça de Deus)"
+                        placeholder="⚓ Digite o tema (ex: A Graça de Deus)"
                         value={topic}
                         onChange={(e) => setTopic(e.target.value)}
                         className="w-full pl-6 pr-6 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
@@ -2473,7 +2486,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
                       >
                         {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                        Gerar
+                        ⚓ Gerar
                       </button>
                     </div>
                   </div>
@@ -2525,7 +2538,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </button>
                       <button onClick={() => { navigator.clipboard.writeText(showLeaderGuide ? leaderGuide : lessonResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
-                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
+                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                       <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
                       <button onClick={() => handleSaveToNotebook(showLeaderGuide ? 'Guia do Líder' : 'Lição Bíblica', showLeaderGuide ? leaderGuide : lessonResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -2566,7 +2579,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </button>
                       <button onClick={() => { navigator.clipboard.writeText(studyResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
-                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
+                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                       <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
                       <button onClick={() => handleSaveToNotebook('Imersão Popular', studyResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -2600,7 +2613,25 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <p className="text-stone-400 text-sm italic">Gerado pelo App do Pregador</p>
                         </div>
                         {isEditingOutline ? (
-                          <textarea value={editedOutline} onChange={(e) => setEditedOutline(e.target.value)} className="w-full h-[600px] p-8 bg-stone-50 dark:bg-zinc-800 border border-emerald-500 rounded-3xl outline-none font-mono text-sm leading-relaxed" />
+                          <textarea 
+                            value={editedOutline} 
+                            onChange={(e) => setEditedOutline(e.target.value)} 
+                            className={cn(
+                              "w-full h-[600px] p-8 bg-stone-50 dark:bg-zinc-800 border border-emerald-500 rounded-3xl outline-none leading-relaxed",
+                              fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                              fontFamily === 'serif' ? 'font-serif' : 
+                              fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                              fontSize === 'xs' ? 'text-xs' :
+                              fontSize === 'sm' ? 'text-sm' :
+                              fontSize === 'base' ? 'text-base' :
+                              fontSize === 'lg' ? 'text-lg' :
+                              fontSize === 'xl' ? 'text-xl' :
+                              fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                            )}
+                            style={{ 
+                              lineHeight: lineHeight
+                            }}
+                          />
                         ) : (
                           <MarkdownRenderer content={outline} onSearch={handleWikiSearch} />
                         )}
@@ -2626,7 +2657,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             {isGeneratingPDF ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
                             Baixar PDF
                           </button>
-                          <button onClick={() => handleWikiSearch(topic)} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2"><Globe size={18} /> Pesquisa Wiki</button>
+                          <button onClick={() => handleWikiSearch(topic)} className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Pesquisa Wiki</button>
                         <div className="flex gap-3">
                           <button
                             onClick={() => handleListen(outline)}
@@ -2708,7 +2739,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </button>
                       <button onClick={() => { navigator.clipboard.writeText(devotionalResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
-                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
+                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                       <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
                       <button onClick={() => handleSaveToNotebook('Devocional Diário', devotionalResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -2745,7 +2776,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </button>
                       <button onClick={() => { navigator.clipboard.writeText(messageResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
-                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
+                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                       <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
                       <button onClick={() => handleSaveToNotebook('Mensagem', messageResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -2801,7 +2832,21 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <textarea 
                           value={editedOutline} 
                           onChange={(e) => setEditedOutline(e.target.value)} 
-                          className="w-full h-[600px] p-8 bg-stone-50 dark:bg-zinc-800 border border-emerald-500 rounded-3xl outline-none font-mono text-sm leading-relaxed" 
+                          className={cn(
+                            "w-full h-[600px] p-8 bg-stone-50 dark:bg-zinc-800 border border-emerald-500 rounded-3xl outline-none leading-relaxed",
+                            fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                            fontFamily === 'serif' ? 'font-serif' : 
+                            fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                            fontSize === 'xs' ? 'text-xs' :
+                            fontSize === 'sm' ? 'text-sm' :
+                            fontSize === 'base' ? 'text-base' :
+                            fontSize === 'lg' ? 'text-lg' :
+                            fontSize === 'xl' ? 'text-xl' :
+                            fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                          )}
+                          style={{ 
+                            lineHeight: lineHeight
+                          }}
                         />
                       ) : (
                         <MarkdownRenderer content={bookletResult} onSearch={handleWikiSearch} />
@@ -2861,16 +2906,30 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <div className="space-y-4">
                       <input
                         type="text"
-                        placeholder="Título da nota"
+                        placeholder="⚓ Título da nota"
                         value={currentNote.title}
                         onChange={(e) => setCurrentNote({ ...currentNote, title: e.target.value })}
                         className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none"
                       />
                       <textarea
-                        placeholder="Conteúdo da página..."
+                        placeholder="⚓ Conteúdo da página..."
                         value={currentNote.content}
                         onChange={(e) => setCurrentNote({ ...currentNote, content: e.target.value })}
-                        className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-64 resize-none"
+                        className={cn(
+                          "w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none h-64 resize-none",
+                          fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                          fontFamily === 'serif' ? 'font-serif' : 
+                          fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                          fontSize === 'xs' ? 'text-xs' :
+                          fontSize === 'sm' ? 'text-sm' :
+                          fontSize === 'base' ? 'text-base' :
+                          fontSize === 'lg' ? 'text-lg' :
+                          fontSize === 'xl' ? 'text-xl' :
+                          fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                        )}
+                        style={{ 
+                          lineHeight: lineHeight
+                        }}
                       />
                       <button
                         onClick={saveNote}
@@ -2888,7 +2947,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Search size={20} className="text-stone-400" />
                     <input 
                       type="text"
-                      placeholder="Pesquisar em suas páginas..."
+                      placeholder="⚓ Pesquisar em suas páginas..."
                       value={notebookSearchQuery}
                       onChange={(e) => setNotebookSearchQuery(e.target.value)}
                       className="flex-1 bg-transparent outline-none text-sm"
@@ -2972,7 +3031,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
                     <input
                       type="text"
-                      placeholder={activeTab === 'compare' ? "Digite o versículo (ex: João 3:16)" : "O que você deseja pesquisar?"}
+                      placeholder={activeTab === 'compare' ? "⚓ Digite o versículo (ex: João 3:16)" : "⚓ O que você deseja pesquisar?"}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
@@ -3012,7 +3071,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                    Pesquisar
+                    ⚓ Pesquisar
                   </button>
                 </div>
 
@@ -3215,7 +3274,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
                     <input 
                       type="text"
-                      placeholder="Pesquisar em meus estudos..."
+                      placeholder="⚓ Pesquisar em meus estudos..."
                       value={notebookSearchQuery}
                       onChange={(e) => setNotebookSearchQuery(e.target.value)}
                       className="w-full pl-12 pr-4 py-3 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm"
@@ -3311,7 +3370,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               <button 
                                 onClick={() => handleWikiSearch(note.title)}
                                 className="p-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                title="Wiki"
+                                title="⚓ Wiki"
                               >
                                 <Globe size={18} />
                               </button>
@@ -3366,16 +3425,30 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   <div className="space-y-4">
                     <input
                       type="text"
-                      placeholder="Título do seu estudo"
+                      placeholder="⚓ Título do seu estudo"
                       value={currentNote.title}
                       onChange={(e) => setCurrentNote({ ...currentNote, title: e.target.value })}
                       className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
                     />
                     <textarea
-                      placeholder="Escreva aqui suas reflexões, esboços e notas..."
+                      placeholder="⚓ Escreva aqui suas reflexões, esboços e notas..."
                       value={currentNote.content}
                       onChange={(e) => setCurrentNote({ ...currentNote, content: e.target.value })}
-                      className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none h-96 resize-none font-serif text-lg leading-relaxed"
+                      className={cn(
+                        "w-full p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none h-96 resize-none",
+                        fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                        fontFamily === 'serif' ? 'font-serif' : 
+                        fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                        fontSize === 'xs' ? 'text-xs' :
+                        fontSize === 'sm' ? 'text-sm' :
+                        fontSize === 'base' ? 'text-base' :
+                        fontSize === 'lg' ? 'text-lg' :
+                        fontSize === 'xl' ? 'text-xl' :
+                        fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                      )}
+                      style={{ 
+                        lineHeight: lineHeight
+                      }}
                     />
                     <div className="flex gap-4">
                       {editingNoteId && (
@@ -3409,7 +3482,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
                     <input
                       type="text"
-                      placeholder="Escreva a palavra, tema ou frase para saber o significado..."
+                      placeholder="⚓ Escreva a palavra, tema ou frase para saber o significado..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleMeaningSearch(false)}
@@ -3443,7 +3516,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                      Pesquisar
+                      ⚓ Pesquisar
                     </button>
                   </div>
                 </div>
@@ -3476,7 +3549,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <div className="relative">
                           <input
                             type="text"
-                            placeholder="Faça uma pergunta baseada na resposta acima..."
+                            placeholder="⚓ Faça uma pergunta baseada na resposta acima..."
                             value={followUpQuery}
                             onChange={(e) => setFollowUpQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleMeaningSearch(true)}
@@ -3506,7 +3579,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         Ouvir
                       </button>
                       <button onClick={() => { navigator.clipboard.writeText(meaningResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
-                      <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> Wiki</button>
+                      <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => handleSaveToNotebook('Significado', meaningResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                     </div>
                   </div>
@@ -3530,7 +3603,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <Globe className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
                     <input
                       type="text"
-                      placeholder="Explore o conhecimento infinito... Digite um tema."
+                      placeholder="⚓ Explore o conhecimento infinito... Digite um tema."
                       value={wikiQuery}
                       onChange={(e) => setWikiQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleWikiSearch()}
@@ -3546,7 +3619,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     className="px-8 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                    Explorar Wiki
+                    ⚓ Explorar Wiki
                   </button>
                 </div>
 
@@ -3613,7 +3686,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-[10px] font-bold rounded-lg hover:bg-blue-100 transition-colors flex items-center gap-1"
                       >
                         <MapIcon size={12} />
-                        Mapas
+                        ⚓ Mapas
                       </button>
                     </div>
                   </div>
@@ -3838,6 +3911,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         isLoading={isSavingToNotebook}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
+      />
+
+      <AudioConfirmationModal
+        isOpen={isAudioConfirmModalOpen}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmGenerateSpeech}
+        isLoading={isGeneratingSpeech}
       />
     </div>
   );

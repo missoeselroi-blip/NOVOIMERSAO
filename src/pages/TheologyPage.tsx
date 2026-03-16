@@ -40,6 +40,7 @@ import { useToast } from '../components/Toast';
 import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { cn } from '../types';
+import { useAccessibility } from '../contexts/AccessibilityContext';
 import TheologySearchPage from './TheologySearchPage';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -101,6 +102,7 @@ interface TheologyPageProps {
 }
 
 export default function TheologyPage({ onNavigate }: TheologyPageProps) {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { user, isInitialLoading } = useAuth();
   const { showToast } = useToast();
   
@@ -742,7 +744,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-200 group-focus-within:text-white transition-colors" size={18} />
                 <input 
                   type="text"
-                  placeholder="Busca Teológica..."
+                  placeholder="⚓ Busca Teológica..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && searchQuery.trim() && setShowSearch(true)}
@@ -1208,8 +1210,20 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         <textarea
                           value={summaryText}
                           onChange={(e) => setSummaryText(e.target.value)}
-                          placeholder="Digite o resumo do que você aprendeu..."
-                          className="w-full h-64 p-6 bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700 rounded-3xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none transition-all"
+                          placeholder="⚓ Digite o resumo do que você aprendeu..."
+                          className={cn(
+                            "w-full h-64 p-6 bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700 rounded-3xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none resize-none transition-all",
+                            fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                            fontFamily === 'serif' ? 'font-serif' : 
+                            fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                            fontSize === 'xs' ? 'text-xs' :
+                            fontSize === 'sm' ? 'text-sm' :
+                            fontSize === 'base' ? 'text-base' :
+                            fontSize === 'lg' ? 'text-lg' :
+                            fontSize === 'xl' ? 'text-xl' :
+                            fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                          )}
+                          style={{ lineHeight }}
                         />
                         <button
                           onClick={evaluateSummary}

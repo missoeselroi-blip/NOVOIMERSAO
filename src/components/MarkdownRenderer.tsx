@@ -2,6 +2,8 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { Sparkles } from 'lucide-react';
+import { useAccessibility } from '../contexts/AccessibilityContext';
+import { cn } from '../types';
 
 interface MarkdownRendererProps {
   content: string;
@@ -10,6 +12,25 @@ interface MarkdownRendererProps {
 }
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onSearch, highlight }) => {
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
+
+  const fontClasses = {
+    sans: 'font-sans',
+    serif: 'font-serif',
+    mono: 'font-mono',
+    dyslexic: 'font-dyslexic',
+  };
+
+  const sizeClasses = {
+    xs: 'text-xs',
+    sm: 'text-sm',
+    base: 'text-base',
+    lg: 'text-lg',
+    xl: 'text-xl',
+    '2xl': 'text-2xl',
+    '3xl': 'text-3xl',
+  };
+
   const uriTransformer = (uri: string) => {
     if (uri.startsWith('search:') || uri.startsWith('theology-search:')) return uri;
     const protocols = ['http', 'https', 'mailto', 'tel'];
@@ -37,10 +58,18 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onS
   };
 
   return (
-    <ReactMarkdown
-      urlTransform={uriTransformer}
-      rehypePlugins={[rehypeRaw]}
-      components={{
+    <div 
+      className={cn(
+        "markdown-content prose dark:prose-invert max-w-none transition-all duration-300",
+        fontClasses[fontFamily],
+        sizeClasses[fontSize]
+      )}
+      style={{ lineHeight }}
+    >
+      <ReactMarkdown
+        urlTransform={uriTransformer}
+        rehypePlugins={[rehypeRaw]}
+        components={{
         a: ({ node, ...props }) => {
           const isSearch = props.href?.startsWith('search:');
           const isTheologySearch = props.href?.startsWith('theology-search:');
@@ -51,9 +80,9 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onS
             return (
               <button
                 onClick={() => onSearch(fullQuery)}
-                className="text-emerald-600 font-bold hover:underline cursor-pointer inline"
+                className="text-emerald-600 font-bold hover:underline cursor-pointer inline-flex items-center gap-1"
               >
-                {props.children}
+                ⚓ {props.children}
               </button>
             );
           }
@@ -92,6 +121,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onS
     >
       {content}
     </ReactMarkdown>
+    </div>
   );
 };
 
