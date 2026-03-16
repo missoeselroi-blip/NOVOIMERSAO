@@ -171,9 +171,15 @@ export default function RedacaoPage() {
     showToast("Baixando redação... 📄");
   };
 
-  const handleShare = () => {
+  const handleShare = async () => {
     if (navigator.share) {
-      navigator.share({ title: 'Minha Redação', text });
+      try {
+        await navigator.share({ title: 'Minha Redação', text });
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+        }
+      }
     } else {
       navigator.clipboard.writeText(text);
       showToast("Copiado para a área de transferência! 📋");

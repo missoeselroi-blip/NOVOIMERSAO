@@ -1,4 +1,4 @@
-import { GoogleGenAI, Modality, ThinkingLevel } from "@google/genai";
+import { GoogleGenAI, Modality, ThinkingLevel, Type } from "@google/genai";
 
 const getAI = () => {
   // Priority order for API Key:
@@ -148,7 +148,7 @@ export const geminiService = {
     });
   },
 
-  async generateJSON<T>(prompt: string, systemInstruction?: string): Promise<T> {
+  async generateJSON<T>(prompt: string, systemInstruction?: string, responseSchema?: any): Promise<T> {
     return withRetry(async () => {
       try {
         const ai = getAI();
@@ -158,12 +158,34 @@ export const geminiService = {
           config: {
             systemInstruction,
             responseMimeType: "application/json",
+            responseSchema,
           },
         });
         const text = response.text || "{}";
         let jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
+        
+        // Robust cleanup for common LLM JSON errors
+        // 1. Remove trailing commas before closing braces/brackets
+        jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+        
         if (!jsonStr) jsonStr = "{}";
-        return JSON.parse(jsonStr) as T;
+        
+        try {
+          return JSON.parse(jsonStr) as T;
+        } catch (parseError: any) {
+          console.error("JSON Parse Error. Raw text:", text);
+          // Attempt to fix common issues like unescaped newlines or quotes
+          // This is a last resort
+          try {
+             // Try to escape unescaped newlines in strings
+             const fixedJson = jsonStr.replace(/(?<=: \")([\s\S]*?)(?=\",?)/g, (match) => {
+                return match.replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+             });
+             return JSON.parse(fixedJson) as T;
+          } catch (e) {
+             throw parseError;
+          }
+        }
       } catch (error: any) {
         return handleApiError(error);
       }
@@ -243,7 +265,7 @@ export const geminiService = {
           .replace(/>\s/g, '') 
           .replace(/-\s/g, '') 
           .replace(/\n+/g, ' ') 
-          .slice(0, 2000)
+          .slice(0, 10000)
           .trim();
 
         if (!cleanText) return null;

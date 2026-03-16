@@ -34,7 +34,7 @@ import { cn } from '../types';
 const THEOLOGY_SUBJECTS = [
   'Bibliologia', 'Teontologia', 'Cristologia', 'Pneumatologia', 
   'Antropologia Bíblica', 'Hamartiologia', 'Soteriologia', 
-  'Eclesiologia', 'Escatologia', 'Angelologia', 
+  'Eclesiologia', 'Escatologia', 'Angeologia', 
   'Hermenêutica Bíblica', 'Homilética'
 ];
 

@@ -29,11 +29,13 @@ import {
   Zap as ChallengeIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Type } from "@google/genai";
 import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { useOffline } from '../contexts/OfflineContext';
+import { useMusicBox } from '../contexts/MusicBoxContext';
 import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -149,6 +151,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { user } = useAuth();
+  const { saveTrack } = useMusicBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const [showMissionary, setShowMissionary] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<DevotionalTheme | null>(null);
@@ -170,12 +173,31 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
 
+  // Narration state
+  const [selectedVoice, setSelectedVoice] = useState<'Zephyr' | 'Puck' | 'Charon' | 'Kore' | 'Fenrir'>('Zephyr');
+  const [selectedEmotion, setSelectedEmotion] = useState('Inspiradora');
+  const [narrationAudio, setNarrationAudio] = useState<string | null>(null);
+  const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
   useEffect(() => {
     const fetchVerse = async () => {
       if (isOffline) return;
       try {
         const data = await geminiService.generateJSON<{ text: string, ref: string }>(
-          "Gere um versículo bíblico inspirador para hoje em português, com a referência. Retorne apenas o versículo e a referência em formato JSON: { \"text\": \"...\", \"ref\": \"...\" }"
+          "Gere um versículo bíblico inspirador para hoje em português, com a referência. Retorne apenas o versículo e a referência em formato JSON: { \"text\": \"...\", \"ref\": \"...\" }",
+          undefined,
+          {
+            type: Type.OBJECT,
+            properties: {
+              text: { type: Type.STRING },
+              ref: { type: Type.STRING }
+            },
+            required: ["text", "ref"]
+          }
         );
         
         const fallbackImg = "https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=1200";
@@ -279,18 +301,30 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
   const confirmPlayAudio = async () => {
     setIsAudioConfirmModalOpen(false);
-    setIsAudioLoading(true);
+    setIsGeneratingNarration(true);
+    setNarrationAudio(null);
+    setAudioProgress(0);
+    
     try {
-      const audioUrl = await geminiService.generateSpeech(devotionalResult!);
+      const prompt = `Crie uma narração emotiva e completa para o seguinte devocional: "${devotionalResult}".
+      A narração deve ter a emoção "${selectedEmotion}".
+      Garanta que a narração cubra TODO o texto fornecido, sem cortes.
+      Retorne apenas o texto da narração formatado para ser lido por um sistema de voz.`;
+      
+      const narrationText = await geminiService.generateText(prompt, "Você é um mentor espiritual e contador de histórias profissional.");
+      
+      const audioUrl = await geminiService.generateSpeech(narrationText, selectedVoice);
       if (audioUrl) {
-        const audio = new Audio(audioUrl);
-        audio.play();
+        setNarrationAudio(audioUrl);
+        showToast("Narração gerada com sucesso! 🎙️✨");
+      } else {
+        showToast("Erro ao gerar áudio da narração.");
       }
     } catch (error) {
       console.error(error);
       showToast("Erro ao gerar áudio.", "error");
     } finally {
-      setIsAudioLoading(false);
+      setIsGeneratingNarration(false);
     }
   };
 
@@ -319,6 +353,19 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     setIsNotebookModalOpen(true);
   };
 
+  const handleSaveToMusicBox = async () => {
+    if (!narrationAudio) {
+      showToast("Gere a narração primeiro para salvar na Caixa de Música.");
+      return;
+    }
+    
+    try {
+      await saveTrack(`Devocional: ${selectedTheme}`, narrationAudio, 'Devocional', selectedEmotion);
+      showToast("Salvo na Caixa de Música! 🎵");
+    } catch (error) {
+      showToast("Erro ao salvar na Caixa de Música.");
+    }
+  };
   const shareSocial = (platform: 'whatsapp' | 'facebook' | 'instagram') => {
     if (!devotionalResult) return;
     const text = `Confira este devocional: ${devotionalResult.substring(0, 100)}...`;
@@ -597,27 +644,139 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                   <MarkdownRenderer content={devotionalResult} />
                 </div>
 
-                <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex flex-wrap gap-3">
-                  <div className="flex gap-2 mr-auto">
-                    <button onClick={() => shareSocial('whatsapp')} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors" title="WhatsApp">
-                      <MessageCircle size={20} />
+                <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex flex-col gap-4">
+                  <div className="flex flex-wrap gap-3 items-center">
+                    <div className="flex gap-2 mr-auto">
+                      <button onClick={() => shareSocial('whatsapp')} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors" title="WhatsApp">
+                        <MessageCircle size={20} />
+                      </button>
+                      <button onClick={() => shareSocial('facebook')} className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors" title="Facebook">
+                        <Facebook size={20} />
+                      </button>
+                      <button onClick={() => shareSocial('instagram')} className="p-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors" title="Instagram">
+                        <Instagram size={20} />
+                      </button>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <select 
+                        value={selectedVoice}
+                        onChange={(e) => setSelectedVoice(e.target.value as any)}
+                        className="px-3 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl text-xs font-bold outline-none"
+                      >
+                        <option value="Zephyr">Voz: Zephyr (Suave)</option>
+                        <option value="Puck">Voz: Puck (Jovem)</option>
+                        <option value="Charon">Voz: Charon (Profunda)</option>
+                        <option value="Kore">Voz: Kore (Feminina)</option>
+                        <option value="Fenrir">Voz: Fenrir (Forte)</option>
+                      </select>
+                      <select 
+                        value={selectedEmotion}
+                        onChange={(e) => setSelectedEmotion(e.target.value)}
+                        className="px-3 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl text-xs font-bold outline-none"
+                      >
+                        <option value="Inspiradora">Emoção: Inspiradora</option>
+                        <option value="Alegre">Emoção: Alegre</option>
+                        <option value="Solene">Emoção: Solene</option>
+                        <option value="Calma">Emoção: Calma</option>
+                        <option value="Enérgica">Emoção: Enérgica</option>
+                      </select>
+                      <button 
+                        onClick={handlePlayAudio}
+                        disabled={isGeneratingNarration}
+                        className="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 flex items-center gap-2 text-xs disabled:opacity-50"
+                      >
+                        {isGeneratingNarration ? <Loader2 size={16} className="animate-spin" /> : <Volume2 size={16} />}
+                        Narração Emotiva
+                      </button>
+                    </div>
+                  </div>
+
+                  {narrationAudio && (
+                    <div className="w-full bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-700 shadow-sm">
+                      <div className="flex items-center gap-4 mb-2">
+                        <button 
+                          onClick={() => {
+                            if (audioRef.current) {
+                              if (isPlaying) audioRef.current.pause();
+                              else audioRef.current.play();
+                              setIsPlaying(!isPlaying);
+                            }
+                          }}
+                          className="w-10 h-10 flex items-center justify-center bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-colors"
+                        >
+                          {isPlaying ? <X size={20} /> : <Volume2 size={20} />}
+                        </button>
+                        <div className="flex-1">
+                          <div className="h-2 bg-stone-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                            <motion.div 
+                              className="h-full bg-emerald-500"
+                              initial={{ width: 0 }}
+                              animate={{ width: `${(audioProgress / audioDuration) * 100}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between mt-1 text-[10px] text-stone-500 font-mono">
+                            <span>{Math.floor(audioProgress / 60)}:{Math.floor(audioProgress % 60).toString().padStart(2, '0')}</span>
+                            <span>{Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <audio 
+                        ref={audioRef}
+                        src={narrationAudio}
+                        onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
+                        onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                        onEnded={() => setIsPlaying(false)}
+                        className="hidden"
+                      />
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => {
+                            const a = document.createElement('a');
+                            a.href = narrationAudio;
+                            a.download = `devocional-audio-${selectedTheme}.mp3`;
+                            a.click();
+                          }}
+                          className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
+                        >
+                          <Download size={14} /> Baixar Áudio
+                        </button>
+                        <button 
+                          onClick={() => {
+                            navigator.share({
+                              title: 'Áudio Devocional',
+                              url: narrationAudio
+                            }).catch((err: any) => {
+                              if (err.name !== 'AbortError') {
+                                console.error(err);
+                              }
+                            });
+                          }}
+                          className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
+                        >
+                          <ShareIcon size={14} /> Compartilhar
+                        </button>
+                      </div>
+                      <button 
+                        onClick={handleSaveToMusicBox}
+                        className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
+                      >
+                        <Volume2 size={14} /> Salvar na Caixa de Música
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-3">
+                    <button onClick={handleDownload} className="flex-1 py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm">
+                      <Download size={18} /> Baixar Texto
                     </button>
-                    <button onClick={() => shareSocial('facebook')} className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors" title="Facebook">
-                      <Facebook size={20} />
+                    <button onClick={saveToNotebook} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/20">
+                      <Save size={18} /> Salvar no Caderno
                     </button>
-                    <button onClick={() => shareSocial('instagram')} className="p-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors" title="Instagram">
-                      <Instagram size={20} />
+                    <button onClick={() => setDevotionalResult(null)} className="flex-1 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-xl hover:bg-stone-300 transition-all text-sm">
+                      Retornar
                     </button>
                   </div>
-                  <button onClick={handleDownload} className="px-4 py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm">
-                    <Download size={18} />
-                  </button>
-                  <button onClick={saveToNotebook} className="px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/20">
-                    <Save size={18} />
-                  </button>
-                  <button onClick={() => setDevotionalResult(null)} className="px-6 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-xl hover:bg-stone-300 transition-all text-sm">
-                    Retornar
-                  </button>
                 </div>
               </motion.div>
             ) : (

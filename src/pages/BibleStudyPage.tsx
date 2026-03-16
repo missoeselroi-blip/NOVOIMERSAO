@@ -39,11 +39,17 @@ import {
   Printer,
   CheckCircle,
   BookOpen,
-  History
+  History,
+  Baby,
+  X,
+  Mic,
+  Music,
+  Play
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { AudioSearchButton } from '../components/AudioSearchButton';
+import { GoogleGenAI, Type } from "@google/genai";
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -55,6 +61,7 @@ import { useCredits } from '../contexts/CreditContext';
 import { useToast } from '../components/Toast';
 import PostsPage from './PostsPage';
 import { useOffline } from '../contexts/OfflineContext';
+import { useMusicBox } from '../contexts/MusicBoxContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { WifiOff } from 'lucide-react';
@@ -114,6 +121,7 @@ interface StudyHistoryItem {
 
 export default function BibleStudyPage({ deepThinking, setDeepThinking, onNavigate }: BibleStudyPageProps) {
   const { user, notes: firestoreNotes } = useAuth();
+  const { tracks: musicBoxTracks, saveTrack, deleteTrack } = useMusicBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const { isOffline, downloadedChapters, downloadedMaterials, downloadChapter, downloadMaterial } = useOffline();
@@ -133,7 +141,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [selectedWork, setSelectedWork] = useState('');
   const [compareVersion, setCompareVersion] = useState('Almeida');
   const [previousTab, setPreviousTab] = useState<string | null>(null);
-  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook'>('lesson');
+  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry'>('lesson');
   const [messageType, setMessageType] = useState<'outline' | 'birthday' | 'wedding' | 'newyear' | 'graduation' | 'devotional' | 'funeral' | 'children'>('outline');
   const [messageResult, setMessageResult] = useState('');
   const [messageResultThought, setMessageResultThought] = useState('');
@@ -150,6 +158,22 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [selectedModel, setSelectedModel] = useState('Gemini');
   const [isGeneratingMeaning, setIsGeneratingMeaning] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+
+  // Music Box state
+  const [musicText, setMusicText] = useState('');
+  const [musicStyle, setMusicStyle] = useState('Gospel');
+  const [musicEmotion, setMusicEmotion] = useState('Alegre');
+  const [isGeneratingMusic, setIsGeneratingMusic] = useState(false);
+  const [isGeneratingLyrics, setIsGeneratingLyrics] = useState(false);
+  const [musicResult, setMusicResult] = useState('');
+  const [musicData, setMusicData] = useState<{ title: string; lyrics: string; chords: string; arrangement: string; guitarGuide: string } | null>(null);
+  const [activeMusicTab, setActiveMusicTab] = useState<'lyrics' | 'chords' | 'arrangement' | 'guitar'>('lyrics');
+  const [musicAudioUrl, setMusicAudioUrl] = useState<string | null>(null);
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [audioDuration, setAudioDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [narrationAudio, setNarrationAudio] = useState<string | null>(null);
+  const [isGeneratingNarration, setIsGeneratingNarration] = useState(false);
   const [searchPopup, setSearchPopup] = useState<{ isOpen: boolean; query: string; result: string }>({
     isOpen: false,
     query: '',
@@ -189,6 +213,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'authors', label: 'Visão do Autor', icon: <User size={18} /> },
     { id: 'religions', label: 'Outras Religiões', icon: <Cross size={18} className="rotate-180" /> },
     { id: 'creation-tool', label: 'Ferramenta de Criação', icon: <Sparkles size={18} /> },
+    { id: 'kids_ministry', label: 'Ministério Infantil', icon: <Baby size={18} /> },
+    { id: 'music_box', label: 'Caixa de Música', icon: <Volume2 size={18} /> },
     { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
     { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
@@ -227,6 +253,16 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+
+  // Kids Ministry state
+  const [isKidsModalOpen, setIsKidsModalOpen] = useState(false);
+  const [kidsAgeGroup, setKidsAgeGroup] = useState('Maternal até 3 anos');
+  const [kidsContentType, setKidsContentType] = useState('Lição EBD');
+  const [kidsResult, setKidsResult] = useState<{ children: string, monitors: string, activities: string, theater?: string } | null>(null);
+  const [kidsActiveTab, setKidsActiveTab] = useState<'children' | 'monitors' | 'activities' | 'illustration'>('children');
+  const [isGeneratingKids, setIsGeneratingKids] = useState(false);
+  const [kidsIllustration, setKidsIllustration] = useState<string | null>(null);
+  const [isGeneratingIllustration, setIsGeneratingIllustration] = useState(false);
 
   const [studyHistory, setStudyHistory] = useState<StudyHistoryItem[]>(() => {
     const saved = localStorage.getItem('study_history');
@@ -491,6 +527,309 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     } finally {
       setIsSearchingVerse(false);
     }
+  };
+
+  const handleGenerateKidsMinistry = async () => {
+    if (!topic.trim()) {
+      showToast("Por favor, digite um tema para o Ministério Infantil! 🎈");
+      return;
+    }
+
+    const cost = 5;
+    if (balance < cost) {
+      showToast("Saldo insuficiente para gerar material infantil! 💎");
+      return;
+    }
+
+    setShowCreditConfirm({
+      show: true,
+      cost,
+      action: async () => {
+        setIsGeneratingKids(true);
+        setKidsResult(null);
+        try {
+          const ageSpecificInstructions: Record<string, string> = {
+            'Maternal até 3 anos': 'Histórias curtas com animais, brinquedos ou rotina familiar.',
+            'Primário 4 a 5 anos': 'Contos com animais humanizados, trava-línguas, parlendas e cantigas. Histórias com ação simples e foco no cotidiano, brincadeiras, escola e família.',
+            'Juniores 6 a 9 anos': 'Histórias mais longas e enredos mais complexos, personagens com idade aproximada, vilões e heróis, alfabetização, aventura, mistério, lendas, foco relacionamento com amigos, vizinhos, escola, família e igreja.',
+            'Pré-adolescentes 10 a 12 anos': 'Enredo mais denso, desafios do cotidiano, sonhos, debates sociais, morais, éticos, combate ao bullying, preconceito, imoralidade, drogas lícitas e ilícitas, campanha contra violência, abusos.'
+          };
+
+          const prompt = `Gere material completo para o Ministério Infantil sobre o tema: "${topic}".
+          Faixa Etária: ${kidsAgeGroup}.
+          Tipo de Conteúdo: ${kidsContentType}.
+          
+          Instruções específicas para esta faixa etária: ${ageSpecificInstructions[kidsAgeGroup] || ''}
+          
+          O conteúdo deve ser dividido em partes distintas:
+          1. PARA AS CRIANÇAS: Linguagem simples, visual, histórias cativantes, aplicações práticas para a idade. Se o tipo for "Estória/Teatro", formate como um roteiro com personagens e falas.
+          2. PARA OS MONITORES: Orientações pedagógicas, dicas de abordagem, preparação espiritual, materiais necessários.
+          3. ATIVIDADES: Sugestões de dinâmicas, brincadeiras, trabalhos manuais (artesanato), quebra-cabeças ou desenhos para colorir (descritos).
+          
+          Retorne o resultado estritamente no formato JSON:
+          {
+            "children": "conteúdo em markdown para as crianças",
+            "monitors": "conteúdo em markdown para os monitores",
+            "activities": "conteúdo em markdown para as atividades"
+          }`;
+
+          const data = await geminiService.generateJSON<{ children: string, monitors: string, activities: string }>(
+            prompt, 
+            "Você é um especialista em educação cristã infantil e pedagogia.",
+            {
+              type: Type.OBJECT,
+              properties: {
+                children: { type: Type.STRING },
+                monitors: { type: Type.STRING },
+                activities: { type: Type.STRING }
+              },
+              required: ["children", "monitors", "activities"]
+            }
+          );
+
+          setKidsResult(data);
+          setKidsIllustration(null);
+          setNarrationAudio(null);
+          consumeCredits(cost, `Geração de Material Infantil: ${topic}`);
+          showToast("Material infantil gerado com sucesso! 🎨✨");
+          addToHistory({
+            tab: 'creation-tool',
+            type: 'kids_ministry',
+            creationType: 'kids_ministry',
+            query: `${kidsContentType} - ${kidsAgeGroup}: ${topic}`,
+            result: data.children,
+            thought: "Material completo para Ministério Infantil"
+          });
+        } catch (error) {
+          console.error(error);
+          showToast("Erro ao gerar material infantil. Tente novamente.");
+        } finally {
+          setIsGeneratingKids(false);
+        }
+      }
+    });
+  };
+
+  const handleGenerateIllustration = async () => {
+    if (!kidsResult) return;
+    
+    const cost = 10;
+    if (balance < cost) {
+      showToast("Saldo insuficiente para gerar ilustração! 💎");
+      return;
+    }
+
+    setIsGeneratingIllustration(true);
+    try {
+      const prompt = `Gere uma ilustração para colorir baseada no seguinte conteúdo infantil: "${kidsResult.children.substring(0, 500)}".
+      Estilo: Pixar/Disney, traços simples, pouco detalhe, imagem monocolor (preto e branco), estilo livro de colorir, tamanho A4.`;
+      
+      const imageUrl = await geminiService.generateImage(prompt);
+      if (imageUrl) {
+        setKidsIllustration(imageUrl);
+        setKidsActiveTab('illustration');
+        consumeCredits(cost, `Ilustração IA Infantil: ${topic}`);
+        showToast("Ilustração gerada com sucesso! 🎨✨");
+      } else {
+        showToast("Erro ao gerar ilustração. Tente novamente.");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar ilustração.");
+    } finally {
+      setIsGeneratingIllustration(false);
+    }
+  };
+
+  const handleGenerateNarration = async () => {
+    if (!kidsResult) return;
+    
+    const content = kidsActiveTab === 'children' ? kidsResult.children : 
+                    kidsActiveTab === 'monitors' ? kidsResult.monitors : 
+                    kidsResult.activities;
+                    
+    setIsGeneratingNarration(true);
+    setNarrationAudio(null);
+    setAudioProgress(0);
+    
+    try {
+      const prompt = `Crie uma narração emotiva e completa para o seguinte conteúdo: "${content}".
+      A narração deve ser expressiva, com alternância de sentimentos e tons de voz adequados para cada parte do texto.
+      Garanta que a narração cubra TODO o texto fornecido, sem cortes.
+      Retorne apenas o texto da narração formatado para ser lido por um sistema de voz.`;
+      
+      const narrationText = await geminiService.generateText(prompt, "Você é um dublador e contador de histórias profissional.");
+      
+      const audioUrl = await geminiService.generateSpeech(narrationText, 'Zephyr');
+      if (audioUrl) {
+        setNarrationAudio(audioUrl);
+        showToast("Narração gerada com sucesso! 🎙️✨");
+      } else {
+        showToast("Erro ao gerar áudio da narração.");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar narração.");
+    } finally {
+      setIsGeneratingNarration(false);
+    }
+  };
+
+  const saveToMusicBox = async (title: string, audioUrl: string, style: string, emotion: string) => {
+    try {
+      await saveTrack(title, audioUrl, style, emotion);
+      showToast("Salvo na Caixa de Música! 🎵✨");
+    } catch (error) {
+      showToast("Erro ao salvar na Caixa de Música.");
+    }
+  };
+
+  const handleGenerateLyrics = async () => {
+    if (!musicText) return;
+    
+    const cost = 5;
+    if (balance < cost) {
+      showToast("Saldo insuficiente para gerar letra! 💎");
+      return;
+    }
+
+    setIsGeneratingLyrics(true);
+    setMusicResult('');
+    setMusicData(null);
+    setMusicAudioUrl(null);
+    
+    try {
+      const prompt = `Componha uma música completa no estilo "${musicStyle}" com a emoção "${musicEmotion}" baseada no seguinte tema ou texto: "${musicText}".
+      
+      Retorne um JSON com a seguinte estrutura:
+      {
+        "title": "Título da Música",
+        "lyrics": "Letra completa formatada em Markdown com [Verso], [Refrão], etc.",
+        "chords": "A letra com as cifras (acordes) posicionadas acima das palavras, no formato padrão de música (Markdown).",
+        "arrangement": "Instruções detalhadas para a banda (Ex: Bateria: Groove 4/4, Baixo: Linha melódica, Guitarras: Drive leve, BPM: 120, etc.)",
+        "guitarGuide": "Guia específico para violão: Batida (ex: ↓ ↑ ↓ ↑), dedilhados sugeridos e dicas de execução para acompanhar a voz."
+      }`;
+      
+      const response = await geminiService.generateJSON<{ title: string; lyrics: string; chords: string; arrangement: string; guitarGuide: string }>(
+        prompt, 
+        "Você é um compositor e produtor musical talentoso especializado em música cristã.",
+        {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            lyrics: { type: Type.STRING },
+            chords: { type: Type.STRING },
+            arrangement: { type: Type.STRING },
+            guitarGuide: { type: Type.STRING }
+          },
+          required: ["title", "lyrics", "chords", "arrangement", "guitarGuide"]
+        }
+      );
+
+      if (response) {
+        setMusicData(response);
+        setMusicResult(response.lyrics);
+        consumeCredits(cost, `Composição Completa: ${musicStyle}`);
+        showToast("Composição gerada com sucesso! 📝🎸", 'success');
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar letra.");
+    } finally {
+      setIsGeneratingLyrics(false);
+    }
+  };
+
+  const handleGenerateMusic = async () => {
+    if (!musicResult) {
+      showToast("Gere a letra primeiro!");
+      return;
+    }
+    
+    const cost = 10;
+    if (balance < cost) {
+      showToast("Saldo insuficiente para gerar música! 💎");
+      return;
+    }
+
+    setIsGeneratingMusic(true);
+    setMusicAudioUrl(null);
+    
+    try {
+      showToast("Compondo melodia, voz e arranjos... 🎵", 'info');
+      
+      // We use a specific voice based on style/emotion if possible, or just a good default
+      const voice = musicStyle === 'Infantil' ? 'Puck' : 
+                    musicEmotion === 'Inspirador' ? 'Zephyr' : 
+                    musicEmotion === 'Alegre' ? 'Fenrir' : 'Kore';
+
+      // To simulate "instruments", we can add a system instruction or a specific prompt prefix
+      // but the generateSpeech tool is simple. We'll just use it.
+      const audioUrl = await geminiService.generateSpeech(musicResult, voice);
+      
+      if (audioUrl) {
+        setMusicAudioUrl(audioUrl);
+        consumeCredits(cost, `Geração de Música: ${musicStyle}`);
+        showToast("Música gerada com sucesso! 🎵✨");
+      } else {
+        showToast("Erro ao gerar o áudio da música.");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar música.");
+    } finally {
+      setIsGeneratingMusic(false);
+    }
+  };
+
+  const handleSaveToMusicBox = async (content: string, audioUrl: string | null) => {
+    if (!audioUrl) {
+      showToast("Gere o áudio primeiro para salvar na Caixa de Música.");
+      return;
+    }
+    
+    try {
+      await saveTrack('Narração Ministério Infantil', audioUrl, 'Narração', 'Emotiva');
+      showToast("Salvo na Caixa de Música! 🎵");
+      setActiveTab('music_box');
+    } catch (error) {
+      showToast("Erro ao salvar na Caixa de Música.");
+    }
+  };
+
+  const handlePrint = (content: string, title: string, isImage: boolean = false) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    printWindow.document.write(`
+      <html>
+        <head>
+          <title>${title}</title>
+          <style>
+            body { font-family: sans-serif; padding: 40px; line-height: 1.6; text-align: center; }
+            img { max-width: 100%; height: auto; display: block; margin: 20px auto; border: 1px solid #eee; }
+            h1 { color: #059669; text-align: left; }
+            .content { white-space: pre-wrap; text-align: left; }
+            @media print {
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${title}</h1>
+          ${isImage ? `<img src="${content}" />` : `<div class="content">${content}</div>`}
+          <script>
+            window.onload = () => {
+              setTimeout(() => {
+                window.print();
+                window.close();
+              }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   const handleUnifiedCreation = () => {
@@ -846,8 +1185,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           text: note.content,
         });
         showToast("Compartilhando página! 🕊️");
-      } catch (err) {
-        console.error('Erro ao compartilhar:', err);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Erro ao compartilhar:', err);
+        }
       }
     } else {
       navigator.clipboard.writeText(`${note.title}\n\n${note.content}`);
@@ -1194,8 +1535,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           text: text,
         });
         showToast("Compartilhando a benção! 🕊️✨");
-      } catch (err) {
-        console.error('Erro ao compartilhar:', err);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error('Erro ao compartilhar:', err);
+        }
       }
     } else {
       navigator.clipboard.writeText(text);
@@ -2889,6 +3232,577 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               </div>
             )}
 
+            {activeTab === 'music_box' && (
+              <div className="space-y-8">
+                <div className="bg-white dark:bg-zinc-900 p-8 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                  <div className="flex flex-col gap-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
+                        <Volume2 size={24} />
+                      </div>
+                      <div>
+                        <h2 className="text-2xl font-display font-black tracking-tight">Caixa de Música</h2>
+                        <p className="text-stone-500 text-sm">Transforme textos e letras em composições musicais</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <textarea
+                        value={musicText}
+                        onChange={(e) => setMusicText(e.target.value)}
+                        placeholder="⚓ Digite ou cole aqui a letra da música ou o texto que deseja transformar em música..."
+                        className="w-full h-48 p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-[2rem] focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
+                      />
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Estilo Musical</label>
+                          <select 
+                            value={musicStyle}
+                            onChange={(e) => setMusicStyle(e.target.value)}
+                            className="w-full px-6 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm font-bold"
+                          >
+                            <option value="Gospel">Gospel</option>
+                            <option value="Adoração">Adoração</option>
+                            <option value="Pop Cristão">Pop Cristão</option>
+                            <option value="Rock Cristão">Rock Cristão</option>
+                            <option value="Infantil">Infantil</option>
+                            <option value="Hino Clássico">Hino Clássico</option>
+                            <option value="Pensativo/Acústico">Pensativo/Acústico</option>
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Emoção</label>
+                          <select 
+                            value={musicEmotion}
+                            onChange={(e) => setMusicEmotion(e.target.value)}
+                            className="w-full px-6 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm font-bold"
+                          >
+                            <option value="Alegre">Alegre</option>
+                            <option value="Animado">Animado</option>
+                            <option value="Triste">Triste</option>
+                            <option value="Pensativo">Pensativo</option>
+                            <option value="Solene">Solene</option>
+                            <option value="Inspirador">Inspirador</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col sm:flex-row gap-4">
+                        <button
+                          onClick={handleGenerateLyrics}
+                          disabled={isGeneratingLyrics || !musicText}
+                          className="flex-[2] py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-600/20"
+                        >
+                          {isGeneratingLyrics ? <Loader2 className="animate-spin" size={20} /> : <Pencil size={20} />}
+                          GERAR LETRA
+                        </button>
+                        <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 px-6 py-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                            <Zap size={18} />
+                            <span className="text-xs font-bold uppercase tracking-wider">Custo</span>
+                          </div>
+                          <span className="font-black text-emerald-600 dark:text-emerald-400">5 créditos</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {musicResult && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-6"
+                  >
+                    <div className="bg-white dark:bg-zinc-900 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-lg overflow-hidden">
+                      {/* Music Tabs */}
+                      <div className="flex border-b border-stone-100 dark:border-zinc-800">
+                        <button 
+                          onClick={() => setActiveMusicTab('lyrics')}
+                          className={cn(
+                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                            activeMusicTab === 'lyrics' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800"
+                          )}
+                        >
+                          Letra
+                        </button>
+                        <button 
+                          onClick={() => setActiveMusicTab('chords')}
+                          className={cn(
+                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                            activeMusicTab === 'chords' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 border-l border-stone-100 dark:border-zinc-800"
+                          )}
+                        >
+                          Cifra
+                        </button>
+                        <button 
+                          onClick={() => setActiveMusicTab('guitar')}
+                          className={cn(
+                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                            activeMusicTab === 'guitar' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 border-l border-stone-100 dark:border-zinc-800"
+                          )}
+                        >
+                          Violão
+                        </button>
+                        <button 
+                          onClick={() => setActiveMusicTab('arrangement')}
+                          className={cn(
+                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
+                            activeMusicTab === 'arrangement' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 border-l border-stone-100 dark:border-zinc-800"
+                          )}
+                        >
+                          Arranjo
+                        </button>
+                      </div>
+
+                      <div className="p-8 md:p-12 prose dark:prose-invert max-w-none">
+                        {activeMusicTab === 'lyrics' && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            <MarkdownRenderer content={musicData?.lyrics || musicResult} />
+                          </motion.div>
+                        )}
+                        {activeMusicTab === 'chords' && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            <div className="font-mono text-sm whitespace-pre-wrap bg-stone-50 dark:bg-zinc-950 p-6 rounded-2xl border border-stone-100 dark:border-zinc-800">
+                              <MarkdownRenderer content={musicData?.chords || "Cifra não disponível."} />
+                            </div>
+                          </motion.div>
+                        )}
+                        {activeMusicTab === 'guitar' && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            <div className="bg-amber-50/50 dark:bg-amber-900/10 p-6 rounded-2xl border border-amber-100 dark:border-amber-800/20">
+                              <h4 className="text-amber-700 dark:text-amber-400 uppercase tracking-widest text-xs font-black mb-4 flex items-center gap-2">
+                                <Music size={14} /> Guia de Violão (Acompanhamento)
+                              </h4>
+                              <MarkdownRenderer content={musicData?.guitarGuide || "Guia de violão não disponível."} />
+                            </div>
+                          </motion.div>
+                        )}
+                        {activeMusicTab === 'arrangement' && (
+                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                            <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800/20">
+                              <h4 className="text-emerald-700 dark:text-emerald-400 uppercase tracking-widest text-xs font-black mb-4 flex items-center gap-2">
+                                <Music size={14} /> Guia de Instrumentação
+                              </h4>
+                              <MarkdownRenderer content={musicData?.arrangement || "Instruções de arranjo não disponíveis."} />
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <button
+                        onClick={handleGenerateMusic}
+                        disabled={isGeneratingMusic || !musicResult}
+                        className="flex-[2] py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-600/20"
+                      >
+                        {isGeneratingMusic ? <Loader2 className="animate-spin" size={20} /> : <Music size={20} />}
+                        GERAR COMPOSIÇÃO (VOZ + INSTRUMENTOS)
+                      </button>
+                      <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 px-6 py-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                          <Zap size={18} />
+                          <span className="text-xs font-bold uppercase tracking-wider">Custo</span>
+                        </div>
+                        <span className="font-black text-emerald-600 dark:text-emerald-400">10 créditos</span>
+                      </div>
+                    </div>
+
+                    {musicAudioUrl && (
+                      <div className="bg-emerald-600 p-6 rounded-[2.5rem] shadow-xl text-white">
+                        <div className="flex items-center gap-6">
+                          <button 
+                            onClick={() => {
+                              if (audioRef.current) {
+                                if (isPlaying) audioRef.current.pause();
+                                else audioRef.current.play();
+                                setIsPlaying(!isPlaying);
+                              }
+                            }}
+                            className="w-16 h-16 flex items-center justify-center bg-white text-emerald-600 rounded-full hover:scale-105 transition-transform shadow-lg"
+                          >
+                            {isPlaying ? <X size={32} /> : <Volume2 size={32} />}
+                          </button>
+                          <div className="flex-1 space-y-2">
+                            <div className="flex justify-between items-end mb-1">
+                              <div>
+                                <h4 className="font-black uppercase tracking-widest text-xs opacity-70">Reproduzindo</h4>
+                                <p className="font-display font-bold text-lg leading-tight">Sua Composição Musical</p>
+                              </div>
+                              <div className="text-[10px] font-mono opacity-70">
+                                {Math.floor(audioProgress / 60)}:{Math.floor(audioProgress % 60).toString().padStart(2, '0')} / {Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')}
+                              </div>
+                            </div>
+                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
+                              <motion.div 
+                                className="h-full bg-white"
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(audioProgress / audioDuration) * 100}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <audio 
+                          ref={audioRef}
+                          src={musicAudioUrl}
+                          onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
+                          onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                          onEnded={() => setIsPlaying(false)}
+                          className="hidden"
+                        />
+                        <div className="grid grid-cols-4 gap-3 mt-6">
+                          <button 
+                            onClick={() => {
+                              const a = document.createElement('a');
+                              a.href = musicAudioUrl;
+                              a.download = `musica-${musicStyle}.mp3`;
+                              a.click();
+                            }}
+                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Download size={18} /> Baixar
+                          </button>
+                          <button 
+                            onClick={() => {
+                              navigator.share({
+                                title: 'Minha Música IA',
+                                text: musicResult,
+                                url: window.location.href
+                              }).catch((err: any) => {
+                                if (err.name !== 'AbortError') {
+                                  console.error(err);
+                                }
+                              });
+                            }}
+                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Share2 size={18} /> Compartilhar
+                          </button>
+                          <button 
+                            onClick={() => saveToMusicBox('Minha Composição', musicAudioUrl, musicStyle, musicEmotion)}
+                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Save size={18} /> Salvar
+                          </button>
+                          <button 
+                            onClick={() => {
+                              showToast("Gravando composição... 🎙️");
+                            }}
+                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
+                          >
+                            <Mic size={18} /> Gravar
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {musicBoxTracks.length > 0 && (
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-display font-black tracking-tight flex items-center gap-2">
+                          <Music size={20} className="text-emerald-600" />
+                          Minhas Músicas Salvas
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {musicBoxTracks.map(track => (
+                            <div key={track.id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 shadow-sm flex items-center gap-4">
+                              <button 
+                                onClick={() => {
+                                  setMusicAudioUrl(track.audioUrl);
+                                  setMusicResult(`### ${track.title}\nEstilo: ${track.style}\nEmoção: ${track.emotion}\nData: ${track.date}`);
+                                }}
+                                className="w-12 h-12 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full hover:bg-emerald-200 transition-colors"
+                              >
+                                <Play size={20} />
+                              </button>
+                              <div className="flex-1 min-w-0">
+                                <h4 className="font-bold text-sm truncate">{track.title}</h4>
+                                <p className="text-[10px] text-stone-500">{track.style} • {track.emotion} • {track.date}</p>
+                              </div>
+                              <button 
+                                onClick={() => deleteTrack(track.id)}
+                                className="p-2 text-stone-400 hover:text-red-500 transition-colors"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'kids_ministry' && (
+              <div className="space-y-8">
+                <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-[2]">
+                      <input
+                        type="text"
+                        placeholder="⚓ Digite o tema para o Ministério Infantil (ex: A Arca de Noé)"
+                        value={topic}
+                        onChange={(e) => setTopic(e.target.value)}
+                        className="w-full pl-6 pr-6 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                    </div>
+                    <div className="flex-1 flex flex-col sm:flex-row gap-2">
+                      <select 
+                        value={kidsAgeGroup}
+                        onChange={(e) => setKidsAgeGroup(e.target.value)}
+                        className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
+                      >
+                        <option value="Maternal até 3 anos">Maternal (até 3 anos)</option>
+                        <option value="Primário 4 a 5 anos">Primário (4 a 5 anos)</option>
+                        <option value="Juniores 6 a 9 anos">Juniores (6 a 9 anos)</option>
+                        <option value="Pré-adolescentes 10 a 12 anos">Pré-adolescentes (10 a 12 anos)</option>
+                      </select>
+                      <select 
+                        value={kidsContentType}
+                        onChange={(e) => setKidsContentType(e.target.value)}
+                        className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
+                      >
+                        <option value="Lição EBD">Lição EBD</option>
+                        <option value="Célula Infantil">Célula Infantil</option>
+                        <option value="Culto Infantil">Culto Infantil</option>
+                        <option value="Culto Doméstico">Culto Doméstico</option>
+                        <option value="Evangelismo">Evangelismo</option>
+                        <option value="História Bíblica">História Bíblica</option>
+                        <option value="Hora de Dormir">Hora de Dormir</option>
+                        <option value="Estória/Teatro">Estória/Teatro</option>
+                      </select>
+                      <button
+                        onClick={handleGenerateKidsMinistry}
+                        disabled={isGeneratingKids || !topic}
+                        className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                      >
+                        {isGeneratingKids ? <Loader2 className="animate-spin" size={20} /> : <Baby size={20} />}
+                        ⚓ Gerar
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
+                    <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                      <Zap size={18} />
+                      <span className="text-sm font-bold">Calculadora de Créditos</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="text-stone-600 dark:text-zinc-400">Custo estimado:</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400 bg-white dark:bg-zinc-800 px-3 py-1 rounded-lg shadow-sm">
+                        5 créditos
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {kidsResult && (
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap gap-2 mb-4">
+                      <button 
+                        onClick={() => setKidsActiveTab('children')} 
+                        className={cn("px-6 py-2 rounded-full font-bold transition-all", kidsActiveTab === 'children' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}
+                      >
+                        Para as Crianças
+                      </button>
+                      <button 
+                        onClick={() => setKidsActiveTab('monitors')} 
+                        className={cn("px-6 py-2 rounded-full font-bold transition-all", kidsActiveTab === 'monitors' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}
+                      >
+                        Para os Monitores
+                      </button>
+                      <button 
+                        onClick={() => setKidsActiveTab('activities')} 
+                        className={cn("px-6 py-2 rounded-full font-bold transition-all", kidsActiveTab === 'activities' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}
+                      >
+                        Atividades
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (!kidsIllustration) {
+                            handleGenerateIllustration();
+                          } else {
+                            setKidsActiveTab('illustration');
+                          }
+                        }} 
+                        className={cn("px-6 py-2 rounded-full font-bold transition-all flex items-center gap-2", kidsActiveTab === 'illustration' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}
+                      >
+                        {isGeneratingIllustration ? <Loader2 size={16} className="animate-spin" /> : <ImageIcon size={16} />}
+                        Ilustração IA
+                      </button>
+                    </div>
+                    <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none min-h-[400px] flex flex-col items-center justify-center">
+                      {kidsActiveTab === 'illustration' ? (
+                        kidsIllustration ? (
+                          <div className="w-full flex flex-col items-center gap-4">
+                            <img src={kidsIllustration} alt="Ilustração Infantil" className="max-w-full h-auto rounded-2xl shadow-md border border-stone-200 dark:border-zinc-800" referrerPolicy="no-referrer" />
+                            <p className="text-sm text-stone-500 italic">Ilustração estilo Pixar/Disney para colorir (A4)</p>
+                          </div>
+                        ) : (
+                          <div className="text-center py-12">
+                            <ImageIcon size={48} className="mx-auto text-stone-300 mb-4" />
+                            <p className="text-stone-500">Clique no botão acima para gerar a ilustração!</p>
+                          </div>
+                        )
+                      ) : (
+                        <MarkdownRenderer 
+                          content={
+                            kidsActiveTab === 'children' ? (kidsResult?.children || '') :
+                            kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') :
+                            (kidsResult?.activities || '')
+                          } 
+                          onSearch={handleWikiSearch} 
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''))}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
+                      <button
+                        onClick={handleGenerateNarration}
+                        disabled={isGeneratingNarration}
+                        className="flex-1 py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingNarration ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Narração Emotiva
+                      </button>
+                      
+                      {narrationAudio && (
+                        <div className="w-full mt-4 bg-stone-50 dark:bg-zinc-800/50 p-4 rounded-2xl border border-stone-200 dark:border-zinc-700">
+                          <div className="flex items-center gap-4 mb-2">
+                            <button 
+                              onClick={() => {
+                                if (audioRef.current) {
+                                  if (isPlaying) audioRef.current.pause();
+                                  else audioRef.current.play();
+                                  setIsPlaying(!isPlaying);
+                                }
+                              }}
+                              className="w-10 h-10 flex items-center justify-center bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-colors"
+                            >
+                              {isPlaying ? <CloseIcon size={20} /> : <Volume2 size={20} />}
+                            </button>
+                            <div className="flex-1">
+                              <div className="h-2 bg-stone-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                                <motion.div 
+                                  className="h-full bg-emerald-500"
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${(audioProgress / audioDuration) * 100}%` }}
+                                />
+                              </div>
+                              <div className="flex justify-between mt-1 text-[10px] text-stone-500 font-mono">
+                                <span>{Math.floor(audioProgress / 60)}:{Math.floor(audioProgress % 60).toString().padStart(2, '0')}</span>
+                                <span>{Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')}</span>
+                              </div>
+                            </div>
+                          </div>
+                          <audio 
+                            ref={audioRef}
+                            src={narrationAudio}
+                            onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
+                            onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                            onEnded={() => setIsPlaying(false)}
+                            className="hidden"
+                          />
+                          <div className="flex gap-2">
+                            <button 
+                              onClick={() => {
+                                const a = document.createElement('a');
+                                a.href = narrationAudio;
+                                a.download = `narracao-${topic}.mp3`;
+                                a.click();
+                              }}
+                              className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
+                            >
+                              <Download size={14} /> Baixar
+                            </button>
+                            <button 
+                              onClick={() => handleSaveToMusicBox(kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''), narrationAudio)}
+                              className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
+                            >
+                              <Volume2 size={14} /> Salvar na Caixa de Música
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      <button 
+                        onClick={() => { 
+                          const content = kidsActiveTab === 'illustration' ? kidsIllustration || '' : (kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''));
+                          navigator.clipboard.writeText(content); 
+                          showToast("Copiado! 📋✨"); 
+                        }} 
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
+                      >
+                        <Copy size={18} /> Copiar
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const isImage = kidsActiveTab === 'illustration';
+                          const content = isImage ? kidsIllustration || '' : (kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''));
+                          const title = `Ministério Infantil - ${kidsActiveTab}`;
+                          handlePrint(content, title, isImage);
+                        }}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
+                      >
+                        <Printer size={18} /> Imprimir
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const isImage = kidsActiveTab === 'illustration';
+                          const content = isImage ? kidsIllustration || '' : (kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''));
+                          
+                          if (isImage && content) {
+                            const a = document.createElement('a');
+                            a.href = content;
+                            a.download = `ilustracao-infantil-${topic}.png`;
+                            a.click();
+                          } else {
+                            const blob = new Blob([content], { type: 'text/plain' });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = `ministerio-infantil-${kidsActiveTab}.txt`;
+                            a.click();
+                          }
+                          showToast("Baixando material... 📥");
+                        }}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
+                      >
+                        <Download size={18} /> Baixar
+                      </button>
+                      <button 
+                        onClick={() => { 
+                          handleShareResult(); 
+                          showToast("Compartilhando... 🕊️✨"); 
+                        }} 
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
+                      >
+                        <Share2 size={18} /> Compartilhar
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const isImage = kidsActiveTab === 'illustration';
+                          const content = isImage ? kidsIllustration || '' : (kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''));
+                          handleSaveToNotebook('Ministério Infantil', content);
+                        }} 
+                        className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"
+                      >
+                        <Save size={18} /> Salvar no Caderno
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {activeTab === 'posts' && (
               <div className="bg-white dark:bg-zinc-900 p-8 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
                 <PostsPage />
@@ -3772,7 +4686,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             title: 'Recurso Bíblico',
                             text: resourceStudyResult,
                           });
-                        } catch (err) { console.error(err); }
+                        } catch (err: any) { 
+                          if (err.name !== 'AbortError') {
+                            console.error(err); 
+                          }
+                        }
                       }
                     }}
                     className="flex-1 min-w-[140px] py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-100 flex items-center justify-center gap-2 transition-all"
@@ -3873,7 +4791,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       if (navigator.share) {
                         try {
                           await navigator.share({ title: `Pesquisa: ${searchPopup.query}`, text: searchPopup.result });
-                        } catch (err) { console.error(err); }
+                        } catch (err: any) { 
+                          if (err.name !== 'AbortError') {
+                            console.error(err); 
+                          }
+                        }
                       }
                     }}
                     className="flex-1 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm"

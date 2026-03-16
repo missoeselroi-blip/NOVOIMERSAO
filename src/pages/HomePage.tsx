@@ -46,6 +46,7 @@ import { useState, useRef, useEffect } from 'react';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { geminiService } from '../services/geminiService';
+import { Type } from "@google/genai";
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import NewsPage from './NewsPage';
 import { useToast } from '../components/Toast';
@@ -219,7 +220,18 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         const aiResults = await geminiService.generateJSON<any[]>(`
           Gere uma lista de 3 resultados de pesquisa para o termo "${query}" em fontes bíblicas.
           Formato: [{ "title": "Fonte: Título", "description": "Breve explicação...", "tab": "study" }]
-        `);
+        `, undefined, {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+              tab: { type: Type.STRING }
+            },
+            required: ["title", "description", "tab"]
+          }
+        });
         if (Array.isArray(aiResults)) {
           aiResults.forEach(res => results.push({ ...res, type: 'bible' }));
         }

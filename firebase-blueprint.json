@@ -64,6 +64,21 @@
         "issuedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "subject", "date"]
+    },
+    "MusicTrack": {
+      "title": "Music Track",
+      "description": "User generated music tracks and narrations",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "style": { "type": "string" },
+        "emotion": { "type": "string" },
+        "date": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "audioUrl"]
     }
   },
   "firestore": {
@@ -86,6 +101,10 @@
     "/theologyCertificates/{certId}": {
       "schema": "TheologyCertificate",
       "description": "Theology certificates"
+    },
+    "/music_box/{trackId}": {
+      "schema": "MusicTrack",
+      "description": "User music tracks"
     }
   }
 }

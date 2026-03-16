@@ -269,8 +269,10 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           title: note.title,
           text: note.content,
         });
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+        }
       }
     } else {
       handleCopy(`${note.title}\n\n${note.content}`);

@@ -92,8 +92,8 @@ const THEOLOGY_SUBJECTS = [
   { title: 'Soteriologia', desc: 'A Doutrina da Salvação', topics: ['A Graça', 'Justificação', 'Panorama'], prereq: 'Hamartiologia', icon: Heart },
   { title: 'Eclesiologia', desc: 'A Doutrina da Igreja', topics: ['Missão', 'Ordenanças', 'Panorama'], prereq: 'Soteriologia', icon: Users },
   { title: 'Escatologia', desc: 'A Doutrina das Últimas Coisas', topics: ['Arrebatamento', 'Milênio', 'Panorama'], prereq: 'Eclesiologia', icon: Hourglass },
-  { title: 'Angelologia', desc: 'Anjos e Demônios', topics: ['Os Anjos', 'A Queda', 'Panorama'], prereq: 'Escatologia', icon: Feather },
-  { title: 'Hermenêutica Bíblica', desc: 'A Interpretação da Bíblia', topics: ['Princípios', 'Regras', 'Panorama'], prereq: 'Bibliologia', icon: Key },
+  { title: 'Angeologia', desc: 'Anjos e Demônios', topics: ['Os Anjos', 'A Queda', 'Panorama'], prereq: 'Escatologia', icon: Feather },
+  { title: 'Hermenêutica Bíblica', desc: 'A Interpretação da Bíblia', topics: ['Princípios', 'Regras', 'Panorama'], prereq: 'Angeologia', icon: Key },
   { title: 'Homilética', desc: 'A Arte da Pregação', topics: ['Estrutura', 'Entrega', 'Panorama'], prereq: 'Hermenêutica Bíblica', icon: Mic },
 ];
 
@@ -1375,7 +1375,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                           title: `Teologia: ${selectedSubject} - Cap ${currentChapter}`,
                           text: chapterContent[currentChapter],
                         });
-                      } catch (err) { console.error(err); }
+                      } catch (err: any) { 
+                        if (err.name !== 'AbortError') {
+                          console.error(err); 
+                        }
+                      }
                     }
                   }}
                   className="p-3 md:p-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-2xl hover:bg-stone-200 transition-all"

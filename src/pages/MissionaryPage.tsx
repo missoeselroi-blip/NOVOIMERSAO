@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { geminiService } from '../services/geminiService';
+import { Type } from "@google/genai";
 import { useToast } from '../components/Toast';
 import MissionaryBulkResults from './MissionaryBulkResults';
 
@@ -40,7 +41,18 @@ export default function MissionaryPage({ onNavigate }: MissionaryPageProps) {
     
     try {
       const prompt = `Gere 30 devocionais curtos para um mês missionário. Cada devocional deve ter: Título, Versículo Chave e uma Mensagem Impactante. Formate como um JSON array de objetos com as chaves: title, verse, message.`;
-      const response = await geminiService.generateJSON(prompt, "Você é um estrategista de missões e evangelismo.");
+      const response = await geminiService.generateJSON(prompt, "Você é um estrategista de missões e evangelismo.", {
+        type: Type.ARRAY,
+        items: {
+          type: Type.OBJECT,
+          properties: {
+            title: { type: Type.STRING },
+            verse: { type: Type.STRING },
+            message: { type: Type.STRING }
+          },
+          required: ["title", "verse", "message"]
+        }
+      });
       
       localStorage.setItem('missionary_bulk_devotionals', JSON.stringify(response));
       setHasResults(true);

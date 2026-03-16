@@ -1,5 +1,13 @@
 import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { 
+  HashRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useLocation
+} from 'react-router-dom';
+import { 
   Home, 
   BookOpen, 
   FileText, 
@@ -70,6 +78,7 @@ import { OfflineProvider, useOffline } from './contexts/OfflineContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
+import { MusicBoxProvider } from './contexts/MusicBoxContext';
 import { AccessibilityControls } from './components/AccessibilityControls';
 import AuthModal from './components/AuthModal';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
@@ -79,8 +88,10 @@ function AppContent() {
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { theme, setTheme } = useTheme();
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState('home');
+  const activeTab = location.pathname.substring(1) || 'home';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [deepThinking, setDeepThinking] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -88,10 +99,10 @@ function AppContent() {
 
   useEffect(() => {
     if (user && pendingTab) {
-      setActiveTab(pendingTab);
+      navigate(pendingTab);
       setPendingTab(null);
     }
-  }, [user, pendingTab]);
+  }, [user, pendingTab, navigate]);
 
   if (isInitialLoading) {
     return (
@@ -115,7 +126,7 @@ function AppContent() {
       return;
     }
     setPendingTab(null);
-    setActiveTab(tabId);
+    navigate(tabId === 'home' ? '/' : `/${tabId}`);
     setIsMenuOpen(false);
   };
 
@@ -568,17 +579,25 @@ function AppContent() {
           </div>
         }>
           <ErrorBoundary>
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                transition={{ duration: 0.2 }}
-              >
-                {activeComponent}
-              </motion.div>
-            </AnimatePresence>
+            <Routes>
+              {navItems.map((item) => (
+                <Route 
+                  key={item.id} 
+                  path={item.id === 'home' ? '/' : `/${item.id}`} 
+                  element={
+                    <motion.div
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {item.component}
+                    </motion.div>
+                  } 
+                />
+              ))}
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
           </ErrorBoundary>
         </Suspense>
       </main>
@@ -616,18 +635,22 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <AccessibilityProvider>
-          <OfflineProvider>
-            <ToastProvider>
-              <CreditProvider>
-                <AppContent />
-              </CreditProvider>
-            </ToastProvider>
-          </OfflineProvider>
-        </AccessibilityProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <Router>
+      <AuthProvider>
+        <ThemeProvider>
+          <AccessibilityProvider>
+            <OfflineProvider>
+              <ToastProvider>
+                <CreditProvider>
+                  <MusicBoxProvider>
+                    <AppContent />
+                  </MusicBoxProvider>
+                </CreditProvider>
+              </ToastProvider>
+            </OfflineProvider>
+          </AccessibilityProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </Router>
   );
 }

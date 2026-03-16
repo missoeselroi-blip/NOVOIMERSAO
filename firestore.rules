@@ -40,6 +40,17 @@ service cloud.firestore {
     //   - createdAt: string|timestamp
     //   - updatedAt: string|timestamp
     //
+    // Collection: music_box
+    // Document ID: {trackId}
+    // Fields:
+    //   - userId: string (required)
+    //   - title: string (required)
+    //   - audioUrl: string (required)
+    //   - style: string
+    //   - emotion: string
+    //   - date: string
+    //   - createdAt: timestamp
+    //
     // ===============================================================
 
     // Helper Functions
@@ -58,6 +69,16 @@ service cloud.firestore {
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
+    function isValidEmail(email) {
+       return email is string &&
+         email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+       return url is string &&
+         (url.matches("^https://.*") || url.matches("^http://.*") || url.matches("^blob:.*") || url.matches("^data:.*"));
+    }
+
     function isValidUser(data) {
       return data.keys().hasAll(['id', 'email', 'role']) &&
              data.id is string &&
@@ -70,6 +91,13 @@ service cloud.firestore {
              data.userId == request.auth.uid &&
              data.title is string && data.title.size() < 500 &&
              data.content is string && data.content.size() < 50000;
+    }
+
+    function isValidMusicTrack(data) {
+      return data.keys().hasAll(['userId', 'title', 'audioUrl']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() < 200 &&
+             data.audioUrl is string && isValidUrl(data.audioUrl);
     }
 
     // Rules
@@ -104,6 +132,14 @@ service cloud.firestore {
 
     match /metrics/{userId} {
       allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /music_box/{trackId} {
+      allow list: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidMusicTrack(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidMusicTrack(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }
