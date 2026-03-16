@@ -71,13 +71,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-
-  const [isTestModalOpen, setIsTestModalOpen] = useState(false);
-  const [testFilter, setTestFilter] = useState<'Criança' | 'Novo Convertido' | null>(null);
-  const [testDay, setTestDay] = useState<number>(1);
-  const [testResult, setTestResult] = useState<string | null>(null);
-  const [testResultThought, setTestResultThought] = useState<string | null>(null);
-  const [isGeneratingTest, setIsGeneratingTest] = useState(false);
+  const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -87,30 +81,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
     const userName = user?.name ? user.name.split(' ')[0] : 'Amigo(a)';
     return `${timeGreeting}, ${userName}! Que bom que voltou! Bons estudos.`;
-  };
-
-  const generateTestDevotional = async () => {
-    if (!testFilter) {
-      showToast("Por favor, escolha um filtro primeiro! 🙏", "info");
-      return;
-    }
-    setIsGeneratingTest(true);
-    setTestResult(null);
-    showToast("Carregando a sua benção... 🙏", 'info');
-    
-    try {
-      const prompt = `Gere um devocional inspirador e profundo para o dia ${testDay} com o foco especial em "${testFilter}". Apresente o resultado de forma clara, acolhedora e formatada em Markdown.`;
-      
-      const response = await geminiService.generateTextWithThought(prompt, "Você é um mentor espiritual e devocional experiente.", deepThinking);
-      setTestResult(response.text);
-      setTestResultThought(response.thought);
-      showToast("Devocional encontrado! 🙌✨");
-    } catch (error: any) {
-      console.error(error);
-      showToast(error.message || "Erro ao buscar devocional.", 'error');
-    } finally {
-      setIsGeneratingTest(false);
-    }
   };
 
   const verses = [
@@ -129,7 +99,8 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   ];
 
   const quickActions = [
-    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsTestModalOpen(true) },
+    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'bible', label: 'Bíblia Online', desc: 'Acesso imediato à Palavra.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', onClick: () => window.open('https://www.bibliaonline.com.br/nvi', '_blank') },
     { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'theology', label: 'Teologia', desc: 'Formação teológica.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'notebook', label: 'Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-amber-600" />, color: 'bg-amber-50 dark:bg-amber-900/20 shadow-amber-100/50', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -139,8 +110,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20 shadow-orange-100/50', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
     { id: 'contact', label: 'Contato', desc: 'Fale conosco.', icon: <Mail size={20} className="text-cyan-600" />, color: 'bg-cyan-50 dark:bg-cyan-900/20 shadow-cyan-100/50', image: 'https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'news', label: 'Notícias', desc: 'Sinais dos tempos.', icon: <Newspaper size={20} className="text-sky-600" />, color: 'bg-sky-50 dark:bg-sky-900/20 shadow-sky-100/50', onClick: () => setIsNewsModalOpen(true) },
-    { id: 'background', label: 'Fundo', desc: 'Personalize sua página.', icon: <ImageIcon size={20} className="text-stone-600" />, color: 'bg-stone-50 dark:bg-zinc-800 shadow-stone-100/50', onClick: () => setIsBgModalOpen(true) },
+    { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-sky-600" />, color: 'bg-sky-50 dark:bg-sky-900/20 shadow-sky-100/50', onClick: () => setIsNewsModalOpen(true) },
   ];
 
   const handleGenerateMessage = async () => {
@@ -265,7 +235,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const [currentBg, setCurrentBg] = useState("https://i.postimg.cc/1Rqjh4bB/Screenshot-2026-03-09-12-08-27-022-com-google-android-googlequicksearchbox-edit.jpg");
   const [isBgModalOpen, setIsBgModalOpen] = useState(false);
-  const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
   const [isSentimentModalOpen, setIsSentimentModalOpen] = useState(false);
   const [isMessageModalOpen, setIsMessageModalOpen] = useState(false);
   const [selectedMessageType, setSelectedMessageType] = useState<string | null>(null);
@@ -472,13 +441,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             </p>
           </motion.div>
         </div>
-        <button 
-          onClick={() => setIsBgModalOpen(true)}
-          className="absolute bottom-6 right-6 p-3 bg-white/20 backdrop-blur-md border border-white/30 rounded-2xl text-white hover:bg-white/30 transition-all opacity-0 group-hover:opacity-100 z-10"
-          title="Alterar Fundo"
-        >
-          <ImageIcon size={20} />
-        </button>
       </div>
 
       {/* Daily Verse Section */}
@@ -714,43 +676,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             </button>
           </motion.div>
         ))}
-      </section>
-
-      {/* Bible Online Quick Access - Minimalist */}
-      <section className="bg-blue-50 dark:bg-blue-900/10 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 border border-blue-100 dark:border-blue-900/20">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 bg-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <BookOpen className="text-white" size={32} />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-blue-950 dark:text-blue-400">Bíblia Online</h3>
-            <p className="text-blue-800/60 dark:text-blue-200/40 text-sm">Acesso imediato à Palavra de Deus.</p>
-          </div>
-        </div>
-        <button 
-          onClick={() => window.open('https://www.bibliaonline.com.br/nvi', '_blank')}
-          className="w-full md:w-auto px-10 py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-blue-600/20"
-        >
-          ABRIR AGORA <ExternalLink size={18} />
-        </button>
-      </section>
-
-      <section className="bg-orange-50 dark:bg-orange-900/10 p-8 rounded-[2.5rem] flex flex-col md:flex-row items-center justify-between gap-6 border border-orange-100 dark:border-orange-900/20">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 bg-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-            <Newspaper className="text-white" size={32} />
-          </div>
-          <div>
-            <h3 className="text-xl font-bold text-orange-950 dark:text-orange-400">Sinais da Vinda de Cristo</h3>
-            <p className="text-orange-800/60 dark:text-orange-200/40 text-sm">Acompanhe os sinais proféticos: guerras, fome, epidemias e desastres naturais.</p>
-          </div>
-        </div>
-        <button 
-          onClick={() => setIsNewsModalOpen(true)}
-          className="w-full md:w-auto px-10 py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-orange-600/20"
-        >
-          VER SINAIS <ArrowRight size={18} />
-        </button>
       </section>
 
       {/* Message of the Week - Soft Reading Area */}
@@ -1262,146 +1187,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         )}
       </AnimatePresence>
 
-      {/* Test Modal */}
-      <AnimatePresence>
-        {isTestModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-2xl max-h-[90vh] rounded-[2.5rem] overflow-hidden shadow-2xl border border-stone-200 dark:border-zinc-800 flex flex-col"
-            >
-              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center bg-stone-50 dark:bg-zinc-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-stone-800 text-white rounded-xl">
-                    <Sparkles size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-bold">Devocional Imersão</h3>
-                    <p className="text-xs text-stone-500">Busca no banco de dados</p>
-                  </div>
-                </div>
-                <button onClick={() => setIsTestModalOpen(false)} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-8 space-y-6">
-                {!testResult && !isGeneratingTest && (
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300">
-                        Selecione o Filtro:
-                      </label>
-                      <div className="grid grid-cols-2 gap-4">
-                        <button
-                          onClick={() => setTestFilter('Criança')}
-                          className={`p-4 rounded-2xl border transition-all font-bold ${
-                            testFilter === 'Criança'
-                              ? 'bg-blue-500 text-white border-transparent shadow-lg'
-                              : 'bg-white dark:bg-zinc-800 border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-400 hover:border-blue-300'
-                          }`}
-                        >
-                          Criança
-                        </button>
-                        <button
-                          onClick={() => setTestFilter('Novo Convertido')}
-                          className={`p-4 rounded-2xl border transition-all font-bold ${
-                            testFilter === 'Novo Convertido'
-                              ? 'bg-emerald-500 text-white border-transparent shadow-lg'
-                              : 'bg-white dark:bg-zinc-800 border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-400 hover:border-emerald-300'
-                          }`}
-                        >
-                          Novo Convertido
-                        </button>
-                      </div>
-                    </div>
-
-                    {testFilter && (
-                      <div className="space-y-2 animate-in fade-in slide-in-from-top-4">
-                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300">
-                          Selecione o Dia:
-                        </label>
-                        <select
-                          value={testDay}
-                          onChange={(e) => setTestDay(Number(e.target.value))}
-                          className="w-full p-4 bg-stone-50 dark:bg-zinc-800/50 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium"
-                        >
-                          {Array.from({ length: 31 }, (_, i) => (
-                            <option key={i + 1} value={i + 1}>
-                              Dia {i + 1}
-                            </option>
-                          ))}
-                        </select>
-
-                        <button 
-                          onClick={generateTestDevotional}
-                          className="w-full mt-6 px-8 py-4 bg-stone-800 text-white font-bold rounded-2xl hover:bg-stone-900 shadow-lg shadow-stone-800/20 transition-all flex items-center justify-center gap-2"
-                        >
-                          <Sparkles size={20} />
-                          ⚓ Gerar Devocional
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {isGeneratingTest && (
-                  <div className="flex flex-col items-center justify-center py-20 space-y-6">
-                    <Loader2 className="animate-spin text-emerald-600" size={64} />
-                    <div className="text-center space-y-2">
-                      <h4 className="text-xl font-bold">Buscando a palavra... 📖</h4>
-                      <p className="text-stone-500 animate-pulse">Espere que você vai se surpreender... ✨</p>
-                    </div>
-                  </div>
-                )}
-
-                {testResult && (
-                  <div className="space-y-6">
-                    {testResultThought && (
-                      <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4">
-                        <details className="group">
-                          <summary className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer list-none">
-                            <Brain size={14} className="group-open:rotate-12 transition-transform" />
-                            PROCESSO DE PENSAMENTO (IA)
-                          </summary>
-                          <div className="mt-3 text-xs text-amber-600/80 dark:text-amber-500/80 leading-relaxed italic">
-                            {testResultThought}
-                          </div>
-                        </details>
-                      </div>
-                    )}
-                    <div className="prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={testResult} />
-                    </div>
-                    <button 
-                      onClick={() => handleSaveToNotebook(`Devocional: ${testFilter} - Dia ${testDay}`, testResult)}
-                      className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
-                    >
-                      <Save size={20} /> Salvar no Caderno
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {testResult && (
-                <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex justify-end gap-3">
-                  <button 
-                    onClick={() => {
-                      setTestResult(null);
-                      setTestFilter(null);
-                    }}
-                    className="px-6 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-300 transition-all"
-                  >
-                    Fazer Novo Teste
-                  </button>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}
         onClose={() => setIsNotebookModalOpen(false)}
