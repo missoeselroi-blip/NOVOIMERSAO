@@ -360,5 +360,39 @@ export const geminiService = {
     Forneça etimologia, contexto bíblico, contexto histórico e aplicações práticas.`;
     
     return this.generateTextWithThought(`Explique o significado de: "${query}"`, systemInstruction, deepThinking);
+  },
+
+  async chat(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
+    return withRetry(async () => {
+      try {
+        const ai = getAI();
+        const chat = ai.chats.create({
+          model: "gemini-3.1-pro-preview",
+          config: {
+            systemInstruction,
+            thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
+          },
+          history: history,
+        });
+        const response = await chat.sendMessage({ message });
+        
+        let thought = "";
+        const parts = response.candidates?.[0]?.content?.parts;
+        if (parts && Array.isArray(parts)) {
+          for (const part of parts) {
+            if ((part as any).thought === true) {
+              thought = (part as any).text || "";
+            }
+          }
+        }
+
+        return {
+          text: response.text || "",
+          thought: thought
+        };
+      } catch (error: any) {
+        return handleApiError(error);
+      }
+    });
   }
 };

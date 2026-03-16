@@ -34,6 +34,41 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { useOffline } from '../contexts/OfflineContext';
+import { useAuth } from '../contexts/AuthContext';
+import { auth, db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+};
 import { cn } from '../types';
 import { DEVOTIONAL_MATRIX } from '../constants/devotionals';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
@@ -111,6 +146,7 @@ const THEMES: ThemeConfig[] = [
 export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { showToast } = useToast();
   const { isOffline } = useOffline();
+  const { user } = useAuth();
   const [showMissionary, setShowMissionary] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<DevotionalTheme | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -127,6 +163,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const [isGeneratingSeries, setIsGeneratingSeries] = useState(false);
   const [seriesSelectedMonth, setSeriesSelectedMonth] = useState<number>(new Date().getMonth());
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
 
   useEffect(() => {
@@ -338,20 +375,40 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
     if (!pendingNote) return;
-    const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
-    const newNote = {
-      id: Date.now().toString(),
-      title: pendingNote.title,
-      content: pendingNote.content,
-      category,
-      date: new Date().toLocaleDateString('pt-BR')
-    };
-    localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
-    showToast(`Série salva em ${category}! 📓✨`);
-    setIsNotebookModalOpen(false);
-    setPendingNote(null);
+    
+    setIsSavingNote(true);
+    try {
+      if (user) {
+        await addDoc(collection(db, 'notes'), {
+          userId: user.id,
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          createdAt: new Date().toISOString()
+        }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'notes'));
+      } else {
+        const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
+        const newNote = {
+          id: Date.now().toString(),
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          date: new Date().toLocaleDateString('pt-BR'),
+          createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
+      }
+      showToast(`Salvo em ${category}! 📓✨`);
+      setIsNotebookModalOpen(false);
+      setPendingNote(null);
+    } catch (error) {
+      console.error("Error saving to notebook:", error);
+      showToast("Erro ao salvar no caderno.", 'error');
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   return (
@@ -743,6 +800,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}
+        isLoading={isSavingNote}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
       />

@@ -7,6 +7,7 @@ import {
   ArrowLeft,
   Map as MapIcon, 
   MessageSquare, 
+  MessageCircle,
   Sparkles,
   ChevronRight,
   Loader2,
@@ -57,8 +58,40 @@ import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { WifiOff } from 'lucide-react';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+};
 
 interface BibleStudyPageProps {
   deepThinking: boolean;
@@ -102,6 +135,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [meaningSource, setMeaningSource] = useState('Dicionário Aurélio');
   const [meaningResult, setMeaningResult] = useState('');
   const [meaningResultThought, setMeaningResultThought] = useState('');
+  const [meaningHistory, setMeaningHistory] = useState<any[]>([]);
+  const [followUpQuery, setFollowUpQuery] = useState('');
   const [wikiQuery, setWikiQuery] = useState('');
   const [wikiResult, setWikiResult] = useState('');
   const [wikiResultThought, setWikiResultThought] = useState('');
@@ -256,7 +291,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           content: pendingNote.content,
           category,
           createdAt: new Date().toISOString()
-        });
+        }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'notes'));
       } else {
         const saved = localStorage.getItem('preacher_notes');
         const entries = saved ? JSON.parse(saved) : [];
@@ -266,6 +301,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           content: pendingNote.content,
           category,
           date: new Date().toLocaleDateString('pt-BR'),
+          createdAt: new Date().toISOString()
         };
         localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
       }
@@ -905,27 +941,51 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleMeaningSearch = async () => {
-    if (!searchQuery) return;
+  const handleMeaningSearch = async (isFollowUp: boolean = false) => {
+    const query = isFollowUp ? followUpQuery : searchQuery;
+    if (!query) return;
+    
     setIsLoading(true);
     showToast(getRandomWaitingMessage(), 'info');
     try {
-      setMeaningResult('');
-      let prompt = '';
+      if (!isFollowUp) {
+        setMeaningResult('');
+        setMeaningHistory([]);
+      }
       
-      if (meaningSource.includes('Gemini')) {
-        prompt = `Explique o significado, origem e contexto de "${searchQuery}". Forneça uma resposta detalhada e educativa.`;
-      } else if (meaningSource.includes('ChatGPT')) {
-        prompt = `Atue como o ChatGPT e explique o significado de "${searchQuery}". Seja direto e forneça exemplos de uso.`;
-      } else if (meaningSource.includes('IA')) {
-        prompt = `Atue como uma Inteligência Artificial avançada e explique o significado de "${searchQuery}" sob diversas perspectivas.`;
+      let systemInstruction = "Você é um especialista em teologia, linguística e história bíblica.";
+      let prompt = "";
+
+      if (meaningSource.includes('Gemini') || meaningSource.includes('ChatGPT') || meaningSource.includes('IA')) {
+        systemInstruction = `Você é uma IA avançada especializada em estudos bíblicos e teologia. 
+        Sua tarefa é fornecer respostas detalhadas, contextuais e profundamente fundamentadas.
+        
+        DIRETRIZES:
+        1. Cite múltiplas fontes bíblicas (versículos específicos) e fontes teológicas (comentários, autores clássicos, léxicos).
+        2. Organize a resposta de forma clara usando títulos e listas.
+        3. Separe opiniões teológicas distintas quando houver divergências (ex: visões arminianas vs calvinistas, ou interpretações literais vs simbólicas).
+        4. Use um tom respeitoso, educativo e espiritual.
+        5. Se for uma palavra em grego ou hebraico, explique a etimologia e o uso cultural na época.`;
+
+        prompt = isFollowUp 
+          ? `Pergunta de acompanhamento: "${query}"`
+          : `Explique detalhadamente o significado, contexto e implicações de: "${query}"`;
       } else {
-        prompt = `Forneça a definição e o significado de "${searchQuery}" de acordo com o padrão do ${meaningSource}. Inclua etimologia e exemplos se possível.`;
+        prompt = `Forneça a definição e o significado de "${query}" de acordo com o padrão do ${meaningSource}. Inclua etimologia e exemplos se possível.`;
       }
 
-      const response = await geminiService.generateTextWithThought(prompt, "Você é um lexicógrafo e especialista em língua portuguesa.", deepThinking);
+      const response = await geminiService.chat(prompt, meaningHistory, systemInstruction, deepThinking);
+      
       setMeaningResult(response.text);
       setMeaningResultThought(response.thought);
+      
+      const newHistory = [
+        ...meaningHistory,
+        { role: 'user', parts: [{ text: prompt }] },
+        { role: 'model', parts: [{ text: response.text }] }
+      ];
+      setMeaningHistory(newHistory);
+      setFollowUpQuery('');
     } catch (error) {
       console.error(error);
       setMeaningResult('Erro ao buscar significado.');
@@ -3352,11 +3412,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       placeholder="Escreva a palavra, tema ou frase para saber o significado..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleMeaningSearch()}
+                      onKeyDown={(e) => e.key === 'Enter' && handleMeaningSearch(false)}
                       className="w-full pl-12 pr-12 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
                     />
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <AudioSearchButton onResult={(text) => { setSearchQuery(text); handleMeaningSearch(); }} />
+                      <AudioSearchButton onResult={(text) => { setSearchQuery(text); handleMeaningSearch(false); }} />
                     </div>
                   </div>
                   <div className="flex-1 flex flex-col sm:flex-row gap-2">
@@ -3378,7 +3438,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <option value="Pergunte ao Llama IA">Pergunte ao Llama IA</option>
                     </select>
                     <button
-                      onClick={handleMeaningSearch}
+                      onClick={() => handleMeaningSearch(false)}
                       disabled={isLoading || !searchQuery}
                       className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
@@ -3406,6 +3466,36 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none">
                       <MarkdownRenderer content={meaningResult} onSearch={handleWikiSearch} />
                     </div>
+
+                    {(meaningSource.includes('Gemini') || meaningSource.includes('ChatGPT') || meaningSource.includes('IA')) && (
+                      <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-6 rounded-3xl border border-emerald-100 dark:border-emerald-800/30 space-y-4">
+                        <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-bold text-sm">
+                          <MessageCircle size={18} />
+                          PERGUNTA DE ACOMPANHAMENTO
+                        </div>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Faça uma pergunta baseada na resposta acima..."
+                            value={followUpQuery}
+                            onChange={(e) => setFollowUpQuery(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleMeaningSearch(true)}
+                            className="w-full pl-4 pr-12 py-3 bg-white dark:bg-zinc-900 border border-emerald-200 dark:border-emerald-800 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <button
+                            onClick={() => handleMeaningSearch(true)}
+                            disabled={isLoading || !followUpQuery}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg disabled:opacity-50"
+                          >
+                            <Search size={20} />
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-emerald-600/60 dark:text-emerald-500/60 italic">
+                          A IA lembrará do contexto da conversa para responder sua próxima dúvida.
+                        </p>
+                      </div>
+                    )}
+
                     <div className="flex gap-3">
                       <button
                         onClick={() => handleListen(meaningResult)}

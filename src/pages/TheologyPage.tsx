@@ -46,8 +46,40 @@ import { useAuth } from '../contexts/AuthContext';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import jsPDF from 'jspdf';
 
-import { db } from '../lib/firebase';
+import { auth, db } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+};
 
 const THEOLOGY_SUBJECTS = [
   { title: 'Bibliologia', desc: 'A Doutrina das Escrituras', topics: ['Origem e Natureza', 'Inspiração', 'Inerrância', 'Panorama'], prereq: null, icon: Book },
@@ -151,6 +183,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       if (doc.exists()) {
         setTheologyProgress(doc.data());
       }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `theologyProgress/${user.id}`);
     });
 
     return () => unsubscribe();
@@ -340,7 +374,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         issuedAt: new Date().toISOString()
       };
       
-      await addDoc(collection(db, 'theologyCertificates'), certData);
+      await addDoc(collection(db, 'theologyCertificates'), certData).catch(err => handleFirestoreError(err, OperationType.CREATE, 'theologyCertificates'));
 
       // Generate PDF
       const docPdf = new jsPDF('l', 'mm', 'a4');

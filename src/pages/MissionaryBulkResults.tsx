@@ -14,6 +14,42 @@ import { motion } from 'framer-motion';
 import { useToast } from '../components/Toast';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 
+import { useAuth } from '../contexts/AuthContext';
+import { db, auth } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+};
+
 interface Devotional {
   title: string;
   verse: string;
@@ -21,9 +57,11 @@ interface Devotional {
 }
 
 export default function MissionaryBulkResults({ onBack }: { onBack: () => void }) {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [devotionals, setDevotionals] = useState<Devotional[]>([]);
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
 
   useEffect(() => {
@@ -53,23 +91,43 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
     if (!pendingNote) return;
-    const saved = localStorage.getItem('preacher_notes');
-    const entries = saved ? JSON.parse(saved) : [];
     
-    const newEntry = {
-      id: Date.now().toString(),
-      title: pendingNote.title,
-      content: pendingNote.content,
-      category,
-      date: new Date().toLocaleDateString('pt-BR'),
-    };
+    setIsSavingNote(true);
+    try {
+      if (user) {
+        await addDoc(collection(db, 'notes'), {
+          userId: user.id,
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          createdAt: new Date().toISOString()
+        }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'notes'));
+      } else {
+        const saved = localStorage.getItem('preacher_notes');
+        const entries = saved ? JSON.parse(saved) : [];
+        
+        const newEntry = {
+          id: Date.now().toString(),
+          title: pendingNote.title,
+          content: pendingNote.content,
+          category,
+          date: new Date().toLocaleDateString('pt-BR'),
+          createdAt: new Date().toISOString()
+        };
 
-    localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
-    showToast(`Todos os devocionais foram salvos em ${category}! 📖✅`, 'success');
-    setIsNotebookModalOpen(false);
-    setPendingNote(null);
+        localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
+      }
+      showToast(`Todos os devocionais foram salvos em ${category}! 📖✅`, 'success');
+      setIsNotebookModalOpen(false);
+      setPendingNote(null);
+    } catch (error) {
+      console.error("Error saving to notebook:", error);
+      showToast("Erro ao salvar no caderno.", 'error');
+    } finally {
+      setIsSavingNote(false);
+    }
   };
 
   if (devotionals.length === 0) {
@@ -162,6 +220,7 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
       </div>
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}
+        isLoading={isSavingNote}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
       />

@@ -61,6 +61,11 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   });
 
   const notes = user ? firestoreNotes : localNotes;
+  const sortedNotes = [...notes].sort((a, b) => {
+    const dateA = a.createdAt ? new Date(a.createdAt).getTime() : (a.date ? new Date(a.date.split('/').reverse().join('-')).getTime() : 0);
+    const dateB = b.createdAt ? new Date(b.createdAt).getTime() : (b.date ? new Date(b.date.split('/').reverse().join('-')).getTime() : 0);
+    return dateB - dateA;
+  });
 
   const saveNote = async () => {
     if (!currentNote.title || !currentNote.content) {
@@ -278,7 +283,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
     );
   }
 
-  const filteredNotes = notes.filter(n => {
+  const filteredNotes = sortedNotes.filter(n => {
     const matchesSearch = n.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
                          n.content.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = searchQuery ? true : (activeCategory === 'Todos' || n.category === activeCategory);

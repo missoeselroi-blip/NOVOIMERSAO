@@ -57,6 +57,57 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string;
+    email?: string;
+    emailVerified?: boolean;
+    isAnonymous?: boolean;
+    tenantId?: string | null;
+    providerInfo: {
+      providerId: string;
+      displayName: string | null;
+      email: string | null;
+      photoUrl: string | null;
+    }[];
+  }
+}
+
+const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email || undefined,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData.map(provider => ({
+        providerId: provider.providerId,
+        displayName: provider.displayName,
+        email: provider.email,
+        photoUrl: provider.photoURL
+      })) || []
+    },
+    operationType,
+    path
+  };
+  console.error('Firestore Error: ', JSON.stringify(errInfo));
+  throw new Error(JSON.stringify(errInfo));
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
@@ -109,18 +160,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Listen for theology progress
         const theologyUnsub = onSnapshot(doc(db, 'theologyProgress', firebaseUser.uid), (doc) => {
           if (doc.exists()) setTheologyProgress(doc.data());
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, `theologyProgress/${firebaseUser.uid}`);
         });
 
         // Listen for career progress
         const careerUnsub = onSnapshot(doc(db, 'careerProgress', firebaseUser.uid), (doc) => {
           if (doc.exists()) setCareerProgress(doc.data());
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, `careerProgress/${firebaseUser.uid}`);
         });
 
         // Listen for notes
         const notesQuery = query(collection(db, 'notes'), where('userId', '==', firebaseUser.uid));
         const notesUnsub = onSnapshot(notesQuery, (snapshot) => {
           const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          // Sort by createdAt desc
+          notesData.sort((a: any, b: any) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
           setNotes(notesData);
+        }, (error) => {
+          handleFirestoreError(error, OperationType.LIST, 'notes');
         });
 
         // Listen for certificates
@@ -128,6 +191,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const certsUnsub = onSnapshot(certsQuery, (snapshot) => {
           const certsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           setCertificates(certsData);
+        }, (error) => {
+          handleFirestoreError(error, OperationType.LIST, 'theologyCertificates');
         });
 
         // Listen for metrics changes
@@ -144,9 +209,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               hasContributed: false,
               membershipMonths: 0,
             };
-            setDoc(metricsDocRef, initialMetrics);
+            setDoc(metricsDocRef, initialMetrics).catch(err => handleFirestoreError(err, OperationType.WRITE, `metrics/${firebaseUser.uid}`));
             setMetrics(initialMetrics);
           }
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, `metrics/${firebaseUser.uid}`);
         });
 
         setIsInitialLoading(false);

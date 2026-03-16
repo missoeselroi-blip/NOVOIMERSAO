@@ -18,15 +18,20 @@ import { useToast } from '../components/Toast';
 import { cn } from '../types';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
-import { Save } from 'lucide-react';
+import { Save, Coins } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { useCredits } from '../contexts/CreditContext';
+import html2canvas from 'html2canvas';
 
 export default function PostsPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { balance, consumeCredits, estimateCredits } = useCredits();
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+  const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [verse, setVerse] = useState("Pois eu bem sei os planos que tenho para vocês...");
   const [reference, setReference] = useState("Jeremias 29:11");
@@ -45,6 +50,13 @@ export default function PostsPage() {
   };
 
   const generateAiBg = async () => {
+    const cost = estimateCredits('image');
+    
+    if (balance < cost) {
+      showToast(`Créditos insuficientes. Você precisa de ${cost} créditos.`, 'error');
+      return;
+    }
+
     setIsGeneratingBg(true);
     showToast(getRandomWaitingMessage(), 'info');
     try {
@@ -54,6 +66,7 @@ export default function PostsPage() {
       
       const response = await geminiService.generateImage(prompt);
       if (response) {
+        consumeCredits(cost, `Geração de imagem IA: ${imageDescription || verse.substring(0, 20)}...`);
         setBgImage(response);
         showToast("Imagem gerada com sucesso! Glória a Deus! 🙌✨");
       } else {
@@ -64,6 +77,32 @@ export default function PostsPage() {
       showToast("Erro ao gerar imagem. Verifique sua conexão.", 'error');
     } finally {
       setIsGeneratingBg(false);
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!postRef.current) return;
+    
+    setIsDownloading(true);
+    showToast("Preparando sua imagem... 🎨", 'info');
+    
+    try {
+      const canvas = await html2canvas(postRef.current, {
+        useCORS: true,
+        scale: 2, // Higher quality
+        backgroundColor: '#000000'
+      });
+      
+      const link = document.createElement('a');
+      link.download = `imersao-biblica-post-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast("Download concluído! 📥✨");
+    } catch (error) {
+      console.error('Error downloading image:', error);
+      showToast("Erro ao baixar imagem.", 'error');
+    } finally {
+      setIsDownloading(false);
     }
   };
 
@@ -105,6 +144,7 @@ export default function PostsPage() {
   const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
     if (!pendingNote) return;
     
+    setIsSavingToNotebook(true);
     try {
       if (user) {
         await addDoc(collection(db, 'notes'), {
@@ -131,6 +171,8 @@ export default function PostsPage() {
     } catch (error) {
       console.error("Error saving to notebook:", error);
       showToast("Erro ao salvar no caderno.", 'error');
+    } finally {
+      setIsSavingToNotebook(false);
     }
   };
 
@@ -198,8 +240,12 @@ export default function PostsPage() {
             </div>
 
             <div className="mt-6 flex flex-col gap-4">
-              <button className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2">
-                <Download size={20} />
+              <button 
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isDownloading ? <Loader2 className="animate-spin" size={20} /> : <Download size={20} />}
                 Baixar Imagem
               </button>
               <button className="w-full py-4 bg-stone-100 dark:bg-zinc-800 rounded-2xl hover:bg-stone-200 transition-colors flex items-center justify-center gap-2 font-bold text-stone-600 dark:text-zinc-300">
@@ -298,16 +344,23 @@ export default function PostsPage() {
             <button
               onClick={generateAiBg}
               disabled={isGeneratingBg}
-              className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold rounded-2xl hover:opacity-90 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+              className="w-full py-4 bg-zinc-900 dark:bg-zinc-100 dark:text-zinc-900 text-white font-bold rounded-2xl hover:opacity-90 flex flex-col items-center justify-center gap-1 transition-all disabled:opacity-50"
             >
-              {isGeneratingBg ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-              Gerar Fundo com IA
+              <div className="flex items-center gap-2">
+                {isGeneratingBg ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
+                Gerar Fundo com IA
+              </div>
+              <div className="flex items-center gap-1 text-[10px] opacity-70">
+                <Coins size={10} />
+                Custo: {estimateCredits('image')} créditos
+              </div>
             </button>
           </div>
         </div>
       </div>
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}
+        isLoading={isSavingToNotebook}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
       />

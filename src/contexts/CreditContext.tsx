@@ -75,6 +75,7 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       case 'wiki': return 2;
       case 'meaning': return 1;
       case 'author': return 5;
+      case 'image': return 15; // Image generation is expensive
       default: return 2;
     }
   };
