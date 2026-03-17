@@ -46,11 +46,15 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
   const { user, theologyProgress, certificates } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'redacao'>('profile');
 
-  const handleScoreChange = async (subject: string, field: 'evaluation' | 'redacaoMateria' | 'redacaoAprofundamento' | 'redacaoSlide' | 'redacaoVideo' | 'redacaoPodcast', value: string) => {
+  const handleScoreChange = async (subject: string, field: 'evaluation' | 'redacaoMateria' | 'redacaoAprofundamento' | 'redacaoSlide' | 'redacaoVideo' | 'redacaoPodcast' | 'quizPoints' | 'studyPoints', value: string) => {
     if (!user) return;
     
     const numValue = Math.max(0, parseInt(value) || 0);
-    const max = field === 'evaluation' ? 50 : 10;
+    let max = 5;
+    if (field === 'evaluation') max = 40;
+    if (field === 'quizPoints') max = 20;
+    if (field === 'studyPoints') max = 15;
+    
     const finalValue = Math.min(numValue, max);
 
     const current = (theologyProgress && theologyProgress[subject]) || {};
@@ -77,7 +81,9 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
     const redSlide = data.redacaoSlide || 0;
     const redVideo = data.redacaoVideo || 0;
     const redPodcast = data.redacaoPodcast || 0;
-    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast;
+    const quizPoints = data.quizPoints || 0;
+    const studyPoints = data.studyPoints || 0;
+    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints + studyPoints;
   };
 
   const totalPoints = theologyProgress ? Object.keys(theologyProgress).reduce((acc, subject) => {
@@ -185,12 +191,14 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                     <thead>
                       <tr className="text-stone-400 border-b border-stone-100 dark:border-zinc-800">
                         <th className="text-left py-4 font-bold uppercase tracking-wider text-[10px]">Matéria</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Avaliação (50)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Matéria (10)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Aprof. (10)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Slide (10)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Vídeo (10)</th>
-                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Redação Podcast (10)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Avaliação (40)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Resumo (5)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Aprof. (5)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Slide (5)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Vídeo (5)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Podcast (5)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Quizzes (20)</th>
+                        <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Estudo (15)</th>
                         <th className="text-center py-4 font-bold uppercase tracking-wider text-[10px]">Nota Final</th>
                         <th className="text-right py-4 font-bold uppercase tracking-wider text-[10px]">A/R</th>
                       </tr>
@@ -209,7 +217,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                                 value={data.evaluation || ''}
                                 onChange={(e) => handleScoreChange(subject, 'evaluation', e.target.value)}
                                 placeholder="0"
-                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
                               />
                             </td>
                             <td className="py-4 text-center">
@@ -218,7 +226,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                                 value={data.redacaoMateria || ''}
                                 onChange={(e) => handleScoreChange(subject, 'redacaoMateria', e.target.value)}
                                 placeholder="0"
-                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
                               />
                             </td>
                             <td className="py-4 text-center">
@@ -227,7 +235,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                                 value={data.redacaoAprofundamento || ''}
                                 onChange={(e) => handleScoreChange(subject, 'redacaoAprofundamento', e.target.value)}
                                 placeholder="0"
-                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
                               />
                             </td>
                             <td className="py-4 text-center">
@@ -236,7 +244,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                                 value={data.redacaoSlide || ''}
                                 onChange={(e) => handleScoreChange(subject, 'redacaoSlide', e.target.value)}
                                 placeholder="0"
-                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
                               />
                             </td>
                             <td className="py-4 text-center">
@@ -245,7 +253,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                                 value={data.redacaoVideo || ''}
                                 onChange={(e) => handleScoreChange(subject, 'redacaoVideo', e.target.value)}
                                 placeholder="0"
-                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
                               />
                             </td>
                             <td className="py-4 text-center">
@@ -254,7 +262,25 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                                 value={data.redacaoPodcast || ''}
                                 onChange={(e) => handleScoreChange(subject, 'redacaoPodcast', e.target.value)}
                                 placeholder="0"
-                                className="w-16 p-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
+                              />
+                            </td>
+                            <td className="py-4 text-center">
+                              <input 
+                                type="number"
+                                value={data.quizPoints || ''}
+                                onChange={(e) => handleScoreChange(subject, 'quizPoints', e.target.value)}
+                                placeholder="0"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
+                              />
+                            </td>
+                            <td className="py-4 text-center">
+                              <input 
+                                type="number"
+                                value={data.studyPoints || ''}
+                                onChange={(e) => handleScoreChange(subject, 'studyPoints', e.target.value)}
+                                placeholder="0"
+                                className="w-12 p-1 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg text-center outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-xs"
                               />
                             </td>
                             <td className="py-4 text-center">

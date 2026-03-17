@@ -33,7 +33,8 @@ import {
   Users,
   Hourglass,
   Feather,
-  Key
+  Key,
+  Youtube
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -121,6 +122,12 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [currentChapter, setCurrentChapter] = useState(1);
   const [chapterContent, setChapterContent] = useState<Record<number, string>>({});
+  const [chapterQuiz, setChapterQuiz] = useState<any[] | null>(null);
+  const [chapterQuizAnswers, setChapterQuizAnswers] = useState<number[]>([]);
+  const [isChapterQuizSubmitted, setIsChapterQuizSubmitted] = useState(false);
+  const [isGeneratingChapterQuiz, setIsGeneratingChapterQuiz] = useState(false);
+  const [studyStartTime, setStudyStartTime] = useState<number | null>(null);
+  const [sessionStudyTime, setSessionStudyTime] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [theologyProgress, setTheologyProgress] = useState<Record<string, any>>({});
   const [showConclusionModal, setShowConclusionModal] = useState(false);
@@ -192,6 +199,75 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     return () => unsubscribe();
   }, [user]);
 
+  useEffect(() => {
+    if (selectedSubject && !showSubjectModal) {
+      setStudyStartTime(Date.now());
+    } else {
+      if (studyStartTime && selectedSubject) {
+        const duration = Math.floor((Date.now() - studyStartTime) / 1000);
+        updateStudyTime(selectedSubject, duration);
+      }
+      setStudyStartTime(null);
+    }
+  }, [selectedSubject, showSubjectModal]);
+
+  const updateStudyTime = async (subject: string, seconds: number) => {
+    if (!user) return;
+    const current = theologyProgress[subject] || {};
+    const totalSeconds = (current.studyTime || 0) + seconds;
+    
+    // Calculate study points
+    // Até uma hora de estudo: 5 pontos. De 61 minutos até 120 minutos: 10 pontos. Acima de 121 minutos: 15 pontos.
+    let studyPoints = 0;
+    const minutes = totalSeconds / 60;
+    if (minutes > 0 && minutes <= 60) studyPoints = 5;
+    else if (minutes > 60 && minutes <= 120) studyPoints = 10;
+    else if (minutes > 120) studyPoints = 15;
+
+    const newSubjectProgress = {
+      ...current,
+      studyTime: totalSeconds,
+      studyPoints: studyPoints
+    };
+
+    const progressDocRef = doc(db, 'theologyProgress', user.id);
+    await updateDoc(progressDocRef, {
+      [subject]: newSubjectProgress
+    });
+  };
+
+  const generateChapterQuiz = async (content: string) => {
+    setIsGeneratingChapterQuiz(true);
+    try {
+      const prompt = `Com base no conteúdo deste capítulo de teologia, gere um questionário de 4 perguntas chaves de múltipla escolha.
+      Cada questão deve ter exatamente 3 opções de resposta.
+      O questionário é obrigatório para o aluno avançar para o próximo capítulo.
+      Retorne APENAS um JSON válido no seguinte formato:
+      {
+        "questions": [
+          {
+            "question": "Texto da pergunta",
+            "options": ["Opção 1", "Opção 2", "Opção 3"],
+            "correctIndex": 0
+          }
+        ]
+      }
+      
+      Conteúdo do capítulo:
+      ${content.substring(0, 2000)}`;
+
+      const response = await geminiService.generateText(prompt, "Você é um professor de teologia que cria questões precisas e didáticas.");
+      const data = JSON.parse(response.replace(/```json|```/g, '').trim());
+      setChapterQuiz(data.questions);
+      setChapterQuizAnswers([]);
+      setIsChapterQuizSubmitted(false);
+    } catch (error) {
+      console.error("Error generating chapter quiz:", error);
+    } finally {
+      setIsGeneratingChapterQuiz(false);
+    }
+  };
+
   const handleEnroll = async () => {
     if (!user) return;
     setIsEnrolling(true);
@@ -258,6 +334,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       const prompt = `Gere o Capítulo ${chapter} de 5 do estudo teológico sobre "${subject}". O conteúdo deve ser profundo, acadêmico e bíblico.`;
       const response = await geminiService.generateText(prompt, "Você é um professor de teologia sistemática.");
       setChapterContent(prev => ({ ...prev, [chapter]: response }));
+      await generateChapterQuiz(response);
     } catch (error) {
       console.error(error);
       showToast("Erro ao carregar capítulo.", 'error');
@@ -266,35 +343,78 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
   };
 
+  const calculateQuizScore = () => {
+    if (!chapterQuiz) return 0;
+    let correct = 0;
+    chapterQuiz.forEach((q, i) => {
+      if (chapterQuizAnswers[i] === q.correctIndex) correct++;
+    });
+    return correct;
+  };
+
+  const submitChapterQuiz = async () => {
+    if (!user || !selectedSubject || !chapterQuiz) return;
+    
+    const score = calculateQuizScore();
+    setIsChapterQuizSubmitted(true);
+    
+    if (score < 4) {
+      showToast(`Você acertou ${score} de 4. Revise o conteúdo e tente novamente!`, 'error');
+      return;
+    }
+
+    showToast("Parabéns! Você acertou todas as questões e pode avançar! 🎉", 'success');
+
+    // Update points in profile
+    // Cada resposta certa vale um ponto
+    const current = theologyProgress[selectedSubject] || {};
+    
+    // Track points per chapter to avoid farming
+    const chapterKey = `chapter${currentChapter}QuizPoints`;
+    const oldChapterPoints = current[chapterKey] || 0;
+    
+    // Only update if the new score is higher
+    const newChapterPoints = Math.max(oldChapterPoints, score);
+    
+    // Calculate total quiz points for the subject
+    let totalQuizPoints = 0;
+    for (let i = 1; i <= 5; i++) {
+      if (i === currentChapter) {
+        totalQuizPoints += newChapterPoints;
+      } else {
+        totalQuizPoints += (current[`chapter${i}QuizPoints`] || 0);
+      }
+    }
+    
+    const newSubjectProgress = {
+      ...current,
+      [chapterKey]: newChapterPoints,
+      quizPoints: totalQuizPoints,
+      [`chapter${currentChapter}Completed`]: true
+    };
+
+    const progressDocRef = doc(db, 'theologyProgress', user.id);
+    await updateDoc(progressDocRef, {
+      [selectedSubject]: newSubjectProgress
+    });
+  };
+
   const handleNextChapter = () => {
+    if (!isChapterQuizSubmitted || calculateQuizScore() < 4) {
+      showToast("Você precisa acertar todas as 4 questões do questionário para avançar! 📖", 'info');
+      return;
+    }
     if (currentChapter < 5) {
       const next = currentChapter + 1;
       setCurrentChapter(next);
       loadChapter(selectedSubject!, next);
+      window.scrollTo(0, 0);
     }
   };
 
   const handlePrevChapter = () => {
     if (currentChapter > 1) {
       setCurrentChapter(currentChapter - 1);
-    }
-  };
-
-  const markAsRead = async () => {
-    if (!user) return;
-    if (currentChapter === 5) {
-      const current = theologyProgress[selectedSubject!] || {};
-      const newSubjectProgress = { ...current, completed: true };
-      
-      const progressDocRef = doc(db, 'theologyProgress', user.id);
-      await updateDoc(progressDocRef, {
-        [selectedSubject!]: newSubjectProgress
-      });
-      
-      showToast(`Parabéns! Você concluiu ${selectedSubject}! 🎓✨`, 'success');
-    } else {
-      showToast(`Capítulo ${currentChapter} lido! Continue para o próximo. 📖`, 'info');
-      handleNextChapter();
     }
   };
 
@@ -481,41 +601,41 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     setIsEvaluatingSummary(true);
     showToast("Avaliando seu resumo... 🤖", 'info');
 
-    let score = 10;
+    let score = 5;
     const criteria = [
-      { label: 'Repetições excessivas', penalty: 1, met: true },
-      { label: 'Palavras de baixo calão', penalty: 2, met: true },
-      { label: 'Fuga do tema', penalty: 2, met: true },
-      { label: 'Mínimo de 100 palavras', penalty: 1, met: true },
-      { label: 'Coerência textual', penalty: 2, met: true },
+      { label: 'Repetições excessivas', penalty: 0.5, met: true },
+      { label: 'Palavras de baixo calão', penalty: 1, met: true },
+      { label: 'Fuga do tema', penalty: 1, met: true },
+      { label: 'Mínimo de 100 palavras', penalty: 0.5, met: true },
+      { label: 'Coerência textual', penalty: 1, met: true },
     ];
 
     const words = (summaryText.toLowerCase().match(/\b\w+\b/g) || []) as string[];
     const wordFreq: Record<string, number> = {};
     words.forEach(w => { if(w.length > 3) wordFreq[w] = (wordFreq[w] || 0) + 1; });
     const hasExcessiveRepetition = Object.values(wordFreq).some(count => count > words.length * 0.1);
-    if (hasExcessiveRepetition) { score -= 1; criteria[0].met = false; }
+    if (hasExcessiveRepetition) { score -= 0.5; criteria[0].met = false; }
 
     const badWords = ['palavrão1', 'palavrão2'];
     const hasBadWords = words.some(w => badWords.includes(w));
-    if (hasBadWords) { score -= 2; criteria[1].met = false; }
+    if (hasBadWords) { score -= 1; criteria[1].met = false; }
 
     const themeKeywords = ['deus', 'jesus', 'bíblia', 'teologia', 'espírito', 'igreja', 'fé', 'graça', 'pecado', 'salvação', 'cristo', 'senhor', 'palavra', 'ensino', 'estudo', 'resumo', 'doutrina', 'homem', 'anjos', 'escatologia', 'hermenêutica', 'homilética'];
     const hasThemeKeywords = themeKeywords.some(k => summaryText.toLowerCase().includes(k));
-    if (!hasThemeKeywords) { score -= 2; criteria[2].met = false; }
+    if (!hasThemeKeywords) { score -= 1; criteria[2].met = false; }
 
-    if (wordCount < 100) { score -= 1; criteria[3].met = false; }
+    if (wordCount < 100) { score -= 0.5; criteria[3].met = false; }
 
     const sentences = summaryText.split(/[.!?]+/).filter(s => s.trim().length > 0);
     const isCoherent = sentences.length > 2 && sentences.every(s => s.trim().split(' ').length > 2);
-    if (!isCoherent) { score -= 2; criteria[4].met = false; }
+    if (!isCoherent) { score -= 1; criteria[4].met = false; }
 
     let message = "";
-    if (score <= 3) message = "Você pode fazer melhor! Acredite!";
-    else if (score <= 5) message = "Vamos tentar de novo? Você vai conseguir!";
-    else if (score === 6) message = "Foi por pouco! Na próxima vai dar certo!";
-    else if (score <= 8) message = "Parabéns! Muito bom!";
-    else if (score === 9) message = "Ótimo! Servo bom e fiel!";
+    if (score <= 1.5) message = "Você pode fazer melhor! Acredite!";
+    else if (score <= 2.5) message = "Vamos tentar de novo? Você vai conseguir!";
+    else if (score === 3) message = "Foi por pouco! Na próxima vai dar certo!";
+    else if (score <= 4) message = "Parabéns! Muito bom!";
+    else if (score === 4.5) message = "Ótimo! Servo bom e fiel!";
     else message = "Excelente! Você é um exemplo para nós!";
 
     let aiFeedback = "";
@@ -624,14 +744,14 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       if (userAnswers[i] === q.correctIndex) correctAnswers++;
     });
     
-    const score = correctAnswers * 5;
+    const score = correctAnswers * 4;
 
     let message = "";
     if (score <= 10) message = "Tente novamente. Você é capaz!";
     else if (score <= 20) message = "Essa nota pode ser melhorada. Que tal estudar mais pouco?";
-    else if (score <= 30) message = "Você pode fazer melhor. Eu confio em você!";
-    else if (score <= 40) message = "Muito boa nota! Passou com louvor!";
-    else if (score < 50) message = "Ótimo. Você me dá orgulho!";
+    else if (score <= 28) message = "Você pode fazer melhor. Eu confio em você!";
+    else if (score <= 32) message = "Muito boa nota! Passou com louvor!";
+    else if (score < 40) message = "Ótimo. Você me dá orgulho!";
     else message = "Sensacional! Você é um exemplo de dedicação! Continue assim...";
 
     setAssessmentResult({ score, message });
@@ -641,7 +761,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     const newSubjectProgress = {
       ...current,
       evaluation: score,
-      completed: score >= 35
+      completed: score >= 28
     };
     
     const progressDocRef = doc(db, 'theologyProgress', user.id);
@@ -649,7 +769,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       [selectedSubject!]: newSubjectProgress
     });
     
-    showToast(`Avaliação concluída! Nota: ${score}/50`, 'success');
+    showToast(`Avaliação concluída! Nota: ${score}/40`, 'success');
   };
 
   if (showSummary) {
@@ -816,15 +936,6 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                     <span className="flex items-center gap-1">
                       {isLocked ? `REQUISITO: ${subject.prereq}` : 'OPÇÕES DE ESTUDO'} <ChevronRight size={16} />
                     </span>
-                    {!isLocked && !isCompleted && (
-                      <button
-                        onClick={(e) => markSubjectAsCompleted(e, subject.title)}
-                        className="px-3 py-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 hover:text-emerald-700 rounded-lg transition-colors flex items-center gap-1"
-                      >
-                        <CheckCircle size={14} />
-                        Concluir
-                      </button>
-                    )}
                   </div>
                 </div>
               );
@@ -1068,7 +1179,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+5 pts)</span>
                       </button>
                     </div>
 
@@ -1093,7 +1204,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+5 pts)</span>
                       </button>
                     </div>
 
@@ -1115,7 +1226,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+5 pts)</span>
                       </button>
                     </div>
 
@@ -1137,29 +1248,37 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+5 pts)</span>
                       </button>
                     </div>
 
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => updateDetailedProgress(selectedSubject, 'podcast')}
+                        onClick={() => {
+                          if (selectedSubject === 'Bibliologia') {
+                            window.open('https://youtu.be/pt-k0N8oD0I?si=mirl30ZNlFvO3fE-', '_blank');
+                          } else {
+                            updateDetailedProgress(selectedSubject, 'podcast');
+                          }
+                        }}
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
-                          <Mic size={24} />
+                          {selectedSubject === 'Bibliologia' ? <Youtube size={24} /> : <Mic size={24} />}
                         </div>
                         <div className="text-left">
-                          <div className="font-bold">Podcast</div>
-                          <div className="text-xs text-stone-500">Ouça o resumo em áudio</div>
+                          <div className="font-bold">{selectedSubject === 'Bibliologia' ? 'Videocast' : 'Podcast'}</div>
+                          <div className="text-xs text-stone-500">
+                            {selectedSubject === 'Bibliologia' ? 'Assista ao vídeo no YouTube' : 'Ouça o resumo em áudio'}
+                          </div>
                         </div>
                       </button>
                       <button
-                        onClick={() => openSummaryModal('Podcast')}
+                        onClick={() => openSummaryModal(selectedSubject === 'Bibliologia' ? 'Videocast' : 'Podcast')}
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
-                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+10 pts)</span>
+                        <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+5 pts)</span>
                       </button>
                     </div>
                   </div>
@@ -1330,6 +1449,64 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 </div>
               )}
             </div>
+
+            {/* Chapter Quiz Section */}
+            {!isLoading && chapterQuiz && (
+              <div className="mt-12 pt-12 border-t border-stone-100 dark:border-zinc-800 space-y-8">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-2xl">
+                    <Brain size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Questionário do Capítulo {currentChapter}</h3>
+                    <p className="text-sm text-stone-500">Responda corretamente para avançar para o próximo capítulo.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-8">
+                  {chapterQuiz.map((q, qIdx) => (
+                    <div key={qIdx} className="space-y-4">
+                      <h4 className="font-bold text-lg">{qIdx + 1}. {q.question}</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {q.options.map((option: string, oIdx: number) => (
+                          <button
+                            key={oIdx}
+                            onClick={() => {
+                              if (isChapterQuizSubmitted && calculateQuizScore() === 4) return;
+                              const newAnswers = [...chapterQuizAnswers];
+                              newAnswers[qIdx] = oIdx;
+                              setChapterQuizAnswers(newAnswers);
+                            }}
+                            className={cn(
+                              "p-4 text-left rounded-xl border-2 transition-all text-sm font-medium",
+                              chapterQuizAnswers[qIdx] === oIdx
+                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-900 dark:text-emerald-300"
+                                : "border-stone-100 dark:border-zinc-800 hover:border-emerald-200"
+                            )}
+                          >
+                            {option}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-center pt-4">
+                  <button
+                    onClick={submitChapterQuiz}
+                    disabled={chapterQuizAnswers.length < 4 || chapterQuizAnswers.includes(undefined as any)}
+                    className="px-10 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center gap-2 disabled:opacity-50"
+                  >
+                    {isChapterQuizSubmitted && calculateQuizScore() === 4 ? (
+                      <><CheckCircle size={20} /> QUESTIONÁRIO CONCLUÍDO</>
+                    ) : (
+                      <><Zap size={20} /> CORRIGIR QUESTIONÁRIO</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Footer Navigation Bar */}
@@ -1388,12 +1565,21 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                   <Share2 size={20} />
                 </button>
                 <button 
-                  onClick={startAssessment}
+                  onClick={() => {
+                    const isChapter5Passed = theologyProgress[selectedSubject!]?.chapter5Completed;
+                    if (currentChapter === 5 && isChapter5Passed) {
+                      startAssessment();
+                    } else if (currentChapter === 5 && !isChapter5Passed) {
+                      showToast("Você precisa concluir o questionário do capítulo 5 primeiro! 📖", 'info');
+                    } else {
+                      showToast("Conclua todos os 5 capítulos para liberar a avaliação final! 🎓", 'info');
+                    }
+                  }}
                   className="flex-1 min-w-[140px] py-3 md:py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center gap-2 text-sm md:text-base"
                 >
                   <Brain size={20} />
-                  <span className="hidden sm:inline">AVALIAÇÃO (+50 pts)</span>
-                  <span className="sm:hidden">AVALIAÇÃO (+50 pts)</span>
+                  <span className="hidden sm:inline">AVALIAÇÃO (+40 pts)</span>
+                  <span className="sm:hidden">AVALIAÇÃO (+40 pts)</span>
                 </button>
                 <button 
                   onClick={saveToNotebook}
@@ -1461,11 +1647,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                     <div className="relative inline-block">
                       <div className={cn(
                         "w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold border-8",
-                        assessmentResult.score >= 35 ? "border-emerald-500 text-emerald-600" : "border-amber-500 text-amber-600"
+                        assessmentResult.score >= 28 ? "border-emerald-500 text-emerald-600" : "border-amber-500 text-amber-600"
                       )}>
-                        {assessmentResult.score}/50
+                        {assessmentResult.score}/40
                       </div>
-                      {assessmentResult.score >= 35 && (
+                      {assessmentResult.score >= 28 && (
                         <div className="absolute -top-2 -right-2 bg-emerald-500 text-white p-2 rounded-full shadow-lg">
                           <Trophy size={20} />
                         </div>

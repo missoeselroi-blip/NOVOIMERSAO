@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { 
   onAuthStateChanged, 
   signInWithPopup, 
@@ -126,24 +126,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Listen for Auth State Changes
   useEffect(() => {
-    if (!auth || !db) {
-      console.warn("Firebase services not initialized. Auth functionality will be limited.");
+    if (!auth) {
       setIsInitialLoading(false);
       return;
     }
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
-        // User is signed in
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
         
         let userData: User;
-        
         if (userDoc.exists()) {
           userData = userDoc.data() as User;
         } else {
-          // Create new user doc if it doesn't exist (e.g. Google login first time)
           userData = {
             id: firebaseUser.uid,
             name: firebaseUser.displayName || 'Usuário',
@@ -154,77 +150,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           await setDoc(userDocRef, userData);
         }
-        
         setUser(userData);
-
-        // Listen for theology progress
-        const theologyUnsub = onSnapshot(doc(db, 'theologyProgress', firebaseUser.uid), (doc) => {
-          if (doc.exists()) setTheologyProgress(doc.data());
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `theologyProgress/${firebaseUser.uid}`);
-        });
-
-        // Listen for career progress
-        const careerUnsub = onSnapshot(doc(db, 'careerProgress', firebaseUser.uid), (doc) => {
-          if (doc.exists()) setCareerProgress(doc.data());
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `careerProgress/${firebaseUser.uid}`);
-        });
-
-        // Listen for notes
-        const notesQuery = query(collection(db, 'notes'), where('userId', '==', firebaseUser.uid));
-        const notesUnsub = onSnapshot(notesQuery, (snapshot) => {
-          const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          // Sort by createdAt desc
-          notesData.sort((a: any, b: any) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-            return dateB - dateA;
-          });
-          setNotes(notesData);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.LIST, 'notes');
-        });
-
-        // Listen for certificates
-        const certsQuery = query(collection(db, 'theologyCertificates'), where('userId', '==', firebaseUser.uid));
-        const certsUnsub = onSnapshot(certsQuery, (snapshot) => {
-          const certsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setCertificates(certsData);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.LIST, 'theologyCertificates');
-        });
-
-        // Listen for metrics changes
-        const metricsDocRef = doc(db, 'metrics', firebaseUser.uid);
-        const unsubscribeMetrics = onSnapshot(metricsDocRef, (doc) => {
-          if (doc.exists()) {
-            setMetrics(doc.data() as Metrics);
-          } else {
-            const initialMetrics: Metrics = {
-              accesses: 1,
-              totalTime: 0,
-              forumParticipations: 0,
-              shares: 0,
-              hasContributed: false,
-              membershipMonths: 0,
-            };
-            setDoc(metricsDocRef, initialMetrics).catch(err => handleFirestoreError(err, OperationType.WRITE, `metrics/${firebaseUser.uid}`));
-            setMetrics(initialMetrics);
-          }
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `metrics/${firebaseUser.uid}`);
-        });
-
-        setIsInitialLoading(false);
-
-        return () => {
-          theologyUnsub();
-          careerUnsub();
-          notesUnsub();
-          certsUnsub();
-          unsubscribeMetrics();
-        };
       } else {
         setUser(null);
         setTheologyProgress(null);
@@ -239,12 +165,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hasContributed: false,
           membershipMonths: 0,
         });
-        setIsInitialLoading(false);
       }
+      setIsInitialLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [auth, db]);
+
+  // Listen for User Data Changes
+  useEffect(() => {
+    if (!user || !db) return;
+
+    const theologyUnsub = onSnapshot(doc(db, 'theologyProgress', user.id), (doc) => {
+      if (doc.exists()) setTheologyProgress(doc.data());
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `theologyProgress/${user.id}`);
+    });
+
+    const careerUnsub = onSnapshot(doc(db, 'careerProgress', user.id), (doc) => {
+      if (doc.exists()) setCareerProgress(doc.data());
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `careerProgress/${user.id}`);
+    });
+
+    const notesQuery = query(collection(db, 'notes'), where('userId', '==', user.id));
+    const notesUnsub = onSnapshot(notesQuery, (snapshot) => {
+      const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      notesData.sort((a: any, b: any) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      setNotes(notesData);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'notes');
+    });
+
+    const certsQuery = query(collection(db, 'theologyCertificates'), where('userId', '==', user.id));
+    const certsUnsub = onSnapshot(certsQuery, (snapshot) => {
+      const certsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCertificates(certsData);
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'theologyCertificates');
+    });
+
+    const metricsDocRef = doc(db, 'metrics', user.id);
+    const metricsUnsub = onSnapshot(metricsDocRef, (doc) => {
+      if (doc.exists()) {
+        setMetrics(doc.data() as Metrics);
+      } else {
+        const initialMetrics: Metrics = {
+          accesses: 1,
+          totalTime: 0,
+          forumParticipations: 0,
+          shares: 0,
+          hasContributed: false,
+          membershipMonths: 0,
+        };
+        setDoc(metricsDocRef, initialMetrics).catch(err => handleFirestoreError(err, OperationType.WRITE, `metrics/${user.id}`));
+        setMetrics(initialMetrics);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `metrics/${user.id}`);
+    });
+
+    return () => {
+      theologyUnsub();
+      careerUnsub();
+      notesUnsub();
+      certsUnsub();
+      metricsUnsub();
+    };
+  }, [user?.id, db]);
 
   // Track time and sync to Firestore periodically
   useEffect(() => {
@@ -326,21 +318,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await updateDoc(metricsDocRef, updates);
   };
 
+  const value = useMemo(() => ({ 
+    user, 
+    metrics, 
+    theologyProgress,
+    careerProgress,
+    notes,
+    certificates,
+    loginWithGoogle, 
+    loginWithEmail, 
+    registerWithEmail, 
+    logout, 
+    updateMetrics, 
+    isInitialLoading 
+  }), [
+    user, 
+    metrics, 
+    theologyProgress,
+    careerProgress,
+    notes,
+    certificates,
+    isInitialLoading
+  ]);
+
   return (
-    <AuthContext.Provider value={{ 
-      user, 
-      metrics, 
-      theologyProgress,
-      careerProgress,
-      notes,
-      certificates,
-      loginWithGoogle, 
-      loginWithEmail, 
-      registerWithEmail, 
-      logout, 
-      updateMetrics, 
-      isInitialLoading 
-    }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

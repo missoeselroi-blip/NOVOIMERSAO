@@ -27,12 +27,14 @@ import {
   Volume2,
   Hourglass,
   Pencil,
+  Quote,
   ExternalLink,
   Image as ImageIcon,
   GraduationCap,
   Layout,
   Cross,
   User,
+  Users,
   Brain,
   Zap,
   Trophy,
@@ -217,6 +219,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'music_box', label: 'Caixa de Música', icon: <Volume2 size={18} /> },
     { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
+    { id: 'commentary', label: 'Comentário/Debate Bíblico', icon: <MessageSquare size={18} /> },
     { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
@@ -279,6 +282,166 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     const updatedHistory = [newItem, ...studyHistory].slice(0, 20);
     setStudyHistory(updatedHistory);
     localStorage.setItem('study_history', JSON.stringify(updatedHistory));
+  };
+
+  // Commentary state
+  const [selectedCommentators, setSelectedCommentators] = useState<string[]>(['Matthew Henry']);
+  const [selectedCommentaryVersion, setSelectedCommentaryVersion] = useState('NVI');
+  const [commentaryResult, setCommentaryResult] = useState('');
+  const [commentaryDebateResult, setCommentaryDebateResult] = useState('');
+  const [isGeneratingCommentary, setIsGeneratingCommentary] = useState(false);
+  const [isGeneratingCommentaryDebate, setIsGeneratingCommentaryDebate] = useState(false);
+  const [suggestedDebaters, setSuggestedDebaters] = useState<string[]>([]);
+  const [includeOpposingOpinions, setIncludeOpposingOpinions] = useState(false);
+  const [isSuggestingCommentators, setIsSuggestingCommentators] = useState(false);
+  const [commentaryDebateTopic, setCommentaryDebateTopic] = useState('');
+
+  const commentators = [
+    { name: 'Matthew Henry', bio: 'Famoso por seu comentário devocional completo da Bíblia.' },
+    { name: 'Charles Spurgeon', bio: 'Conhecido como o "Príncipe dos Pregadores", foca na aplicação prática e espiritual.' },
+    { name: 'John Calvin', bio: 'Foco na soberania de Deus e exegese cuidadosa.' },
+    { name: 'Martin Luther', bio: 'Ênfase na justificação pela fé e na graça.' },
+    { name: 'John Wesley', bio: 'Foco na santidade e na experiência cristã.' },
+    { name: 'Albert Barnes', bio: 'Comentários explicativos e práticos populares no século XIX.' },
+    { name: 'Adam Clarke', bio: 'Conhecido por seu vasto conhecimento linguístico e histórico.' },
+    { name: 'John MacArthur', bio: 'Perspectiva conservadora e foco na exposição versículo por versículo.' },
+    { name: 'N.T. Wright', bio: 'Perspectiva contemporânea e foco no contexto histórico do Novo Testamento.' },
+    { name: 'William Barclay', bio: 'Comentários acessíveis com foco no significado das palavras gregas.' },
+  ];
+
+  const commentaryVersions = [
+    'NVI', 'ARA', 'ARC', 'KJV', 'Almeida Século 21', 'NTLH'
+  ];
+
+  const handleSuggestCommentators = async () => {
+    if (!topic) {
+      showToast("Insira um tema primeiro para sugerirmos os melhores comentaristas.", "info");
+      return;
+    }
+    setIsSuggestingCommentators(true);
+    try {
+      const prompt = `Com base no tema ou versículo "${topic}", identifique os dois comentaristas bíblicos ou teólogos que mais se aprofundaram ou têm as visões mais relevantes sobre este assunto específico. 
+      Retorne apenas os nomes dos dois autores, separados por vírgula. Não adicione mais nada.`;
+      
+      const response = await geminiService.generateText(prompt);
+      const suggested = response.split(',').map(s => s.trim()).filter(s => s.length > 0);
+      if (suggested.length > 0) {
+        setSelectedCommentators(suggested);
+        showToast(`Sugeridos: ${suggested.join(' e ')}`, "success");
+      }
+    } catch (error) {
+      console.error("Erro ao sugerir comentaristas:", error);
+      showToast("Erro ao sugerir comentaristas.", "error");
+    } finally {
+      setIsSuggestingCommentators(false);
+    }
+  };
+
+  const handleGenerateCommentary = async () => {
+    if (!topic) {
+      showToast("Por favor, insira um versículo ou tema para o comentário.", "error");
+      return;
+    }
+
+    setIsGeneratingCommentary(true);
+    setCommentaryDebateTopic(topic); // Pre-fill debate topic
+    try {
+      const prompt = `Aja como um grupo de renomados teólogos e comentaristas bíblicos. 
+      Gere um estudo bíblico exaustivo e comentário detalhado sobre o versículo ou tema: "${topic}".
+      
+      Fontes e Recursos a serem integrados:
+      1. Bases Bíblicas: Citações diretas na versão ${selectedCommentaryVersion}.
+      2. Comentários Bíblicos: Perspectivas detalhadas dos principais autores que abordam este assunto, incluindo especificamente: ${selectedCommentators.join(', ')}.
+      3. Bíblias de Estudo: Insights de Bíblias renomadas (ex: Genebra, Thompson, Shedd, Plenitude, MacArthur).
+      4. Enciclopédias Bíblicas: Contexto histórico, arqueológico e geográfico profundo.
+      5. Dicionários Bíblicos: Definições e etimologias de termos-chave do tema no original (Hebraico/Grego).
+      
+      Estrutura do Estudo:
+      1. Introdução e Panorama Geral
+      2. Contexto Histórico, Cultural e Literário (Enciclopédia)
+      3. Análise Exegética e Linguística (Dicionário)
+      4. Comentário Teológico Detalhado (Baseado em ${selectedCommentators.join(', ')} e Bíblias de Estudo)
+      5. Síntese e Conclusão
+      
+      Formate o texto em Markdown com títulos claros, negritos e listas para facilitar a leitura.
+      
+      IMPORTANTE: Ao final do seu comentário, adicione uma seção chamada "SUGESTÃO PARA DEBATE" contendo exatamente dois nomes de autores teológicos renomados que possuem visões possivelmente divergentes ou complementares sobre este tema específico, no formato: [Autor 1, Autor 2].`;
+
+      const response = await geminiService.generateText(prompt);
+      
+      // Extract suggested debaters
+      const suggestionMatch = response.match(/SUGESTÃO PARA DEBATE.*\[(.*?)\]/s);
+      if (suggestionMatch && suggestionMatch[1]) {
+        const authors = suggestionMatch[1].split(',').map(s => s.trim());
+        if (authors.length >= 2) {
+          setSuggestedDebaters(authors.slice(0, 2));
+        }
+      }
+
+      setCommentaryResult(response);
+      addToHistory({
+        tab: 'commentary',
+        query: topic,
+        result: response,
+        type: `Comentário: ${selectedCommentators.join(', ')}`
+      });
+    } catch (error) {
+      console.error("Erro ao gerar comentário:", error);
+      showToast("Erro ao gerar comentário. Tente novamente.", "error");
+    } finally {
+      setIsGeneratingCommentary(false);
+    }
+  };
+
+  const handleGenerateCommentaryDebate = async () => {
+    const targetTopic = commentaryDebateTopic || topic;
+    if (!targetTopic) {
+      showToast("Por favor, insira um tema para o debate.", "error");
+      return;
+    }
+
+    setIsGeneratingCommentaryDebate(true);
+    try {
+      // Use suggested debaters if available and no specific ones selected
+      let debateAuthors = selectedCommentators.filter(n => n.trim() !== '');
+      
+      if (debateAuthors.length < 2 && suggestedDebaters.length >= 2) {
+        debateAuthors = suggestedDebaters;
+      }
+      
+      if (debateAuthors.length < 2) {
+        const suggestPrompt = `Para o tema "${targetTopic}", identifique os dois autores teológicos com as visões mais profundas e possivelmente divergentes para um debate. Retorne apenas os nomes separados por vírgula.`;
+        const suggestRes = await geminiService.generateText(suggestPrompt);
+        debateAuthors = suggestRes.split(',').map(s => s.trim());
+      }
+
+      const prompt = `Aja como um moderador de um debate teológico de alto nível.
+      O tema do debate é: "${targetTopic}".
+      Os debatedores principais são: ${debateAuthors.join(' e ')}.
+      
+      Estrutura do Debate:
+      1. Tese de ${debateAuthors[0]} sobre o assunto.
+      2. Antítese ou Perspectiva Divergente de ${debateAuthors[1]}.
+      3. Pontos de Tensão e Diálogo entre as duas visões.
+      4. Síntese Teológica e implicações para a fé cristã.
+      
+      Baseie-se em obras reais e pensamentos documentados destes autores.
+      Formate em Markdown.`;
+
+      const response = await geminiService.generateText(prompt);
+      setCommentaryDebateResult(response);
+      addToHistory({
+        tab: 'commentary',
+        query: targetTopic,
+        result: response,
+        type: `Debate: ${debateAuthors.join(' vs ')}`
+      });
+    } catch (error) {
+      console.error("Erro ao gerar debate:", error);
+      showToast("Erro ao gerar debate. Tente novamente.", "error");
+    } finally {
+      setIsGeneratingCommentaryDebate(false);
+    }
   };
 
   const loadFromHistory = (item: StudyHistoryItem) => {
@@ -4030,6 +4193,238 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <Copy size={18} />
                         Copiar
                       </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'commentary' && (
+                  <div className="space-y-12">
+                    {/* Section 1: Comprehensive Commentary */}
+                    <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl shadow-stone-200/50 dark:shadow-none">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
+                            <MessageSquare size={24} />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-stone-800 dark:text-zinc-100">Comentário Bíblico Profundo</h3>
+                            <p className="text-sm text-stone-500 dark:text-zinc-400">Recursos exaustivos: Comentários, Bíblias de Estudo, Enciclopédias e Dicionários</p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={handleSuggestCommentators}
+                          disabled={isSuggestingCommentators || !topic}
+                          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-all text-sm font-bold disabled:opacity-50"
+                        >
+                          {isSuggestingCommentators ? <Loader2 className="animate-spin" size={16} /> : <Brain size={16} />}
+                          Sugerir Autores
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Autores Principais</label>
+                            <button 
+                              onClick={() => setSelectedCommentators([...selectedCommentators, ''])}
+                              className="text-emerald-600 hover:text-emerald-700 text-xs font-bold flex items-center gap-1"
+                            >
+                              <Plus size={14} /> Adicionar
+                            </button>
+                          </div>
+                          <div className="space-y-2">
+                            {selectedCommentators.map((name, index) => (
+                              <div key={index} className="flex gap-2">
+                                <div className="relative flex-1">
+                                  <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => {
+                                      const newNames = [...selectedCommentators];
+                                      newNames[index] = e.target.value;
+                                      setSelectedCommentators(newNames);
+                                    }}
+                                    placeholder="Nome do comentarista"
+                                    className="w-full p-3 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm"
+                                    list="commentators-list"
+                                  />
+                                  <datalist id="commentators-list">
+                                    {commentators.map(c => <option key={c.name} value={c.name} />)}
+                                  </datalist>
+                                </div>
+                                {selectedCommentators.length > 1 && (
+                                  <button 
+                                    onClick={() => setSelectedCommentators(selectedCommentators.filter((_, i) => i !== index))}
+                                    className="p-3 text-stone-400 hover:text-red-500 transition-all"
+                                  >
+                                    <Trash2 size={18} />
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="space-y-6">
+                          <div className="space-y-2">
+                            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Versão Bíblica</label>
+                            <select 
+                              value={selectedCommentaryVersion}
+                              onChange={(e) => setSelectedCommentaryVersion(e.target.value)}
+                              className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            >
+                              {commentaryVersions.map(v => (
+                                <option key={v} value={v}>{v}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                            <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
+                              Esta pesquisa integra automaticamente comentários bíblicos, bíblias de estudo, enciclopédias e dicionários bíblicos para um resultado exaustivo.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="relative">
+                          <input 
+                            type="text"
+                            value={topic}
+                            onChange={(e) => setTopic(e.target.value)}
+                            placeholder="Ex: João 3:16 ou 'A Graça de Deus'"
+                            className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent focus:border-emerald-500 rounded-[2rem] outline-none transition-all shadow-inner text-lg"
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                            <button 
+                              onClick={handleGenerateCommentary}
+                              disabled={isGeneratingCommentary || !topic}
+                              className="p-4 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-600/20"
+                            >
+                              {isGeneratingCommentary ? <Loader2 className="animate-spin" size={24} /> : <Search size={24} />}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {commentaryResult && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="mt-8 space-y-6"
+                        >
+                          <div className="bg-stone-50 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800 prose dark:prose-invert max-w-none relative">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2 text-emerald-600 font-bold uppercase text-xs tracking-widest">
+                                <BookOpen size={16} /> Resultado do Comentário
+                              </div>
+                              <button 
+                                onClick={() => setCommentaryResult('')}
+                                className="text-stone-400 hover:text-red-500 transition-all"
+                                title="Limpar resultado"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                            <MarkdownRenderer content={commentaryResult} onSearch={handleWikiSearch} />
+                          </div>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => handleSaveToNotebook(`Comentário: ${topic}`, commentaryResult)}
+                              className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
+                            >
+                              <Save size={20} /> Salvar no Caderno
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+                    </div>
+
+                    {/* Section 2: Debate Section */}
+                    <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl shadow-stone-200/50 dark:shadow-none">
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-2xl">
+                          <Users size={24} />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-stone-800 dark:text-zinc-100">Debate Teológico</h3>
+                          <p className="text-sm text-stone-500 dark:text-zinc-400">Confronte visões de diferentes autores para um estudo mais profundo</p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-6 mb-8">
+                        <div className="relative">
+                          <input 
+                            type="text"
+                            value={commentaryDebateTopic || topic}
+                            onChange={(e) => setCommentaryDebateTopic(e.target.value)}
+                            placeholder="Tema para o debate..."
+                            className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent focus:border-amber-500 rounded-[2rem] outline-none transition-all shadow-inner text-lg"
+                          />
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                            <button 
+                              onClick={handleGenerateCommentaryDebate}
+                              disabled={isGeneratingCommentaryDebate || (!commentaryDebateTopic && !topic)}
+                              className="px-8 py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-700 disabled:opacity-50 transition-all shadow-lg shadow-amber-600/20 flex items-center gap-2"
+                            >
+                              {isGeneratingCommentaryDebate ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}
+                              Criar Debate
+                            </button>
+                          </div>
+                        </div>
+                        <p className="text-xs text-stone-400 italic ml-4">
+                          * A IA selecionará automaticamente dois autores de peso para o debate baseado no tema, mas você pode alterar os autores na seção acima se desejar.
+                        </p>
+                      </div>
+
+                      {commentaryDebateResult && (
+                        <motion.div 
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-6"
+                        >
+                          <div className="bg-amber-50/50 dark:bg-amber-900/10 p-8 rounded-[2rem] border border-amber-100 dark:border-amber-900/30 prose dark:prose-invert max-w-none relative">
+                            <div className="flex items-center justify-between mb-4">
+                              <div className="flex items-center gap-2 text-amber-600 font-bold uppercase text-xs tracking-widest">
+                                <Zap size={16} /> Resultado do Debate
+                              </div>
+                              <button 
+                                onClick={() => setCommentaryDebateResult('')}
+                                className="text-stone-400 hover:text-red-500 transition-all"
+                                title="Limpar resultado"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                            <MarkdownRenderer content={commentaryDebateResult} onSearch={handleWikiSearch} />
+                          </div>
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => handleSaveToNotebook(`Debate: ${commentaryDebateTopic || topic}`, commentaryDebateResult)}
+                              className="flex-1 py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-700 flex items-center justify-center gap-2 shadow-lg shadow-amber-600/20 transition-all"
+                            >
+                              <Save size={20} /> Salvar no Caderno
+                            </button>
+                          </div>
+                        </motion.div>
+                      )}
+
+                      {suggestedDebaters.length > 0 && !commentaryDebateResult && (
+                        <div className="mt-6 p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border border-amber-100 dark:border-amber-900/30">
+                          <p className="text-sm font-bold text-amber-800 dark:text-amber-400 mb-3 flex items-center gap-2">
+                            <Brain size={18} /> Sugestão de Debatedores para este tema:
+                          </p>
+                          <div className="flex flex-wrap gap-2">
+                            {suggestedDebaters.map((author, idx) => (
+                              <span key={idx} className="px-4 py-2 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold border border-amber-200 dark:border-amber-800 shadow-sm">
+                                {author}
+                              </span>
+                            ))}
+                          </div>
+                          <p className="text-[10px] text-amber-600/70 dark:text-amber-400/50 mt-3 italic">
+                            Estes autores foram sugeridos com base na sua pesquisa de comentário acima.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
