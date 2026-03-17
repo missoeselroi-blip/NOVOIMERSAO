@@ -81,6 +81,8 @@ enum OperationType {
   WRITE = 'write',
 }
 
+import { FeedbackSection } from '../components/FeedbackSection';
+
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -2692,6 +2694,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
                       <MarkdownRenderer content={result} onSearch={handleWikiSearch} />
+                      <div className="mt-8 pt-8 border-t border-stone-100 dark:border-zinc-800">
+                        <FeedbackSection page="Imersão Bíblica" context={activeTab} />
+                      </div>
                     </div>
                     
                     <div className="flex flex-wrap gap-3">

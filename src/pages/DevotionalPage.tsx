@@ -49,6 +49,8 @@ enum OperationType {
   WRITE = 'write',
 }
 
+import { FeedbackSection } from '../components/FeedbackSection';
+
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -642,6 +644,10 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                 
                 <div className="flex-1 p-10 overflow-y-auto custom-scrollbar">
                   <MarkdownRenderer content={devotionalResult} />
+                  
+                  <div className="mt-12 pt-12 border-t border-stone-100 dark:border-zinc-800">
+                    <FeedbackSection page="Devocional" context={selectedTheme || ''} />
+                  </div>
                 </div>
 
                 <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex flex-col gap-4">

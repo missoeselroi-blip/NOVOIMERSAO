@@ -109,7 +109,12 @@ service cloud.firestore {
 
     match /theologyProgress/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow write: if isOwner(userId) || isAdmin();
+      allow write, delete: if isOwner(userId) || isAdmin();
+    }
+
+    match /feedback/{feedbackId} {
+      allow create: if true; // Allow anonymous feedback
+      allow read, delete: if isAdmin();
     }
 
     match /careerProgress/{userId} {

@@ -39,12 +39,42 @@ const THEOLOGY_SUBJECTS = [
 ];
 
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../lib/firebase';
-import { doc, updateDoc } from 'firebase/firestore';
+import { db, auth } from '../lib/firebase';
+import { doc, updateDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { useToast } from '../components/Toast';
 
 export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user, theologyProgress, certificates } = useAuth();
+  const { showToast } = useToast();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'redacao'>('profile');
+  const [isResetting, setIsResetting] = useState(false);
+
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
+  const isAdmin = user?.email === 'missoeselroi@gmail.com';
+
+  const resetAllTheologyProgress = async () => {
+    if (!isAdmin) return;
+    
+    setIsResetting(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, 'theologyProgress'));
+      const batch = writeBatch(db);
+      
+      querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      showToast('Todo o progresso de Teologia foi reiniciado com sucesso! 🔄✅', 'success');
+      setShowResetConfirm(false);
+    } catch (error) {
+      console.error("Error resetting theology progress:", error);
+      showToast('Erro ao reiniciar progresso.', 'error');
+    } finally {
+      setIsResetting(false);
+    }
+  };
 
   const handleScoreChange = async (subject: string, field: 'evaluation' | 'redacaoMateria' | 'redacaoAprofundamento' | 'redacaoSlide' | 'redacaoVideo' | 'redacaoPodcast' | 'quizPoints' | 'studyPoints', value: string) => {
     if (!user) return;
@@ -167,6 +197,42 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                     />
                   </div>
                   <p className="text-stone-500 font-medium">Histórico acadêmico e progresso na Marinha Celestial</p>
+                  
+                  {isAdmin && (
+                    <div className="mt-4 space-y-4">
+                      {!showResetConfirm ? (
+                        <button
+                          onClick={() => setShowResetConfirm(true)}
+                          className="px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 transition-all shadow-lg shadow-red-600/20 flex items-center gap-2"
+                        >
+                          REINICIAR TODOS OS PONTOS DE TEOLOGIA
+                        </button>
+                      ) : (
+                        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-2xl space-y-3">
+                          <p className="text-xs font-bold text-red-700 dark:text-red-400">
+                            ⚠️ TEM CERTEZA? Isso irá apagar o progresso de TODOS os alunos no curso de Teologia. Esta ação não pode ser desfeita.
+                          </p>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={resetAllTheologyProgress}
+                              disabled={isResetting}
+                              className="px-4 py-2 bg-red-600 text-white rounded-lg text-[10px] font-bold hover:bg-red-700 transition-all disabled:opacity-50"
+                            >
+                              {isResetting ? 'Reiniciando...' : 'SIM, REINICIAR TUDO'}
+                            </button>
+                            <button
+                              onClick={() => setShowResetConfirm(false)}
+                              disabled={isResetting}
+                              className="px-4 py-2 bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 rounded-lg text-[10px] font-bold hover:bg-stone-300 transition-all"
+                            >
+                              CANCELAR
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
                     <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-full text-sm font-bold flex items-center gap-2">
                       <Trophy size={16} /> {totalPoints} Pontos

@@ -60,6 +60,8 @@ enum OperationType {
   WRITE = 'write',
 }
 
+import { FeedbackSection } from '../components/FeedbackSection';
+
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
     error: error instanceof Error ? error.message : String(error),
@@ -1449,6 +1451,10 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 </div>
               )}
             </div>
+
+                  <div className="mt-12">
+                    <FeedbackSection page="Teologia" context={selectedSubject || ''} />
+                  </div>
 
             {/* Chapter Quiz Section */}
             {!isLoading && chapterQuiz && (
