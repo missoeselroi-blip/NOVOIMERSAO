@@ -1791,9 +1791,22 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   const [generatedResourceImage, setGeneratedResourceImage] = useState<string | null>(null);
+  const [isEditingKidsResult, setIsEditingKidsResult] = useState(false);
+  const [editedKidsResult, setEditedKidsResult] = useState<any>(null);
   const [isResourceImageModalOpen, setIsResourceImageModalOpen] = useState(false);
   const [resourceImageSource, setResourceImageSource] = useState('');
   const [resourceStudyResult, setResourceStudyResult] = useState('');
+
+  const handleSaveKidsEdit = () => {
+    setKidsResult(editedKidsResult);
+    setIsEditingKidsResult(false);
+    showToast("Alterações salvas! ✨");
+  };
+
+  const handleCancelKidsEdit = () => {
+    setEditedKidsResult(kidsResult);
+    setIsEditingKidsResult(false);
+  };
 
   const handleGenerateResourceImage = async (resourceTitle: string) => {
     setIsLoading(true);
@@ -2431,6 +2444,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
               <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex gap-3">
                 <button 
+                  onClick={() => handleListen(creationPopup.content)}
+                  disabled={isGeneratingSpeech}
+                  className="flex-1 py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                  Ouvir
+                </button>
+                <button 
                   onClick={() => {
                     navigator.clipboard.writeText(creationPopup.content);
                     showToast("Copiado! 📋✨");
@@ -2825,14 +2846,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       >
                         <Globe size={18} />
                         ⚓ Wiki
-                      </button>
-                      <button
-                        onClick={() => handleListen(result)}
-                        disabled={isGeneratingSpeech}
-                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                      >
-                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
-                        Ouvir
                       </button>
                       <button
                         onClick={() => {
@@ -3916,6 +3929,38 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             <p className="text-stone-500">Clique no botão acima para gerar a ilustração!</p>
                           </div>
                         )
+                      ) : isEditingKidsResult ? (
+                        <div className="w-full h-full flex flex-col gap-4">
+                          <textarea
+                            value={
+                              kidsActiveTab === 'children' ? (editedKidsResult?.children || '') :
+                              kidsActiveTab === 'monitors' ? (editedKidsResult?.monitors || '') :
+                              (editedKidsResult?.activities || '')
+                            }
+                            onChange={(e) => {
+                              const newResult = { ...editedKidsResult };
+                              if (kidsActiveTab === 'children') newResult.children = e.target.value;
+                              else if (kidsActiveTab === 'monitors') newResult.monitors = e.target.value;
+                              else newResult.activities = e.target.value;
+                              setEditedKidsResult(newResult);
+                            }}
+                            className="w-full h-[400px] p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none resize-none font-sans"
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button
+                              onClick={handleCancelKidsEdit}
+                              className="px-6 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200"
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              onClick={handleSaveKidsEdit}
+                              className="px-6 py-2 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700"
+                            >
+                              Salvar Alterações
+                            </button>
+                          </div>
+                        </div>
                       ) : (
                         <MarkdownRenderer 
                           content={
@@ -3928,6 +3973,17 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       )}
                     </div>
                     <div className="flex flex-wrap gap-3">
+                      {!isEditingKidsResult && kidsActiveTab !== 'illustration' && (
+                        <button
+                          onClick={() => {
+                            setEditedKidsResult(kidsResult);
+                            setIsEditingKidsResult(true);
+                          }}
+                          className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
+                        >
+                          <Edit size={18} /> Editar
+                        </button>
+                      )}
                       <button
                         onClick={() => handleListen(kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''))}
                         disabled={isGeneratingSpeech}

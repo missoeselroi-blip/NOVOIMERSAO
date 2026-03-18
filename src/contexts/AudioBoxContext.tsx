@@ -94,9 +94,29 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [user]);
 
   const saveTrack = async (title: string, audioUrl: string, style: string, emotion: string) => {
+    let finalAudioUrl = audioUrl;
+
+    // If it's a blob URL, we should try to convert it to base64 for persistence
+    // since blob URLs are only valid for the current session.
+    if (audioUrl.startsWith('blob:')) {
+      try {
+        const response = await fetch(audioUrl);
+        const blob = await response.blob();
+        finalAudioUrl = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+      } catch (error) {
+        console.error("Error converting blob to base64:", error);
+        // Fallback to original URL if conversion fails
+      }
+    }
+
     const newTrack = {
       title,
-      audioUrl,
+      audioUrl: finalAudioUrl,
       style,
       emotion,
       date: new Date().toLocaleDateString(),
@@ -116,7 +136,12 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } else {
       const saved = localStorage.getItem('audio_box_tracks');
       const currentTracks = saved ? JSON.parse(saved) : [];
-      const trackWithId = { ...newTrack, id: Date.now().toString(), createdAt: new Date().toISOString() };
+      // For localStorage, convert Timestamp to ISO string
+      const trackWithId = { 
+        ...newTrack, 
+        id: Date.now().toString(), 
+        createdAt: new Date().toISOString() 
+      };
       const updatedTracks = [trackWithId, ...currentTracks];
       localStorage.setItem('audio_box_tracks', JSON.stringify(updatedTracks));
       setTracks(updatedTracks);

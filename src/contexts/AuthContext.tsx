@@ -148,7 +148,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    let unsubscribeUser: (() => void) | null = null;
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Clean up previous user listener if it exists
+      if (unsubscribeUser) {
+        unsubscribeUser();
+        unsubscribeUser = null;
+      }
+
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         const userDoc = await getDoc(userDocRef);
@@ -167,12 +175,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           await setDoc(userDocRef, userData);
         }
-        const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+        
+        unsubscribeUser = onSnapshot(userDocRef, (doc) => {
           if (doc.exists()) {
             setUser(doc.data() as User);
           }
+          setIsInitialLoading(false);
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+          setIsInitialLoading(false);
         });
-        return () => unsubscribeUser();
       } else {
         setUser(null);
         setTheologyProgress(null);
@@ -187,11 +199,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           hasContributed: false,
           membershipMonths: 0,
         });
+        setIsInitialLoading(false);
       }
-      setIsInitialLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      if (unsubscribeUser) unsubscribeUser();
+    };
   }, [auth, db]);
 
   // Listen for User Data Changes
@@ -264,19 +279,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user || !db) return;
 
-    const interval = setInterval(async () => {
-      setMetrics(prev => {
-        const newTime = prev.totalTime + 1;
-        if (newTime % 30 === 0 && db) {
-          const metricsDocRef = doc(db, 'metrics', user.id);
-          updateDoc(metricsDocRef, { totalTime: newTime }).catch(console.error);
-        }
-        return { ...prev, totalTime: newTime };
-      });
+    let localTotalTime = metrics.totalTime;
+    const interval = setInterval(() => {
+      localTotalTime += 1;
+      setMetrics(prev => ({ ...prev, totalTime: localTotalTime }));
+      
+      // Sync to Firestore every 5 minutes (300 seconds) to reduce write operations
+      if (localTotalTime % 300 === 0 && db) {
+        const metricsDocRef = doc(db, 'metrics', user.id);
+        updateDoc(metricsDocRef, { totalTime: localTotalTime }).catch(err => {
+          // If we hit a resource-exhausted error, we should stop trying to write for a while
+          if (err.message.includes('resource-exhausted')) {
+            console.error("Firestore quota exceeded. Slowing down metrics updates.");
+          } else {
+            console.error("Error updating metrics:", err);
+          }
+        });
+      }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user?.id, db]);
 
   const loginWithGoogle = async () => {
     if (!auth) return;
