@@ -1,12 +1,12 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Book, BookOpen, PenTool, Loader2 } from 'lucide-react';
+import { X, Book, BookOpen, PenTool, Loader2, Theater, ScrollText, PlusCircle } from 'lucide-react';
 
 interface SaveToNotebookModalProps {
   isOpen: boolean;
   isLoading?: boolean;
   onClose: () => void;
-  onConfirm: (category: 'Anotações' | 'Pregações' | 'Estudos') => void;
+  onConfirm: (category: 'Anotações' | 'Pregações' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => void;
 }
 
 export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: SaveToNotebookModalProps) {
@@ -91,6 +91,48 @@ export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: S
                 <div className="text-left">
                   <h4 className="font-bold text-stone-900 dark:text-white">Estudos</h4>
                   <p className="text-sm text-stone-500 dark:text-zinc-400">Pesquisas e aprofundamentos bíblicos</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onConfirm('Histórias')}
+                disabled={isLoading}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform">
+                  <ScrollText size={24} />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-bold text-stone-900 dark:text-white">Histórias</h4>
+                  <p className="text-sm text-stone-500 dark:text-zinc-400">Contos, fábulas e estórias geradas</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onConfirm('Teatro')}
+                disabled={isLoading}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all group disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center text-rose-600 dark:text-rose-400 group-hover:scale-110 transition-transform">
+                  <Theater size={24} />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-bold text-stone-900 dark:text-white">Teatro</h4>
+                  <p className="text-sm text-stone-500 dark:text-zinc-400">Peças, roteiros e dramaturgia</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => onConfirm('Outros')}
+                disabled={isLoading}
+                className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-stone-500 hover:bg-stone-50 dark:hover:bg-stone-900/20 transition-all group disabled:opacity-50"
+              >
+                <div className="w-12 h-12 rounded-xl bg-stone-100 dark:bg-stone-900/50 flex items-center justify-center text-stone-600 dark:text-stone-400 group-hover:scale-110 transition-transform">
+                  <PlusCircle size={24} />
+                </div>
+                <div className="text-left">
+                  <h4 className="font-bold text-stone-900 dark:text-white">Outros</h4>
+                  <p className="text-sm text-stone-500 dark:text-zinc-400">Outras categorias de conteúdo</p>
                 </div>
               </button>
             </div>

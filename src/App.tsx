@@ -83,6 +83,7 @@ import { AudioBoxProvider } from './contexts/AudioBoxContext';
 import { AccessibilityControls } from './components/AccessibilityControls';
 import { VoiceCommandCenter } from './components/VoiceCommandCenter';
 import AuthModal from './components/AuthModal';
+import { MicrophonePermissionModal } from './components/MicrophonePermissionModal';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 
 function AppContent() {
@@ -619,6 +620,7 @@ function AppContent() {
 
       <AccessibilityControls />
       <VoiceCommandCenter />
+      <MicrophonePermissionModal />
 
       <footer className={cn(
         "py-8 border-t text-center text-sm",

@@ -47,6 +47,7 @@ import {
   BookOpen,
   History,
   Baby,
+  Theater,
   X,
   Mic,
   Music,
@@ -280,6 +281,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'religions', label: 'Outras Religiões', icon: <Cross size={18} className="rotate-180" /> },
     { id: 'creation-tool', label: 'Ferramenta de Criação', icon: <Sparkles size={18} /> },
     { id: 'kids_ministry', label: 'Ministério Infantil', icon: <Baby size={18} /> },
+    { id: 'stories_theater', label: 'Estórias & Teatro', icon: <Theater size={18} /> },
     { id: 'audio_box', label: 'Caixa de Áudios', icon: <Volume2 size={18} /> },
     { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
@@ -320,6 +322,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+
+  // Stories & Theater state
+  const [storiesTheaterAgeGroup, setStoriesTheaterAgeGroup] = useState('Adolescentes 13 a 17 anos');
+  const [storiesTheaterTopic, setStoriesTheaterTopic] = useState('');
+  const [storiesTheaterType, setStoriesTheaterType] = useState('theater');
+  const [storiesTheaterResult, setStoriesTheaterResult] = useState<{ theater?: string, stories?: string, bibleStory?: string } | null>(null);
+  const [storiesTheaterActiveTab, setStoriesTheaterActiveTab] = useState<'theater' | 'stories' | 'bibleStory'>('theater');
+  const [isGeneratingStoriesTheater, setIsGeneratingStoriesTheater] = useState(false);
 
   // Kids Ministry state
   const [isKidsModalOpen, setIsKidsModalOpen] = useState(false);
@@ -548,7 +558,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => {
     if (!pendingNote) return;
     
     setIsSavingToNotebook(true);
@@ -752,6 +762,106 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       showToast("Erro ao buscar versículo. Verifique a referência.", "error");
     } finally {
       setIsSearchingVerse(false);
+    }
+  };
+
+  const handleGenerateStoriesTheater = async () => {
+    if (!storiesTheaterTopic) {
+      showToast("Digite um tema para gerar o conteúdo! 🎭", "info");
+      return;
+    }
+
+    setIsGeneratingStoriesTheater(true);
+    setStoriesTheaterResult(null);
+
+    try {
+      const isYoungAge = ['Maternal até 3 anos', 'Primário 4 a 5 anos', 'Juniores 6 a 9 anos', 'Pré-adolescentes 10 a 12 anos'].includes(storiesTheaterAgeGroup);
+      
+      const ageSpecificInstructions: Record<string, string> = {
+        'Maternal até 3 anos': 'Histórias curtas com animais, brinquedos ou rotina familiar.',
+        'Primário 4 a 5 anos': 'Contos com animais humanizados, trava-línguas, parlendas e cantigas. Histórias com ação simples e foco no cotidiano, brincadeiras, escola e família.',
+        'Juniores 6 a 9 anos': 'Histórias mais longas e enredos mais complexos, personagens com idade aproximada, vilões e heróis, alfabetização, aventura, mistério, lendas, foco relacionamento com amigos, vizinhos, escola, família e igreja.',
+        'Pré-adolescentes 10 a 12 anos': 'Enredo mais denso, desafios do cotidiano, sonhos, debates sociais, morais, éticos, combate ao bullying, preconceito, imoralidade, drogas lícitas e ilícitas, campanha contra violência, abusos.'
+      };
+
+      let prompt = "";
+      if (storiesTheaterType === 'theater') {
+        prompt = `Gere um roteiro de teatro cristão detalhado e criativo sobre o tema: "${storiesTheaterTopic}". 
+        Faixa etária: ${storiesTheaterAgeGroup}. 
+        ${isYoungAge ? `Instruções específicas para esta idade: ${ageSpecificInstructions[storiesTheaterAgeGroup]}` : ''}
+        
+        ESTRUTURA OBRIGATÓRIA:
+        1. Título da Peça
+        2. Lista de Personagens (com características físicas e comportamentais detalhadas)
+        3. Descrição do Cenário, Maquiagem e Figurinos
+        4. Orientações de Sonoplastia e Iluminação
+        5. Roteiro dividido em Atos e Cenas
+        
+        REGRAS DE DRAMATURGIA:
+        - Estabeleça um conflito central claro.
+        - Defina os objetivos e impedimentos de cada personagem.
+        - Utilize a dinâmica de herói/protagonista e vilão/antagonista.
+        - Inclua coadjuvantes que ajudam ou atrapalham o protagonista.
+        - Inclua narração quando necessário para contextualizar as cenas.
+        
+        O conteúdo deve ser profundamente cristão e apropriado para a idade escolhida.`;
+      } else if (storiesTheaterType === 'stories') {
+        prompt = `Gere uma estória (conto) cristã profunda, prática e impactante sobre o tema: "${storiesTheaterTopic}". 
+        Faixa etária: ${storiesTheaterAgeGroup}. 
+        ${isYoungAge ? `Instruções específicas para esta idade: ${ageSpecificInstructions[storiesTheaterAgeGroup]}` : ''}
+        
+        REQUISITOS DA ESTÓRIA:
+        - Foco no cotidiano e na prática da vida cristã.
+        - Baseada em princípios bíblicos sólidos.
+        - Aborde temas sociais relevantes (como fome, desigualdade, preconceito, bullying, respeito, violência, drogas ou abusos), adaptando a abordagem à maturidade da faixa etária.
+        - O objetivo final deve ser o evangelismo e proporcionar um encontro com Deus.
+        - Linguagem envolvente e narrativa com começo, meio e fim (clímax e resolução).`;
+      } else if (storiesTheaterType === 'bibleStory') {
+        prompt = `Recrie uma história bíblica fiel e cativante sobre o tema ou personagem: "${storiesTheaterTopic}". 
+        Faixa etária: ${storiesTheaterAgeGroup}. 
+        ${isYoungAge ? `Instruções específicas para esta idade: ${ageSpecificInstructions[storiesTheaterAgeGroup]}` : ''}
+        
+        DIRETRIZES:
+        - Mantenha a fidedignidade absoluta ao relato das Escrituras Sagradas.
+        - Utilize uma linguagem apropriada, moderna e compreensível para a faixa etária escolhida.
+        - Destaque a lição espiritual e a aplicação prática para os dias de hoje.
+        - Torne a narrativa viva e emocionante, sem perder a reverência ao texto sagrado.`;
+      }
+
+      if (isYoungAge) {
+        prompt += `
+        
+        ESTRUTURA ADICIONAL (REPLICAR MINISTÉRIO INFANTIL):
+        Como esta é uma faixa etária infantil, inclua também:
+        1. PARA OS MONITORES: Orientações pedagógicas, dicas de abordagem e materiais necessários.
+        2. ATIVIDADES: Sugestões de dinâmicas, brincadeiras ou trabalhos manuais relacionados ao tema.`;
+      }
+
+      const response = await geminiService.generateText(prompt);
+      
+      if (storiesTheaterType === 'theater') {
+        setStoriesTheaterResult({ theater: response });
+        setStoriesTheaterActiveTab('theater');
+      } else if (storiesTheaterType === 'stories') {
+        setStoriesTheaterResult({ stories: response });
+        setStoriesTheaterActiveTab('stories');
+      } else {
+        setStoriesTheaterResult({ bibleStory: response });
+        setStoriesTheaterActiveTab('bibleStory');
+      }
+
+      showToast("Conteúdo gerado com sucesso! 🎭✨", "success");
+      addToHistory({
+        type: 'Stories & Theater',
+        query: storiesTheaterTopic,
+        result: response,
+        tab: 'stories_theater'
+      });
+    } catch (error) {
+      console.error("Error generating stories/theater:", error);
+      showToast("Erro ao gerar conteúdo. Tente novamente.", "error");
+    } finally {
+      setIsGeneratingStoriesTheater(false);
     }
   };
 
@@ -1010,16 +1120,18 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const handleSaveToAudioBox = async (content: string, audioUrl: string | null) => {
     if (!audioUrl) {
-      showToast("Gere o áudio primeiro para salvar na Caixa de Áudios.");
+      showToast("Gere o áudio primeiro para salvar na Caixa de Áudios.", "info");
       return;
     }
     
     try {
-      await saveTrack('Narração Ministério Infantil', audioUrl, 'Narração', 'Emotiva');
-      showToast("Salvo na Caixa de Áudios! 🎵");
+      console.log('Saving to audio box:', { topic, audioUrl: audioUrl.substring(0, 50) + '...' });
+      await saveTrack(`Ministério Infantil: ${topic || 'Sem Título'}`, audioUrl, 'Narração', 'Emotiva');
+      showToast("Salvo na Caixa de Áudios! 🎙️✨");
       setActiveTab('audio_box');
     } catch (error) {
-      showToast("Erro ao salvar na Caixa de Áudios.");
+      console.error('Error in handleSaveToAudioBox:', error);
+      showToast("Erro ao salvar na Caixa de Áudios.", "error");
     }
   };
 
@@ -1332,6 +1444,35 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
+  const handleDownloadPDF = async (title: string, content: string) => {
+    setIsGeneratingPDF(true);
+    showToast("Gerando seu PDF... 📄💎", 'info');
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const margin = 20;
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const contentWidth = pageWidth - (margin * 2);
+      
+      pdf.setFontSize(18);
+      pdf.setTextColor(5, 150, 105); // emerald-600
+      pdf.text(title, margin, margin);
+      
+      pdf.setFontSize(12);
+      pdf.setTextColor(31, 41, 55); // stone-800
+      
+      const splitText = pdf.splitTextToSize(content, contentWidth);
+      pdf.text(splitText, margin, margin + 15);
+      
+      pdf.save(`${title.replace(/\s+/g, '_')}.pdf`);
+      showToast("PDF gerado com sucesso! 📄🎉", 'success');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      showToast("Erro ao gerar PDF.", 'error');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleDownloadBookletPDF = async () => {
     const element = document.getElementById('booklet-content');
     if (!element) return;
@@ -1422,6 +1563,42 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
+  const [relatedResources, setRelatedResources] = useState<{ title: string, type: string, url: string }[]>([]);
+  const [isGeneratingResources, setIsGeneratingResources] = useState(false);
+  const [isEditingStoriesTheater, setIsEditingStoriesTheater] = useState(false);
+  const [editedStoriesTheaterResult, setEditedStoriesTheaterResult] = useState<{ theater?: string, stories?: string, bibleStory?: string } | null>(null);
+
+  const generateRelatedResources = async (query: string) => {
+    if (!query) return;
+    setIsGeneratingResources(true);
+    try {
+      const prompt = `Com base no tema ou versículo bíblico "${query}", sugira 4 a 6 recursos relacionados de alta relevância.
+      Os recursos devem incluir:
+      - Comentários de estudo (ex: Matthew Henry, Shedd)
+      - Artigos teológicos (ex: Justificação pela fé, Contexto histórico)
+      - Mapas bíblicos pertinentes (ex: Viagens de Paulo, Êxodo)
+      - Enciclopédias ou Dicionários
+      
+      Retorne os resultados estritamente no formato JSON:
+      [
+        { "title": "Título do Recurso", "type": "Tipo (Mapa, Artigo, Comentário, etc.)", "url": "search:termo_para_pesquisa" }
+      ]
+      No campo "url", use o prefixo "search:" seguido do termo que deve ser pesquisado no app para encontrar esse recurso.`;
+
+      const response = await geminiService.generateText(prompt, "Você é um bibliotecário teológico especializado em recursos bíblicos.");
+      // Extract JSON from response
+      const jsonMatch = response.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        const resources = JSON.parse(jsonMatch[0]);
+        setRelatedResources(resources);
+      }
+    } catch (error) {
+      console.error("Error generating related resources:", error);
+    } finally {
+      setIsGeneratingResources(false);
+    }
+  };
+
   const handleWikiSearch = async (query?: string) => {
     const q = query || wikiQuery;
     if (!q) return;
@@ -1460,9 +1637,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleListen = async (text: string) => {
+  const handleListen = async (text: string, isEmotive: boolean = false) => {
     if (!text) return;
-    setPendingSpeechText(text);
+    setPendingSpeechText(isEmotive ? `Narrar com emoção e dramaticidade: ${text}` : text);
     setIsAudioConfirmModalOpen(true);
   };
 
@@ -1691,6 +1868,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
       setResult(responseText);
       setResultThought(responseThought);
+      
+      if (activeTab === 'bibles') {
+        generateRelatedResources(query);
+      }
       
       addToHistory({
         type: activeTab === 'bibles' ? 'Bíblia' : activeTab === 'authors' ? 'Autor' : activeTab === 'religions' ? 'Religião' : 'Comparação',
@@ -2865,6 +3046,49 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         Salvar no Caderno
                       </button>
                     </div>
+
+                    {isGeneratingResources && (
+                      <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800/30">
+                        <Loader2 className="animate-spin text-blue-600" size={18} />
+                        <span className="text-sm font-bold text-blue-700 dark:text-blue-400">Buscando recursos relacionados... 📚✨</span>
+                      </div>
+                    )}
+
+                    {relatedResources.length > 0 && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800"
+                      >
+                        <h4 className="text-sm font-black text-stone-900 dark:text-white mb-4 uppercase tracking-widest flex items-center gap-2">
+                          <Sparkles size={16} className="text-amber-500" />
+                          Recursos Relacionados Sugeridos
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          {relatedResources.map((resource, idx) => (
+                            <button
+                              key={idx}
+                              onClick={() => {
+                                const term = resource.url.replace('search:', '');
+                                setSearchQuery(term);
+                                handleSearch(selectedBible, term);
+                              }}
+                              className="flex items-start gap-3 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-emerald-500 transition-all text-left group"
+                            >
+                              <div className="p-2 bg-stone-100 dark:bg-zinc-800 rounded-lg text-stone-500 group-hover:text-emerald-600 transition-colors">
+                                {resource.type.toLowerCase().includes('mapa') ? <MapIcon size={18} /> : 
+                                 resource.type.toLowerCase().includes('artigo') ? <FileText size={18} /> : 
+                                 <BookOpen size={18} />}
+                              </div>
+                              <div>
+                                <p className="text-xs font-bold text-stone-900 dark:text-white line-clamp-1">{resource.title}</p>
+                                <p className="text-[10px] text-stone-400 uppercase font-black tracking-tighter">{resource.type}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
                   </div>
                 )}
               </div>
@@ -3817,6 +4041,251 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </motion.div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'stories_theater' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8"
+              >
+                <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-rose-100 dark:bg-rose-900/50 rounded-2xl flex items-center justify-center text-rose-600 dark:text-rose-400">
+                      <Theater size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold font-display text-stone-900 dark:text-white">Estórias & Teatro</h3>
+                      <p className="text-stone-500 dark:text-zinc-400">Crie roteiros de teatro e estórias impactantes para todas as idades</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="md:col-span-3">
+                      <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-2 ml-1">
+                        Tema para Estórias & Teatro
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="⚓ Digite o tema (ex: O Amor de Deus, A Arca de Noé, Superação)"
+                        value={storiesTheaterTopic}
+                        onChange={(e) => setStoriesTheaterTopic(e.target.value)}
+                        className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none font-bold"
+                      />
+                    </div>
+
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-2 ml-1">
+                        Faixa Etária
+                      </label>
+                      <select
+                        value={storiesTheaterAgeGroup}
+                        onChange={(e) => setStoriesTheaterAgeGroup(e.target.value)}
+                        className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none font-bold"
+                      >
+                        <option value="Maternal até 3 anos">Maternal (até 3 anos)</option>
+                        <option value="Primário 4 a 5 anos">Primário (4 a 5 anos)</option>
+                        <option value="Juniores 6 a 9 anos">Juniores (6 a 9 anos)</option>
+                        <option value="Pré-adolescentes 10 a 12 anos">Pré-adolescentes (10 a 12 anos)</option>
+                        <option value="Adolescentes 13 a 17 anos">Adolescentes (13-17 anos)</option>
+                        <option value="Jovens 18 a 28 anos">Jovens (18-28 anos)</option>
+                        <option value="Adultos 29 a 59 anos">Adultos (29-59 anos)</option>
+                        <option value="Idosos 60 a 120 anos">Idosos (60-120 anos)</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-1">
+                      <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-2 ml-1">
+                        O que deseja gerar?
+                      </label>
+                      <select
+                        value={storiesTheaterType}
+                        onChange={(e) => setStoriesTheaterType(e.target.value)}
+                        className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none font-bold"
+                      >
+                        <option value="theater">Gerar Teatro</option>
+                        <option value="stories">Gerar Estórias</option>
+                        <option value="bibleStory">Gerar História Bíblica</option>
+                      </select>
+                    </div>
+
+                    <div className="md:col-span-1 flex items-end">
+                      <button
+                        onClick={handleGenerateStoriesTheater}
+                        disabled={isGeneratingStoriesTheater || !storiesTheaterTopic}
+                        className="w-full py-4 bg-rose-600 text-white font-bold rounded-2xl hover:bg-rose-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-600/20"
+                      >
+                        {isGeneratingStoriesTheater ? (
+                          <>
+                            <Loader2 className="animate-spin" size={20} />
+                            Gerando...
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles size={20} />
+                            Gerar Conteúdo
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  {storiesTheaterResult && (
+                    <div className="mt-12 space-y-8">
+                      <div className="flex flex-wrap gap-2 p-1 bg-stone-100 dark:bg-zinc-800 rounded-2xl w-fit">
+                        {storiesTheaterResult.theater && (
+                          <button
+                            onClick={() => setStoriesTheaterActiveTab('theater')}
+                            className={cn(
+                              "px-6 py-2 rounded-xl font-bold text-sm transition-all",
+                              storiesTheaterActiveTab === 'theater' ? "bg-white dark:bg-zinc-700 text-rose-600 shadow-sm" : "text-stone-500"
+                            )}
+                          >
+                            Roteiro de Teatro
+                          </button>
+                        )}
+                        {storiesTheaterResult.stories && (
+                          <button
+                            onClick={() => setStoriesTheaterActiveTab('stories')}
+                            className={cn(
+                              "px-6 py-2 rounded-xl font-bold text-sm transition-all",
+                              storiesTheaterActiveTab === 'stories' ? "bg-white dark:bg-zinc-700 text-rose-600 shadow-sm" : "text-stone-500"
+                            )}
+                          >
+                            Estória
+                          </button>
+                        )}
+                        {storiesTheaterResult.bibleStory && (
+                          <button
+                            onClick={() => setStoriesTheaterActiveTab('bibleStory')}
+                            className={cn(
+                              "px-6 py-2 rounded-xl font-bold text-sm transition-all",
+                              storiesTheaterActiveTab === 'bibleStory' ? "bg-white dark:bg-zinc-700 text-rose-600 shadow-sm" : "text-stone-500"
+                            )}
+                          >
+                            História Bíblica
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="bg-stone-50 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800 relative group">
+                        <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              if (isEditingStoriesTheater) {
+                                setStoriesTheaterResult({
+                                  ...storiesTheaterResult,
+                                  [storiesTheaterActiveTab]: editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                });
+                                setIsEditingStoriesTheater(false);
+                                showToast("Alterações salvas! ✨");
+                              } else {
+                                setEditedStoriesTheaterResult(storiesTheaterResult);
+                                setIsEditingStoriesTheater(true);
+                              }
+                            }}
+                            className="p-3 bg-white dark:bg-zinc-900 text-blue-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            title={isEditingStoriesTheater ? "Salvar Edição" : "Editar Conteúdo"}
+                          >
+                            {isEditingStoriesTheater ? <Save size={20} /> : <Pencil size={20} />}
+                          </button>
+                          <button
+                            onClick={() => {
+                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                            storiesTheaterResult.bibleStory;
+                              if (content) {
+                                handleDownloadPDF(`Stories_Theater_${storiesTheaterTopic}`, content);
+                                showToast("Baixando PDF... 📄✨");
+                              }
+                            }}
+                            className="p-3 bg-white dark:bg-zinc-900 text-stone-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            title="Baixar PDF"
+                          >
+                            <Download size={20} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                            storiesTheaterResult.bibleStory;
+                              if (content) {
+                                handleShareContent(`Stories & Theater - ${storiesTheaterTopic}`, content);
+                              }
+                            }}
+                            className="p-3 bg-white dark:bg-zinc-900 text-purple-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            title="Compartilhar"
+                          >
+                            <Share2 size={20} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                            storiesTheaterResult.bibleStory;
+                              if (content) {
+                                handleListen(content);
+                              }
+                            }}
+                            className="p-3 bg-white dark:bg-zinc-900 text-amber-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            title="Ouvir"
+                          >
+                            <Volume2 size={20} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                            storiesTheaterResult.bibleStory;
+                              if (content) {
+                                handleListen(content, true); // True for emotive narration
+                              }
+                            }}
+                            className="p-3 bg-white dark:bg-zinc-900 text-rose-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            title="Narração Emotiva"
+                          >
+                            <Music size={20} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                            storiesTheaterResult.bibleStory;
+                              if (content) {
+                                setPendingNote({ title: `Stories & Theater - ${storiesTheaterTopic}`, content });
+                                setIsNotebookModalOpen(true);
+                              }
+                            }}
+                            className="p-3 bg-white dark:bg-zinc-900 text-emerald-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            title="Salvar no Caderno"
+                          >
+                            <Save size={20} />
+                          </button>
+                        </div>
+
+                        <div className="prose prose-stone dark:prose-invert max-w-none">
+                          {isEditingStoriesTheater ? (
+                            <textarea
+                              value={editedStoriesTheaterResult?.[storiesTheaterActiveTab] || ''}
+                              onChange={(e) => setEditedStoriesTheaterResult({
+                                ...editedStoriesTheaterResult,
+                                [storiesTheaterActiveTab]: e.target.value
+                              })}
+                              className="w-full h-[500px] p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none font-mono text-sm"
+                            />
+                          ) : (
+                            <MarkdownRenderer
+                              content={storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater || '' :
+                               storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories || '' :
+                               storiesTheaterResult.bibleStory || ''}
+                            />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             )}
 
             {activeTab === 'kids_ministry' && (

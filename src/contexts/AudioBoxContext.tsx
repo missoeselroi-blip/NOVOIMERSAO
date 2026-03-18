@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { db, auth } from '../lib/firebase';
-import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, orderBy, Timestamp, getDoc } from 'firebase/firestore';
+import { storeAudio, getAudio, deleteAudio } from '../lib/indexedDB';
 
 enum OperationType {
   CREATE = 'create',
@@ -62,13 +63,25 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   useEffect(() => {
     if (!user) {
-      const saved = localStorage.getItem('audio_box_tracks');
-      if (saved) {
-        setTracks(JSON.parse(saved));
-      } else {
-        setTracks([]);
-      }
-      setIsLoading(false);
+      const fetchOfflineTracks = async () => {
+        const saved = localStorage.getItem('audio_box_tracks');
+        if (saved) {
+          const offlineTracks = JSON.parse(saved);
+          const tracksWithData = await Promise.all(offlineTracks.map(async (track: any) => {
+            if (track.audioUrl.startsWith('local:')) {
+              const localId = track.audioUrl.split(':')[1];
+              const localData = await getAudio(localId);
+              return { ...track, audioUrl: localData || track.audioUrl };
+            }
+            return track;
+          }));
+          setTracks(tracksWithData);
+        } else {
+          setTracks([]);
+        }
+        setIsLoading(false);
+      };
+      fetchOfflineTracks();
       return;
     }
 
@@ -78,10 +91,26 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       orderBy('createdAt', 'desc')
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const tracksData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      console.log('AudioBox: Received snapshot, docs:', snapshot.docs.length);
+      const tracksData = await Promise.all(snapshot.docs.map(async (doc) => {
+        const data = doc.data();
+        let audioUrl = data.audioUrl;
+
+        // If it's a local reference, try to get it from IndexedDB
+        if (audioUrl.startsWith('local:')) {
+          const localId = audioUrl.split(':')[1];
+          const localData = await getAudio(localId);
+          if (localData) {
+            audioUrl = localData;
+          }
+        }
+
+        return {
+          id: doc.id,
+          ...data,
+          audioUrl
+        };
       })) as AudioTrack[];
       setTracks(tracksData);
       setIsLoading(false);
@@ -94,6 +123,7 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [user]);
 
   const saveTrack = async (title: string, audioUrl: string, style: string, emotion: string) => {
+    console.log('AudioBox: Saving track:', { title, style, emotion });
     let finalAudioUrl = audioUrl;
 
     // If it's a blob URL, we should try to convert it to base64 for persistence
@@ -125,8 +155,21 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     if (user) {
       try {
+        // Check size of finalAudioUrl (base64)
+        // Firestore document limit is 1MB. Let's use 800KB as a safe limit.
+        const sizeInBytes = finalAudioUrl.length * 0.75; // Approximate base64 to bytes
+        const isTooLarge = sizeInBytes > 800 * 1024;
+
+        let firestoreAudioUrl = finalAudioUrl;
+        if (isTooLarge) {
+          const localId = `audio_${Date.now()}`;
+          await storeAudio(localId, finalAudioUrl);
+          firestoreAudioUrl = `local:${localId}`;
+        }
+
         await addDoc(collection(db, 'audio_box'), {
           ...newTrack,
+          audioUrl: firestoreAudioUrl,
           userId: user.id
         }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'audio_box'));
       } catch (error) {
@@ -134,23 +177,47 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         throw error;
       }
     } else {
-      const saved = localStorage.getItem('audio_box_tracks');
-      const currentTracks = saved ? JSON.parse(saved) : [];
-      // For localStorage, convert Timestamp to ISO string
-      const trackWithId = { 
-        ...newTrack, 
-        id: Date.now().toString(), 
-        createdAt: new Date().toISOString() 
-      };
-      const updatedTracks = [trackWithId, ...currentTracks];
-      localStorage.setItem('audio_box_tracks', JSON.stringify(updatedTracks));
-      setTracks(updatedTracks);
+      try {
+        const sizeInBytes = finalAudioUrl.length * 0.75;
+        const isTooLarge = sizeInBytes > 800 * 1024;
+        
+        let offlineAudioUrl = finalAudioUrl;
+        if (isTooLarge) {
+          const localId = `audio_off_${Date.now()}`;
+          await storeAudio(localId, finalAudioUrl);
+          offlineAudioUrl = `local:${localId}`;
+        }
+
+        const saved = localStorage.getItem('audio_box_tracks');
+        const currentTracks = saved ? JSON.parse(saved) : [];
+        const trackWithId = { 
+          ...newTrack, 
+          audioUrl: offlineAudioUrl,
+          id: Date.now().toString(), 
+          createdAt: new Date().toISOString() 
+        };
+        const updatedTracks = [trackWithId, ...currentTracks];
+        localStorage.setItem('audio_box_tracks', JSON.stringify(updatedTracks));
+        
+        // For the state, we want the full audio data
+        setTracks([{ ...trackWithId, audioUrl: finalAudioUrl }, ...tracks]);
+      } catch (error) {
+        console.error("Error saving offline track:", error);
+      }
     }
   };
 
   const deleteTrack = async (id: string) => {
     if (user) {
       try {
+        const trackDoc = await getDoc(doc(db, 'audio_box', id));
+        if (trackDoc.exists()) {
+          const data = trackDoc.data();
+          if (data.audioUrl.startsWith('local:')) {
+            const localId = data.audioUrl.split(':')[1];
+            await deleteAudio(localId);
+          }
+        }
         await deleteDoc(doc(db, 'audio_box', id)).catch(err => handleFirestoreError(err, OperationType.DELETE, `audio_box/${id}`));
       } catch (error) {
         console.error("Error deleting track from Firestore:", error);
@@ -160,9 +227,14 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const saved = localStorage.getItem('audio_box_tracks');
       if (saved) {
         const currentTracks = JSON.parse(saved);
+        const trackToDelete = currentTracks.find((t: AudioTrack) => t.id === id);
+        if (trackToDelete && trackToDelete.audioUrl.startsWith('local:')) {
+          const localId = trackToDelete.audioUrl.split(':')[1];
+          await deleteAudio(localId);
+        }
         const updatedTracks = currentTracks.filter((t: AudioTrack) => t.id !== id);
         localStorage.setItem('audio_box_tracks', JSON.stringify(updatedTracks));
-        setTracks(updatedTracks);
+        setTracks(tracks.filter(t => t.id !== id));
       }
     }
   };
