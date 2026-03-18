@@ -4169,14 +4169,16 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
 
                       <div className="bg-stone-50 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800 relative group">
-                        <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="absolute top-6 right-6 flex gap-2 transition-opacity">
                           <button
                             onClick={() => {
                               if (isEditingStoriesTheater) {
-                                setStoriesTheaterResult({
-                                  ...storiesTheaterResult,
-                                  [storiesTheaterActiveTab]: editedStoriesTheaterResult?.[storiesTheaterActiveTab]
-                                });
+                                if (storiesTheaterResult) {
+                                  setStoriesTheaterResult({
+                                    ...storiesTheaterResult,
+                                    [storiesTheaterActiveTab]: editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                  });
+                                }
                                 setIsEditingStoriesTheater(false);
                                 showToast("Alterações salvas! ✨");
                               } else {
