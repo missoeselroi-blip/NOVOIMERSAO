@@ -45,6 +45,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useAudioBox } from '../contexts/AudioBoxContext';
 import { geminiService } from '../services/geminiService';
 import { Type } from "@google/genai";
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
@@ -67,8 +68,9 @@ interface HomePageProps {
 
 export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: HomePageProps) {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
+  const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
-  const { user } = useAuth();
+  const { user, toggleFavorite } = useAuth();
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -243,8 +245,38 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     setSearchResults(results);
   };
 
-  const [isFavorited, setIsFavorited] = useState(false);
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
+  const dailyVerse = verses[currentVerseIndex];
+  const [isFavorited, setIsFavorited] = useState(false);
+
+  useEffect(() => {
+    if (user && user.favorites && dailyVerse) {
+      const favorited = user.favorites.some(f => f.reference === dailyVerse.reference);
+      setIsFavorited(favorited);
+    } else {
+      setIsFavorited(false);
+    }
+  }, [user, dailyVerse]);
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      showToast("Faça login para favoritar versículos.", "info");
+      return;
+    }
+
+    if (!dailyVerse) return;
+
+    try {
+      await toggleFavorite({
+        reference: dailyVerse.reference,
+        verse: dailyVerse.text,
+        version: 'NVI',
+        date: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  };
   const [currentBg, setCurrentBg] = useState("https://i.postimg.cc/1Rqjh4bB/Screenshot-2026-03-09-12-08-27-022-com-google-android-googlequicksearchbox-edit.jpg");
   const [isBgModalOpen, setIsBgModalOpen] = useState(false);
   const [isSentimentModalOpen, setIsSentimentModalOpen] = useState(false);
@@ -368,6 +400,14 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       if (audioUrl) {
         const audio = new Audio(audioUrl);
         audio.play();
+        
+        // Auto-save to Audio Box
+        try {
+          await saveTrack('Mensagem Inspiradora', audioUrl, 'Inspiracional', 'Emotiva');
+          showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+        } catch (saveError) {
+          console.error("Error auto-saving to audio box:", saveError);
+        }
       }
     } catch (error: any) {
       console.error(error);
@@ -399,8 +439,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     }, 10000);
     return () => clearInterval(interval);
   }, []);
-
-  const dailyVerse = verses[currentVerseIndex];
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -472,6 +510,18 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
               Pão Diário
             </div>
             <div className="flex items-center gap-2">
+              <button 
+                onClick={handleToggleFavorite}
+                className={cn(
+                  "p-2 rounded-full transition-colors",
+                  isFavorited 
+                    ? "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400" 
+                    : "hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-400 hover:text-red-500"
+                )}
+                title={isFavorited ? "Remover dos Favoritos" : "Adicionar aos Favoritos"}
+              >
+                <Heart size={18} className={cn(isFavorited && "fill-current")} />
+              </button>
               <button 
                 onClick={() => shareToSocial('whatsapp')}
                 className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full text-stone-400 hover:text-emerald-600 transition-colors"

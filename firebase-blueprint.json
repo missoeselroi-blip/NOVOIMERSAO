@@ -8,8 +8,28 @@
         "id": { "type": "string" },
         "email": { "type": "string", "format": "email" },
         "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "user"] },
-        "createdAt": { "type": "string", "format": "date-time" }
+        "createdAt": { "type": "string", "format": "date-time" },
+        "favorites": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "verse": { "type": "string" },
+              "reference": { "type": "string" },
+              "date": { "type": "string", "format": "date-time" }
+            }
+          }
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "theme": { "type": "string", "enum": ["light", "dark", "system"] },
+            "preferredBible": { "type": "string" },
+            "fontSize": { "type": "string" }
+          }
+        }
       },
       "required": ["id", "email", "role"]
     },
@@ -65,9 +85,9 @@
       },
       "required": ["id", "userId", "subject", "date"]
     },
-    "MusicTrack": {
-      "title": "Music Track",
-      "description": "User generated music tracks and narrations",
+    "AudioTrack": {
+      "title": "Audio Track",
+      "description": "User generated audio tracks and narrations",
       "type": "object",
       "properties": {
         "userId": { "type": "string" },
@@ -102,9 +122,9 @@
       "schema": "TheologyCertificate",
       "description": "Theology certificates"
     },
-    "/music_box/{trackId}": {
-      "schema": "MusicTrack",
-      "description": "User music tracks"
+    "/audio_box/{trackId}": {
+      "schema": "AudioTrack",
+      "description": "User audio tracks"
     }
   }
 }

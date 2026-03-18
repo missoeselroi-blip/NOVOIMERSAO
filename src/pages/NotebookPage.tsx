@@ -16,13 +16,16 @@ import {
   Calendar,
   Anchor,
   Loader2,
-  Lock
+  Lock,
+  Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
+import { geminiService } from '../services/geminiService';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -41,11 +44,13 @@ interface NotebookPageProps {
 }
 
 import { useAuth } from '../contexts/AuthContext';
+import { useAudioBox } from '../contexts/AudioBoxContext';
 import { db } from '../lib/firebase';
 import { doc, addDoc, updateDoc, deleteDoc, collection } from 'firebase/firestore';
 
 export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const { user, notes: firestoreNotes, isInitialLoading } = useAuth();
+  const { saveTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,6 +61,9 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingSpeechText, setPendingSpeechText] = useState('');
 
   const [localNotes, setLocalNotes] = useState<any[]>(() => {
     const saved = localStorage.getItem('preacher_notes');
@@ -276,6 +284,36 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       }
     } else {
       handleCopy(`${note.title}\n\n${note.content}`);
+    }
+  };
+
+  const handleListen = (text: string) => {
+    setPendingSpeechText(text);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmGenerateSpeech = async () => {
+    setIsAudioConfirmModalOpen(false);
+    setIsGeneratingSpeech(true);
+    try {
+      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      const audio = new Audio(audioUrl);
+      await audio.play();
+      showToast("Reproduzindo áudio... 🔊✨");
+
+      // Auto-save to Audio Box
+      try {
+        await saveTrack('Nota do Caderno', audioUrl, 'Leitura', 'Informativa');
+        showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+      } catch (saveError) {
+        console.error("Error auto-saving to audio box:", saveError);
+      }
+    } catch (error) {
+      console.error("Error generating speech:", error);
+      showToast("Erro ao gerar áudio.", "error");
+    } finally {
+      setIsGeneratingSpeech(false);
+      setPendingSpeechText('');
     }
   };
 
@@ -528,6 +566,18 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                     >
                       <Share2 size={20} />
                     </button>
+                    <button 
+                      onClick={() => handleListen(`${note.title}. ${note.content}`)}
+                      disabled={isGeneratingSpeech}
+                      className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors disabled:opacity-50"
+                      title="Ouvir"
+                    >
+                      {isGeneratingSpeech && pendingSpeechText === `${note.title}. ${note.content}` ? (
+                        <Loader2 size={20} className="animate-spin" />
+                      ) : (
+                        <Volume2 size={20} />
+                      )}
+                    </button>
                     {onSearchWiki && (
                       <button 
                         onClick={() => onSearchWiki(note.title)}
@@ -615,6 +665,13 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           </div>
         )}
       </AnimatePresence>
+
+      <AudioConfirmationModal
+        isOpen={isAudioConfirmModalOpen}
+        isLoading={isGeneratingSpeech}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmGenerateSpeech}
+      />
 
       <footer className="pt-12 pb-6 border-t border-stone-200 dark:border-zinc-800 flex flex-col items-center gap-4">
         <div className="flex items-center justify-center gap-3">

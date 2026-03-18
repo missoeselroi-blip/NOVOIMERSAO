@@ -8,14 +8,19 @@ import {
   User, 
   Star,
   AlertCircle,
-  Info
+  Info,
+  Volume2,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
+import { geminiService } from '../services/geminiService';
 import { ForumPost, RANKS } from '../types/forum';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import { useAudioBox } from '../contexts/AudioBoxContext';
 
 const RULES = [
   "Proibido palavrões e linguagem ofensiva.",
@@ -57,10 +62,14 @@ const MOCK_POSTS: ForumPost[] = [
 
 export default function ForumPage() {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
+  const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
   const [posts, setPosts] = useState<ForumPost[]>(MOCK_POSTS);
   const [newPost, setNewPost] = useState('');
   const [showRules, setShowRules] = useState(true);
+  const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingSpeechText, setPendingSpeechText] = useState('');
 
   const handlePost = () => {
     if (!newPost.trim()) return;
@@ -85,6 +94,36 @@ export default function ForumPage() {
     setPosts([post, ...posts]);
     setNewPost('');
     showToast("Mensagem enviada com sucesso! 🙌✨");
+  };
+
+  const handleListen = (text: string) => {
+    setPendingSpeechText(text);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmGenerateSpeech = async () => {
+    setIsAudioConfirmModalOpen(false);
+    setIsGeneratingSpeech(true);
+    try {
+      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      const audio = new Audio(audioUrl);
+      await audio.play();
+      showToast("Reproduzindo áudio... 🔊✨");
+
+      // Auto-save to Audio Box
+      try {
+        await saveTrack('Post do Fórum', audioUrl, 'Fórum', 'Comunidade');
+        showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+      } catch (saveError) {
+        console.error("Error auto-saving to audio box:", saveError);
+      }
+    } catch (error) {
+      console.error("Error generating speech:", error);
+      showToast("Erro ao gerar áudio.", "error");
+    } finally {
+      setIsGeneratingSpeech(false);
+      setPendingSpeechText('');
+    }
   };
 
   return (
@@ -219,6 +258,18 @@ export default function ForumPage() {
               <button className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl text-stone-400 transition-colors">
                 <ShieldAlert size={18} />
               </button>
+              <button 
+                onClick={() => handleListen(`${post.author} disse: ${post.content}`)}
+                disabled={isGeneratingSpeech}
+                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl text-stone-400 hover:text-emerald-600 transition-colors disabled:opacity-50"
+                title="Ouvir"
+              >
+                {isGeneratingSpeech && pendingSpeechText === `${post.author} disse: ${post.content}` ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Volume2 size={18} />
+                )}
+              </button>
             </div>
 
             <p className="text-stone-700 dark:text-zinc-300 leading-relaxed">
@@ -280,6 +331,13 @@ export default function ForumPage() {
           </motion.div>
         ))}
       </div>
+
+      <AudioConfirmationModal
+        isOpen={isAudioConfirmModalOpen}
+        isLoading={isGeneratingSpeech}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmGenerateSpeech}
+      />
     </div>
   );
 }

@@ -8,13 +8,18 @@ import {
   CheckCircle, 
   BookOpen,
   FileText,
-  Copy
+  Copy,
+  Volume2,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useToast } from '../components/Toast';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
+import { geminiService } from '../services/geminiService';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useAudioBox } from '../contexts/AudioBoxContext';
 import { db, auth } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
@@ -59,10 +64,14 @@ interface Devotional {
 export default function MissionaryBulkResults({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { saveTrack } = useAudioBox();
   const [devotionals, setDevotionals] = useState<Devotional[]>([]);
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+  const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingSpeechText, setPendingSpeechText] = useState('');
 
   useEffect(() => {
     const saved = localStorage.getItem('missionary_bulk_devotionals');
@@ -127,6 +136,36 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
       showToast("Erro ao salvar no caderno.", 'error');
     } finally {
       setIsSavingNote(false);
+    }
+  };
+
+  const handleListen = (text: string) => {
+    setPendingSpeechText(text);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmGenerateSpeech = async () => {
+    setIsAudioConfirmModalOpen(false);
+    setIsGeneratingSpeech(true);
+    try {
+      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      const audio = new Audio(audioUrl);
+      await audio.play();
+      showToast("Reproduzindo áudio... 🔊✨");
+      
+      // Auto-save to Audio Box if it's a generated audio
+      try {
+        await saveTrack('Devocional Missionário', audioUrl, 'Missionário', 'Inspirador');
+        showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+      } catch (saveError) {
+        console.error("Error auto-saving to audio box:", saveError);
+      }
+    } catch (error) {
+      console.error("Error generating speech:", error);
+      showToast("Erro ao gerar áudio.", "error");
+    } finally {
+      setIsGeneratingSpeech(false);
+      setPendingSpeechText('');
     }
   };
 
@@ -209,6 +248,18 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
               >
                 <Copy size={18} />
               </button>
+              <button 
+                onClick={() => handleListen(`${d.title}. ${d.verse}. ${d.message}`)}
+                disabled={isGeneratingSpeech}
+                className="p-2 text-stone-400 hover:text-emerald-600 transition-colors disabled:opacity-50"
+                title="Ouvir"
+              >
+                {isGeneratingSpeech && pendingSpeechText === `${d.title}. ${d.verse}. ${d.message}` ? (
+                  <Loader2 size={18} className="animate-spin" />
+                ) : (
+                  <Volume2 size={18} />
+                )}
+              </button>
             </div>
             <h3 className="text-xl font-bold mb-3">{d.title}</h3>
             <div className="p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl mb-4 border border-stone-100 dark:border-zinc-800">
@@ -223,6 +274,12 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
         isLoading={isSavingNote}
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
+      />
+      <AudioConfirmationModal
+        isOpen={isAudioConfirmModalOpen}
+        isLoading={isGeneratingSpeech}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmGenerateSpeech}
       />
     </div>
   );

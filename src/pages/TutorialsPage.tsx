@@ -17,6 +17,8 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { geminiService } from '../services/geminiService';
 import { useToast } from '../components/Toast';
+import { useAudioBox } from '../contexts/AudioBoxContext';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 
 interface TutorialStep {
   title: string;
@@ -62,23 +64,40 @@ export default function TutorialsPage() {
   const [currentStep, setCurrentStep] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingSpeechText, setPendingSpeechText] = useState('');
   const { showToast } = useToast();
+  const { saveTrack } = useAudioBox();
 
-  const handlePlayAudio = async () => {
-    if (isPlaying) return;
-    
+  const handleListen = () => {
+    setPendingSpeechText(tutorialSteps[currentStep].description);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmGenerateSpeech = async () => {
+    setIsAudioConfirmModalOpen(false);
     setIsLoadingAudio(true);
     try {
-      const response = await geminiService.generateSpeech(tutorialSteps[currentStep].audioText, 'Kore');
-      const audio = new Audio(`data:audio/mp3;base64,${response}`);
+      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      const audio = new Audio(audioUrl);
       audio.onended = () => setIsPlaying(false);
       setIsPlaying(true);
-      audio.play();
+      await audio.play();
+      showToast("Reproduzindo áudio do tutorial... 🔊✨");
+
+      // Auto-save to Audio Box
+      try {
+        await saveTrack(`Tutorial: ${tutorialSteps[currentStep].title}`, audioUrl, 'Tutorial', 'Informativo');
+        showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+      } catch (saveError) {
+        console.error("Error auto-saving to audio box:", saveError);
+      }
     } catch (error) {
       console.error(error);
       showToast("Erro ao gerar áudio do tutorial.", 'error');
     } finally {
       setIsLoadingAudio(false);
+      setPendingSpeechText('');
     }
   };
 
@@ -138,6 +157,14 @@ export default function TutorialsPage() {
                 <p className="text-xl text-stone-600 dark:text-zinc-300 leading-relaxed max-w-xl mx-auto">
                   {tutorialSteps[currentStep].description}
                 </p>
+                <button
+                  onClick={handleListen}
+                  disabled={isLoadingAudio}
+                  className="px-6 py-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 font-bold rounded-2xl hover:bg-emerald-200 transition-all flex items-center gap-2 mx-auto disabled:opacity-50"
+                >
+                  {isLoadingAudio ? <Loader2 size={20} className="animate-spin" /> : <Volume2 size={20} />}
+                  Ouvir Tutorial
+                </button>
               </div>
             </motion.div>
           </AnimatePresence>
@@ -191,6 +218,13 @@ export default function TutorialsPage() {
           </p>
         </div>
       </section>
+
+      <AudioConfirmationModal
+        isOpen={isAudioConfirmModalOpen}
+        isLoading={isLoadingAudio}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmGenerateSpeech}
+      />
     </div>
   );
 }

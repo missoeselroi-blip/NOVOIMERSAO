@@ -22,6 +22,19 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
+interface Favorite {
+  verse: string;
+  reference: string;
+  version?: string;
+  date: string;
+}
+
+interface UserSettings {
+  theme: 'light' | 'dark' | 'system';
+  preferredBible: string;
+  fontSize: string;
+}
+
 interface User {
   id: string;
   name: string;
@@ -29,6 +42,8 @@ interface User {
   photoURL?: string;
   joinDate: string;
   role: 'admin' | 'user';
+  favorites?: Favorite[];
+  settings?: UserSettings;
 }
 
 interface Metrics {
@@ -52,6 +67,8 @@ interface AuthContextType {
   registerWithEmail: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
   updateMetrics: (updates: Partial<Metrics>) => void;
+  updateUser: (updates: Partial<User>) => Promise<void>;
+  toggleFavorite: (favorite: Omit<Favorite, 'id'>) => Promise<void>;
   isInitialLoading: boolean;
 }
 
@@ -150,7 +167,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
           await setDoc(userDocRef, userData);
         }
-        setUser(userData);
+        const unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            setUser(doc.data() as User);
+          }
+        });
+        return () => unsubscribeUser();
       } else {
         setUser(null);
         setTheologyProgress(null);
@@ -302,6 +324,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updateUser = async (updates: Partial<User>) => {
+    if (!user || !db) return;
+    const userDocRef = doc(db, 'users', user.id);
+    try {
+      await updateDoc(userDocRef, updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.id}`);
+    }
+  };
+
+  const toggleFavorite = async (favorite: Omit<Favorite, 'id'>) => {
+    if (!user || !db) return;
+    const userDocRef = doc(db, 'users', user.id);
+    const currentFavorites = user.favorites || [];
+    const exists = currentFavorites.find(f => f.reference === favorite.reference);
+    
+    let newFavorites;
+    if (exists) {
+      newFavorites = currentFavorites.filter(f => f.reference !== favorite.reference);
+    } else {
+      newFavorites = [...currentFavorites, favorite];
+    }
+    
+    try {
+      await updateDoc(userDocRef, { favorites: newFavorites });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `users/${user.id}`);
+    }
+  };
+
   const logout = async () => {
     if (!auth) return;
     try {
@@ -330,6 +382,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registerWithEmail, 
     logout, 
     updateMetrics, 
+    updateUser,
+    toggleFavorite,
     isInitialLoading 
   }), [
     user, 
@@ -338,6 +392,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     careerProgress,
     notes,
     certificates,
+    updateUser,
+    toggleFavorite,
     isInitialLoading
   ]);
 

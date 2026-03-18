@@ -35,7 +35,7 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { useOffline } from '../contexts/OfflineContext';
-import { useMusicBox } from '../contexts/MusicBoxContext';
+import { useAudioBox } from '../contexts/AudioBoxContext';
 import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
@@ -153,7 +153,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { user } = useAuth();
-  const { saveTrack } = useMusicBox();
+  const { saveTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const [showMissionary, setShowMissionary] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<DevotionalTheme | null>(null);
@@ -355,17 +355,17 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     setIsNotebookModalOpen(true);
   };
 
-  const handleSaveToMusicBox = async () => {
+  const handleSaveToAudioBox = async () => {
     if (!narrationAudio) {
-      showToast("Gere a narração primeiro para salvar na Caixa de Música.");
+      showToast("Gere a narração primeiro para salvar na Caixa de Áudios.");
       return;
     }
     
     try {
       await saveTrack(`Devocional: ${selectedTheme}`, narrationAudio, 'Devocional', selectedEmotion);
-      showToast("Salvo na Caixa de Música! 🎵");
+      showToast("Salvo na Caixa de Áudios! 🎵");
     } catch (error) {
-      showToast("Erro ao salvar na Caixa de Música.");
+      showToast("Erro ao salvar na Caixa de Áudios.");
     }
   };
   const shareSocial = (platform: 'whatsapp' | 'facebook' | 'instagram') => {
@@ -764,10 +764,10 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                         </button>
                       </div>
                       <button 
-                        onClick={handleSaveToMusicBox}
+                        onClick={handleSaveToAudioBox}
                         className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
                       >
-                        <Volume2 size={14} /> Salvar na Caixa de Música
+                        <Volume2 size={14} /> Salvar na Caixa de Áudios
                       </button>
                     </div>
                   )}

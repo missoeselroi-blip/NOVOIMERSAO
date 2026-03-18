@@ -1,5 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
+  useNavigate,
+  useSearchParams
+} from 'react-router-dom';
+import { 
   Search, 
   Book, 
   Layers, 
@@ -54,6 +58,7 @@ import { AudioSearchButton } from '../components/AudioSearchButton';
 import { GoogleGenAI, Type } from "@google/genai";
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -63,9 +68,8 @@ import { useCredits } from '../contexts/CreditContext';
 import { useToast } from '../components/Toast';
 import PostsPage from './PostsPage';
 import { useOffline } from '../contexts/OfflineContext';
-import { useMusicBox } from '../contexts/MusicBoxContext';
+import { useAudioBox } from '../contexts/AudioBoxContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
-import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { WifiOff } from 'lucide-react';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { useAuth } from '../contexts/AuthContext';
@@ -124,12 +128,13 @@ interface StudyHistoryItem {
 }
 
 export default function BibleStudyPage({ deepThinking, setDeepThinking, onNavigate }: BibleStudyPageProps) {
-  const { user, notes: firestoreNotes } = useAuth();
-  const { tracks: musicBoxTracks, saveTrack, deleteTrack } = useMusicBox();
+  const { user, notes: firestoreNotes, toggleFavorite } = useAuth();
+  const { tracks: audioBoxTracks, saveTrack, deleteTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const { isOffline, downloadedChapters, downloadedMaterials, downloadChapter, downloadMaterial } = useOffline();
   const { balance, consumeCredits, estimateCredits } = useCredits();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<string>('bibles');
   const [searchQuery, setSearchQuery] = useState('');
   const [result, setResult] = useState('');
@@ -191,7 +196,43 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isEditingOutline, setIsEditingOutline] = useState(false);
   const [editedOutline, setEditedOutline] = useState('');
   const [personalNotes, setPersonalNotes] = useState('');
+  const [verseSearch, setVerseSearch] = useState('');
+  const [verseContent, setVerseContent] = useState('');
   const [isFavorited, setIsFavorited] = useState(false);
+
+  useEffect(() => {
+    if (user && user.favorites && (verseSearch || searchQuery)) {
+      const ref = activeTab === 'verse-search' ? verseSearch : searchQuery;
+      const favorited = user.favorites.some(f => f.reference === ref);
+      setIsFavorited(favorited);
+    } else {
+      setIsFavorited(false);
+    }
+  }, [user, verseSearch, searchQuery, activeTab]);
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      showToast("Faça login para favoritar versículos.", "info");
+      return;
+    }
+
+    const reference = activeTab === 'verse-search' ? verseSearch : searchQuery;
+    const content = activeTab === 'verse-search' ? verseContent : result;
+    const version = activeTab === 'verse-search' ? 'ACF/NVI' : (selectedBible || 'Imersão');
+
+    if (!reference || !content) return;
+
+    try {
+      await toggleFavorite({
+        reference,
+        verse: content,
+        version,
+        date: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error toggling favorite:", error);
+    }
+  };
   const outlineRef = useRef<HTMLDivElement>(null);
   const bibleResultRef = useRef<HTMLDivElement>(null);
   const verseResultRef = useRef<HTMLDivElement>(null);
@@ -201,6 +242,27 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     const saved = localStorage.getItem('preacher_notes');
     return saved ? JSON.parse(saved) : [];
   });
+
+  useEffect(() => {
+    const search = searchParams.get('search');
+    const outlineParam = searchParams.get('outline');
+    const tabParam = searchParams.get('tab');
+
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+
+    if (search) {
+      setSearchQuery(search);
+      handleSearch(undefined, search);
+      // Clear params to avoid re-triggering
+      setSearchParams({}, { replace: true });
+    } else if (outlineParam) {
+      setTopic(outlineParam);
+      handleGenerateOutline(outlineParam);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams]);
 
   const notes = user ? firestoreNotes : localNotes;
 
@@ -218,7 +280,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'religions', label: 'Outras Religiões', icon: <Cross size={18} className="rotate-180" /> },
     { id: 'creation-tool', label: 'Ferramenta de Criação', icon: <Sparkles size={18} /> },
     { id: 'kids_ministry', label: 'Ministério Infantil', icon: <Baby size={18} /> },
-    { id: 'music_box', label: 'Caixa de Música', icon: <Volume2 size={18} /> },
+    { id: 'audio_box', label: 'Caixa de Áudios', icon: <Volume2 size={18} /> },
     { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
     { id: 'commentary', label: 'Comentário/Debate Bíblico', icon: <MessageSquare size={18} /> },
@@ -291,6 +353,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [selectedCommentaryVersion, setSelectedCommentaryVersion] = useState('NVI');
   const [commentaryResult, setCommentaryResult] = useState('');
   const [commentaryDebateResult, setCommentaryDebateResult] = useState('');
+
   const [isGeneratingCommentary, setIsGeneratingCommentary] = useState(false);
   const [isGeneratingCommentaryDebate, setIsGeneratingCommentaryDebate] = useState(false);
   const [suggestedDebaters, setSuggestedDebaters] = useState<string[]>([]);
@@ -650,8 +713,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const [verseSearch, setVerseSearch] = useState('');
-  const [verseContent, setVerseContent] = useState('');
   const [isSearchingVerse, setIsSearchingVerse] = useState(false);
   const [verseContentThought, setVerseContentThought] = useState('');
 
@@ -840,12 +901,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const saveToMusicBox = async (title: string, audioUrl: string, style: string, emotion: string) => {
+  const saveToAudioBox = async (title: string, audioUrl: string, style: string, emotion: string) => {
     try {
       await saveTrack(title, audioUrl, style, emotion);
-      showToast("Salvo na Caixa de Música! 🎵✨");
+      showToast("Salvo na Caixa de Áudios! 🎵✨");
     } catch (error) {
-      showToast("Erro ao salvar na Caixa de Música.");
+      showToast("Erro ao salvar na Caixa de Áudios.");
     }
   };
 
@@ -947,18 +1008,18 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleSaveToMusicBox = async (content: string, audioUrl: string | null) => {
+  const handleSaveToAudioBox = async (content: string, audioUrl: string | null) => {
     if (!audioUrl) {
-      showToast("Gere o áudio primeiro para salvar na Caixa de Música.");
+      showToast("Gere o áudio primeiro para salvar na Caixa de Áudios.");
       return;
     }
     
     try {
       await saveTrack('Narração Ministério Infantil', audioUrl, 'Narração', 'Emotiva');
-      showToast("Salvo na Caixa de Música! 🎵");
-      setActiveTab('music_box');
+      showToast("Salvo na Caixa de Áudios! 🎵");
+      setActiveTab('audio_box');
     } catch (error) {
-      showToast("Erro ao salvar na Caixa de Música.");
+      showToast("Erro ao salvar na Caixa de Áudios.");
     }
   };
 
@@ -1513,8 +1574,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleSearch = async (source?: string) => {
-    const query = searchQuery || topic;
+  const handleSearch = async (source?: string, overrideQuery?: string) => {
+    const query = overrideQuery || searchQuery || topic;
     if (!query && !source) return;
     
     const searchSource = source || loadingSource;
@@ -1764,15 +1825,16 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleGenerateOutline = async () => {
-    if (!topic) return;
+  const handleGenerateOutline = async (overrideTopic?: string) => {
+    const targetTopic = overrideTopic || topic;
+    if (!targetTopic) return;
     setIsLoading(true);
     showToast(getRandomWaitingMessage(), 'info');
     try {
       setOutline('');
       setOutlineThought('');
       setSlidesResult('');
-      const response = await geminiService.generateOutlineWithThought(topic, deepThinking);
+      const response = await geminiService.generateOutlineWithThought(targetTopic, deepThinking);
       setOutline(response.text);
       setOutlineThought(response.thought);
       setEditedOutline(response.text);
@@ -2592,11 +2654,31 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
+                        onClick={handleToggleFavorite}
+                        className={cn(
+                          "flex-1 min-w-[150px] py-3 font-bold rounded-xl flex items-center justify-center gap-2 transition-all",
+                          isFavorited 
+                            ? "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200" 
+                            : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 hover:bg-stone-200"
+                        )}
+                      >
+                        <Heart size={18} className={cn(isFavorited && "fill-current")} />
+                        {isFavorited ? 'Favoritado' : 'Favoritar'}
+                      </button>
+                      <button
                         onClick={() => handleSaveToNotebook(verseSearch, verseContent)}
                         className="flex-1 min-w-[150px] py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 transition-all"
                       >
                         <Save size={18} />
                         Salvar no Caderno
+                      </button>
+                      <button
+                        onClick={() => handleListen(verseContent)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 min-w-[150px] py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
                       </button>
                       <button
                         onClick={() => handleDownloadElement(verseResultRef.current, `Versiculo_${verseSearch}`)}
@@ -2701,11 +2783,31 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     
                     <div className="flex flex-wrap gap-3">
                       <button
+                        onClick={handleToggleFavorite}
+                        className={cn(
+                          "flex-1 py-3 font-bold rounded-xl flex items-center justify-center gap-2 transition-all",
+                          isFavorited 
+                            ? "bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-200" 
+                            : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 hover:bg-stone-200"
+                        )}
+                      >
+                        <Heart size={18} className={cn(isFavorited && "fill-current")} />
+                        {isFavorited ? 'Favoritado' : 'Favoritar'}
+                      </button>
+                      <button
                         onClick={() => handleCopy()}
                         className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
                       >
                         <Copy size={18} />
                         Copiar
+                      </button>
+                      <button
+                        onClick={() => handleListen(result)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
                       </button>
                       <button
                         onClick={() => {
@@ -3400,7 +3502,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               </div>
             )}
 
-            {activeTab === 'music_box' && (
+            {activeTab === 'audio_box' && (
               <div className="space-y-8">
                 <div className="bg-white dark:bg-zinc-900 p-8 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
                   <div className="flex flex-col gap-6">
@@ -3409,8 +3511,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <Volume2 size={24} />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-display font-black tracking-tight">Caixa de Música</h2>
-                        <p className="text-stone-500 text-sm">Transforme textos e letras em composições musicais</p>
+                        <h2 className="text-2xl font-display font-black tracking-tight">Caixa de Áudios</h2>
+                        <p className="text-stone-500 text-sm">Transforme textos e letras em composições musicais ou narrações</p>
                       </div>
                     </div>
 
@@ -3649,10 +3751,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             <Share2 size={18} /> Compartilhar
                           </button>
                           <button 
-                            onClick={() => saveToMusicBox('Minha Composição', musicAudioUrl, musicStyle, musicEmotion)}
+                            onClick={() => saveToAudioBox('Minha Composição', musicAudioUrl, musicStyle, musicEmotion)}
                             className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
                           >
-                            <Save size={18} /> Salvar
+                            <Save size={18} /> Salvar na Caixa de Áudios
                           </button>
                           <button 
                             onClick={() => {
@@ -3666,14 +3768,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
 
-                    {musicBoxTracks.length > 0 && (
+                    {audioBoxTracks.length > 0 && (
                       <div className="space-y-4">
                         <h3 className="text-xl font-display font-black tracking-tight flex items-center gap-2">
                           <Music size={20} className="text-emerald-600" />
-                          Minhas Músicas Salvas
+                          Minha Caixa de Áudios
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                          {musicBoxTracks.map(track => (
+                          {audioBoxTracks.map(track => (
                             <div key={track.id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 shadow-sm flex items-center gap-4">
                               <button 
                                 onClick={() => {
@@ -3893,10 +3995,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               <Download size={14} /> Baixar
                             </button>
                             <button 
-                              onClick={() => handleSaveToMusicBox(kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''), narrationAudio)}
+                              onClick={() => handleSaveToAudioBox(kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''), narrationAudio)}
                               className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
                             >
-                              <Volume2 size={14} /> Salvar na Caixa de Música
+                              <Volume2 size={14} /> Salvar na Caixa de Áudios
                             </button>
                           </div>
                         </div>
@@ -5065,6 +5167,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   >
                     <Download size={20} />
                     Baixar Imagem
+                  </button>
+                  <button
+                    onClick={() => handleListen(resourceStudyResult)}
+                    disabled={isGeneratingSpeech}
+                    className="flex-1 min-w-[140px] py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                    Ouvir
                   </button>
                   <button
                     onClick={() => {

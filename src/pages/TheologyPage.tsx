@@ -34,7 +34,8 @@ import {
   Hourglass,
   Feather,
   Key,
-  Youtube
+  Youtube,
+  Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -61,6 +62,8 @@ enum OperationType {
 }
 
 import { FeedbackSection } from '../components/FeedbackSection';
+
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
@@ -144,6 +147,38 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<number[]>([]);
   const [assessmentResult, setAssessmentResult] = useState<{ score: number, message: string } | null>(null);
+  const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingSpeechText, setPendingSpeechText] = useState<string | null>(null);
+
+  const handleListen = async (text: string) => {
+    if (!text) return;
+    setPendingSpeechText(text);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmGenerateSpeech = async () => {
+    if (!pendingSpeechText) return;
+    setIsAudioConfirmModalOpen(false);
+    setIsGeneratingSpeech(true);
+    showToast("Preparando a voz da IA... 🔊📖", 'info');
+    try {
+      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.play();
+        showToast("Iniciando leitura... Ouça com atenção! 🔊✨", 'success');
+      } else {
+        showToast("Erro ao gerar áudio.", 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar áudio.", 'error');
+    } finally {
+      setIsGeneratingSpeech(false);
+      setPendingSpeechText(null);
+    }
+  };
 
   // Summary Evaluation State
   const [showSummaryModal, setShowSummaryModal] = useState(false);
@@ -567,7 +602,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       // Coordenador
       docPdf.line(206, sigY, 266, sigY);
       docPdf.text("Coordenador Pedagógico", 236, sigY + 5, { align: 'center' });
-      docPdf.text("missoeselroi@gmail.com", 236, sigY + 10, { align: 'center' });
+      docPdf.text("imersaobiblicapp@gmail.com", 236, sigY + 10, { align: 'center' });
 
       docPdf.save("Certificado_Teologia_Basica.pdf");
       showToast("Certificado baixado e cliente de e-mail aberto!", 'success');
@@ -575,7 +610,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
       // Open email client
       const emailBody = `Olá, ${studentName}!\n\nParabéns por toda a sua dedicação a conhecer mais de Deus e aprender ferramentas para melhor servi-lo! É uma alegria ver você concluir o Curso de Teologia Básica.\n\nSegue em anexo o seu certificado de conclusão (que você acabou de baixar no aplicativo).\n\nNota: O certificado estará sendo assinado pelo Monitor e pelo Coordenador Pedagógico.\n\nDeus abençoe sua jornada!`;
-      const mailtoLink = `mailto:${user?.email || ''}?cc=wreis29@gmail.com,missoeselroi@gmail.com&subject=Certificado de Conclusão - Teologia Básica&body=${encodeURIComponent(emailBody)}`;
+      const mailtoLink = `mailto:${user?.email || ''}?cc=wreis29@gmail.com,imersaobiblicapp@gmail.com&subject=Certificado de Conclusão - Teologia Básica&body=${encodeURIComponent(emailBody)}`;
       setTimeout(() => {
         window.location.href = mailtoLink;
       }, 500);
@@ -1073,10 +1108,10 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         <p className="text-sm text-stone-500 dark:text-zinc-400 mb-2">Chave PIX (E-mail):</p>
                         <div className="flex items-center gap-2">
                           <code className="flex-1 p-2 bg-white dark:bg-zinc-900 rounded-xl text-center font-mono text-sm border border-stone-200 dark:border-zinc-700">
-                            missoeselroi@gmail.com
+                            imersaobiblicapp@gmail.com
                           </code>
                           <button 
-                            onClick={() => { navigator.clipboard.writeText('missoeselroi@gmail.com'); showToast('Chave PIX copiada!'); }}
+                            onClick={() => { navigator.clipboard.writeText('imersaobiblicapp@gmail.com'); showToast('Chave PIX copiada!'); }}
                             className="p-2 bg-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-200"
                           >
                             <Copy size={16} />
@@ -1448,6 +1483,16 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
               ) : (
                 <div className="prose dark:prose-invert max-w-none">
                   <MarkdownRenderer content={chapterContent[currentChapter] || ''} />
+                  <div className="mt-8 flex justify-end">
+                    <button
+                      onClick={() => handleListen(chapterContent[currentChapter])}
+                      disabled={isGeneratingSpeech}
+                      className="px-6 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center gap-2 disabled:opacity-50"
+                    >
+                      {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                      Ouvir Capítulo
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -1732,6 +1777,12 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
           </div>
         )}
       </AnimatePresence>
+      <AudioConfirmationModal 
+        isOpen={isAudioConfirmModalOpen}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmGenerateSpeech}
+        isLoading={isGeneratingSpeech}
+      />
     </div>
   );
 }

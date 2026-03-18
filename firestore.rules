@@ -40,7 +40,7 @@ service cloud.firestore {
     //   - createdAt: string|timestamp
     //   - updatedAt: string|timestamp
     //
-    // Collection: music_box
+    // Collection: audio_box
     // Document ID: {trackId}
     // Fields:
     //   - userId: string (required)
@@ -64,7 +64,7 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "missoeselroi@gmail.com" && request.auth.token.email_verified == true ||
+        (request.auth.token.email == "imersaobiblicapp@gmail.com" && request.auth.token.email_verified == true ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
@@ -83,7 +83,9 @@ service cloud.firestore {
       return data.keys().hasAll(['id', 'email', 'role']) &&
              data.id is string &&
              data.email is string &&
-             data.role in ['admin', 'user'];
+             data.role in ['admin', 'user'] &&
+             (!('favorites' in data) || data.favorites is list) &&
+             (!('settings' in data) || data.settings is map);
     }
 
     function isValidNote(data) {
@@ -93,7 +95,7 @@ service cloud.firestore {
              data.content is string && data.content.size() < 50000;
     }
 
-    function isValidMusicTrack(data) {
+    function isValidAudioTrack(data) {
       return data.keys().hasAll(['userId', 'title', 'audioUrl']) &&
              data.userId == request.auth.uid &&
              data.title is string && data.title.size() < 200 &&
@@ -103,7 +105,7 @@ service cloud.firestore {
     // Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || (request.auth.token.email == "missoeselroi@gmail.com" && request.auth.token.email_verified == true));
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || (request.auth.token.email == "imersaobiblicapp@gmail.com" && request.auth.token.email_verified == true));
       allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
     }
 
@@ -139,11 +141,11 @@ service cloud.firestore {
       allow read, write: if isOwner(userId) || isAdmin();
     }
 
-    match /music_box/{trackId} {
+    match /audio_box/{trackId} {
       allow list: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow get: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated() && isValidMusicTrack(request.resource.data);
-      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidMusicTrack(request.resource.data);
+      allow create: if isAuthenticated() && isValidAudioTrack(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidAudioTrack(request.resource.data);
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }

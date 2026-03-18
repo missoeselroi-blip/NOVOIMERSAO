@@ -8,7 +8,8 @@ import {
   X,
   ArrowLeft,
   BookOpen,
-  HelpCircle
+  HelpCircle,
+  Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -17,6 +18,8 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { useEffect } from 'react';
+
+import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 
 interface TheologySearchPageProps {
   initialQuery?: string;
@@ -28,6 +31,38 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
   const [query, setQuery] = useState(initialQuery);
   const [result, setResult] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
+  const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [pendingSpeechText, setPendingSpeechText] = useState<string | null>(null);
+
+  const handleListen = async (text: string) => {
+    if (!text) return;
+    setPendingSpeechText(text);
+    setIsAudioConfirmModalOpen(true);
+  };
+
+  const confirmGenerateSpeech = async () => {
+    if (!pendingSpeechText) return;
+    setIsAudioConfirmModalOpen(false);
+    setIsGeneratingSpeech(true);
+    showToast("Preparando a voz da IA... 🔊📖", 'info');
+    try {
+      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      if (audioUrl) {
+        const audio = new Audio(audioUrl);
+        audio.play();
+        showToast("Iniciando leitura... Ouça com atenção! 🔊✨", 'success');
+      } else {
+        showToast("Erro ao gerar áudio.", 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar áudio.", 'error');
+    } finally {
+      setIsGeneratingSpeech(false);
+      setPendingSpeechText(null);
+    }
+  };
 
   const handleSearch = async (overrideQuery?: string) => {
     const searchTarget = overrideQuery || query;
@@ -98,7 +133,17 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
             className="bg-white dark:bg-zinc-900 p-10 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-xl prose dark:prose-invert max-w-none"
           >
             <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-100 dark:border-zinc-800">
-              <h3 className="text-xl font-bold m-0">Resultado da Pesquisa: {query}</h3>
+              <div className="flex items-center gap-4">
+                <h3 className="text-xl font-bold m-0">Resultado da Pesquisa: {query}</h3>
+                <button
+                  onClick={() => handleListen(result)}
+                  disabled={isGeneratingSpeech}
+                  className="p-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                  title="Ouvir Resultado"
+                >
+                  {isGeneratingSpeech ? <Loader2 size={20} className="animate-spin" /> : <Volume2 size={20} />}
+                </button>
+              </div>
               <button 
                 onClick={() => setResult('')}
                 className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
@@ -128,6 +173,13 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
           ))}
         </div>
       )}
+
+      <AudioConfirmationModal 
+        isOpen={isAudioConfirmModalOpen}
+        onClose={() => setIsAudioConfirmModalOpen(false)}
+        onConfirm={confirmGenerateSpeech}
+        isLoading={isGeneratingSpeech}
+      />
     </div>
   );
 }

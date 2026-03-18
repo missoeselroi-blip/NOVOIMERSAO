@@ -51,7 +51,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
-  const isAdmin = user?.email === 'missoeselroi@gmail.com';
+  const isAdmin = user?.email === 'imersaobiblicapp@gmail.com';
 
   const resetAllTheologyProgress = async () => {
     if (!isAdmin) return;

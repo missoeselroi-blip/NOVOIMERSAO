@@ -67,6 +67,7 @@ const NotebookPage = lazy(() => import('./pages/NotebookPage'));
 const DevotionalPage = lazy(() => import('./pages/DevotionalPage'));
 const RedacaoPage = lazy(() => import('./pages/RedacaoPage'));
 const StudentPage = lazy(() => import('./pages/StudentPage'));
+const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazy(() => import('./pages/TheologySearchPage'));
 const TheologyPage = lazy(() => import('./pages/TheologyPage'));
 const MissionaryPage = lazy(() => import('./pages/MissionaryPage'));
@@ -78,8 +79,9 @@ import { OfflineProvider, useOffline } from './contexts/OfflineContext';
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
-import { MusicBoxProvider } from './contexts/MusicBoxContext';
+import { AudioBoxProvider } from './contexts/AudioBoxContext';
 import { AccessibilityControls } from './components/AccessibilityControls';
+import { VoiceCommandCenter } from './components/VoiceCommandCenter';
 import AuthModal from './components/AuthModal';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 
@@ -155,6 +157,7 @@ function AppContent() {
     { id: 'missionary', label: 'Missões', subtitle: 'Impacto Global', icon: <Globe size={20} />, component: <MissionaryPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'missionary-results', label: 'Resultados Missões', subtitle: 'Relatórios de campo', icon: <Calendar size={20} />, component: <MissionaryBulkResults onBack={() => handleNavigate('missionary')} />, hidden: true },
     { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
+    { id: 'profile', label: 'Perfil', subtitle: 'Sua conta e preferências', icon: <User size={20} />, component: <ProfilePage />, hidden: true },
   ];
 
   const activeItem = navItems.find(item => item.id === activeTab);
@@ -294,7 +297,7 @@ function AppContent() {
             {user ? (
               <div className="flex items-center gap-3 pl-4 border-l border-stone-200 dark:border-zinc-800">
                 <button
-                  onClick={() => handleNavigate('student-profile')}
+                  onClick={() => handleNavigate('profile')}
                   className="flex items-center gap-2 group"
                 >
                   <img 
@@ -307,6 +310,13 @@ function AppContent() {
                     <p className="text-xs font-bold leading-none">{user.name}</p>
                     <p className="text-[10px] text-stone-400 uppercase tracking-widest">Membro</p>
                   </div>
+                </button>
+                <button
+                  onClick={() => handleNavigate('student-profile')}
+                  className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
+                  title="Página do Aluno"
+                >
+                  <GraduationCap size={18} />
                 </button>
                 <button
                   onClick={() => {
@@ -608,6 +618,7 @@ function AppContent() {
       />
 
       <AccessibilityControls />
+      <VoiceCommandCenter />
 
       <footer className={cn(
         "py-8 border-t text-center text-sm",
@@ -642,9 +653,9 @@ export default function App() {
             <OfflineProvider>
               <ToastProvider>
                 <CreditProvider>
-                  <MusicBoxProvider>
+                  <AudioBoxProvider>
                     <AppContent />
-                  </MusicBoxProvider>
+                  </AudioBoxProvider>
                 </CreditProvider>
               </ToastProvider>
             </OfflineProvider>
