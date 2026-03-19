@@ -99,6 +99,23 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "title", "audioUrl"]
+    },
+    "Metrics": {
+      "title": "Metrics",
+      "description": "User usage metrics and time tracking",
+      "type": "object",
+      "properties": {
+        "accesses": { "type": "integer" },
+        "totalTime": { "type": "integer" },
+        "forumParticipations": { "type": "integer" },
+        "shares": { "type": "integer" },
+        "hasContributed": { "type": "boolean" },
+        "membershipMonths": { "type": "integer" },
+        "sectionTimes": { 
+          "type": "object",
+          "additionalProperties": { "type": "integer" }
+        }
+      }
     }
   },
   "firestore": {
@@ -125,6 +142,10 @@
     "/audio_box/{trackId}": {
       "schema": "AudioTrack",
       "description": "User audio tracks"
+    },
+    "/metrics/{userId}": {
+      "schema": "Metrics",
+      "description": "User metrics"
     }
   }
 }

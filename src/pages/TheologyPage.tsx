@@ -35,7 +35,10 @@ import {
   Feather,
   Key,
   Youtube,
-  Volume2
+  Volume2,
+  MessageSquare,
+  StickyNote,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -195,6 +198,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+
+  // Debate State
+  const [showDebateModal, setShowDebateModal] = useState(false);
+  const [isGeneratingDebate, setIsGeneratingDebate] = useState(false);
+  const [debateContent, setDebateContent] = useState('');
 
   if (isInitialLoading) {
     return (
@@ -692,7 +700,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     if (user && selectedSubject) {
       const fieldMap: Record<string, string> = {
         'Matéria básica': 'redacaoMateria',
-        'Aprofundamento': 'redacaoAprofundamento',
+        'Debate teológico': 'redacaoAprofundamento',
         'Vídeo': 'redacaoVideo',
         'Slides': 'redacaoSlide',
         'Podcast': 'redacaoPodcast'
@@ -712,6 +720,39 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
           }).catch(console.error);
         }
       }
+    }
+  };
+
+  const handleGenerateDebate = async () => {
+    if (!selectedSubject) return;
+    
+    setIsGeneratingDebate(true);
+    setDebateContent('');
+    setShowDebateModal(true);
+    showToast("Iniciando Debate Teológico... ⚔️📖", 'info');
+
+    try {
+      const prompt = `Gere um debate teológico profundo sobre a matéria "${selectedSubject}".
+      
+      REQUISITOS DO DEBATE:
+      1. Envolva dois ou três autores teológicos renomados que abordam este assunto com profundidade (ex: João Calvino, Armínio, Agostinho, Lutero, etc., dependendo do tema).
+      2. Apresente pelo menos 8 temas polêmicos e divergentes dentro desta matéria.
+      3. Para cada tema, inclua réplicas e tréplicas entre os autores.
+      4. Insira argumentos bíblicos (com referências) e argumentos racionais/lógicos para cada posição.
+      5. O debate deve ser respeitoso, mas intelectualmente rigoroso.
+      6. No final, inclua a fala de um MODERADOR que busca um consenso sobre o que é mais importante: a fé em Cristo e uma mensagem de vida e esperança.
+      
+      Formate o texto em Markdown, usando negrito para os nomes dos autores e títulos claros para cada tema polêmico.`;
+
+      const response = await geminiService.generateText(prompt);
+      setDebateContent(response || "Não foi possível gerar o debate no momento.");
+      showToast("Debate gerado com sucesso! 🎓✨", 'success');
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar debate.", 'error');
+      setShowDebateModal(false);
+    } finally {
+      setIsGeneratingDebate(false);
     }
   };
 
@@ -1067,6 +1108,99 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
               </div>
             )}
           </AnimatePresence>
+          
+          {/* Debate Modal */}
+          <AnimatePresence>
+            {showDebateModal && (
+              <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                  className="bg-white dark:bg-zinc-900 w-full max-w-4xl max-h-[90vh] rounded-[3rem] overflow-hidden shadow-2xl border border-stone-200 dark:border-zinc-800 flex flex-col"
+                >
+                  <div className="p-6 md:p-8 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center bg-gradient-to-r from-blue-600 to-indigo-700 text-white shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-white/20 backdrop-blur-sm rounded-2xl">
+                        <MessageSquare size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold">Debate Teológico</h3>
+                        <p className="text-xs text-blue-100 uppercase tracking-widest font-bold">{selectedSubject}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {debateContent && (
+                        <button 
+                          onClick={() => {
+                            navigator.clipboard.writeText(debateContent);
+                            showToast("Debate copiado! 📋✨");
+                          }}
+                          className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                          title="Copiar Debate"
+                        >
+                          <Copy size={20} />
+                        </button>
+                      )}
+                      <button 
+                        onClick={() => setShowDebateModal(false)}
+                        className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="p-6 md:p-8 overflow-y-auto custom-scrollbar flex-1">
+                    {isGeneratingDebate ? (
+                      <div className="flex flex-col items-center justify-center py-20 space-y-6">
+                        <div className="relative">
+                          <div className="absolute inset-0 bg-blue-500/20 blur-2xl rounded-full animate-pulse" />
+                          <Loader2 className="animate-spin text-blue-600 relative z-10" size={64} />
+                        </div>
+                        <div className="text-center space-y-2">
+                          <p className="text-xl font-bold text-stone-800 dark:text-zinc-200">Convocando os Teólogos...</p>
+                          <p className="text-stone-500 font-medium animate-pulse">Preparando os argumentos e temas polêmicos...</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="prose dark:prose-invert max-w-none">
+                        <MarkdownRenderer content={debateContent} />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-6 md:p-8 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 shrink-0 flex flex-col sm:flex-row gap-4 justify-end">
+                    <button 
+                      onClick={() => setShowDebateModal(false)}
+                      className="px-8 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-300 dark:hover:bg-zinc-600 transition-colors"
+                    >
+                      FECHAR
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setPendingNote({ title: `Debate: ${selectedSubject}`, content: debateContent });
+                        setIsNotebookModalOpen(true);
+                      }}
+                      disabled={!debateContent}
+                      className="px-8 py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <StickyNote size={20} />
+                      SALVAR NO CADERNO
+                    </button>
+                    <button 
+                      onClick={handleGenerateDebate}
+                      disabled={isGeneratingDebate}
+                      className="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <RefreshCw size={20} className={isGeneratingDebate ? "animate-spin" : ""} />
+                      REGERAR DEBATE
+                    </button>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
 
           {/* Certificate Payment Modal */}
           <AnimatePresence>
@@ -1222,22 +1356,19 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => {
-                          showToast("Iniciando Imersão Profunda... 🌊", 'info');
-                          handleSubjectSelect(selectedSubject);
-                        }}
+                        onClick={() => handleGenerateDebate()}
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-blue-50 dark:hover:bg-blue-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl group-hover:scale-110 transition-transform">
                           <Sparkles size={24} />
                         </div>
                         <div className="text-left">
-                          <div className="font-bold">Aprofundamento</div>
-                          <div className="text-xs text-stone-500">Imersão Teológica Aprofundada</div>
+                          <div className="font-bold">Debate teológico</div>
+                          <div className="text-xs text-stone-500">Debate Profundo entre Autores</div>
                         </div>
                       </button>
                       <button
-                        onClick={() => openSummaryModal('Aprofundamento')}
+                        onClick={() => openSummaryModal('Debate teológico')}
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />

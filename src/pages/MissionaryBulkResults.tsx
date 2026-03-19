@@ -155,7 +155,7 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
       
       // Auto-save to Audio Box if it's a generated audio
       try {
-        await saveTrack('Devocional Missionário', audioUrl, 'Missionário', 'Inspirador');
+        await saveTrack('Devocional Missionário', 'Missões', audioUrl, 'Missionário', 'Inspirador');
         showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
       } catch (saveError) {
         console.error("Error auto-saving to audio box:", saveError);

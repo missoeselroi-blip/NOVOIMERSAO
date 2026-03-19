@@ -30,7 +30,7 @@ export default function ProfilePage() {
   const { user, logout, updateUser, toggleFavorite, notes } = useAuth();
   const { tracks, deleteTrack } = useAudioBox();
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'info' | 'favorites' | 'notes' | 'audios' | 'settings'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'favorites' | 'notes' | 'audios' | 'settings' | 'stats'>('info');
   const [isUpdating, setIsUpdating] = useState(false);
 
   // Settings state
@@ -58,6 +58,7 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'info', label: 'Meu Perfil', icon: <UserIcon size={18} /> },
+    { id: 'stats', label: 'Estatísticas', icon: <Clock size={18} /> },
     { id: 'favorites', label: 'Favoritos', icon: <Heart size={18} /> },
     { id: 'notes', label: 'Meu Caderno', icon: <StickyNote size={18} /> },
     { id: 'audios', label: 'Caixa de Áudio', icon: <Volume2 size={18} /> },
@@ -155,6 +156,60 @@ export default function ProfilePage() {
                 <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl space-y-1">
                   <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">Tipo de Conta</p>
                   <p className="text-lg font-medium uppercase tracking-widest text-emerald-600">{user.role}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'stats' && (
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold flex items-center gap-2">
+                <Clock className="text-emerald-600" /> Estatísticas de Uso
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-8 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-100 dark:border-emerald-900/20 rounded-[2rem] space-y-2">
+                  <p className="text-xs font-bold text-emerald-600 uppercase tracking-widest">Total de Estudos</p>
+                  <p className="text-4xl font-black font-display">{user.metrics?.totalStudies || 0}</p>
+                </div>
+                <div className="p-8 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 dark:border-blue-900/20 rounded-[2rem] space-y-2">
+                  <p className="text-xs font-bold text-blue-600 uppercase tracking-widest">Favoritos Salvos</p>
+                  <p className="text-4xl font-black font-display">{user.favorites?.length || 0}</p>
+                </div>
+                <div className="p-8 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-[2rem] space-y-2">
+                  <p className="text-xs font-bold text-amber-600 uppercase tracking-widest">Notas no Caderno</p>
+                  <p className="text-4xl font-black font-display">{notes.length}</p>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <h4 className="text-lg font-bold">Tempo por Seção</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Object.entries(user.metrics?.sectionTimes || {}).length === 0 ? (
+                    <p className="text-stone-400 col-span-full py-10 text-center bg-stone-50 dark:bg-zinc-800/50 rounded-3xl">
+                      Nenhum dado de tempo registrado ainda.
+                    </p>
+                  ) : (
+                    Object.entries(user.metrics?.sectionTimes || {})
+                      .sort(([, a], [, b]) => (b as number) - (a as number))
+                      .map(([section, seconds]) => {
+                        const hours = Math.floor((seconds as number) / 3600);
+                        const minutes = Math.floor(((seconds as number) % 3600) / 60);
+                        return (
+                          <div key={section} className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl border border-stone-100 dark:border-zinc-800 flex items-center justify-between">
+                            <div>
+                              <p className="text-xs font-bold text-stone-400 uppercase tracking-widest">{section}</p>
+                              <p className="text-lg font-medium">
+                                {hours > 0 ? `${hours}h ` : ''}{minutes}m
+                              </p>
+                            </div>
+                            <div className="w-12 h-12 bg-white dark:bg-zinc-900 rounded-2xl flex items-center justify-center text-emerald-600 shadow-sm">
+                              <Clock size={20} />
+                            </div>
+                          </div>
+                        );
+                      })
+                  )}
                 </div>
               </div>
             </div>

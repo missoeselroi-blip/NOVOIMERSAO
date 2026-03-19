@@ -44,6 +44,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
 import ErrorBoundary from './components/ErrorBoundary';
+import { useAccessibility } from './contexts/AccessibilityContext';
 
 declare global {
   interface Window {
@@ -91,6 +92,7 @@ function AppContent() {
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { theme, setTheme } = useTheme();
+  const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -167,8 +169,17 @@ function AppContent() {
   return (
     <div className={cn(
       "min-h-screen transition-colors duration-700 relative overflow-hidden",
-      isDarkMode ? "bg-app-bg text-app-text" : "bg-app-bg text-app-text"
-    )}>
+      isDarkMode ? "bg-app-bg text-app-text" : "bg-app-bg text-app-text",
+      fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+      fontFamily === 'serif' ? 'font-serif' : 
+      fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+      fontSize === 'xs' ? 'text-xs' :
+      fontSize === 'sm' ? 'text-sm' :
+      fontSize === 'base' ? 'text-base' :
+      fontSize === 'lg' ? 'text-lg' :
+      fontSize === 'xl' ? 'text-xl' :
+      fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+    )} style={{ lineHeight: lineHeight }}>
       {/* Background Image for non-home pages */}
       {activeTab !== 'home' && (
         <div 

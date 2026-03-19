@@ -50,6 +50,7 @@ import {
   Theater,
   X,
   Mic,
+  Mic2,
   Music,
   Play
 } from 'lucide-react';
@@ -87,6 +88,7 @@ enum OperationType {
 }
 
 import { FeedbackSection } from '../components/FeedbackSection';
+import { SpeechGenerator } from '../components/SpeechGenerator';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
@@ -143,6 +145,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
+  const [isSpeechModalOpen, setIsSpeechModalOpen] = useState(false);
+  const [speechModalContent, setSpeechModalContent] = useState('');
   const [pendingSpeechText, setPendingSpeechText] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [loadingSource, setLoadingSource] = useState<string | null>(null);
@@ -151,7 +155,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [selectedWork, setSelectedWork] = useState('');
   const [compareVersion, setCompareVersion] = useState('Almeida');
   const [previousTab, setPreviousTab] = useState<string | null>(null);
-  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry'>('lesson');
+  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry' | 'audio'>('lesson');
   const [messageType, setMessageType] = useState<'outline' | 'birthday' | 'wedding' | 'newyear' | 'graduation' | 'devotional' | 'funeral' | 'children'>('outline');
   const [messageResult, setMessageResult] = useState('');
   const [messageResultThought, setMessageResultThought] = useState('');
@@ -282,7 +286,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'creation-tool', label: 'Ferramenta de Criação', icon: <Sparkles size={18} /> },
     { id: 'kids_ministry', label: 'Ministério Infantil', icon: <Baby size={18} /> },
     { id: 'stories_theater', label: 'Estórias & Teatro', icon: <Theater size={18} /> },
-    { id: 'audio_box', label: 'Caixa de Áudios', icon: <Volume2 size={18} /> },
+    { id: 'narration', label: 'Geração Narração', icon: <Volume2 size={18} /> },
     { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
     { id: 'commentary', label: 'Comentário/Debate Bíblico', icon: <MessageSquare size={18} /> },
@@ -322,6 +326,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+  const [narrationText, setNarrationText] = useState('');
+
+  const handleSendToNarration = (text: string) => {
+    setNarrationText(text);
+    setActiveTab('narration');
+    showToast("Texto enviado para o Gerador de Narração! 🎙️✨", "success");
+    scrollToSearch();
+  };
 
   // Stories & Theater state
   const [storiesTheaterAgeGroup, setStoriesTheaterAgeGroup] = useState('Adolescentes 13 a 17 anos');
@@ -1013,7 +1025,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const saveToAudioBox = async (title: string, audioUrl: string, style: string, emotion: string) => {
     try {
-      await saveTrack(title, audioUrl, style, emotion);
+      await saveTrack(title, "Narração", audioUrl, style, emotion);
       showToast("Salvo na Caixa de Áudios! 🎵✨");
     } catch (error) {
       showToast("Erro ao salvar na Caixa de Áudios.");
@@ -1126,9 +1138,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     
     try {
       console.log('Saving to audio box:', { topic, audioUrl: audioUrl.substring(0, 50) + '...' });
-      await saveTrack(`Ministério Infantil: ${topic || 'Sem Título'}`, audioUrl, 'Narração', 'Emotiva');
+      await saveTrack(`Ministério Infantil: ${topic || 'Sem Título'}`, 'Ministério Infantil', audioUrl, 'Narração', 'Emotiva');
       showToast("Salvo na Caixa de Áudios! 🎙️✨");
-      setActiveTab('audio_box');
+      setActiveTab('narration');
     } catch (error) {
       console.error('Error in handleSaveToAudioBox:', error);
       showToast("Erro ao salvar na Caixa de Áudios.", "error");
@@ -3185,6 +3197,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={handleShareResult} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                       <button onClick={() => handleSaveToNotebook(selectedAuthor || 'Visão do Autor', result)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
+                      <button 
+                        onClick={() => handleSendToNarration(result)}
+                        className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2"
+                      >
+                        <Mic2 size={18} /> Gerar Narração
+                      </button>
                     </div>
                   </div>
                 )}
@@ -3739,7 +3757,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               </div>
             )}
 
-            {activeTab === 'audio_box' && (
+            {activeTab === 'narration' && (
               <div className="space-y-8">
                 <div className="bg-white dark:bg-zinc-900 p-8 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
                   <div className="flex flex-col gap-6">
@@ -3748,297 +3766,121 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <Volume2 size={24} />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-display font-black tracking-tight">Caixa de Áudios</h2>
-                        <p className="text-stone-500 text-sm">Transforme textos e letras em composições musicais ou narrações</p>
+                        <h2 className="text-2xl font-display font-black tracking-tight">Geração de Narração</h2>
+                        <p className="text-stone-500 text-sm">Gere narrações profissionais para seus estudos, lições ou mensagens</p>
                       </div>
                     </div>
 
-                    <div className="space-y-4">
-                      <textarea
-                        value={musicText}
-                        onChange={(e) => setMusicText(e.target.value)}
-                        placeholder="⚓ Digite ou cole aqui a letra da música ou o texto que deseja transformar em música..."
-                        className="w-full h-48 p-6 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-[2rem] focus:ring-2 focus:ring-emerald-500 outline-none resize-none"
-                      />
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Estilo Musical</label>
-                          <select 
-                            value={musicStyle}
-                            onChange={(e) => setMusicStyle(e.target.value)}
-                            className="w-full px-6 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm font-bold"
-                          >
-                            <option value="Gospel">Gospel</option>
-                            <option value="Adoração">Adoração</option>
-                            <option value="Pop Cristão">Pop Cristão</option>
-                            <option value="Rock Cristão">Rock Cristão</option>
-                            <option value="Infantil">Infantil</option>
-                            <option value="Hino Clássico">Hino Clássico</option>
-                            <option value="Pensativo/Acústico">Pensativo/Acústico</option>
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Emoção</label>
-                          <select 
-                            value={musicEmotion}
-                            onChange={(e) => setMusicEmotion(e.target.value)}
-                            className="w-full px-6 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm font-bold"
-                          >
-                            <option value="Alegre">Alegre</option>
-                            <option value="Animado">Animado</option>
-                            <option value="Triste">Triste</option>
-                            <option value="Pensativo">Pensativo</option>
-                            <option value="Solene">Solene</option>
-                            <option value="Inspirador">Inspirador</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <button
-                          onClick={handleGenerateLyrics}
-                          disabled={isGeneratingLyrics || !musicText}
-                          className="flex-[2] py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-600/20"
-                        >
-                          {isGeneratingLyrics ? <Loader2 className="animate-spin" size={20} /> : <Pencil size={20} />}
-                          GERAR LETRA
-                        </button>
-                        <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 px-6 py-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                            <Zap size={18} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Custo</span>
-                          </div>
-                          <span className="font-black text-emerald-600 dark:text-emerald-400">5 créditos</span>
-                        </div>
-                      </div>
-                    </div>
+                    <SpeechGenerator 
+                      initialText={narrationText || topic}
+                      onSaveToNotebook={handleSaveToNotebook}
+                    />
                   </div>
                 </div>
 
-                {musicResult && (
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-6"
-                  >
-                    <div className="bg-white dark:bg-zinc-900 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-lg overflow-hidden">
-                      {/* Music Tabs */}
-                      <div className="flex border-b border-stone-100 dark:border-zinc-800">
-                        <button 
-                          onClick={() => setActiveMusicTab('lyrics')}
-                          className={cn(
-                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
-                            activeMusicTab === 'lyrics' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800"
-                          )}
-                        >
-                          Letra
-                        </button>
-                        <button 
-                          onClick={() => setActiveMusicTab('chords')}
-                          className={cn(
-                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
-                            activeMusicTab === 'chords' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 border-l border-stone-100 dark:border-zinc-800"
-                          )}
-                        >
-                          Cifra
-                        </button>
-                        <button 
-                          onClick={() => setActiveMusicTab('guitar')}
-                          className={cn(
-                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
-                            activeMusicTab === 'guitar' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 border-l border-stone-100 dark:border-zinc-800"
-                          )}
-                        >
-                          Violão
-                        </button>
-                        <button 
-                          onClick={() => setActiveMusicTab('arrangement')}
-                          className={cn(
-                            "flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all",
-                            activeMusicTab === 'arrangement' ? "bg-emerald-600 text-white" : "text-stone-400 hover:bg-stone-50 dark:hover:bg-zinc-800 border-l border-stone-100 dark:border-zinc-800"
-                          )}
-                        >
-                          Arranjo
-                        </button>
-                      </div>
-
-                      <div className="p-8 md:p-12 prose dark:prose-invert max-w-none">
-                        {activeMusicTab === 'lyrics' && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            <MarkdownRenderer content={musicData?.lyrics || musicResult} />
-                          </motion.div>
-                        )}
-                        {activeMusicTab === 'chords' && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            <div className="font-mono text-sm whitespace-pre-wrap bg-stone-50 dark:bg-zinc-950 p-6 rounded-2xl border border-stone-100 dark:border-zinc-800">
-                              <MarkdownRenderer content={musicData?.chords || "Cifra não disponível."} />
-                            </div>
-                          </motion.div>
-                        )}
-                        {activeMusicTab === 'guitar' && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            <div className="bg-amber-50/50 dark:bg-amber-900/10 p-6 rounded-2xl border border-amber-100 dark:border-amber-800/20">
-                              <h4 className="text-amber-700 dark:text-amber-400 uppercase tracking-widest text-xs font-black mb-4 flex items-center gap-2">
-                                <Music size={14} /> Guia de Violão (Acompanhamento)
-                              </h4>
-                              <MarkdownRenderer content={musicData?.guitarGuide || "Guia de violão não disponível."} />
-                            </div>
-                          </motion.div>
-                        )}
-                        {activeMusicTab === 'arrangement' && (
-                          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                            <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-6 rounded-2xl border border-emerald-100 dark:border-emerald-800/20">
-                              <h4 className="text-emerald-700 dark:text-emerald-400 uppercase tracking-widest text-xs font-black mb-4 flex items-center gap-2">
-                                <Music size={14} /> Guia de Instrumentação
-                              </h4>
-                              <MarkdownRenderer content={musicData?.arrangement || "Instruções de arranjo não disponíveis."} />
-                            </div>
-                          </motion.div>
-                        )}
-                      </div>
+                {audioBoxTracks.length > 0 && (
+                  <div className="bg-white dark:bg-zinc-900 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-sm overflow-hidden">
+                    <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between">
+                      <h3 className="text-xl font-display font-black tracking-tight flex items-center gap-2">
+                        <Music size={20} className="text-emerald-600" />
+                        Áudios Salvos
+                      </h3>
+                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full">
+                        {audioBoxTracks.length} {audioBoxTracks.length === 1 ? 'Arquivo' : 'Arquivos'}
+                      </span>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4">
-                      <button
-                        onClick={handleGenerateMusic}
-                        disabled={isGeneratingMusic || !musicResult}
-                        className="flex-[2] py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-600/20"
-                      >
-                        {isGeneratingMusic ? <Loader2 className="animate-spin" size={20} /> : <Music size={20} />}
-                        GERAR COMPOSIÇÃO (VOZ + INSTRUMENTOS)
-                      </button>
-                      <div className="flex-1 bg-emerald-50 dark:bg-emerald-900/20 px-6 py-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30 flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
-                          <Zap size={18} />
-                          <span className="text-xs font-bold uppercase tracking-wider">Custo</span>
-                        </div>
-                        <span className="font-black text-emerald-600 dark:text-emerald-400">10 créditos</span>
-                      </div>
-                    </div>
-
-                    {musicAudioUrl && (
-                      <div className="bg-emerald-600 p-6 rounded-[2.5rem] shadow-xl text-white">
-                        <div className="flex items-center gap-6">
-                          <button 
-                            onClick={() => {
-                              if (audioRef.current) {
-                                if (isPlaying) audioRef.current.pause();
-                                else audioRef.current.play();
-                                setIsPlaying(!isPlaying);
-                              }
-                            }}
-                            className="w-16 h-16 flex items-center justify-center bg-white text-emerald-600 rounded-full hover:scale-105 transition-transform shadow-lg"
-                          >
-                            {isPlaying ? <X size={32} /> : <Volume2 size={32} />}
-                          </button>
-                          <div className="flex-1 space-y-2">
-                            <div className="flex justify-between items-end mb-1">
-                              <div>
-                                <h4 className="font-black uppercase tracking-widest text-xs opacity-70">Reproduzindo</h4>
-                                <p className="font-display font-bold text-lg leading-tight">Sua Composição Musical</p>
-                              </div>
-                              <div className="text-[10px] font-mono opacity-70">
-                                {Math.floor(audioProgress / 60)}:{Math.floor(audioProgress % 60).toString().padStart(2, '0')} / {Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')}
-                              </div>
-                            </div>
-                            <div className="h-2 bg-white/20 rounded-full overflow-hidden">
-                              <motion.div 
-                                className="h-full bg-white"
-                                initial={{ width: 0 }}
-                                animate={{ width: `${(audioProgress / audioDuration) * 100}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <audio 
-                          ref={audioRef}
-                          src={musicAudioUrl}
-                          onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
-                          onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
-                          onEnded={() => setIsPlaying(false)}
-                          className="hidden"
-                        />
-                        <div className="grid grid-cols-4 gap-3 mt-6">
-                          <button 
-                            onClick={() => {
-                              const a = document.createElement('a');
-                              a.href = musicAudioUrl;
-                              a.download = `musica-${musicStyle}.mp3`;
-                              a.click();
-                            }}
-                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Download size={18} /> Baixar
-                          </button>
-                          <button 
-                            onClick={() => {
-                              navigator.share({
-                                title: 'Minha Música IA',
-                                text: musicResult,
-                                url: window.location.href
-                              }).catch((err: any) => {
-                                if (err.name !== 'AbortError') {
-                                  console.error(err);
-                                }
-                              });
-                            }}
-                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Share2 size={18} /> Compartilhar
-                          </button>
-                          <button 
-                            onClick={() => saveToAudioBox('Minha Composição', musicAudioUrl, musicStyle, musicEmotion)}
-                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Save size={18} /> Salvar na Caixa de Áudios
-                          </button>
-                          <button 
-                            onClick={() => {
-                              showToast("Gravando composição... 🎙️");
-                            }}
-                            className="py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-colors"
-                          >
-                            <Mic size={18} /> Gravar
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {audioBoxTracks.length > 0 && (
-                      <div className="space-y-4">
-                        <h3 className="text-xl font-display font-black tracking-tight flex items-center gap-2">
-                          <Music size={20} className="text-emerald-600" />
-                          Minha Caixa de Áudios
-                        </h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-stone-50 dark:bg-zinc-800/50">
+                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Título / Assunto</th>
+                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Voz / Emoção</th>
+                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Data</th>
+                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 text-center">Tamanho / Tempo</th>
+                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 text-right">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-stone-100 dark:divide-zinc-800">
                           {audioBoxTracks.map(track => (
-                            <div key={track.id} className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 shadow-sm flex items-center gap-4">
-                              <button 
-                                onClick={() => {
-                                  setMusicAudioUrl(track.audioUrl);
-                                  setMusicResult(`### ${track.title}\nEstilo: ${track.style}\nEmoção: ${track.emotion}\nData: ${track.date}`);
-                                }}
-                                className="w-12 h-12 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full hover:bg-emerald-200 transition-colors"
-                              >
-                                <Play size={20} />
-                              </button>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="font-bold text-sm truncate">{track.title}</h4>
-                                <p className="text-[10px] text-stone-500">{track.style} • {track.emotion} • {track.date}</p>
-                              </div>
-                              <button 
-                                onClick={() => deleteTrack(track.id)}
-                                className="p-2 text-stone-400 hover:text-red-500 transition-colors"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                            </div>
+                            <tr key={track.id} className="hover:bg-stone-50 dark:hover:bg-zinc-800/30 transition-colors group">
+                              <td className="px-6 py-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl">
+                                    <Volume2 size={18} />
+                                  </div>
+                                  <div>
+                                    <p className="font-bold text-sm leading-tight">{track.title}</p>
+                                    <p className="text-[10px] text-stone-400 uppercase tracking-wider mt-0.5">{track.subject || 'Sem assunto'}</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <div className="flex flex-col">
+                                  <span className="text-xs font-medium text-stone-600 dark:text-stone-300">{track.style}</span>
+                                  <span className="text-[10px] text-stone-400 italic">{track.emotion}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4">
+                                <span className="text-xs text-stone-500">{track.date}</span>
+                              </td>
+                              <td className="px-6 py-4 text-center">
+                                <div className="flex flex-col items-center">
+                                  <span className="text-xs font-mono text-stone-600 dark:text-stone-300">{track.size || '--'}</span>
+                                  <span className="text-[10px] text-stone-400 font-mono">{track.duration || '--'}</span>
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 text-right">
+                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button 
+                                    onClick={() => handleSendToNarration(track.audioUrl)}
+                                    className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
+                                    title="Abrir"
+                                  >
+                                    <ExternalLink size={16} />
+                                  </button>
+                                  <a 
+                                    href={track.audioUrl}
+                                    download={`${track.title}.mp3`}
+                                    className="p-2 text-stone-400 hover:text-blue-600 transition-colors"
+                                    title="Baixar"
+                                  >
+                                    <Download size={16} />
+                                  </a>
+                                  <button 
+                                    onClick={async () => {
+                                      try {
+                                        await navigator.share({
+                                          title: track.title,
+                                          text: track.subject,
+                                          url: track.audioUrl
+                                        });
+                                      } catch (err) {
+                                        if ((err as Error).name !== 'AbortError') {
+                                          showToast("Erro ao compartilhar.", "error");
+                                        }
+                                      }
+                                    }}
+                                    className="p-2 text-stone-400 hover:text-amber-600 transition-colors"
+                                    title="Compartilhar"
+                                  >
+                                    <Share2 size={16} />
+                                  </button>
+                                  <button 
+                                    onClick={() => deleteTrack(track.id)}
+                                    className="p-2 text-stone-400 hover:text-red-600 transition-colors"
+                                    title="Excluir"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
                           ))}
-                        </div>
-                      </div>
-                    )}
-                  </motion.div>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 )}
               </div>
             )}
@@ -4193,9 +4035,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </button>
                           <button
                             onClick={() => {
-                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
-                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
-                                            storiesTheaterResult.bibleStory;
+                              const content = isEditingStoriesTheater 
+                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                   storiesTheaterResult.bibleStory);
                               if (content) {
                                 handleDownloadPDF(`Stories_Theater_${storiesTheaterTopic}`, content);
                                 showToast("Baixando PDF... 📄✨");
@@ -4208,9 +4052,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </button>
                           <button
                             onClick={() => {
-                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
-                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
-                                            storiesTheaterResult.bibleStory;
+                              const content = isEditingStoriesTheater 
+                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                   storiesTheaterResult.bibleStory);
                               if (content) {
                                 handleShareContent(`Stories & Theater - ${storiesTheaterTopic}`, content);
                               }
@@ -4222,9 +4068,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </button>
                           <button
                             onClick={() => {
-                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
-                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
-                                            storiesTheaterResult.bibleStory;
+                              const content = isEditingStoriesTheater 
+                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                   storiesTheaterResult.bibleStory);
                               if (content) {
                                 handleListen(content);
                               }
@@ -4236,9 +4084,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </button>
                           <button
                             onClick={() => {
-                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
-                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
-                                            storiesTheaterResult.bibleStory;
+                              const content = isEditingStoriesTheater 
+                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                   storiesTheaterResult.bibleStory);
                               if (content) {
                                 handleListen(content, true); // True for emotive narration
                               }
@@ -4250,9 +4100,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </button>
                           <button
                             onClick={() => {
-                              const content = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
-                                            storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
-                                            storiesTheaterResult.bibleStory;
+                              const content = isEditingStoriesTheater 
+                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                   storiesTheaterResult.bibleStory);
                               if (content) {
                                 setPendingNote({ title: `Stories & Theater - ${storiesTheaterTopic}`, content });
                                 setIsNotebookModalOpen(true);
@@ -4262,6 +4114,22 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             title="Salvar no Caderno"
                           >
                             <Save size={20} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              const content = isEditingStoriesTheater 
+                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                   storiesTheaterResult.bibleStory);
+                              if (content) {
+                                handleSendToNarration(content);
+                              }
+                            }}
+                            className="p-3 bg-white dark:bg-zinc-900 text-blue-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            title="Gerar Narração"
+                          >
+                            <Mic2 size={20} />
                           </button>
                         </div>
 
@@ -4501,14 +4369,16 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               </div>
                             </div>
                           </div>
-                          <audio 
-                            ref={audioRef}
-                            src={narrationAudio}
-                            onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
-                            onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
-                            onEnded={() => setIsPlaying(false)}
-                            className="hidden"
-                          />
+                          {narrationAudio && (
+                            <audio 
+                              ref={audioRef}
+                              src={narrationAudio}
+                              onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
+                              onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                              onEnded={() => setIsPlaying(false)}
+                              className="hidden"
+                            />
+                          )}
                           <div className="flex gap-2">
                             <button 
                               onClick={() => {
@@ -5863,6 +5733,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         <p><strong className="text-stone-900 dark:text-white">Significado</strong> = Pesquise palavras e expressões nos três principais dicionários da língua portuguesa. Mais: Português-Hebraico, Hebraico-Português, Português-Grego, Grego-Português. E também estão quatro IAs integradas: Gemini, ChatGPT, Claude e LIama.</p>
         <p><strong className="text-stone-900 dark:text-white">Pesquisa Infinita - Wiki</strong> = É um recurso formidável integrada a IA Gemini que transforme uma pesquisa ou um texto em hiperlink nas palavras principais direcionando a outras pesquisas com novos hiperlinks e assim indefinidamente.</p>
         <p><strong className="text-stone-900 dark:text-white">Mapas e Notas</strong> = Neste recurso é possível pesquisar os principais mapas bíblicos antigos, momentos históricos e outros recursos gerados a partir de IA com fontes em Bíblias de Estudos e Enciclopédias.</p>
+        <p><strong className="text-stone-900 dark:text-white">Ministério Infantil</strong> = Recurso para gerar lições de EBD, atividades e roteiros adaptados para crianças de todas as idades.</p>
+        <p><strong className="text-stone-900 dark:text-white">Histórias & Teatro</strong> = Crie roteiros de teatro e histórias impactantes e criativas para o seu ministério.</p>
+        <p><strong className="text-stone-900 dark:text-white">Geração Narração</strong> = Transforme seus textos e estudos em narrações profissionais com diversas vozes e tons.</p>
+        <p><strong className="text-stone-900 dark:text-white">Comentário/Debate bíblico</strong> = Gere comentários profundos ou debates teológicos entre diferentes visões sobre qualquer tema bíblico.</p>
       </div>
 
       <SaveToNotebookModal
@@ -5878,6 +5752,43 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         onConfirm={confirmGenerateSpeech}
         isLoading={isGeneratingSpeech}
       />
+
+      {/* Speech Generator Modal */}
+      <AnimatePresence>
+        {isSpeechModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsSpeechModalOpen(false)}
+              className="absolute inset-0 bg-stone-900/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-scrollbar"
+            >
+              <div className="absolute top-6 right-6 z-10">
+                <button
+                  onClick={() => setIsSpeechModalOpen(false)}
+                  className="p-2 bg-white dark:bg-zinc-800 text-stone-500 rounded-full shadow-lg hover:scale-110 transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <SpeechGenerator 
+                initialText={speechModalContent} 
+                onSaveToNotebook={(title, content) => {
+                  setPendingNote({ title, content });
+                  setIsNotebookModalOpen(true);
+                }}
+              />
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

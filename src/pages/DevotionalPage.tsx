@@ -362,7 +362,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     }
     
     try {
-      await saveTrack(`Devocional: ${selectedTheme}`, narrationAudio, 'Devocional', selectedEmotion);
+      await saveTrack(`Devocional: ${selectedTheme}`, 'Devocional', narrationAudio, 'Devocional', selectedEmotion);
       showToast("Salvo na Caixa de Áudios! 🎵");
     } catch (error) {
       showToast("Erro ao salvar na Caixa de Áudios.");
@@ -727,14 +727,16 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                           </div>
                         </div>
                       </div>
-                      <audio 
-                        ref={audioRef}
-                        src={narrationAudio}
-                        onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
-                        onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
-                        onEnded={() => setIsPlaying(false)}
-                        className="hidden"
-                      />
+                      {narrationAudio && (
+                        <audio 
+                          ref={audioRef}
+                          src={narrationAudio}
+                          onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
+                          onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                          onEnded={() => setIsPlaying(false)}
+                          className="hidden"
+                        />
+                      )}
                       <div className="flex gap-2">
                         <button 
                           onClick={() => {

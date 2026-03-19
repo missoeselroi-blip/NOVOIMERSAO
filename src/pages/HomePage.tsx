@@ -403,7 +403,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         
         // Auto-save to Audio Box
         try {
-          await saveTrack('Mensagem Inspiradora', audioUrl, 'Inspiracional', 'Emotiva');
+          await saveTrack('Mensagem Inspiradora', 'Início', audioUrl, 'Inspiracional', 'Emotiva');
           showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
         } catch (saveError) {
           console.error("Error auto-saving to audio box:", saveError);

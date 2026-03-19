@@ -58,6 +58,10 @@ export const GOSPEL_AUTHORS = [
     works: ["Bom Dia, Espírito Santo", "Bem-vindo, Espírito Santo", "O Sangue"]
   },
   {
+    name: "Bráulio Brandão",
+    works: ["A Glória de Cristo", "O Conhecimento de Deus", "Teologia Reformada"]
+  },
+  {
     name: "C.S. Lewis",
     works: [
       "Cristianismo Puro e Simples",
@@ -137,6 +141,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Gary Chapman",
     works: ["As 5 Linguagens do Amor", "As 5 Linguagens do Perdão"]
+  },
+  {
+    name: "Gustavo Poubel",
+    works: ["Cultura e Fé", "Apologética Contemporânea", "O Cristão na Esfera Pública"]
   },
   {
     name: "J.C. Ryle",

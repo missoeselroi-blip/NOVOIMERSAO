@@ -87,7 +87,7 @@ export default function TutorialsPage() {
 
       // Auto-save to Audio Box
       try {
-        await saveTrack(`Tutorial: ${tutorialSteps[currentStep].title}`, audioUrl, 'Tutorial', 'Informativo');
+        await saveTrack(`Tutorial: ${tutorialSteps[currentStep].title}`, 'Tutorial', audioUrl, 'Tutorial', 'Informativo');
         showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
       } catch (saveError) {
         console.error("Error auto-saving to audio box:", saveError);

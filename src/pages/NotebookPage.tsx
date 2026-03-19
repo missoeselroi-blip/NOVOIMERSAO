@@ -303,7 +303,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
 
       // Auto-save to Audio Box
       try {
-        await saveTrack('Nota do Caderno', audioUrl, 'Leitura', 'Informativa');
+        await saveTrack('Nota do Caderno', 'Caderno', audioUrl, 'Leitura', 'Informativa');
         showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
       } catch (saveError) {
         console.error("Error auto-saving to audio box:", saveError);

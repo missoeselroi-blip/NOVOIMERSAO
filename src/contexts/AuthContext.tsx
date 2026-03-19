@@ -44,15 +44,18 @@ interface User {
   role: 'admin' | 'user';
   favorites?: Favorite[];
   settings?: UserSettings;
+  metrics?: Metrics;
 }
 
 interface Metrics {
   accesses: number;
   totalTime: number; // in seconds
+  totalStudies?: number;
   forumParticipations: number;
   shares: number;
   hasContributed: boolean;
   membershipMonths: number;
+  sectionTimes?: Record<string, number>;
 }
 
 interface AuthContextType {
@@ -66,7 +69,8 @@ interface AuthContextType {
   loginWithEmail: (email: string, password: string) => Promise<void>;
   registerWithEmail: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
-  updateMetrics: (updates: Partial<Metrics>) => void;
+  updateMetrics: (updates: Partial<Metrics>) => Promise<void>;
+  updateSectionTime: (sectionId: string, seconds: number) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   toggleFavorite: (favorite: Omit<Favorite, 'id'>) => Promise<void>;
   isInitialLoading: boolean;
@@ -139,6 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     shares: 0,
     hasContributed: false,
     membershipMonths: 0,
+    sectionTimes: {},
   });
 
   // Listen for Auth State Changes
@@ -198,6 +203,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           shares: 0,
           hasContributed: false,
           membershipMonths: 0,
+          sectionTimes: {},
         });
         setIsInitialLoading(false);
       }
@@ -258,6 +264,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           shares: 0,
           hasContributed: false,
           membershipMonths: 0,
+          sectionTimes: {},
         };
         setDoc(metricsDocRef, initialMetrics).catch(err => handleFirestoreError(err, OperationType.WRITE, `metrics/${user.id}`));
         setMetrics(initialMetrics);
@@ -390,7 +397,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateMetrics = async (updates: Partial<Metrics>) => {
     if (!user || !db) return;
     const metricsDocRef = doc(db, 'metrics', user.id);
-    await updateDoc(metricsDocRef, updates);
+    try {
+      await updateDoc(metricsDocRef, updates);
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `metrics/${user.id}`);
+    }
+  };
+
+  const updateSectionTime = async (sectionId: string, seconds: number) => {
+    if (!user || !db) return;
+    const metricsDocRef = doc(db, 'metrics', user.id);
+    const currentSectionTimes = metrics.sectionTimes || {};
+    const newSectionTimes = {
+      ...currentSectionTimes,
+      [sectionId]: (currentSectionTimes[sectionId] || 0) + seconds
+    };
+    
+    try {
+      await updateDoc(metricsDocRef, { sectionTimes: newSectionTimes });
+      setMetrics(prev => ({ ...prev, sectionTimes: newSectionTimes }));
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `metrics/${user.id}`);
+    }
   };
 
   const value = useMemo(() => ({ 
@@ -405,6 +433,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registerWithEmail, 
     logout, 
     updateMetrics, 
+    updateSectionTime,
     updateUser,
     toggleFavorite,
     isInitialLoading 

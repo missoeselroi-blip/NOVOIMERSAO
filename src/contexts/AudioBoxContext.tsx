@@ -3,6 +3,7 @@ import { useAuth } from './AuthContext';
 import { db, auth } from '../lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, deleteDoc, doc, orderBy, Timestamp, getDoc } from 'firebase/firestore';
 import { storeAudio, getAudio, deleteAudio } from '../lib/indexedDB';
+import { geminiService } from '../services/geminiService';
 
 enum OperationType {
   CREATE = 'create',
@@ -39,27 +40,83 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
 interface AudioTrack {
   id: string;
   title: string;
+  subject?: string;
   audioUrl: string;
   style: string;
   emotion: string;
   date: string;
+  size?: string;
+  duration?: string;
   createdAt: any;
   userId?: string;
 }
 
 interface AudioBoxContextType {
   tracks: AudioTrack[];
-  saveTrack: (title: string, audioUrl: string, style: string, emotion: string) => Promise<void>;
+  generateAudio: (text: string, voice: string, emotion: string) => Promise<string>;
+  saveTrack: (title: string, subject: string, audioUrl: string, style: string, emotion: string, duration?: string) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   isLoading: boolean;
 }
 
 const AudioBoxContext = createContext<AudioBoxContextType | undefined>(undefined);
 
+import { GoogleGenAI, Modality } from "@google/genai";
+
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+
 export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
+
+  const generateAudio = async (text: string, voice: string, emotion: string) => {
+    if (!GEMINI_API_KEY) {
+      throw new Error("Gemini API Key is required for audio generation.");
+    }
+
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+    
+    // Map user voice choices to prebuilt voices
+    let voiceName: 'Kore' | 'Puck' | 'Charon' | 'Fenrir' | 'Zephyr' = 'Kore';
+    
+    if (voice.includes('criança')) voiceName = 'Puck';
+    else if (voice.includes('adolescente rapaz')) voiceName = 'Puck';
+    else if (voice.includes('adolescente moça')) voiceName = 'Kore';
+    else if (voice.includes('jovem')) voiceName = 'Puck';
+    else if (voice.includes('homem')) voiceName = 'Charon';
+    else if (voice.includes('mulher')) voiceName = 'Kore';
+    else if (voice.includes('idoso')) voiceName = 'Fenrir';
+    else if (voice.includes('idosa')) voiceName = 'Zephyr';
+    else if (voice.includes('ninar')) voiceName = 'Zephyr';
+
+    const prompt = `Fale o seguinte texto com um tom ${emotion} e voz de ${voice}: ${text}`;
+
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName },
+            },
+          },
+        },
+      });
+
+      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (!base64Audio) {
+        throw new Error("Failed to generate audio data.");
+      }
+
+      return geminiService.pcmToWav(base64Audio, 24000);
+    } catch (error) {
+      console.error("Error generating audio:", error);
+      throw error;
+    }
+  };
 
   useEffect(() => {
     if (!user) {
@@ -122,16 +179,29 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => unsubscribe();
   }, [user]);
 
-  const saveTrack = async (title: string, audioUrl: string, style: string, emotion: string) => {
-    console.log('AudioBox: Saving track:', { title, style, emotion });
+  const saveTrack = async (title: string, subject: string, audioUrl: string, style: string, emotion: string, duration?: string) => {
+    console.log('AudioBox: Saving track:', { title, subject, style, emotion });
     let finalAudioUrl = audioUrl;
 
+    // Calculate size
+    let sizeStr = "0 KB";
+    if (audioUrl.startsWith('data:')) {
+      const base64Length = audioUrl.split(',')[1].length;
+      const sizeInBytes = base64Length * 0.75;
+      sizeStr = sizeInBytes > 1024 * 1024 
+        ? `${(sizeInBytes / (1024 * 1024)).toFixed(1)} MB` 
+        : `${(sizeInBytes / 1024).toFixed(1)} KB`;
+    }
+
     // If it's a blob URL, we should try to convert it to base64 for persistence
-    // since blob URLs are only valid for the current session.
     if (audioUrl.startsWith('blob:')) {
       try {
         const response = await fetch(audioUrl);
         const blob = await response.blob();
+        sizeStr = blob.size > 1024 * 1024 
+          ? `${(blob.size / (1024 * 1024)).toFixed(1)} MB` 
+          : `${(blob.size / 1024).toFixed(1)} KB`;
+
         finalAudioUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onloadend = () => resolve(reader.result as string);
@@ -140,15 +210,17 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
       } catch (error) {
         console.error("Error converting blob to base64:", error);
-        // Fallback to original URL if conversion fails
       }
     }
 
     const newTrack = {
       title,
+      subject,
       audioUrl: finalAudioUrl,
       style,
       emotion,
+      size: sizeStr,
+      duration: duration || "0:00",
       date: new Date().toLocaleDateString(),
       createdAt: Timestamp.now()
     };
@@ -240,7 +312,7 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <AudioBoxContext.Provider value={{ tracks, saveTrack, deleteTrack, isLoading }}>
+    <AudioBoxContext.Provider value={{ tracks, generateAudio, saveTrack, deleteTrack, isLoading }}>
       {children}
     </AudioBoxContext.Provider>
   );
