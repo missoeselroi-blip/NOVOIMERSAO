@@ -1947,7 +1947,29 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleDownloadResult = () => handleDownloadElement(bibleResultRef.current, 'Estudo_Biblico');
+  const handleDownloadResult = () => {
+    let title = 'Estudo_Biblico';
+    if (activeTab === 'creation-tool') {
+      if (creationType === 'lesson') title = showLeaderGuide ? 'Guia_do_Lider' : 'Licao_Celula';
+      else if (creationType === 'study') title = 'Estudo_Biblico';
+      else if (creationType === 'outline') title = 'Esboco_Pregacao';
+      else if (creationType === 'devotional') title = 'Devocional';
+      else if (creationType === 'debate') title = 'Debate';
+      else if (creationType === 'booklet') title = 'Apostila';
+      else if (creationType === 'message') title = 'Mensagem';
+      else if (creationType === 'infographic') title = 'Infografico';
+      else if (creationType === 'slides_notebook') title = 'Slides';
+      else if (creationType === 'kids_ministry') title = 'Ministerio_Infantil';
+      else if (creationType === 'audio') title = 'Audio';
+    } else if (activeTab === 'wiki') {
+      title = 'Wiki_Biblica';
+    } else if (activeTab === 'authors') {
+      title = 'Visao_do_Autor';
+    } else if (activeTab === 'religions') {
+      title = 'Visao_Outras_Religioes';
+    }
+    handleDownloadElement(bibleResultRef.current, title);
+  };
 
   const handleShareContent = async (title: string, text: string) => {
     if (navigator.share) {
@@ -1968,7 +1990,60 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleShareResult = () => handleShareContent('Comentário Bíblico', result);
+  const handleShareResult = () => {
+    let contentToShare = result;
+    let titleToShare = 'Comentário Bíblico';
+
+    if (activeTab === 'creation-tool') {
+      if (creationType === 'lesson') { contentToShare = showLeaderGuide ? leaderGuide : lessonResult; titleToShare = showLeaderGuide ? 'Guia do Líder' : 'Lição Célula'; }
+      else if (creationType === 'study') { contentToShare = studyResult; titleToShare = 'Estudo Bíblico'; }
+      else if (creationType === 'outline') { contentToShare = outline; titleToShare = 'Esboço Pregação'; }
+      else if (creationType === 'devotional') { contentToShare = devotionalResult; titleToShare = 'Devocional'; }
+      else if (creationType === 'debate') { contentToShare = debateResult; titleToShare = 'Debate'; }
+      else if (creationType === 'booklet') { contentToShare = bookletResult; titleToShare = 'Apostila'; }
+      else if (creationType === 'message') { contentToShare = messageResult; titleToShare = 'Mensagem'; }
+      else if (creationType === 'infographic') { contentToShare = infographicResult; titleToShare = 'Infográfico'; }
+      else if (creationType === 'slides_notebook') { contentToShare = slidesResult; titleToShare = 'Slides'; }
+      else if (creationType === 'kids_ministry') { contentToShare = kidsMinistryResult; titleToShare = 'Ministério Infantil'; }
+      else if (creationType === 'audio') { contentToShare = audioResult; titleToShare = 'Áudio'; }
+    } else if (activeTab === 'kids_ministry') {
+      const isImage = kidsActiveTab === 'illustration';
+      contentToShare = isImage ? kidsIllustration || '' : (kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''));
+      titleToShare = `Ministério Infantil - ${kidsActiveTab}`;
+    } else if (activeTab === 'stories_theater') {
+      contentToShare = storiesTheaterActiveTab === 'theater' ? storiesTheaterResult?.theater || '' :
+                       storiesTheaterActiveTab === 'stories' ? storiesTheaterResult?.stories || '' :
+                       storiesTheaterResult?.bibleStory || '';
+      titleToShare = 'Histórias & Teatro';
+    } else if (activeTab === 'commentary') {
+      contentToShare = commentaryResult;
+      titleToShare = 'Comentário Bíblico';
+    } else if (activeTab === 'compare') {
+      contentToShare = result;
+      titleToShare = 'Comparação de Versões';
+    } else if (activeTab === 'meaning') {
+      contentToShare = meaningResult;
+      titleToShare = 'Significado';
+    } else if (activeTab === 'wiki') {
+      contentToShare = wikiResult;
+      titleToShare = 'Wiki Bíblica';
+    } else if (activeTab === 'authors') {
+      contentToShare = result;
+      titleToShare = 'Visão do Autor';
+    } else if (activeTab === 'religions') {
+      contentToShare = result;
+      titleToShare = 'Visão de Outras Religiões';
+    } else if (activeTab === 'verse-search') {
+      contentToShare = verseContent;
+      titleToShare = verseSearch;
+    }
+
+    if (contentToShare) {
+      handleShareContent(titleToShare, contentToShare);
+    } else {
+      showToast("Nada para compartilhar.", "error");
+    }
+  };
 
   const handleSaveDraft = () => {
     const draft = {
@@ -3426,7 +3501,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <button onClick={() => setShowLeaderGuide(false)} className={cn("px-6 py-2 rounded-full font-bold transition-all", !showLeaderGuide ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}>Lição</button>
                       <button onClick={() => setShowLeaderGuide(true)} className={cn("px-6 py-2 rounded-full font-bold transition-all", showLeaderGuide ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}>Guia do Líder</button>
                     </div>
-                    <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                    <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
                       <MarkdownRenderer content={showLeaderGuide ? leaderGuide : lessonResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -3467,7 +3542,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         </details>
                       </div>
                     )}
-                    <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                    <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
                       <MarkdownRenderer content={studyResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -3593,7 +3668,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         </details>
                       </div>
                     )}
-                    <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                    <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
                       <MarkdownRenderer content={debateResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -3627,7 +3702,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         </details>
                       </div>
                     )}
-                    <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                    <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
                       <MarkdownRenderer content={devotionalResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -3664,7 +3739,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         </details>
                       </div>
                     )}
-                    <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                    <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
                       <MarkdownRenderer content={messageResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">

@@ -40,7 +40,8 @@ import {
   Pencil,
   Anchor,
   LogIn,
-  Volume2
+  Volume2,
+  ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -75,6 +76,7 @@ const TheologyPage = lazy(() => import('./pages/TheologyPage'));
 const MissionaryPage = lazy(() => import('./pages/MissionaryPage'));
 const MissionaryBulkResults = lazy(() => import('./pages/MissionaryBulkResults'));
 const AudioBoxPage = lazy(() => import('./pages/AudioBoxPage'));
+const AdminPage = lazy(() => import('./pages/AdminPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -165,6 +167,7 @@ function AppContent() {
     { id: 'missionary-results', label: 'Resultados Missões', subtitle: 'Relatórios de campo', icon: <Calendar size={20} />, component: <MissionaryBulkResults onBack={() => handleNavigate('missionary')} />, hidden: true },
     { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
     { id: 'profile', label: 'Perfil', subtitle: 'Sua conta e preferências', icon: <User size={20} />, component: <ProfilePage />, hidden: true },
+    { id: 'admin', label: 'Painel ADM', subtitle: 'Administração do Sistema', icon: <ShieldCheck size={20} />, component: <AdminPage />, hidden: true },
   ];
 
   const activeItem = navItems.find(item => item.id === activeTab);
