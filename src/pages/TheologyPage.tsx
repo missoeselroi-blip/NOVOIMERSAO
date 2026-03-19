@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   GraduationCap, 
   BookOpen, 
@@ -53,7 +53,7 @@ import { AudioSearchButton } from '../components/AudioSearchButton';
 import jsPDF from 'jspdf';
 
 import { auth, db } from '../lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, increment } from 'firebase/firestore';
 
 enum OperationType {
   CREATE = 'create',
@@ -209,6 +209,89 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
 
+  // Section Tracking State
+  const currentSectionRef = useRef('HOME');
+  const sectionStartTimeRef = useRef(Date.now());
+
+  const getActiveSection = () => {
+    if (showSearch) return 'SEARCH';
+    if (showSlidesModal) return `SLIDES_${selectedSubject || 'UNKNOWN'}`;
+    if (showInfographicModal) return `INFOGRAPHIC_${selectedSubject || 'UNKNOWN'}`;
+    if (showDebateModal) return `DEBATE_${selectedSubject || 'UNKNOWN'}`;
+    if (showAssessmentModal) return `ASSESSMENT_${selectedSubject || 'UNKNOWN'}`;
+    if (showSummaryModal) return `SUMMARY_${selectedSubject || 'UNKNOWN'}`;
+    if (showSubjectModal) return `OVERVIEW_${selectedSubject || 'UNKNOWN'}`;
+    if (selectedSubject) return `STUDY_${selectedSubject}`;
+    return 'HOME';
+  };
+
+  const saveSectionTime = async (section: string, seconds: number) => {
+    if (!user || seconds <= 0) return;
+    try {
+      const progressDocRef = doc(db, 'theologyProgress', user.id);
+      
+      const updates: any = {
+        [`sectionMetrics.${section}`]: increment(seconds),
+        lastActive: new Date().toISOString()
+      };
+
+      // If it's a study section, also update the main study time for points
+      if (section.startsWith('STUDY_')) {
+        const subject = section.replace('STUDY_', '');
+        // Fetch latest data to ensure points are calculated correctly
+        const docSnap = await getDoc(progressDocRef);
+        const currentData = docSnap.exists() ? docSnap.data() : {};
+        const subjectData = currentData[subject] || {};
+        const totalSeconds = (subjectData.studyTime || 0) + seconds;
+        
+        let studyPoints = 0;
+        const minutes = totalSeconds / 60;
+        if (minutes > 0 && minutes <= 60) studyPoints = 5;
+        else if (minutes > 60 && minutes <= 120) studyPoints = 10;
+        else if (minutes > 120) studyPoints = 15;
+
+        updates[subject] = {
+          ...subjectData,
+          studyTime: totalSeconds,
+          studyPoints: studyPoints
+        };
+        
+        // Sync to career will happen after update
+        setTimeout(() => syncPointsToCareer(subject, updates[subject]), 1000);
+      }
+
+      await updateDoc(progressDocRef, updates);
+    } catch (error) {
+      console.error("Error saving section time:", error);
+    }
+  };
+
+  useEffect(() => {
+    const newSection = getActiveSection();
+    if (newSection !== currentSectionRef.current) {
+      const duration = Math.floor((Date.now() - sectionStartTimeRef.current) / 1000);
+      saveSectionTime(currentSectionRef.current, duration);
+      currentSectionRef.current = newSection;
+      sectionStartTimeRef.current = Date.now();
+    }
+  }, [
+    showSearch, 
+    showSlidesModal, 
+    showInfographicModal, 
+    showDebateModal, 
+    showAssessmentModal, 
+    showSummaryModal, 
+    showSubjectModal, 
+    selectedSubject
+  ]);
+
+  useEffect(() => {
+    return () => {
+      const duration = Math.floor((Date.now() - sectionStartTimeRef.current) / 1000);
+      saveSectionTime(currentSectionRef.current, duration);
+    };
+  }, []);
+
   const BIBLIOLOGIA_SLIDES = [
     "https://picsum.photos/seed/bibliologia-slide-1/1200/800",
     "https://picsum.photos/seed/bibliologia-slide-2/1200/800",
@@ -270,18 +353,6 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
     return () => unsubscribe();
   }, [user]);
-
-  useEffect(() => {
-    if (selectedSubject && !showSubjectModal) {
-      setStudyStartTime(Date.now());
-    } else {
-      if (studyStartTime && selectedSubject) {
-        const duration = Math.floor((Date.now() - studyStartTime) / 1000);
-        updateStudyTime(selectedSubject, duration);
-      }
-      setStudyStartTime(null);
-    }
-  }, [selectedSubject, showSubjectModal]);
 
   const syncPointsToCareer = async (subject: string, updatedProgress: any) => {
     if (!user) return;
