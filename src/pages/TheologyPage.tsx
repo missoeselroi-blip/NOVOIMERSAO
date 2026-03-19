@@ -204,6 +204,33 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [isGeneratingDebate, setIsGeneratingDebate] = useState(false);
   const [debateContent, setDebateContent] = useState('');
 
+  // Slides and Infographic State
+  const [showSlidesModal, setShowSlidesModal] = useState(false);
+  const [showInfographicModal, setShowInfographicModal] = useState(false);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+
+  const BIBLIOLOGIA_SLIDES = [
+    "https://picsum.photos/seed/bibliologia-slide-1/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-2/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-3/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-4/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-5/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-6/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-7/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-8/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-9/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-10/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-11/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-12/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-13/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-14/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-15/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-16/1200/800",
+    "https://picsum.photos/seed/bibliologia-slide-17/1200/800"
+  ];
+
+  const BIBLIOLOGIA_INFOGRAPHIC = "https://picsum.photos/seed/bibliologia-infographic/1200/1600";
+
   if (isInitialLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -700,6 +727,16 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   };
 
   const openSummaryModal = (type: string) => {
+    if (selectedSubject === 'Bibliologia') {
+      if (type === 'Vídeo Resumo') {
+        window.open("https://youtu.be/P2YVpigLsCY", "_blank");
+        return;
+      }
+      if (type === 'Videocast') {
+        window.open("https://youtu.be/P2YVpigLsCY", "_blank");
+        return;
+      }
+    }
     setSummaryType(type);
     setSummaryText('');
     setSummaryEvaluation(null);
@@ -1082,7 +1119,18 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                   )}
                   <div className="flex justify-between items-start mb-6">
                     <div>
-                      <h4 className="text-xl font-bold group-hover:text-emerald-600 transition-colors flex items-center gap-2">
+                      <h4 
+                        onClick={(e) => {
+                          if (subject.title === 'Bibliologia') {
+                            e.stopPropagation();
+                            setShowInfographicModal(true);
+                          }
+                        }}
+                        className={cn(
+                          "text-xl font-bold group-hover:text-emerald-600 transition-colors flex items-center gap-2",
+                          subject.title === 'Bibliologia' && "cursor-pointer hover:underline decoration-emerald-500/30 underline-offset-4"
+                        )}
+                      >
                         <Icon size={24} className={cn("text-emerald-500", isLocked && "text-stone-400")} />
                         {subject.title}
                         {isLocked && <Zap size={16} className="text-stone-400 ml-auto" />}
@@ -1466,19 +1514,27 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => updateDetailedProgress(selectedSubject, 'video')}
+                        onClick={() => {
+                          if (selectedSubject === 'Bibliologia') {
+                            window.open('https://youtu.be/P2YVpigLsCY', '_blank');
+                          } else {
+                            updateDetailedProgress(selectedSubject, 'video');
+                          }
+                        }}
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-red-50 dark:hover:bg-red-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-red-100 dark:bg-red-900/30 text-red-600 rounded-xl group-hover:scale-110 transition-transform">
                           <Play size={24} />
                         </div>
                         <div className="text-left">
-                          <div className="font-bold">Vídeo</div>
-                          <div className="text-xs text-stone-500">Assista à vídeo-aula</div>
+                          <div className="font-bold">{selectedSubject === 'Bibliologia' ? 'Vídeo Resumo' : 'Vídeo'}</div>
+                          <div className="text-xs text-stone-500">
+                            {selectedSubject === 'Bibliologia' ? 'Assista ao resumo no YouTube' : 'Assista à vídeo-aula'}
+                          </div>
                         </div>
                       </button>
                       <button
-                        onClick={() => openSummaryModal('Vídeo')}
+                        onClick={() => openSummaryModal(selectedSubject === 'Bibliologia' ? 'Vídeo Resumo' : 'Vídeo')}
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />
@@ -1488,7 +1544,14 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
                     <div className="flex gap-2">
                       <button 
-                        onClick={() => updateDetailedProgress(selectedSubject, 'slides')}
+                        onClick={() => {
+                          if (selectedSubject === 'Bibliologia') {
+                            setCurrentSlideIndex(0);
+                            setShowSlidesModal(true);
+                          } else {
+                            updateDetailedProgress(selectedSubject, 'slides');
+                          }
+                        }}
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-amber-50 dark:hover:bg-amber-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-xl group-hover:scale-110 transition-transform">
@@ -1496,7 +1559,9 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         </div>
                         <div className="text-left">
                           <div className="font-bold">Slides</div>
-                          <div className="text-xs text-stone-500">Apresentação visual</div>
+                          <div className="text-xs text-stone-500">
+                            {selectedSubject === 'Bibliologia' ? 'Ver apresentação de slides' : 'Apresentação visual'}
+                          </div>
                         </div>
                       </button>
                       <button
@@ -1537,6 +1602,116 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         <span className="text-[10px] font-bold uppercase tracking-wider">Resumo<br/>(+5 pts)</span>
                       </button>
                     </div>
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          {/* Summary Evaluation Modal */}
+          <AnimatePresence>
+            {showSlidesModal && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-white dark:bg-zinc-900 w-full max-w-5xl h-[90vh] rounded-[3rem] overflow-hidden shadow-2xl flex flex-col"
+                >
+                  <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-2xl">
+                        <Presentation size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold">Slides: Bibliologia</h3>
+                        <p className="text-sm text-stone-500">Página {currentSlideIndex + 1} de {BIBLIOLOGIA_SLIDES.length}</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowSlidesModal(false)}
+                      className="p-3 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-stone-100 dark:bg-zinc-950 relative group">
+                    <img 
+                      src={BIBLIOLOGIA_SLIDES[currentSlideIndex]} 
+                      alt={`Slide ${currentSlideIndex + 1}`}
+                      className="max-w-full max-h-full object-contain rounded-xl shadow-lg"
+                      referrerPolicy="no-referrer"
+                    />
+                    
+                    <button 
+                      onClick={() => setCurrentSlideIndex(prev => Math.max(0, prev - 1))}
+                      disabled={currentSlideIndex === 0}
+                      className="absolute left-4 p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-full shadow-lg text-stone-800 dark:text-white disabled:opacity-30 transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <ArrowLeft size={24} />
+                    </button>
+                    
+                    <button 
+                      onClick={() => setCurrentSlideIndex(prev => Math.min(BIBLIOLOGIA_SLIDES.length - 1, prev + 1))}
+                      disabled={currentSlideIndex === BIBLIOLOGIA_SLIDES.length - 1}
+                      className="absolute right-4 p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-full shadow-lg text-stone-800 dark:text-white disabled:opacity-30 transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <ArrowRight size={24} />
+                    </button>
+                  </div>
+
+                  <div className="p-6 border-t border-stone-100 dark:border-zinc-800 flex justify-center gap-2 overflow-x-auto shrink-0 bg-white dark:bg-zinc-900">
+                    {BIBLIOLOGIA_SLIDES.map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setCurrentSlideIndex(idx)}
+                        className={cn(
+                          "w-3 h-3 rounded-full transition-all",
+                          currentSlideIndex === idx ? "bg-emerald-500 w-8" : "bg-stone-200 dark:bg-zinc-700 hover:bg-stone-300"
+                        )}
+                      />
+                    ))}
+                  </div>
+                </motion.div>
+              </div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {showInfographicModal && (
+              <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+                <motion.div 
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  className="bg-white dark:bg-zinc-900 w-full max-w-4xl h-[90vh] rounded-[3rem] overflow-hidden shadow-2xl flex flex-col"
+                >
+                  <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center shrink-0">
+                    <div className="flex items-center gap-3">
+                      <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
+                        <FileText size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold">Infográfico: Bibliologia</h3>
+                        <p className="text-sm text-stone-500">Visão geral da matéria</p>
+                      </div>
+                    </div>
+                    <button 
+                      onClick={() => setShowInfographicModal(false)}
+                      className="p-3 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
+                    >
+                      <X size={24} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-auto p-8 bg-stone-50 dark:bg-zinc-950 flex justify-center">
+                    <img 
+                      src={BIBLIOLOGIA_INFOGRAPHIC} 
+                      alt="Infográfico Bibliologia"
+                      className="max-w-full h-auto rounded-xl shadow-2xl"
+                      referrerPolicy="no-referrer"
+                    />
                   </div>
                 </motion.div>
               </div>
