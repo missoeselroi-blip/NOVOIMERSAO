@@ -133,7 +133,11 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
   }, [isListening, processCommand, showToast]);
 
   return (
-    <div className="fixed bottom-24 left-6 z-50 flex flex-col items-start gap-4">
+    <motion.div 
+      drag
+      dragMomentum={false}
+      className="fixed bottom-24 left-6 z-50 flex flex-col items-start gap-4 touch-none"
+    >
       <AnimatePresence>
         {isListening && (
           <motion.div
@@ -181,6 +185,6 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
           </div>
         )}
       </button>
-    </div>
+    </motion.div>
   );
 };

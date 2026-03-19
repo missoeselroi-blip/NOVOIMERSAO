@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, 
   Book, 
@@ -9,7 +9,9 @@ import {
   ArrowLeft,
   BookOpen,
   HelpCircle,
-  Volume2
+  Volume2,
+  Download,
+  Share2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -17,7 +19,10 @@ import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
-import { useEffect } from 'react';
+import { SearchLoadingOverlay } from '../components/SearchLoadingOverlay';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 
@@ -26,6 +31,7 @@ interface TheologySearchPageProps {
 }
 
 export default function TheologySearchPage({ initialQuery = '' }: TheologySearchPageProps) {
+  const { user } = useAuth();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [query, setQuery] = useState(initialQuery);
@@ -34,6 +40,8 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [pendingSpeechText, setPendingSpeechText] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const handleListen = async (text: string) => {
     if (!text) return;
@@ -47,11 +55,17 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
     setIsGeneratingSpeech(true);
     showToast("Preparando a voz da IA... 🔊📖", 'info');
     try {
-      const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
-      if (audioUrl) {
-        const audio = new Audio(audioUrl);
+      const url = await geminiService.generateSpeech(pendingSpeechText);
+      if (url) {
+        setAudioUrl(url);
+        const audio = new Audio(url);
         audio.play();
         showToast("Iniciando leitura... Ouça com atenção! 🔊✨", 'success');
+        
+        // Scroll to result after a short delay to allow rendering
+        setTimeout(() => {
+          resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 100);
       } else {
         showToast("Erro ao gerar áudio.", 'error');
       }
@@ -69,15 +83,40 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
     if (!searchTarget.trim()) return;
     setIsLoading(true);
     setResult('');
+    setAudioUrl(null);
     try {
       const prompt = `Pesquise o termo teológico "${searchTarget}" em Bíblias de Estudo, Enciclopédias, Dicionários e Comentários Bíblicos. Forneça uma explicação profunda, citando fontes e versículos.`;
       const response = await geminiService.generateText(prompt, "Você é um PhD em Teologia.");
       setResult(response);
+      
+      // Scroll to result after a short delay to allow rendering
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
     } catch (error) {
       console.error(error);
       showToast("Erro ao realizar a busca teológica.", 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSendToCollection = async () => {
+    if (!user || !audioUrl || !result) return;
+    
+    try {
+      await addDoc(collection(db, 'audioCollection'), {
+        userId: user.id,
+        title: `Pesquisa: ${query}`,
+        text: result,
+        audioUrl: audioUrl,
+        createdAt: new Date().toISOString(),
+        type: 'theology_search'
+      });
+      showToast("Áudio enviado para a Coletânea de Áudios! 🎧✨", 'success');
+    } catch (error) {
+      console.error("Error sending to collection:", error);
+      showToast("Erro ao enviar áudio para a coletânea.", 'error');
     }
   };
 
@@ -89,6 +128,8 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
 
   return (
     <div className="max-w-5xl mx-auto space-y-8">
+      <SearchLoadingOverlay isVisible={isLoading || isGeneratingSpeech} message={isLoading ? "Pesquisando Teologia..." : "Gerando Áudio..."} />
+      
       <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl">
         <div className="flex items-center gap-4 mb-8">
           <div className="p-4 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-600/20">
@@ -128,9 +169,10 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
       <AnimatePresence>
         {result && (
           <motion.div
+            ref={resultRef}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white dark:bg-zinc-900 p-10 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-xl prose dark:prose-invert max-w-none"
+            className="bg-white dark:bg-zinc-900 p-10 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-xl overflow-hidden"
           >
             <div className="flex items-center justify-between mb-8 pb-4 border-b border-stone-100 dark:border-zinc-800">
               <div className="flex items-center gap-4">
@@ -144,14 +186,43 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
                   {isGeneratingSpeech ? <Loader2 size={20} className="animate-spin" /> : <Volume2 size={20} />}
                 </button>
               </div>
-              <button 
-                onClick={() => setResult('')}
-                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                {audioUrl && (
+                  <button 
+                    onClick={handleSendToCollection}
+                    className="px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-colors flex items-center gap-2"
+                  >
+                    <Download size={14} />
+                    Enviar para Coletânea
+                  </button>
+                )}
+                <button 
+                  onClick={() => setResult('')}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
-            <MarkdownRenderer content={result} />
+            
+            {audioUrl && (
+              <div className="mb-8 bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl space-y-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-600 text-white rounded-full flex items-center justify-center animate-pulse">
+                    <Volume2 size={20} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">Áudio Gerado</p>
+                    <p className="text-xs text-stone-400">Narração IA</p>
+                  </div>
+                </div>
+                <audio controls className="w-full h-10" src={audioUrl} />
+              </div>
+            )}
+
+            <div className="prose dark:prose-invert max-w-none">
+              <MarkdownRenderer content={result} />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

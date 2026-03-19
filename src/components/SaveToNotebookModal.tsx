@@ -6,7 +6,7 @@ interface SaveToNotebookModalProps {
   isOpen: boolean;
   isLoading?: boolean;
   onClose: () => void;
-  onConfirm: (category: 'Anotações' | 'Pregações' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => void;
+  onConfirm: (category: 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => void;
 }
 
 export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: SaveToNotebookModalProps) {
@@ -62,12 +62,11 @@ export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: S
                 </div>
                 <div className="text-left">
                   <h4 className="font-bold text-stone-900 dark:text-white">Anotações</h4>
-                  <p className="text-sm text-stone-500 dark:text-zinc-400">Ideias, reflexões e notas gerais</p>
                 </div>
               </button>
 
               <button
-                onClick={() => onConfirm('Pregações')}
+                onClick={() => onConfirm('Esboços')}
                 disabled={isLoading}
                 className="w-full flex items-center gap-4 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group disabled:opacity-50"
               >
@@ -75,8 +74,7 @@ export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: S
                   <BookOpen size={24} />
                 </div>
                 <div className="text-left">
-                  <h4 className="font-bold text-stone-900 dark:text-white">Pregações</h4>
-                  <p className="text-sm text-stone-500 dark:text-zinc-400">Esboços e mensagens para ministrar</p>
+                  <h4 className="font-bold text-stone-900 dark:text-white">Esboços</h4>
                 </div>
               </button>
 
@@ -90,7 +88,6 @@ export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: S
                 </div>
                 <div className="text-left">
                   <h4 className="font-bold text-stone-900 dark:text-white">Estudos</h4>
-                  <p className="text-sm text-stone-500 dark:text-zinc-400">Pesquisas e aprofundamentos bíblicos</p>
                 </div>
               </button>
 
@@ -104,7 +101,6 @@ export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: S
                 </div>
                 <div className="text-left">
                   <h4 className="font-bold text-stone-900 dark:text-white">Histórias</h4>
-                  <p className="text-sm text-stone-500 dark:text-zinc-400">Contos, fábulas e estórias geradas</p>
                 </div>
               </button>
 
@@ -118,7 +114,6 @@ export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: S
                 </div>
                 <div className="text-left">
                   <h4 className="font-bold text-stone-900 dark:text-white">Teatro</h4>
-                  <p className="text-sm text-stone-500 dark:text-zinc-400">Peças, roteiros e dramaturgia</p>
                 </div>
               </button>
 
@@ -132,7 +127,6 @@ export function SaveToNotebookModal({ isOpen, isLoading, onClose, onConfirm }: S
                 </div>
                 <div className="text-left">
                   <h4 className="font-bold text-stone-900 dark:text-white">Outros</h4>
-                  <p className="text-sm text-stone-500 dark:text-zinc-400">Outras categorias de conteúdo</p>
                 </div>
               </button>
             </div>

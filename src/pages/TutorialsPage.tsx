@@ -48,7 +48,7 @@ const tutorialSteps: TutorialStep[] = [
   },
   {
     title: "Meu Caderno Espiritual",
-    description: "Organize suas anotações em três categorias: Anotações, Pregações e Estudos. Exporte em PDF formatado para A4, pronto para impressão com cabeçalho personalizado.",
+    description: "Organize suas anotações em três categorias: Anotações, Esboços e Estudos. Exporte em PDF formatado para A4, pronto para impressão com cabeçalho personalizado.",
     icon: <StickyNote className="text-purple-600" size={32} />,
     audioText: ""
   },
@@ -88,7 +88,7 @@ export default function TutorialsPage() {
       // Auto-save to Audio Box
       try {
         await saveTrack(`Tutorial: ${tutorialSteps[currentStep].title}`, 'Tutorial', audioUrl, 'Tutorial', 'Informativo');
-        showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+        showToast("Áudio salvo na Coletânea! 🎵", 'success');
       } catch (saveError) {
         console.error("Error auto-saving to audio box:", saveError);
       }

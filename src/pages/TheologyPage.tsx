@@ -256,6 +256,72 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
   }, [selectedSubject, showSubjectModal]);
 
+  const syncPointsToCareer = async (subject: string, updatedProgress: any) => {
+    if (!user) return;
+    
+    // Calculate total points for this subject
+    const evalScore = updatedProgress.evaluation || 0;
+    const redMateria = updatedProgress.redacaoMateria || 0;
+    const redAprofundamento = updatedProgress.redacaoAprofundamento || 0;
+    const redSlide = updatedProgress.redacaoSlide || 0;
+    const redVideo = updatedProgress.redacaoVideo || 0;
+    const redPodcast = updatedProgress.redacaoPodcast || 0;
+    const quizPoints = updatedProgress.quizPoints || 0;
+    const studyPoints = updatedProgress.studyPoints || 0;
+    const subjectTotal = evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints + studyPoints;
+
+    // We need to calculate the grand total across all subjects
+    // Since theologyProgress might be stale in the state, we fetch the latest
+    try {
+      const progressDoc = await getDoc(doc(db, 'theologyProgress', user.id));
+      if (progressDoc.exists()) {
+        const allProgress = progressDoc.data();
+        // Merge the current update
+        allProgress[subject] = updatedProgress;
+        
+        const grandTotal = Object.keys(allProgress).reduce((acc, key) => {
+          if (key === 'userId' || key === 'enrolled') return acc;
+          const data = allProgress[key] || {};
+          const sTotal = (data.evaluation || 0) + 
+                         (data.redacaoMateria || 0) + 
+                         (data.redacaoAprofundamento || 0) + 
+                         (data.redacaoSlide || 0) + 
+                         (data.redacaoVideo || 0) + 
+                         (data.redacaoPodcast || 0) + 
+                         (data.quizPoints || 0) + 
+                         (data.studyPoints || 0);
+          return acc + sTotal;
+        }, 0);
+
+        // Update careerProgress points
+        const careerDocRef = doc(db, 'careerProgress', user.id);
+        const careerDoc = await getDoc(careerDocRef);
+        
+        if (careerDoc.exists()) {
+          await updateDoc(careerDocRef, { 
+            points: grandTotal,
+            name: user.name,
+            avatar: user.photoURL,
+            updatedAt: new Date().toISOString()
+          });
+        } else {
+          await setDoc(careerDocRef, {
+            userId: user.id,
+            name: user.name,
+            avatar: user.photoURL,
+            points: grandTotal,
+            rankId: 1,
+            stars: 0,
+            authorized: false,
+            updatedAt: new Date().toISOString()
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error syncing points to career:", error);
+    }
+  };
+
   const updateStudyTime = async (subject: string, seconds: number) => {
     if (!user) return;
     const current = theologyProgress[subject] || {};
@@ -279,6 +345,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     await updateDoc(progressDocRef, {
       [subject]: newSubjectProgress
     });
+    
+    await syncPointsToCareer(subject, newSubjectProgress);
   };
 
   const generateChapterQuiz = async (content: string) => {
@@ -442,6 +510,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     await updateDoc(progressDocRef, {
       [selectedSubject]: newSubjectProgress
     });
+    
+    await syncPointsToCareer(selectedSubject, newSubjectProgress);
   };
 
   const handleNextChapter = () => {
@@ -485,7 +555,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
     if (!pendingNote || !user) return;
     
     try {
@@ -706,6 +776,24 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         'Podcast': 'redacaoPodcast'
       };
       const field = fieldMap[summaryType];
+      
+      // Save summary to a dedicated collection for the student profile
+      try {
+        const summaryData = {
+          userId: user.id,
+          userName: user.name,
+          subject: selectedSubject,
+          type: summaryType,
+          content: summaryText,
+          score: score,
+          aiFeedback: aiFeedback,
+          createdAt: new Date().toISOString()
+        };
+        await addDoc(collection(db, 'theologySummaries'), summaryData);
+      } catch (error) {
+        console.error("Error saving summary to collection:", error);
+      }
+
       if (field) {
         const current = theologyProgress[selectedSubject] || {};
         // Only update if the new score is higher
@@ -717,7 +805,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
           const progressDocRef = doc(db, 'theologyProgress', user.id);
           updateDoc(progressDocRef, {
             [selectedSubject]: newSubjectProgress
-          }).catch(console.error);
+          }).then(() => syncPointsToCareer(selectedSubject, newSubjectProgress)).catch(console.error);
         }
       }
     }

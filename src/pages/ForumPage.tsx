@@ -113,7 +113,7 @@ export default function ForumPage() {
       // Auto-save to Audio Box
       try {
         await saveTrack('Post do Fórum', 'Fórum', audioUrl, 'Fórum', 'Comunidade');
-        showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+        showToast("Áudio salvo na Coletânea! 🎵", 'success');
       } catch (saveError) {
         console.error("Error auto-saving to audio box:", saveError);
       }

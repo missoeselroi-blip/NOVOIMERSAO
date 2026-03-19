@@ -24,7 +24,11 @@ export const AccessibilityControls: React.FC = () => {
   };
 
   return (
-    <div className="fixed bottom-24 right-6 z-50 flex flex-col items-end gap-4">
+    <motion.div 
+      drag
+      dragMomentum={false}
+      className="fixed bottom-24 right-6 z-50 flex flex-col items-end gap-4 touch-none"
+    >
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -125,6 +129,6 @@ export const AccessibilityControls: React.FC = () => {
       >
         {isOpen ? <X size={24} /> : <Type size={24} />}
       </button>
-    </div>
+    </motion.div>
   );
 };

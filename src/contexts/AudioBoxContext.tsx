@@ -41,6 +41,7 @@ interface AudioTrack {
   id: string;
   title: string;
   subject?: string;
+  text?: string;
   audioUrl: string;
   style: string;
   emotion: string;
@@ -54,7 +55,7 @@ interface AudioTrack {
 interface AudioBoxContextType {
   tracks: AudioTrack[];
   generateAudio: (text: string, voice: string, emotion: string) => Promise<string>;
-  saveTrack: (title: string, subject: string, audioUrl: string, style: string, emotion: string, duration?: string) => Promise<void>;
+  saveTrack: (title: string, subject: string, audioUrl: string, style: string, emotion: string, text?: string, duration?: string) => Promise<void>;
   deleteTrack: (id: string) => Promise<void>;
   isLoading: boolean;
 }
@@ -89,6 +90,7 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (voice.includes('idoso')) voiceName = 'Fenrir';
     else if (voice.includes('idosa')) voiceName = 'Zephyr';
     else if (voice.includes('ninar')) voiceName = 'Zephyr';
+    else if (voice.includes('energético')) voiceName = 'Puck';
 
     const prompt = `Fale o seguinte texto com um tom ${emotion} e voz de ${voice}: ${text}`;
 
@@ -179,8 +181,8 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => unsubscribe();
   }, [user]);
 
-  const saveTrack = async (title: string, subject: string, audioUrl: string, style: string, emotion: string, duration?: string) => {
-    console.log('AudioBox: Saving track:', { title, subject, style, emotion });
+  const saveTrack = async (title: string, subject: string, audioUrl: string, style: string, emotion: string, text?: string, duration?: string) => {
+    console.log('AudioBox: Saving track:', { title, subject, style, emotion, text });
     let finalAudioUrl = audioUrl;
 
     // Calculate size
@@ -216,6 +218,7 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const newTrack = {
       title,
       subject,
+      text: text || "",
       audioUrl: finalAudioUrl,
       style,
       emotion,

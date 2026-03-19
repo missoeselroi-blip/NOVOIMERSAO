@@ -39,7 +39,8 @@ import {
   Calendar,
   Pencil,
   Anchor,
-  LogIn
+  LogIn,
+  Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -73,6 +74,7 @@ const TheologySearchPage = lazy(() => import('./pages/TheologySearchPage'));
 const TheologyPage = lazy(() => import('./pages/TheologyPage'));
 const MissionaryPage = lazy(() => import('./pages/MissionaryPage'));
 const MissionaryBulkResults = lazy(() => import('./pages/MissionaryBulkResults'));
+const AudioBoxPage = lazy(() => import('./pages/AudioBoxPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -141,11 +143,13 @@ function AppContent() {
   const mainNavItems = [
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
+    { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];  const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
+    { id: 'audio-box', label: 'Áudios', subtitle: 'Sua caixa de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },

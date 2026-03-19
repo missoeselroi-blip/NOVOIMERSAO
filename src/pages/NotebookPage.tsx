@@ -36,7 +36,7 @@ interface Note {
   content: string;
   date: string;
   createdAt?: string;
-  category: 'Anotações' | 'Pregações' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros';
+  category: 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros';
 }
 
 interface NotebookPageProps {
@@ -54,10 +54,10 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentNote, setCurrentNote] = useState<{ title: string, content: string, category: 'Anotações' | 'Pregações' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros' }>({ title: '', content: '', category: 'Anotações' });
+  const [currentNote, setCurrentNote] = useState<{ title: string, content: string, category: 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros' }>({ title: '', content: '', category: 'Anotações' });
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'Todos' | 'Anotações' | 'Pregações' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros'>('Todos');
+  const [activeCategory, setActiveCategory] = useState<'Todos' | 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros'>('Todos');
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -304,7 +304,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       // Auto-save to Audio Box
       try {
         await saveTrack('Nota do Caderno', 'Caderno', audioUrl, 'Leitura', 'Informativa');
-        showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+        showToast("Áudio salvo na Coletânea! 🎵", 'success');
       } catch (saveError) {
         console.error("Error auto-saving to audio box:", saveError);
       }
@@ -363,7 +363,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       {/* Categories and Customization */}
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
         <div className="flex bg-stone-100 dark:bg-zinc-800 p-1 rounded-2xl overflow-x-auto max-w-full">
-          {['Todos', 'Anotações', 'Pregações', 'Estudos', 'Histórias', 'Teatro', 'Outros'].map((cat) => (
+          {['Todos', 'Anotações', 'Esboços', 'Estudos', 'Histórias', 'Teatro', 'Outros'].map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat as any)}
@@ -425,7 +425,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                   className="p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold"
                 >
                   <option value="Anotações">Anotações</option>
-                  <option value="Pregações">Pregações</option>
+                  <option value="Esboços">Esboços</option>
                   <option value="Estudos">Estudos</option>
                   <option value="Histórias">Histórias</option>
                   <option value="Teatro">Teatro</option>

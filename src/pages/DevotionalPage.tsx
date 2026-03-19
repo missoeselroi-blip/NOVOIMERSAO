@@ -73,6 +73,7 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 };
+import { useLocation } from 'react-router-dom';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
@@ -150,6 +151,7 @@ const THEMES: ThemeConfig[] = [
 ];
 
 export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
+  const location = useLocation();
   const { showToast } = useToast();
   const { isOffline } = useOffline();
   const { user } = useAuth();
@@ -174,6 +176,16 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+
+  useEffect(() => {
+    if (location.state?.text) {
+      setDevotionalResult(location.state.text);
+      if (location.state.title) {
+        // You might want to store the title somewhere if needed, 
+        // but for now, we just show the text.
+      }
+    }
+  }, [location.state]);
 
   // Narration state
   const [selectedVoice, setSelectedVoice] = useState<'Zephyr' | 'Puck' | 'Charon' | 'Kore' | 'Fenrir'>('Zephyr');
@@ -308,12 +320,12 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     setAudioProgress(0);
     
     try {
-      const prompt = `Crie uma narração emotiva e completa para o seguinte devocional: "${devotionalResult}".
+      const prompt = `Crie uma narração contínua, fluida e completa para o seguinte devocional: "${devotionalResult}".
       A narração deve ter a emoção "${selectedEmotion}".
-      Garanta que a narração cubra TODO o texto fornecido, sem cortes.
-      Retorne apenas o texto da narração formatado para ser lido por um sistema de voz.`;
+      IMPORTANTE: Narre o texto integralmente do início ao fim, sem repetições e sem omitir nenhuma seção.
+      Retorne apenas o texto da narração pronto para ser lido.`;
       
-      const narrationText = await geminiService.generateText(prompt, "Você é um mentor espiritual e contador de histórias profissional.");
+      const narrationText = await geminiService.generateText(prompt, "Você é um mentor espiritual e locutor profissional com voz acolhedora.");
       
       const audioUrl = await geminiService.generateSpeech(narrationText, selectedVoice);
       if (audioUrl) {
@@ -357,15 +369,15 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
   const handleSaveToAudioBox = async () => {
     if (!narrationAudio) {
-      showToast("Gere a narração primeiro para salvar na Caixa de Áudios.");
+      showToast("Gere a narração primeiro para salvar na Coletânea.");
       return;
     }
     
     try {
       await saveTrack(`Devocional: ${selectedTheme}`, 'Devocional', narrationAudio, 'Devocional', selectedEmotion);
-      showToast("Salvo na Caixa de Áudios! 🎵");
+      showToast("Salvo na Coletânea! 🎵");
     } catch (error) {
-      showToast("Erro ao salvar na Caixa de Áudios.");
+      showToast("Erro ao salvar na Coletânea.");
     }
   };
   const shareSocial = (platform: 'whatsapp' | 'facebook' | 'instagram') => {
@@ -433,7 +445,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
     if (!pendingNote) return;
     
     setIsSavingNote(true);
@@ -665,28 +677,6 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                     </div>
                     
                     <div className="flex gap-2">
-                      <select 
-                        value={selectedVoice}
-                        onChange={(e) => setSelectedVoice(e.target.value as any)}
-                        className="px-3 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl text-xs font-bold outline-none"
-                      >
-                        <option value="Zephyr">Voz: Zephyr (Suave)</option>
-                        <option value="Puck">Voz: Puck (Jovem)</option>
-                        <option value="Charon">Voz: Charon (Profunda)</option>
-                        <option value="Kore">Voz: Kore (Feminina)</option>
-                        <option value="Fenrir">Voz: Fenrir (Forte)</option>
-                      </select>
-                      <select 
-                        value={selectedEmotion}
-                        onChange={(e) => setSelectedEmotion(e.target.value)}
-                        className="px-3 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-xl text-xs font-bold outline-none"
-                      >
-                        <option value="Inspiradora">Emoção: Inspiradora</option>
-                        <option value="Alegre">Emoção: Alegre</option>
-                        <option value="Solene">Emoção: Solene</option>
-                        <option value="Calma">Emoção: Calma</option>
-                        <option value="Enérgica">Emoção: Enérgica</option>
-                      </select>
                       <button 
                         onClick={handlePlayAudio}
                         disabled={isGeneratingNarration}
@@ -769,7 +759,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                         onClick={handleSaveToAudioBox}
                         className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
                       >
-                        <Volume2 size={14} /> Salvar na Caixa de Áudios
+                        <Volume2 size={14} /> Enviar para Coletânea
                       </button>
                     </div>
                   )}

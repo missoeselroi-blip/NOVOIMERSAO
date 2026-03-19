@@ -315,7 +315,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
     if (!pendingNote) return;
     
     try {
@@ -404,7 +404,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         // Auto-save to Audio Box
         try {
           await saveTrack('Mensagem Inspiradora', 'Início', audioUrl, 'Inspiracional', 'Emotiva');
-          showToast("Áudio salvo na Caixa de Áudios! 🎵", 'success');
+          showToast("Áudio salvo na Coletânea! 🎵", 'success');
         } catch (saveError) {
           console.error("Error auto-saving to audio box:", saveError);
         }

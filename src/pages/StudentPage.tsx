@@ -14,7 +14,8 @@ import {
   Zap,
   Pencil,
   BarChart3,
-  ChevronRight
+  ChevronRight,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -40,14 +41,41 @@ const THEOLOGY_SUBJECTS = [
 
 import { useAuth } from '../contexts/AuthContext';
 import { db, auth } from '../lib/firebase';
-import { doc, updateDoc, collection, getDocs, writeBatch } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, writeBatch, query, where, orderBy, getDoc } from 'firebase/firestore';
 import { useToast } from '../components/Toast';
 
 export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const { user, theologyProgress, certificates } = useAuth();
   const { showToast } = useToast();
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'redacao'>('profile');
+  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'summaries'>('profile');
   const [isResetting, setIsResetting] = useState(false);
+  const [summaries, setSummaries] = useState<any[]>([]);
+  const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
+
+  useEffect(() => {
+    if (activeSubTab === 'summaries' && user) {
+      loadSummaries();
+    }
+  }, [activeSubTab, user]);
+
+  const loadSummaries = async () => {
+    if (!user) return;
+    setIsLoadingSummaries(true);
+    try {
+      const q = query(
+        collection(db, 'theologySummaries'),
+        where('userId', '==', user.id),
+        orderBy('createdAt', 'desc')
+      );
+      const querySnapshot = await getDocs(q);
+      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setSummaries(docs);
+    } catch (error) {
+      console.error("Error loading summaries:", error);
+    } finally {
+      setIsLoadingSummaries(false);
+    }
+  };
 
   const [showResetConfirm, setShowResetConfirm] = useState(false);
 
@@ -98,6 +126,35 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
       await updateDoc(progressDocRef, {
         [subject]: newSubjectProgress
       });
+
+      // Sync to careerProgress
+      const progressDoc = await getDoc(progressDocRef);
+      if (progressDoc.exists()) {
+        const allProgress = progressDoc.data();
+        allProgress[subject] = newSubjectProgress;
+        
+        const grandTotal = Object.keys(allProgress).reduce((acc, key) => {
+          if (key === 'userId' || key === 'enrolled') return acc;
+          const data = allProgress[key] || {};
+          const sTotal = (data.evaluation || 0) + 
+                         (data.redacaoMateria || 0) + 
+                         (data.redacaoAprofundamento || 0) + 
+                         (data.redacaoSlide || 0) + 
+                         (data.redacaoVideo || 0) + 
+                         (data.redacaoPodcast || 0) + 
+                         (data.quizPoints || 0) + 
+                         (data.studyPoints || 0);
+          return acc + sTotal;
+        }, 0);
+
+        const careerDocRef = doc(db, 'careerProgress', user.id);
+        await updateDoc(careerDocRef, { 
+          points: grandTotal,
+          name: user.name,
+          avatar: user.photoURL,
+          updatedAt: new Date().toISOString()
+        });
+      }
     } catch (error) {
       console.error("Error updating score:", error);
     }
@@ -116,7 +173,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
     return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints + studyPoints;
   };
 
-  const totalPoints = theologyProgress ? Object.keys(theologyProgress).reduce((acc, subject) => {
+  const totalPoints = theologyProgress ? THEOLOGY_SUBJECTS.reduce((acc, subject) => {
     return acc + calculateTotal(subject);
   }, 0) : 0;
 
@@ -154,6 +211,15 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
           )}
         >
           <GraduationCap size={18} /> Curso de Teologia
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('summaries')}
+          className={cn(
+            "px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2",
+            activeSubTab === 'summaries' ? "bg-emerald-600 text-white shadow-lg" : "text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800"
+          )}
+        >
+          <Pencil size={18} /> Meus Resumos
         </button>
       </div>
 
@@ -489,6 +555,77 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                   </div>
                 </div>
               </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeSubTab === 'summaries' && (
+          <motion.div 
+            key="summaries"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-6"
+          >
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+              <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
+                <Pencil className="text-emerald-600" size={24} />
+                Meus Resumos e Notas da IA
+              </h3>
+
+              {isLoadingSummaries ? (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <Loader2 className="animate-spin text-emerald-600 mb-4" size={32} />
+                  <p className="text-stone-500">Carregando seus resumos...</p>
+                </div>
+              ) : summaries.length === 0 ? (
+                <div className="text-center py-12 text-stone-400 italic">
+                  Você ainda não criou nenhum resumo avaliado pela IA.
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {summaries.map((summary) => (
+                    <div key={summary.id} className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl border border-stone-100 dark:border-zinc-800 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h4 className="font-bold text-lg text-stone-900 dark:text-zinc-100">{summary.subject}</h4>
+                          <p className="text-xs text-stone-500 uppercase tracking-wider font-bold">{summary.type}</p>
+                        </div>
+                        <div className="flex flex-col items-end">
+                          <div className="px-4 py-2 bg-emerald-600 text-white rounded-2xl font-bold text-xl shadow-lg shadow-emerald-600/20">
+                            {summary.score.toFixed(1)}
+                          </div>
+                          <p className="text-[10px] text-stone-400 mt-1 font-bold uppercase tracking-widest">Nota da IA</p>
+                        </div>
+                      </div>
+                      
+                      <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-100 dark:border-zinc-800 text-sm text-stone-600 dark:text-zinc-400 line-clamp-3 italic">
+                        "{summary.content}"
+                      </div>
+
+                      {summary.aiFeedback && (
+                        <div className="p-4 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100/50 dark:border-emerald-900/20">
+                          <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-1">
+                            <Brain size={14} /> Feedback da IA:
+                          </p>
+                          <p className="text-xs text-emerald-600/80 dark:text-emerald-400/60 leading-relaxed">
+                            {summary.aiFeedback}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex justify-between items-center text-[10px] text-stone-400 font-bold uppercase tracking-widest pt-2">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={12} /> {new Date(summary.createdAt).toLocaleDateString('pt-BR')}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock size={12} /> {new Date(summary.createdAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

@@ -22,26 +22,48 @@ import { cn } from '../types';
 
 interface SpeechGeneratorProps {
   initialText?: string;
+  initialAudioUrl?: string;
+  initialVoice?: string;
+  initialEmotion?: string;
+  initialTitle?: string;
+  initialSubject?: string;
   onSaveToNotebook?: (title: string, content: string) => void;
 }
 
-export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({ initialText = '', onSaveToNotebook }) => {
+export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({ 
+  initialText = '', 
+  initialAudioUrl = null,
+  initialVoice = 'mulher',
+  initialEmotion = 'calma',
+  initialTitle = '',
+  initialSubject = '',
+  onSaveToNotebook 
+}) => {
   const { generateAudio, saveTrack } = useAudioBox();
   const { showToast } = useToast();
   
   const [text, setText] = useState(initialText);
-  const [voice, setVoice] = useState('mulher');
-  const [emotion, setEmotion] = useState('calma');
-  const [title, setTitle] = useState('');
-  const [subject, setSubject] = useState('');
+  const [voice, setVoice] = useState(initialVoice);
+  const [emotion, setEmotion] = useState(initialEmotion);
+  const [title, setTitle] = useState(initialTitle);
+  const [subject, setSubject] = useState(initialSubject);
   
   const [isGenerating, setIsGenerating] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(initialAudioUrl);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   
   const audioRef = useRef<HTMLAudioElement>(null);
+
+  React.useEffect(() => {
+    setText(initialText);
+    setAudioUrl(initialAudioUrl || null);
+    setVoice(initialVoice || 'mulher');
+    setEmotion(initialEmotion || 'calma');
+    setTitle(initialTitle || '');
+    setSubject(initialSubject || '');
+  }, [initialText, initialAudioUrl, initialVoice, initialEmotion, initialTitle, initialSubject]);
 
   const voices = [
     { id: 'criança', label: 'Criança' },
@@ -52,7 +74,8 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({ initialText = 
     { id: 'mulher', label: 'Mulher' },
     { id: 'idoso', label: 'Idoso' },
     { id: 'idosa', label: 'Idosa' },
-    { id: 'ninar', label: 'Voz de Ninar' }
+    { id: 'ninar', label: 'Voz de Ninar' },
+    { id: 'energético', label: 'Energético' }
   ];
 
   const emotions = [
@@ -123,8 +146,8 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({ initialText = 
       const seconds = Math.floor(duration % 60).toString().padStart(2, '0');
       const durationStr = `${minutes}:${seconds}`;
       
-      await saveTrack(title, subject || 'Narração', audioUrl, voice, emotion, durationStr);
-      showToast("Áudio salvo na Caixa de Áudios! 📦✨");
+      await saveTrack(title, subject || 'Narração', audioUrl, voice, emotion, text, durationStr);
+      showToast("Áudio enviado para a Coletânea de Áudios! 📦✨");
     } catch (error) {
       showToast("Erro ao salvar áudio.", "error");
     }
@@ -303,7 +326,7 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({ initialText = 
                     onClick={handleSave}
                     className="py-3 bg-blue-600 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-blue-700 transition-colors"
                   >
-                    <Save size={16} /> Salvar
+                    <Save size={16} /> Enviar para Coletânea
                   </button>
                   {onSaveToNotebook && (
                     <button 

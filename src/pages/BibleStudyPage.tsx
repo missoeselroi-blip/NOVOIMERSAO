@@ -130,9 +130,11 @@ interface StudyHistoryItem {
   creationType?: string;
 }
 
+import { SearchLoadingOverlay } from '../components/SearchLoadingOverlay';
+
 export default function BibleStudyPage({ deepThinking, setDeepThinking, onNavigate }: BibleStudyPageProps) {
   const { user, notes: firestoreNotes, toggleFavorite } = useAuth();
-  const { tracks: audioBoxTracks, saveTrack, deleteTrack } = useAudioBox();
+  const { saveTrack, deleteTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
   const { isOffline, downloadedChapters, downloadedMaterials, downloadChapter, downloadMaterial } = useOffline();
@@ -241,33 +243,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const outlineRef = useRef<HTMLDivElement>(null);
   const bibleResultRef = useRef<HTMLDivElement>(null);
   const verseResultRef = useRef<HTMLDivElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   // General Notes state
   const [localNotes, setLocalNotes] = useState<{ id: string, title: string, content: string, date: string }[]>(() => {
     const saved = localStorage.getItem('preacher_notes');
     return saved ? JSON.parse(saved) : [];
   });
-
-  useEffect(() => {
-    const search = searchParams.get('search');
-    const outlineParam = searchParams.get('outline');
-    const tabParam = searchParams.get('tab');
-
-    if (tabParam) {
-      setActiveTab(tabParam);
-    }
-
-    if (search) {
-      setSearchQuery(search);
-      handleSearch(undefined, search);
-      // Clear params to avoid re-triggering
-      setSearchParams({}, { replace: true });
-    } else if (outlineParam) {
-      setTopic(outlineParam);
-      handleGenerateOutline(outlineParam);
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams]);
 
   const notes = user ? firestoreNotes : localNotes;
 
@@ -327,11 +309,32 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [narrationText, setNarrationText] = useState('');
+  const [narrationAudioData, setNarrationAudioData] = useState<{
+    text: string;
+    audioUrl: string;
+    voice: string;
+    emotion: string;
+    title: string;
+    subject?: string;
+  } | null>(null);
 
-  const handleSendToNarration = (text: string) => {
-    setNarrationText(text);
+  const handleSendToNarration = (text: string, savedTrack?: any) => {
+    if (savedTrack) {
+      setNarrationAudioData({
+        text: savedTrack.text || '',
+        audioUrl: savedTrack.audioUrl,
+        voice: savedTrack.style,
+        emotion: savedTrack.emotion,
+        title: savedTrack.title,
+        subject: savedTrack.subject
+      });
+      setNarrationText('');
+    } else {
+      setNarrationText(text);
+      setNarrationAudioData(null);
+    }
     setActiveTab('narration');
-    showToast("Texto enviado para o Gerador de Narração! 🎙️✨", "success");
+    showToast(savedTrack ? "Áudio carregado no Gerador de Narração! 🎙️✨" : "Texto enviado para o Gerador de Narração! 🎙️✨", "success");
     scrollToSearch();
   };
 
@@ -570,7 +573,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => {
     if (!pendingNote) return;
     
     setIsSavingToNotebook(true);
@@ -1026,9 +1029,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const saveToAudioBox = async (title: string, audioUrl: string, style: string, emotion: string) => {
     try {
       await saveTrack(title, "Narração", audioUrl, style, emotion);
-      showToast("Salvo na Caixa de Áudios! 🎵✨");
+      showToast("Salvo na Coletânea! 🎵✨");
     } catch (error) {
-      showToast("Erro ao salvar na Caixa de Áudios.");
+      showToast("Erro ao salvar na Coletânea.");
     }
   };
 
@@ -1132,18 +1135,18 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const handleSaveToAudioBox = async (content: string, audioUrl: string | null) => {
     if (!audioUrl) {
-      showToast("Gere o áudio primeiro para salvar na Caixa de Áudios.", "info");
+      showToast("Gere o áudio primeiro para salvar na Coletânea.", "info");
       return;
     }
     
     try {
       console.log('Saving to audio box:', { topic, audioUrl: audioUrl.substring(0, 50) + '...' });
       await saveTrack(`Ministério Infantil: ${topic || 'Sem Título'}`, 'Ministério Infantil', audioUrl, 'Narração', 'Emotiva');
-      showToast("Salvo na Caixa de Áudios! 🎙️✨");
+      showToast("Salvo na Coletânea! 🎙️✨");
       setActiveTab('narration');
     } catch (error) {
       console.error('Error in handleSaveToAudioBox:', error);
-      showToast("Erro ao salvar na Caixa de Áudios.", "error");
+      showToast("Erro ao salvar na Coletânea.", "error");
     }
   };
 
@@ -2060,6 +2063,33 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
+  useEffect(() => {
+    const search = searchParams.get('search');
+    const outlineParam = searchParams.get('outline');
+    const tabParam = searchParams.get('tab');
+
+    if (tabParam) {
+      setActiveTab(tabParam);
+    }
+
+    if (search) {
+      setSearchQuery(search);
+      handleSearch(undefined, search);
+      // Clear params to avoid re-triggering
+      setSearchParams({}, { replace: true });
+    } else if (outlineParam) {
+      setTopic(outlineParam);
+      handleGenerateOutline(outlineParam);
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (result || verseContent || messageResult || meaningResult || wikiResult || lessonResult || musicResult || narrationAudio) {
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [result, verseContent, messageResult, meaningResult, wikiResult, lessonResult, musicResult, narrationAudio]);
+
   const handleCreateLesson = async () => {
     if (!topic) return;
     setIsLoading(true);
@@ -2526,6 +2556,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   return (
     <div className="space-y-8">
+      <SearchLoadingOverlay 
+        isVisible={isLoading || isSearchingVerse || isGeneratingMeaning || isGeneratingKids || isGeneratingStoriesTheater || isGeneratingMusic || isGeneratingLyrics || isGeneratingNarration || isGeneratingCommentary || isGeneratingCommentaryDebate} 
+        message={isLoading ? "Pesquisando..." : "Processando..."} 
+      />
       <AnimatePresence>
         {isHistoryOpen && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8">
@@ -2861,7 +2895,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div 
-                      ref={verseResultRef}
+                      ref={resultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
                       <MarkdownRenderer content={verseContent} onSearch={handleWikiSearch} />
@@ -2986,7 +3020,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div 
-                      ref={bibleResultRef}
+                      ref={resultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
                       <MarkdownRenderer content={result} onSearch={handleWikiSearch} />
@@ -3772,116 +3806,16 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
 
                     <SpeechGenerator 
-                      initialText={narrationText || topic}
+                      initialText={narrationAudioData ? narrationAudioData.text : (narrationText || topic)}
+                      initialAudioUrl={narrationAudioData?.audioUrl}
+                      initialVoice={narrationAudioData?.voice}
+                      initialEmotion={narrationAudioData?.emotion}
+                      initialTitle={narrationAudioData?.title}
+                      initialSubject={narrationAudioData?.subject}
                       onSaveToNotebook={handleSaveToNotebook}
                     />
                   </div>
                 </div>
-
-                {audioBoxTracks.length > 0 && (
-                  <div className="bg-white dark:bg-zinc-900 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-                    <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between">
-                      <h3 className="text-xl font-display font-black tracking-tight flex items-center gap-2">
-                        <Music size={20} className="text-emerald-600" />
-                        Áudios Salvos
-                      </h3>
-                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 text-[10px] font-black uppercase tracking-widest rounded-full">
-                        {audioBoxTracks.length} {audioBoxTracks.length === 1 ? 'Arquivo' : 'Arquivos'}
-                      </span>
-                    </div>
-
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left border-collapse">
-                        <thead>
-                          <tr className="bg-stone-50 dark:bg-zinc-800/50">
-                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Título / Assunto</th>
-                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Voz / Emoção</th>
-                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400">Data</th>
-                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 text-center">Tamanho / Tempo</th>
-                            <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-stone-400 text-right">Ações</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-stone-100 dark:divide-zinc-800">
-                          {audioBoxTracks.map(track => (
-                            <tr key={track.id} className="hover:bg-stone-50 dark:hover:bg-zinc-800/30 transition-colors group">
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 flex items-center justify-center bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl">
-                                    <Volume2 size={18} />
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-sm leading-tight">{track.title}</p>
-                                    <p className="text-[10px] text-stone-400 uppercase tracking-wider mt-0.5">{track.subject || 'Sem assunto'}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <div className="flex flex-col">
-                                  <span className="text-xs font-medium text-stone-600 dark:text-stone-300">{track.style}</span>
-                                  <span className="text-[10px] text-stone-400 italic">{track.emotion}</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className="text-xs text-stone-500">{track.date}</span>
-                              </td>
-                              <td className="px-6 py-4 text-center">
-                                <div className="flex flex-col items-center">
-                                  <span className="text-xs font-mono text-stone-600 dark:text-stone-300">{track.size || '--'}</span>
-                                  <span className="text-[10px] text-stone-400 font-mono">{track.duration || '--'}</span>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4 text-right">
-                                <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <button 
-                                    onClick={() => handleSendToNarration(track.audioUrl)}
-                                    className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
-                                    title="Abrir"
-                                  >
-                                    <ExternalLink size={16} />
-                                  </button>
-                                  <a 
-                                    href={track.audioUrl}
-                                    download={`${track.title}.mp3`}
-                                    className="p-2 text-stone-400 hover:text-blue-600 transition-colors"
-                                    title="Baixar"
-                                  >
-                                    <Download size={16} />
-                                  </a>
-                                  <button 
-                                    onClick={async () => {
-                                      try {
-                                        await navigator.share({
-                                          title: track.title,
-                                          text: track.subject,
-                                          url: track.audioUrl
-                                        });
-                                      } catch (err) {
-                                        if ((err as Error).name !== 'AbortError') {
-                                          showToast("Erro ao compartilhar.", "error");
-                                        }
-                                      }
-                                    }}
-                                    className="p-2 text-stone-400 hover:text-amber-600 transition-colors"
-                                    title="Compartilhar"
-                                  >
-                                    <Share2 size={16} />
-                                  </button>
-                                  <button 
-                                    onClick={() => deleteTrack(track.id)}
-                                    className="p-2 text-stone-400 hover:text-red-600 transition-colors"
-                                    title="Excluir"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
@@ -4395,7 +4329,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               onClick={() => handleSaveToAudioBox(kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''), narrationAudio)}
                               className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
                             >
-                              <Volume2 size={14} /> Salvar na Caixa de Áudios
+                              <Volume2 size={14} /> Enviar para Coletânea
                             </button>
                           </div>
                         </div>

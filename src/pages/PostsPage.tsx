@@ -143,7 +143,7 @@ export default function PostsPage() {
     setIsNotebookModalOpen(true);
   };
 
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Pregações' | 'Estudos') => {
+  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
     if (!pendingNote) return;
     
     setIsSavingToNotebook(true);
