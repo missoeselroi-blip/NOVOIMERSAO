@@ -610,7 +610,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                   <img 
                     src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                     alt="Logo" 
-                    className="w-4 h-4 object-contain mix-blend-multiply dark:mix-blend-screen"
+                    className="w-4 h-4 object-contain"
                     referrerPolicy="no-referrer"
                   />
                   <p className="text-[10px] font-mono text-stone-300 uppercase tracking-[0.2em]">
@@ -619,7 +619,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                   <img 
                     src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                     alt="Logo" 
-                    className="w-4 h-4 object-contain mix-blend-multiply dark:mix-blend-screen"
+                    className="w-4 h-4 object-contain"
                     referrerPolicy="no-referrer"
                   />
                 </div>
@@ -681,7 +681,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-5 h-5 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"
           />
           <p className="text-stone-500 dark:text-zinc-400 font-medium">
@@ -690,7 +690,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-5 h-5 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"
           />
         </div>

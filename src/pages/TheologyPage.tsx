@@ -38,7 +38,9 @@ import {
   Volume2,
   MessageSquare,
   StickyNote,
-  RefreshCw
+  RefreshCw,
+  Shield,
+  Scale
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -104,7 +106,15 @@ const THEOLOGY_SUBJECTS = [
   { title: 'Angeologia', desc: 'Anjos e Demônios', topics: ['Os Anjos', 'A Queda', 'Panorama'], prereq: 'Escatologia', icon: Feather },
   { title: 'Hermenêutica Bíblica', desc: 'A Interpretação da Bíblia', topics: ['Princípios', 'Regras', 'Panorama'], prereq: 'Angeologia', icon: Key },
   { title: 'Homilética', desc: 'A Arte da Pregação', topics: ['Estrutura', 'Entrega', 'Panorama'], prereq: 'Hermenêutica Bíblica', icon: Mic },
+  { title: 'Exegética', desc: 'A Interpretação Profunda do Texto', topics: ['Análise Gramatical', 'Contexto Histórico', 'Panorama'], prereq: 'Hermenêutica Bíblica', icon: BookOpen },
+  { title: 'Teologia Sistemática (Calvinista e Arminiana)', desc: 'Perspectivas Comparadas', topics: ['Calvinismo', 'Arminianismo', 'Panorama'], prereq: 'Exegética', icon: Brain },
+  { title: 'Evangelismo/Missões', desc: 'A Proclamação do Evangelho', topics: ['Fundamentos', 'Estratégias', 'Panorama'], prereq: 'Teologia Sistemática (Calvinista e Arminiana)', icon: Sparkles },
+  { title: 'Liderança Cristã', desc: 'O Modelo Bíblico de Liderança', topics: ['Modelos Bíblicos', 'Autoridade e Submissão', 'O Líder Servo', 'Panorama'], prereq: 'Evangelismo/Missões', icon: Shield },
+  { title: 'Filosofia e Sociologia', desc: 'O Cristão e a Sociedade', topics: ['Antropologia', 'Ética e Moral', 'Sistemas Políticos', 'Panorama'], prereq: 'Liderança Cristã', icon: Scale },
+  { title: 'As Dispensações', desc: 'O Plano de Deus para os Séculos', topics: ['Inocência', 'Consciência', 'Governo Humano', 'Promessa', 'Lei', 'Graça', 'Reino', 'Panorama'], prereq: 'Filosofia e Sociologia', icon: BookOpen },
 ];
+
+const getMaxChapters = (subject: string) => subject === 'As Dispensações' ? 7 : 5;
 
 interface TheologyPageProps {
   onNavigate: (tab: string) => void;
@@ -542,8 +552,31 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     
     setIsLoading(true);
     try {
-      const prompt = `Gere o Capítulo ${chapter} de 5 do estudo teológico sobre "${subject}". O conteúdo deve ser profundo, acadêmico e bíblico.`;
-      const response = await geminiService.generateText(prompt, "Você é um professor de teologia sistemática.");
+      let subjectSpecificPrompt = "";
+      if (subject === 'Teologia Sistemática (Calvinista e Arminiana)') {
+        subjectSpecificPrompt = "Apresente de forma equilibrada e profunda as perspectivas Calvinista e Arminiana sobre o tema do capítulo.";
+      } else if (subject === 'Exegética') {
+        subjectSpecificPrompt = "Foque na análise gramatical, sintática e no contexto histórico-cultural do texto bíblico. Inclua um passo a passo prático de exegese.";
+      } else if (subject === 'Homilética') {
+        subjectSpecificPrompt = "Inclua exemplos práticos de esboços de sermões e técnicas de oratória e comunicação.";
+      } else if (subject === 'Evangelismo/Missões') {
+        subjectSpecificPrompt = "Apresente estratégias práticas de evangelismo pessoal e transcultural, com foco em missões modernas.";
+      } else if (subject === 'Liderança Cristã') {
+        subjectSpecificPrompt = `Explore os modelos de liderança na Bíblia. Inclua obrigatoriamente um capítulo dedicado a "Autoridade e Submissão" (autoridades instituídas, submissão à luz da Palavra, mundo espiritual). Enfatize o papel do líder cristão: servir, amar, proteger e cuidar, seguindo o exemplo de Cristo com Seus discípulos. Aborde o conceito do Bom Pastor que dá a vida pelas ovelhas, a diferença entre autoridade e autoritarismo, e a corrupção do poder.`;
+      } else if (subject === 'Filosofia e Sociologia') {
+        subjectSpecificPrompt = `Descreva o básico da filosofia e sociologia para o obreiro: como a sociedade é estabelecida, conceitos de antropologia, etnocentrismo, cultura, ética, moral, identidades culturais e tribais. Aborde a luta de classes (classe dominante vs operária), conceitos bíblicos de injustiça social e igualdade, como Jesus atendeu os rejeitados. Esclareça o surgimento dos movimentos de esquerda e direita, o sistema político, constituição, direitos e deveres do cidadão cristão, e a influência da herança brasileira na visão de Deus e do sistema.`;
+      } else if (subject === 'As Dispensações') {
+        subjectSpecificPrompt = `Gere a matéria baseada na Bíblia Scofield e nas obras de C.I. Scofield, Zélio Cabral e Jacques André-Monard. Insira um capítulo para cada uma das sete dispensações (Inocência, Consciência, Governo Humano, Promessa, Lei, Graça e Reino). Explique detalhadamente cada período, a responsabilidade do homem, o fracasso e o julgamento divino em cada dispensação.`;
+      }
+
+      const maxChapters = getMaxChapters(subject);
+      const prompt = `Gere o Capítulo ${chapter} de ${maxChapters} do estudo teológico sobre "${subject}". 
+      O conteúdo deve ser profundo, acadêmico e bíblico.
+      ${subjectSpecificPrompt}
+      
+      IMPORTANTE: Ao final do conteúdo, inclua uma seção chamada "--- EXERCÍCIO PRÁTICO ---" com uma atividade prática para o aluno realizar (ex: elaborar um esboço, analisar um versículo, planejar uma ação evangelística, etc).`;
+
+      const response = await geminiService.generateText(prompt, "Você é um professor de teologia sistemática e prática, mestre em exegese e homilética.");
       setChapterContent(prev => ({ ...prev, [chapter]: response }));
       await generateChapterQuiz(response);
     } catch (error) {
@@ -589,7 +622,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     
     // Calculate total quiz points for the subject
     let totalQuizPoints = 0;
-    for (let i = 1; i <= 5; i++) {
+    const maxChapters = getMaxChapters(selectedSubject);
+    for (let i = 1; i <= maxChapters; i++) {
       if (i === currentChapter) {
         totalQuizPoints += newChapterPoints;
       } else {
@@ -617,7 +651,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       showToast("Você precisa acertar todas as 4 questões do questionário para avançar! 📖", 'info');
       return;
     }
-    if (currentChapter < 5) {
+    const maxChapters = getMaxChapters(selectedSubject!);
+    if (currentChapter < maxChapters) {
       const next = currentChapter + 1;
       setCurrentChapter(next);
       loadChapter(selectedSubject!, next);
@@ -1923,11 +1958,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 </div>
                 <div>
                   <h3 className="text-2xl font-bold">{selectedSubject}</h3>
-                  <p className="text-stone-500 text-sm">Capítulo {currentChapter} de 5</p>
+                  <p className="text-stone-500 text-sm">Capítulo {currentChapter} de {getMaxChapters(selectedSubject || '')}</p>
                 </div>
               </div>
               <div className="flex gap-2">
-                {[1, 2, 3, 4, 5].map(i => (
+                {Array.from({ length: getMaxChapters(selectedSubject || '') }, (_, i) => i + 1).map(i => (
                   <div 
                     key={i} 
                     className={cn(

@@ -102,14 +102,14 @@ export default function NewsPage() {
             <img 
               src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
               alt="Logo" 
-              className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen"
+              className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
             />
             <h2 className="text-3xl font-display font-bold">Sinais da Vinda de Cristo</h2>
             <img 
               src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
               alt="Logo" 
-              className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen"
+              className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
             />
           </div>

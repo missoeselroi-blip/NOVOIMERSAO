@@ -57,6 +57,12 @@ export const LoginPage: React.FC = () => {
 
         <div className="text-center space-y-4 mb-10">
           <div className="flex items-center justify-center gap-4 mb-6">
+            <img 
+              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+              alt="Logo" 
+              className="w-10 h-10 object-contain"
+              referrerPolicy="no-referrer"
+            />
             <h1 className="text-3xl font-display font-bold tracking-tight">Imersão Bíblica IA</h1>
           </div>
           <p className="text-stone-500 dark:text-zinc-400 text-sm">
@@ -144,7 +150,7 @@ export const LoginPage: React.FC = () => {
             onClick={loginWithGoogle}
             className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
           >
-            <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+            <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" alt="App Icon" className="w-5 h-5" />
             Google
           </button>
 

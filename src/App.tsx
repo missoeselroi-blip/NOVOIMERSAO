@@ -116,11 +116,19 @@ function AppContent() {
   if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">
-        <div className="text-center space-y-4">
-          <Loader2 className="animate-spin text-emerald-600 mx-auto" size={48} />
-          <p className="text-stone-500 font-medium animate-pulse uppercase tracking-[0.3em] text-[10px]">
-            Carregando Imersão Bíblica IA...
-          </p>
+        <div className="text-center space-y-6">
+          <img 
+            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+            alt="Logo" 
+            className="w-20 h-20 object-contain mx-auto animate-pulse"
+            referrerPolicy="no-referrer"
+          />
+          <div className="space-y-2">
+            <Loader2 className="animate-spin text-emerald-600 mx-auto" size={32} />
+            <p className="text-stone-500 font-medium uppercase tracking-[0.3em] text-[10px]">
+              Carregando Imersão Bíblica IA...
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -237,9 +245,9 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-              alt="Logo" 
-              className="w-8 h-8 object-contain mix-blend-multiply dark:mix-blend-screen"
+              src="/logo.png" 
+              alt="Imersão Bíblica IA Logo" 
+              className="w-8 h-8 object-contain rounded-full"
               referrerPolicy="no-referrer"
             />
             <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Imersão Bíblica IA</span>
@@ -447,7 +455,7 @@ function AppContent() {
                     <img 
                       src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                       alt="Logo" 
-                      className="w-6 h-6 object-contain mix-blend-multiply dark:mix-blend-screen"
+                      className="w-6 h-6 object-contain"
                       referrerPolicy="no-referrer"
                     />
                   </div>
@@ -648,14 +656,14 @@ function AppContent() {
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-5 h-5 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"
           />
           <p>© {new Date().getFullYear()} Imersão Bíblica IA • Mergulhando na Palavra</p>
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-5 h-5 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"
           />
         </div>

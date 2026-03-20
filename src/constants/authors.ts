@@ -321,5 +321,17 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Tomás de Aquino",
     works: ["Suma Teológica", "Suma contra os Gentios"]
+  },
+  {
+    name: "C.I. Scofield",
+    works: ["Bíblia de Estudo Scofield", "Manejando Bem a Palavra da Verdade", "As Sete Dispensações"]
+  },
+  {
+    name: "Zélio Cabral",
+    works: ["As Sete Dispensações", "Panorama Bíblico"]
+  },
+  {
+    name: "Jacques André-Monard",
+    works: ["As Dispensações", "O Plano de Deus para os Séculos"]
   }
 ];

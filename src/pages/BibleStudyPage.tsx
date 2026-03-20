@@ -1471,7 +1471,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       const opt = {
         margin:       15,
         filename:     `apostila-${topic.replace(/\s+/g, '_')}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
+        image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
           scale: 2, 
           useCORS: true,
@@ -1494,7 +1494,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             clonedDoc.head.appendChild(style);
           }
         },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
         pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
@@ -1882,7 +1882,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       const opt = {
         margin:       15,
         filename:     `${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
+        image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
           scale: 2, 
           useCORS: true,
@@ -1905,7 +1905,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             clonedDoc.head.appendChild(style);
           }
         },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
         pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
@@ -1972,10 +1972,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       else if (creationType === 'debate') { contentToShare = debateResult; titleToShare = 'Debate'; }
       else if (creationType === 'booklet') { contentToShare = bookletResult; titleToShare = 'Apostila'; }
       else if (creationType === 'message') { contentToShare = messageResult; titleToShare = 'Mensagem'; }
-      else if (creationType === 'infographic') { contentToShare = infographicResult; titleToShare = 'Infográfico'; }
+      else if (creationType === 'infographic') { contentToShare = ''; titleToShare = 'Infográfico'; }
       else if (creationType === 'slides_notebook') { contentToShare = slidesResult; titleToShare = 'Slides'; }
-      else if (creationType === 'kids_ministry') { contentToShare = kidsMinistryResult; titleToShare = 'Ministério Infantil'; }
-      else if (creationType === 'audio') { contentToShare = audioResult; titleToShare = 'Áudio'; }
+      else if (creationType === 'kids_ministry') { contentToShare = kidsResult?.children || ''; titleToShare = 'Ministério Infantil'; }
+      else if (creationType === 'audio') { contentToShare = ''; titleToShare = 'Áudio'; }
     } else if (activeTab === 'kids_ministry') {
       const isImage = kidsActiveTab === 'illustration';
       contentToShare = isImage ? kidsIllustration || '' : (kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''));
@@ -2404,7 +2404,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       const opt = {
         margin:       15,
         filename:     `esboco-${topic.slice(0, 20)}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
+        image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
           scale: 2, 
           useCORS: true,
@@ -2427,7 +2427,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             clonedDoc.head.appendChild(style);
           }
         },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
         pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
@@ -2491,6 +2491,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "Bíblia Sagrada Missionária",
     "Bíblia Shedd",
     "Bíblia Thompson",
+    "Bíblia Scofield",
     "Bíblia Tradução do Novo mundo (Versão TJ)",
     "Comentário Bíblico Beacon",
     "Comentário bíblico expositivo Wiersbe",
@@ -5190,14 +5191,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               <img 
                                 src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                                 alt="Logo" 
-                                className="w-4 h-4 object-contain mix-blend-multiply dark:mix-blend-screen"
+                                className="w-4 h-4 object-contain"
                                 referrerPolicy="no-referrer"
                               />
                               <span>Imersão Bíblica IA - Mergulhando na Palavra - {new Date().getFullYear()}</span>
                               <img 
                                 src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                                 alt="Logo" 
-                                className="w-4 h-4 object-contain mix-blend-multiply dark:mix-blend-screen"
+                                className="w-4 h-4 object-contain"
                                 referrerPolicy="no-referrer"
                               />
                             </div>

@@ -13,7 +13,9 @@ import {
   Eye,
   BarChart3,
   Download,
-  Filter
+  Filter,
+  Loader2,
+  X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '../lib/firebase';

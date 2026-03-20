@@ -67,14 +67,14 @@ export default function DonatePage() {
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-10 h-10 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-10 h-10 object-contain"
             referrerPolicy="no-referrer"
           />
           <h2 className="text-4xl font-display font-bold">Contribua com a Obra</h2>
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-10 h-10 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-10 h-10 object-contain"
             referrerPolicy="no-referrer"
           />
         </div>

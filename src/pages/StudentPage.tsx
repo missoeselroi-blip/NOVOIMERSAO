@@ -36,7 +36,9 @@ const THEOLOGY_SUBJECTS = [
   'Bibliologia', 'Teontologia', 'Cristologia', 'Pneumatologia', 
   'Antropologia Bíblica', 'Hamartiologia', 'Soteriologia', 
   'Eclesiologia', 'Escatologia', 'Angeologia', 
-  'Hermenêutica Bíblica', 'Homilética'
+  'Hermenêutica Bíblica', 'Homilética', 'Exegética', 
+  'Teologia Sistemática (Calvinista e Arminiana)', 'Evangelismo/Missões',
+  'Liderança Cristã', 'Filosofia e Sociologia', 'As Dispensações'
 ];
 
 import { useAuth } from '../contexts/AuthContext';
@@ -251,14 +253,14 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                         <img 
                           src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                           alt="Logo" 
-                          className="w-10 h-10 object-contain mix-blend-screen"
+                          className="w-10 h-10 object-contain"
                           referrerPolicy="no-referrer"
                         />
                         <h2 className="text-4xl font-bold font-display">{user?.name || 'Página do Aluno'}</h2>
                     <img 
                       src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                       alt="Logo" 
-                      className="w-10 h-10 object-contain mix-blend-screen"
+                      className="w-10 h-10 object-contain"
                       referrerPolicy="no-referrer"
                     />
                   </div>

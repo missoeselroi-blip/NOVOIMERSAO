@@ -111,14 +111,14 @@ export default function TutorialsPage() {
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-10 h-10 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-10 h-10 object-contain"
             referrerPolicy="no-referrer"
           />
           Tutoriais do App
           <img 
             src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
             alt="Logo" 
-            className="w-10 h-10 object-contain mix-blend-multiply dark:mix-blend-screen"
+            className="w-10 h-10 object-contain"
             referrerPolicy="no-referrer"
           />
         </h1>

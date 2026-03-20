@@ -85,7 +85,7 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
     setResult('');
     setAudioUrl(null);
     try {
-      const prompt = `Pesquise o termo teológico "${searchTarget}" em Bíblias de Estudo, Enciclopédias, Dicionários e Comentários Bíblicos. Forneça uma explicação profunda, citando fontes e versículos.`;
+      const prompt = `Pesquise o termo teológico "${searchTarget}" agregando insights das seguintes Bíblias de Estudo: Pentecostal, Thompson, Plenitude, Genebra e NVI de Estudo, além de enciclopédias, dicionários e concordâncias bíblicas. Estruture os resultados para distinguir claramente as perspectivas calvinistas e arminianas sobre o tema, oferecendo uma visão abrangente e equilibrada. Cite fontes e versículos relevantes.`;
       const response = await geminiService.generateText(prompt, "Você é um PhD em Teologia.");
       setResult(response);
       
