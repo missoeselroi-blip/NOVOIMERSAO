@@ -843,6 +843,12 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         return;
       }
     }
+    if (selectedSubject === 'Teontologia') {
+      if (type === 'Videocast') {
+        window.open("https://youtu.be/UJqaYmjdBEg?si=g-dccKDeZLPYhK-B", "_blank");
+        return;
+      }
+    }
     setSummaryType(type);
     setSummaryText('');
     setSummaryEvaluation(null);
@@ -1684,6 +1690,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         onClick={() => {
                           if (selectedSubject === 'Bibliologia') {
                             window.open('https://youtu.be/pt-k0N8oD0I?si=mirl30ZNlFvO3fE-', '_blank');
+                          } else if (selectedSubject === 'Teontologia') {
+                            window.open('https://youtu.be/UJqaYmjdBEg?si=g-dccKDeZLPYhK-B', '_blank');
                           } else {
                             updateDetailedProgress(selectedSubject, 'podcast');
                           }
@@ -1691,17 +1699,17 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         className="flex-1 p-6 bg-stone-50 dark:bg-zinc-800/50 hover:bg-purple-50 dark:hover:bg-purple-900/20 border border-stone-100 dark:border-zinc-700 rounded-3xl flex items-center gap-4 transition-all group"
                       >
                         <div className="p-3 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-xl group-hover:scale-110 transition-transform">
-                          {selectedSubject === 'Bibliologia' ? <Youtube size={24} /> : <Mic size={24} />}
+                          {['Bibliologia', 'Teontologia'].includes(selectedSubject) ? <Youtube size={24} /> : <Mic size={24} />}
                         </div>
                         <div className="text-left">
-                          <div className="font-bold">{selectedSubject === 'Bibliologia' ? 'Videocast' : 'Podcast'}</div>
+                          <div className="font-bold">{['Bibliologia', 'Teontologia'].includes(selectedSubject) ? 'Videocast' : 'Podcast'}</div>
                           <div className="text-xs text-stone-500">
-                            {selectedSubject === 'Bibliologia' ? 'Assista ao vídeo no YouTube' : 'Ouça o resumo em áudio'}
+                            {['Bibliologia', 'Teontologia'].includes(selectedSubject) ? 'Assista ao vídeo no YouTube' : 'Ouça o resumo em áudio'}
                           </div>
                         </div>
                       </button>
                       <button
-                        onClick={() => openSummaryModal(selectedSubject === 'Bibliologia' ? 'Videocast' : 'Podcast')}
+                        onClick={() => openSummaryModal(['Bibliologia', 'Teontologia'].includes(selectedSubject) ? 'Videocast' : 'Podcast')}
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />

@@ -245,7 +245,7 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
               alt="Imersão Bíblica IA Logo" 
               className="w-8 h-8 object-contain rounded-full"
               referrerPolicy="no-referrer"
