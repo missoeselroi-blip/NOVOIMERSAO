@@ -14,6 +14,14 @@ export const GOSPEL_AUTHORS = [
     ]
   },
   {
+    name: "Adam Clarke",
+    works: ["Conhecido por seu vasto conhecimento linguístico e histórico."]
+  },
+  {
+    name: "Albert Barnes",
+    works: ["Comentários explicativos e práticos populares no século XIX."]
+  },
+  {
     name: "Andrew Murray",
     works: ["Humildade", "Permanecendo em Cristo", "Com Cristo na Escola da Oração"]
   },
@@ -60,6 +68,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Bráulio Brandão",
     works: ["A Glória de Cristo", "O Conhecimento de Deus", "Teologia Reformada"]
+  },
+  {
+    name: "C.I. Scofield",
+    works: ["Bíblia de Estudo Scofield", "Manejando Bem a Palavra da Verdade", "As Sete Dispensações"]
   },
   {
     name: "C.S. Lewis",
@@ -155,6 +167,10 @@ export const GOSPEL_AUTHORS = [
     works: ["Metanoia", "O Poder da Profecia", "Filhos da Luz"]
   },
   {
+    name: "Jacques André-Monard",
+    works: ["As Dispensações", "O Plano de Deus para os Séculos"]
+  },
+  {
     name: "João Calvino",
     works: ["As Institutas da Religião Cristã", "Comentários Bíblicos"]
   },
@@ -166,6 +182,10 @@ export const GOSPEL_AUTHORS = [
       "A Guerra Santa",
       "Graça Abundante ao Principal dos Pecadores"
     ]
+  },
+  {
+    name: "John MacArthur",
+    works: ["Perspectiva conservadora e foco na exposição versículo por versículo."]
   },
   {
     name: "John Piper",
@@ -181,6 +201,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "John Stott",
     works: ["A Cruz de Cristo", "O Cristão em uma Sociedade Contemporânea", "Ouça o Espírito, Ouça o Mundo"]
+  },
+  {
+    name: "John Wesley",
+    works: ["Foco na santidade e na experiência cristã."]
   },
   {
     name: "Jonas Madureira",
@@ -236,6 +260,10 @@ export const GOSPEL_AUTHORS = [
     ]
   },
   {
+    name: "Martin Luther",
+    works: ["Ênfase na justificação pela fé e na graça."]
+  },
+  {
     name: "Martinho Lutero",
     works: ["As 95 Teses", "O Cativeiro Babilônico da Igreja", "Da Liberdade do Cristão"]
   },
@@ -261,6 +289,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Michael W. Goheen",
     works: ["A Igreja Missional na Bíblia", "Introdução à Cosmovisão Cristã (Coautor)", "O Drama das Escrituras (Coautor)"]
+  },
+  {
+    name: "N.T. Wright",
+    works: ["Perspectiva contemporânea e foco no contexto histórico do Novo Testamento."]
   },
   {
     name: "Priscilla Reis Andrade",
@@ -323,15 +355,11 @@ export const GOSPEL_AUTHORS = [
     works: ["Suma Teológica", "Suma contra os Gentios"]
   },
   {
-    name: "C.I. Scofield",
-    works: ["Bíblia de Estudo Scofield", "Manejando Bem a Palavra da Verdade", "As Sete Dispensações"]
+    name: "William Barclay",
+    works: ["Comentários acessíveis com foco no significado das palavras gregas."]
   },
   {
     name: "Zélio Cabral",
     works: ["As Sete Dispensações", "Panorama Bíblico"]
-  },
-  {
-    name: "Jacques André-Monard",
-    works: ["As Dispensações", "O Plano de Deus para os Séculos"]
   }
 ];

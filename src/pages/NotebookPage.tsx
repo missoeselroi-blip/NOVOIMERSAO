@@ -14,7 +14,6 @@ import {
   Book,
   ArrowLeft,
   Calendar,
-  Anchor,
   Loader2,
   Lock,
   Volume2
@@ -336,11 +335,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
 
   return (
     <div className="space-y-8 relative">
-      {/* Transparent Anchor Background */}
-      <div className="fixed inset-0 pointer-events-none flex items-center justify-center opacity-[0.03] z-0 overflow-hidden">
-        <Anchor size={800} className="text-emerald-900 dark:text-emerald-100 rotate-12" />
-      </div>
-
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div>
           <h2 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400">Caderno</h2>
@@ -383,7 +377,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
         <input 
           type="text"
-          placeholder="⚓ Pesquisar em suas páginas..."
+          placeholder="Pesquisar em suas páginas..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="w-full pl-12 pr-12 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none shadow-sm"

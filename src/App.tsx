@@ -38,7 +38,6 @@ import {
   Globe,
   Calendar,
   Pencil,
-  Anchor,
   LogIn,
   Volume2,
   ShieldCheck
@@ -118,7 +117,7 @@ function AppContent() {
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">
         <div className="text-center space-y-6">
           <img 
-            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+            src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
             alt="Logo" 
             className="w-20 h-20 object-contain mx-auto animate-pulse"
             referrerPolicy="no-referrer"
@@ -159,7 +158,7 @@ function AppContent() {
   ];  const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
-    { id: 'audio-box', label: 'Áudios', subtitle: 'Sua caixa de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
+    { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
@@ -210,11 +209,6 @@ function AppContent() {
 
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Transparent Anchor Background */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-[0.03] dark:opacity-[0.02] z-0">
-          <Anchor size={800} className="text-emerald-900 dark:text-emerald-100 -rotate-12" />
-        </div>
-
         <div className={cn(
           "absolute -top-[10%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[160px] opacity-20 transition-all duration-1000",
           isDarkMode ? "bg-emerald-900/40" : "bg-emerald-100"
@@ -245,9 +239,9 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-              alt="Imersão Bíblica IA Logo" 
-              className="w-8 h-8 object-contain rounded-full"
+              src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
+              alt="App Icon" 
+              className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
             />
             <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Imersão Bíblica IA</span>
@@ -453,8 +447,8 @@ function AppContent() {
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg overflow-hidden bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                     <img 
-                      src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-                      alt="Logo" 
+                      src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
+                      alt="App Icon" 
                       className="w-6 h-6 object-contain"
                       referrerPolicy="no-referrer"
                     />
@@ -654,14 +648,14 @@ function AppContent() {
       )}>
         <div className="flex items-center justify-center gap-3">
           <img 
-            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+            src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
             alt="Logo" 
             className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"
           />
           <p>© {new Date().getFullYear()} Imersão Bíblica IA • Mergulhando na Palavra</p>
           <img 
-            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+            src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
             alt="Logo" 
             className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"

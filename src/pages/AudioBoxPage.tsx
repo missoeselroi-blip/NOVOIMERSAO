@@ -141,7 +141,7 @@ export default function AudioBoxPage() {
               <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-600/20">
                 <Music size={32} />
               </div>
-              Coletânea de Áudios
+              Biblioteca de Áudios
             </h1>
             <p className="text-stone-500 dark:text-zinc-400 mt-2 font-medium">
               Sua biblioteca pessoal de meditações e estudos narrados.

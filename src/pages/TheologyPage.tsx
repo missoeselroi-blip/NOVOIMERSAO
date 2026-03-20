@@ -1629,6 +1629,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         onClick={() => {
                           if (selectedSubject === 'Bibliologia') {
                             window.open('https://youtu.be/P2YVpigLsCY', '_blank');
+                          } else if (selectedSubject === 'Teontologia') {
+                            window.open('https://youtu.be/TInV9QMNB8M', '_blank');
                           } else {
                             updateDetailedProgress(selectedSubject, 'video');
                           }
