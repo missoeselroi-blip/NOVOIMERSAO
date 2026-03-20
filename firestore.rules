@@ -115,6 +115,23 @@ service cloud.firestore {
              data.createdAt is timestamp;
     }
 
+    function isValidTheologySummary(data) {
+      return data.keys().hasAll(['userId', 'subject', 'type', 'content', 'score']) &&
+             data.userId == request.auth.uid &&
+             data.subject is string && data.subject.size() < 500 &&
+             data.type is string && data.type.size() < 200 &&
+             data.content is string && data.content.size() < 50000 &&
+             data.score is number && data.score >= 0 && data.score <= 5;
+    }
+
+    function isValidAudioCollection(data) {
+      return data.keys().hasAll(['userId', 'title', 'text', 'audioUrl']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() < 500 &&
+             data.text is string && data.text.size() < 50000 &&
+             data.audioUrl is string && isValidUrl(data.audioUrl);
+    }
+
     // Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -159,6 +176,18 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidAudioTrack(request.resource.data);
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidAudioTrack(request.resource.data);
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /theologySummaries/{summaryId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidTheologySummary(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /audioCollection/{audioId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidAudioCollection(request.resource.data);
+      allow update, delete: if isAdmin();
     }
   }
 }

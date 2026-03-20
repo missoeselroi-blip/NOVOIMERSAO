@@ -100,6 +100,36 @@
       },
       "required": ["userId", "title", "audioUrl"]
     },
+    "TheologySummary": {
+      "title": "Theology Summary",
+      "description": "User generated theology subject summaries with AI feedback",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "subject": { "type": "string" },
+        "type": { "type": "string" },
+        "content": { "type": "string" },
+        "score": { "type": "number" },
+        "aiFeedback": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "subject", "type", "content", "score"]
+    },
+    "AudioCollection": {
+      "title": "Audio Collection",
+      "description": "User generated audio search results and theology content",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "text": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "type": { "type": "string" }
+      },
+      "required": ["userId", "title", "text", "audioUrl"]
+    },
     "Metrics": {
       "title": "Metrics",
       "description": "User usage metrics and time tracking",
@@ -146,6 +176,14 @@
     "/metrics/{userId}": {
       "schema": "Metrics",
       "description": "User metrics"
+    },
+    "/theologySummaries/{summaryId}": {
+      "schema": "TheologySummary",
+      "description": "Theology subject summaries"
+    },
+    "/audioCollection/{audioId}": {
+      "schema": "AudioCollection",
+      "description": "User audio collection"
     }
   }
 }

@@ -64,6 +64,7 @@ import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import html2pdf from 'html2pdf.js';
 import { GOSPEL_AUTHORS } from '../constants/authors';
 import { useCredits } from '../contexts/CreditContext';
 
@@ -241,6 +242,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
   const outlineRef = useRef<HTMLDivElement>(null);
+  const storiesTheaterRef = useRef<HTMLDivElement>(null);
   const bibleResultRef = useRef<HTMLDivElement>(null);
   const verseResultRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
@@ -1459,35 +1461,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleDownloadPDF = async (title: string, content: string) => {
-    setIsGeneratingPDF(true);
-    showToast("Gerando seu PDF... 📄💎", 'info');
-    try {
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const margin = 20;
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const contentWidth = pageWidth - (margin * 2);
-      
-      pdf.setFontSize(18);
-      pdf.setTextColor(5, 150, 105); // emerald-600
-      pdf.text(title, margin, margin);
-      
-      pdf.setFontSize(12);
-      pdf.setTextColor(31, 41, 55); // stone-800
-      
-      const splitText = pdf.splitTextToSize(content, contentWidth);
-      pdf.text(splitText, margin, margin + 15);
-      
-      pdf.save(`${title.replace(/\s+/g, '_')}.pdf`);
-      showToast("PDF gerado com sucesso! 📄🎉", 'success');
-    } catch (error) {
-      console.error('Erro ao gerar PDF:', error);
-      showToast("Erro ao gerar PDF.", 'error');
-    } finally {
-      setIsGeneratingPDF(false);
-    }
-  };
-
   const handleDownloadBookletPDF = async () => {
     const element = document.getElementById('booklet-content');
     if (!element) return;
@@ -1495,45 +1468,37 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     setIsGeneratingPDF(true);
     showToast("Gerando seu Ebook PDF... Isso pode levar um momento. 📄💎", 'info');
     try {
-      const canvas = await html2canvas(element, { 
-        scale: 1.5,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        windowWidth: 800 // Fixed width for consistent A4 aspect ratio
-      });
-      
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const imgHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      // Add watermark to each page
-      const addWatermark = (p: any) => {
-        p.setFontSize(8);
-        p.setTextColor(150);
-        p.text("Gerado pelo App Imersão Bíblica IA", pdfWidth / 2, pdfHeight - 10, { align: 'center' });
+      const opt = {
+        margin:       15,
+        filename:     `apostila-${topic.replace(/\s+/g, '_')}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true,
+          onclone: (clonedDoc: Document) => {
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              * {
+                color: #1c1917 !important;
+                background-color: #ffffff !important;
+                border-color: #e7e5e4 !important;
+              }
+              .prose * {
+                color: inherit !important;
+              }
+              /* Fix for overlapping lines in markdown */
+              .prose p, .prose li, .prose h1, .prose h2, .prose h3, .prose h4 {
+                page-break-inside: avoid;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-      addWatermark(pdf);
-      heightLeft -= pdfHeight;
-
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
-        addWatermark(pdf);
-        heightLeft -= pdfHeight;
-      }
-
-      pdf.save(`apostila-${topic.replace(/\s+/g, '_')}.pdf`);
+      await html2pdf().set(opt).from(element).save();
       showToast("Ebook baixado com sucesso! 📚✅");
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
@@ -1914,32 +1879,37 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     if (!element) return;
     showToast("Preparando seu arquivo... Ficou lindo! 📄💎", 'info');
     try {
-      const canvas = await html2canvas(element, { 
-        scale: 2,
-        useCORS: true,
-        onclone: (clonedDoc) => {
-          const style = clonedDoc.createElement('style');
-          style.innerHTML = `
-            * {
-              color: #1c1917 !important;
-              background-color: #ffffff !important;
-              border-color: #e7e5e4 !important;
-            }
-            .prose * {
-              color: inherit !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        }
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`);
+      const opt = {
+        margin:       15,
+        filename:     `${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true,
+          onclone: (clonedDoc: Document) => {
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              * {
+                color: #1c1917 !important;
+                background-color: #ffffff !important;
+                border-color: #e7e5e4 !important;
+              }
+              .prose * {
+                color: inherit !important;
+              }
+              /* Fix for overlapping lines in markdown */
+              .prose p, .prose li, .prose h1, .prose h2, .prose h3, .prose h4 {
+                page-break-inside: avoid;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      await html2pdf().set(opt).from(element).save();
       showToast("Download concluído! 🙌✨");
     } catch (err) {
       console.error('Erro ao gerar PDF:', err);
@@ -2431,29 +2401,37 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     setIsGeneratingPDF(true);
     showToast("Gerando seu PDF... Quase pronto! 📄💎", 'info');
     try {
-      const canvas = await html2canvas(outlineRef.current, { 
-        scale: 2,
-        useCORS: true,
-        onclone: (clonedDoc) => {
-          const style = clonedDoc.createElement('style');
-          style.innerHTML = `
-            * {
-              color: #1c1917 !important;
-              background-color: #ffffff !important;
-              border-color: #e7e5e4 !important;
-            }
-          `;
-          clonedDoc.head.appendChild(style);
-        }
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`esboco-${topic.slice(0, 20)}.pdf`);
+      const opt = {
+        margin:       15,
+        filename:     `esboco-${topic.slice(0, 20)}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true,
+          onclone: (clonedDoc: Document) => {
+            const style = clonedDoc.createElement('style');
+            style.innerHTML = `
+              * {
+                color: #1c1917 !important;
+                background-color: #ffffff !important;
+                border-color: #e7e5e4 !important;
+              }
+              .prose * {
+                color: inherit !important;
+              }
+              /* Fix for overlapping lines in markdown */
+              .prose p, .prose li, .prose h1, .prose h2, .prose h3, .prose h4 {
+                page-break-inside: avoid;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+          }
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      await html2pdf().set(opt).from(outlineRef.current).save();
       showToast("PDF gerado com sucesso! 📄🎉", 'success');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
@@ -4044,15 +4022,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </button>
                           <button
                             onClick={() => {
-                              const content = isEditingStoriesTheater 
-                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
-                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
-                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
-                                   storiesTheaterResult.bibleStory);
-                              if (content) {
-                                handleDownloadPDF(`Stories_Theater_${storiesTheaterTopic}`, content);
-                                showToast("Baixando PDF... 📄✨");
-                              }
+                              handleDownloadElement(storiesTheaterRef.current, `Stories_Theater_${storiesTheaterTopic}`);
                             }}
                             className="p-3 bg-white dark:bg-zinc-900 text-stone-600 rounded-xl shadow-lg hover:scale-110 transition-all"
                             title="Baixar PDF"
@@ -4142,7 +4112,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </button>
                         </div>
 
-                        <div className="prose prose-stone dark:prose-invert max-w-none">
+                        <div className="prose prose-stone dark:prose-invert max-w-none" ref={storiesTheaterRef}>
                           {isEditingStoriesTheater ? (
                             <textarea
                               value={editedStoriesTheaterResult?.[storiesTheaterActiveTab] || ''}

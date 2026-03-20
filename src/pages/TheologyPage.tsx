@@ -293,23 +293,23 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   }, []);
 
   const BIBLIOLOGIA_SLIDES = [
-    "https://picsum.photos/seed/bibliologia-slide-1/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-2/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-3/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-4/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-5/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-6/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-7/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-8/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-9/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-10/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-11/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-12/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-13/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-14/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-15/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-16/1200/800",
-    "https://picsum.photos/seed/bibliologia-slide-17/1200/800"
+    "https://storage.googleapis.com/mcp-user-attachments/67db8759600e00002069818b/67db87b1600e000020698196/input_file_0.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8759600e00002069818b/67db87b1600e000020698196/input_file_1.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8759600e00002069818b/67db87b1600e000020698196/input_file_2.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_0.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_1.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_2.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_3.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_4.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_0.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_1.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_2.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_3.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_4.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_0.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_1.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_2.png",
+    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_3.png"
   ];
 
   const BIBLIOLOGIA_INFOGRAPHIC = "https://picsum.photos/seed/bibliologia-infographic/1200/1600";
