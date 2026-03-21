@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   User as UserIcon, 
   Settings, 
@@ -32,7 +32,6 @@ import { Medal } from '../components/Medal';
 import { generateCertificate } from '../lib/certificateGenerator';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
   const { user, logout, updateUser, toggleFavorite, notes } = useAuth();

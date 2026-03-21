@@ -149,6 +149,10 @@ export const GOSPEL_AUTHORS = [
     works: ["O Caminho a Cristo", "O Grande Conflito", "O Desejado de Todas as Nações"]
   },
   {
+    name: "Eugene H. Peterson",
+    works: ["A Mensagem (Bíblia)", "Um Longo Obediência na Mesma Direção", "Pastor", "Subversão do Evangelho"]
+  },
+  {
     name: "Filipe Fontes",
     works: ["Filosofia Essencial para Cristãos"]
   },

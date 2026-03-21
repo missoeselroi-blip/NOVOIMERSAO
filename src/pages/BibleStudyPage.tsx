@@ -764,7 +764,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       Referência Bíblica: "${verseSearch}"
       
       Por favor, forneça o texto bíblico completo para esta referência.
-      Utilize a versão Almeida Corrigida Fiel (ACF) como base principal, mas também apresente a versão NVI para comparação se for um versículo curto.
+      Priorize a versão "A Mensagem" (Eugene H. Peterson) se disponível, ou uma versão de estudo equivalente. Apresente também a versão Almeida Corrigida Fiel (ACF) ou NVI para comparação.
       Se for um capítulo inteiro, formate de maneira legível com os números dos versículos.
       
       Além do texto, adicione uma breve explicação do contexto histórico ou teológico desta passagem (máximo 3 parágrafos).
@@ -1825,6 +1825,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           prompt += `Forneça um estudo bíblico exaustivo e completo sobre a passagem ou tema: ${query || 'Geral'}. 
           Sua pesquisa deve integrar informações de todas as fontes disponíveis: Bíblias de Estudo, Comentários, Dicionários e Enciclopédias. 
           Seja o mais detalhado possível.`;
+        } else if (searchSource.includes('A Mensagem')) {
+          prompt += `Forneça o comentário e a perspectiva da "Bíblia de Estudo A Mensagem" (Eugene H. Peterson) para a passagem ou tema: ${query || 'Geral'}. Se não houver uma passagem específica, explique a visão de Peterson sobre o tema.`;
         } else if (searchSource.includes('Shedd')) {
           prompt += `Forneça o comentário bíblico do Dr. Russel Shedd para a passagem ou tema: ${query || 'Geral'}. Se não houver uma passagem específica, explique a visão teológica de Shedd sobre o tema.`;
         } else {
@@ -1843,12 +1845,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         responseText = response.text;
         responseThought = response.thought;
       } else {
-        // General search
+        // General search - prioritize A Mensagem
         const response = await geminiService.generateTextWithThought(`
         Termo pesquisado: "${query}"
-        Fonte selecionada: "Geral (Shedd, Thompson, Genebra)"
+        Fonte selecionada: "Geral (Priorizando Bíblia de Estudo A Mensagem, Shedd, Thompson, Genebra)"
         
-        Forneça comentários bíblicos detalhados sobre: ${query}. Use fontes como Shedd, Thompson e Genebra.
+        Forneça comentários bíblicos detalhados sobre: ${query}. 
+        Priorize a perspectiva da "Bíblia de Estudo A Mensagem" (Eugene H. Peterson). 
+        Use também fontes como Shedd, Thompson e Genebra.
         Se não houver resultados diretos, sugira versículos, estudos e insights teológicos.`, undefined, deepThinking);
         responseText = response.text;
         responseThought = response.thought;
@@ -2450,6 +2454,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   const studyBibles = [
+    "Bíblia de Estudo A Mensagem",
     "Bíblia de Estudos Palavras-Chave",
     "Bíblia Apologética com apócrifos",
     "Bíblia da Mulher",
@@ -3003,6 +3008,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <MarkdownRenderer content={verseContent} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => handleSearch('Todas as Bíblias', verseSearch.split(' ')[0])}
+                        className="flex-1 min-w-[150px] py-3 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold rounded-xl hover:bg-emerald-200 flex items-center justify-center gap-2 transition-all"
+                      >
+                        <BookOpen size={18} />
+                        Ver Capítulo Completo
+                      </button>
                       <button
                         onClick={handleToggleFavorite}
                         className={cn(
