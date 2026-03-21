@@ -2534,14 +2534,19 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       </AnimatePresence>
       {showFeedback && (
         <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.5 }}
+          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.8, y: 20 }}
           className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
         >
-          <div className="bg-emerald-500 text-white p-8 rounded-full shadow-2xl">
-            <CheckCircle size={64} />
-          </div>
+          <motion.div 
+            initial={{ rotate: -45, scale: 0 }}
+            animate={{ rotate: 0, scale: 1 }}
+            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            className="bg-emerald-500 text-white p-6 rounded-full shadow-2xl"
+          >
+            <CheckCircle size={48} />
+          </motion.div>
         </motion.div>
       )}
       <AudioConfirmationModal 

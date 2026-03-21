@@ -200,7 +200,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onS
                 onClick={() => onSearch(fullQuery)}
                 className="text-emerald-600 font-bold hover:underline cursor-pointer inline-flex items-center gap-1"
               >
-                ⚓ {props.children}
+                {props.children}
               </button>
             );
           }

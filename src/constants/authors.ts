@@ -129,6 +129,10 @@ export const GOSPEL_AUTHORS = [
     works: ["A Quarta Dimensão", "Oração: A Chave do Avivamento", "Grupos Familiares e o Crescimento da Igreja"]
   },
   {
+    name: "Devi Titus",
+    works: ["A Experiência do Lar", "A Sabedoria da Mulher"]
+  },
+  {
     name: "Dietrich Bonhoeffer",
     works: ["O Custo do Discipulado"]
   },
@@ -412,6 +416,10 @@ export const GOSPEL_AUTHORS = [
       "Igreja Centrada",
       "Ego Transformado"
     ]
+  },
+  {
+    name: "Tish Harrison Warren",
+    works: ["A Liturgia do Cotidiano", "Oração na Noite"]
   },
   {
     name: "Tomás de Aquino",
