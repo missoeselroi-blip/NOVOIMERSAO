@@ -578,6 +578,18 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
   };
 
+  const generateAndSaveAll = async () => {
+    if (!user || user.email !== 'missoeselroi@gmail.com') return;
+    showToast("Iniciando geração de todo o currículo... Isso pode demorar.", 'info');
+    for (const subject of THEOLOGY_SUBJECTS) {
+      const maxChapters = getMaxChapters(subject.title);
+      for (let i = 1; i <= maxChapters; i++) {
+        await loadChapter(subject.title, i);
+      }
+    }
+    showToast("Currículo gerado com sucesso!", 'success');
+  };
+
   const handleSubjectClick = (subject: string) => {
     const subjectData = THEOLOGY_SUBJECTS.find(s => s.title === subject);
     if (subjectData?.prereq && (!theologyProgress[subjectData.prereq] || !theologyProgress[subjectData.prereq].completed)) {
@@ -616,6 +628,19 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     
     setIsLoading(true);
     try {
+      // 1. Check shared materials first
+      const materialId = `${subject.replace(/\s+/g, '_')}_${chapter}`;
+      const materialDocRef = doc(db, 'shared_theology_materials', materialId);
+      const materialDoc = await getDoc(materialDocRef);
+      
+      if (materialDoc.exists()) {
+        const data = materialDoc.data();
+        setChapterContent(prev => ({ ...prev, [chapter]: data.content }));
+        await generateChapterQuiz(data.content);
+        setIsLoading(false);
+        return;
+      }
+
       let subjectSpecificPrompt = "";
       if (subject === 'Teologia Sistemática (Calvinista e Arminiana)') {
         subjectSpecificPrompt = "Apresente de forma equilibrada e profunda as perspectivas Calvinista e Arminiana sobre o tema do capítulo.";
@@ -682,6 +707,17 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       IMPORTANTE: Ao final do conteúdo, inclua uma seção chamada "--- EXERCÍCIO PRÁTICO ---" com uma atividade prática para o aluno realizar (ex: elaborar um esboço, analisar um versículo, planejar uma ação evangelística, etc).`;
 
       const response = await geminiService.generateText(prompt, "Você é um professor de teologia sistemática e prática, mestre em exegese e homilética.");
+      
+      // Save to shared ONLY if admin
+      if (user?.email === 'missoeselroi@gmail.com') {
+        await setDoc(materialDocRef, {
+          content: response,
+          subject,
+          chapter,
+          createdAt: new Date().toISOString()
+        });
+      }
+
       setChapterContent(prev => ({ ...prev, [chapter]: response }));
       await generateChapterQuiz(response);
     } catch (error) {
@@ -2176,6 +2212,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 </div>
               </div>
               <div className="flex gap-2">
+                {user?.email === 'missoeselroi@gmail.com' && (
+                  <button onClick={generateAndSaveAll} className="p-2 bg-red-600 text-white rounded-xl text-xs font-bold">
+                    Gerar Tudo
+                  </button>
+                )}
                 {Array.from({ length: getMaxChapters(selectedSubject || '') }, (_, i) => i + 1).map(i => (
                   <div 
                     key={i} 

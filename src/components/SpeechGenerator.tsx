@@ -84,6 +84,7 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({
     { id: 'alegre', label: 'Alegre' },
     { id: 'animado', label: 'Animado' },
     { id: 'inspirador', label: 'Inspirador' },
+    { id: 'inspiradora', label: 'Inspiradora' },
     { id: 'motivadora', label: 'Motivadora' },
     { id: 'pensativo', label: 'Pensativo' },
     { id: 'duvidoso', label: 'Duvidoso' },

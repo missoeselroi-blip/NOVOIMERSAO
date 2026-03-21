@@ -197,5 +197,10 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidAudioCollection(request.resource.data);
       allow update, delete: if isAdmin();
     }
+
+    match /shared_theology_materials/{materialId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
   }
 }

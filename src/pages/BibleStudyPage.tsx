@@ -48,6 +48,7 @@ import {
   Baby,
   Theater,
   X,
+  Video,
   Mic,
   Mic2,
   Music,
@@ -57,6 +58,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { AudioSearchButton } from '../components/AudioSearchButton';
+import { VeoVideoGenerator } from '../components/VeoVideoGenerator';
 import { GoogleGenAI, Type } from "@google/genai";
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
@@ -279,6 +281,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
     { id: 'credits-quotas', label: 'Créditos/Quotas', icon: <Coins size={18} /> },
+    { id: 'video-generation', label: 'Geração de Vídeo', icon: <Video size={18} /> },
   ];
 
   const [lessonResult, setLessonResult] = useState('');
@@ -3237,6 +3240,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'video-generation' && (
+              <VeoVideoGenerator />
             )}
 
             {activeTab === 'authors' && (
