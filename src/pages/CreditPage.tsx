@@ -14,8 +14,34 @@ import { motion } from 'framer-motion';
 import { useCredits } from '../contexts/CreditContext';
 import { cn } from '../types';
 
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
+
 export default function CreditPage() {
   const { balance, history, addCredits } = useCredits();
+
+  const handlePurchase = async (amount: number, description: string) => {
+    const stripe = await stripePromise;
+    if (!stripe) return;
+
+    try {
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, description }),
+      });
+      const session = await response.json();
+
+      if (session.id) {
+        await (stripe as any).redirectToCheckout({ sessionId: session.id });
+      } else {
+        console.error('Failed to create checkout session');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  };
 
   const purchaseOptions = [
     { amount: 100, price: 'R$ 19,90', label: 'Básico', icon: <Zap className="text-blue-500" /> },
@@ -79,7 +105,7 @@ export default function CreditPage() {
                 <div className="text-2xl font-display font-bold text-emerald-600 dark:text-emerald-400 mb-6">{option.price}</div>
               </div>
               <button 
-                onClick={() => addCredits(option.amount, `Compra de pacote ${option.label}`)}
+                onClick={() => handlePurchase(option.amount, `Compra de pacote ${option.label}`)}
                 className={cn(
                   "w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all",
                   option.popular 

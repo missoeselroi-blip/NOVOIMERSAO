@@ -31,16 +31,28 @@ export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      if (response.ok) {
+        setIsSent(true);
+        showToast("Glória a Deus! Mensagem enviada com sucesso! 🙏✨");
+        setFormData({ name: '', email: '', subject: '', message: '' });
+      } else {
+        showToast("Erro ao enviar mensagem.", "error");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao enviar mensagem.", "error");
+    } finally {
       setIsSubmitting(false);
-      setIsSent(true);
-      showToast("Glória a Deus! Mensagem enviada com sucesso! 🙏✨");
-      setFormData({ name: '', email: '', subject: '', message: '' });
-    }, 1500);
+    }
   };
 
   const contactInfo: any[] = [];

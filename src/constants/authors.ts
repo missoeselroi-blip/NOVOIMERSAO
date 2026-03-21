@@ -10,7 +10,8 @@ export const GOSPEL_AUTHORS = [
       "O Conhecimento do Santo",
       "O Homem: O Local onde Deus Habita",
       "A Vida Crucificada",
-      "Atributos de Deus"
+      "Atributos de Deus",
+      "O Líder Cristão"
     ]
   },
   {
@@ -24,6 +25,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Andrew Murray",
     works: ["Humildade", "Permanecendo em Cristo", "Com Cristo na Escola da Oração"]
+  },
+  {
+    name: "Anthony Giddens",
+    works: ["Sociologia"]
   },
   {
     name: "Apóstolo Paulo",
@@ -85,7 +90,8 @@ export const GOSPEL_AUTHORS = [
       "Milagres",
       "As Crônicas de Nárnia",
       "Trilogia Espacial",
-      "Até que Tenhamos Rostos"
+      "Até que Tenhamos Rostos",
+      "Filosofia Essencial para Cristãos"
     ]
   },
   {
@@ -115,8 +121,16 @@ export const GOSPEL_AUTHORS = [
     works: ["O Comentário Exegético e Expositivo", "A Difícil Doutrina do Amor de Deus", "Escândalo"]
   },
   {
+    name: "David Lyon",
+    works: ["O Cristão e a Sociologia"]
+  },
+  {
     name: "David Young Cho",
     works: ["A Quarta Dimensão", "Oração: A Chave do Avivamento", "Grupos Familiares e o Crescimento da Igreja"]
+  },
+  {
+    name: "Dietrich Bonhoeffer",
+    works: ["O Custo do Discipulado"]
   },
   {
     name: "Don Richardson",
@@ -133,6 +147,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Ellen White",
     works: ["O Caminho a Cristo", "O Grande Conflito", "O Desejado de Todas as Nações"]
+  },
+  {
+    name: "Filipe Fontes",
+    works: ["Filosofia Essencial para Cristãos"]
   },
   {
     name: "Francis Schaeffer",
@@ -159,16 +177,20 @@ export const GOSPEL_AUTHORS = [
     works: ["Cultura e Fé", "Apologética Contemporânea", "O Cristão na Esfera Pública"]
   },
   {
+    name: "Herman Bavinck",
+    works: ["Dogmática Reformada"]
+  },
+  {
     name: "J.C. Ryle",
     works: ["Santidade", "Meditações nos Evangelhos", "Caminho Cristão"]
   },
   {
-    name: "JB Carvalho",
-    works: ["Metanoia", "O Poder da Profecia", "Filhos da Luz"]
-  },
-  {
     name: "Jacques André-Monard",
     works: ["As Dispensações", "O Plano de Deus para os Séculos"]
+  },
+  {
+    name: "JB Carvalho",
+    works: ["Metanoia", "O Poder da Profecia", "Filhos da Luz"]
   },
   {
     name: "João Calvino",
@@ -182,6 +204,10 @@ export const GOSPEL_AUTHORS = [
       "A Guerra Santa",
       "Graça Abundante ao Principal dos Pecadores"
     ]
+  },
+  {
+    name: "John Howard Yoder",
+    works: ["A Política de Jesus"]
   },
   {
     name: "John MacArthur",
@@ -212,7 +238,8 @@ export const GOSPEL_AUTHORS = [
       "Inteligência Humilhada",
       "O Custo do Discipulado",
       "Tomás de Aquino e o Conhecimento de Deus",
-      "Acima de Todos os Deuses (Coautor)"
+      "Acima de Todos os Deuses (Coautor)",
+      "Filosofia Essencial para Cristãos"
     ]
   },
   {
@@ -291,8 +318,16 @@ export const GOSPEL_AUTHORS = [
     works: ["A Igreja Missional na Bíblia", "Introdução à Cosmovisão Cristã (Coautor)", "O Drama das Escrituras (Coautor)"]
   },
   {
+    name: "Millard Erickson",
+    works: ["Teologia Sistemática (Batista)"]
+  },
+  {
     name: "N.T. Wright",
     works: ["Perspectiva contemporânea e foco no contexto histórico do Novo Testamento."]
+  },
+  {
+    name: "Paul G. Hiebert",
+    works: ["Antropologia Cultural: Uma Perspectiva Cristã"]
   },
   {
     name: "Priscilla Reis Andrade",
@@ -336,6 +371,14 @@ export const GOSPEL_AUTHORS = [
     works: ["Vencendo as Tempestades da Vida", "O Poder da Oração", "Inteligência Espiritual"]
   },
   {
+    name: "Stanley Grenz",
+    works: ["A Busca da Moral"]
+  },
+  {
+    name: "Stanley Horton",
+    works: ["Teologia Sistemática (Pentecostal)"]
+  },
+  {
     name: "Søren Kierkegaard",
     works: ["Temor e Tremor", "O Desespero Humano", "As Obras do Amor"]
   },
@@ -353,6 +396,14 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Tomás de Aquino",
     works: ["Suma Teológica", "Suma contra os Gentios"]
+  },
+  {
+    name: "Wallace Cabral Ribeiro",
+    works: ["Religião e Revolução"]
+  },
+  {
+    name: "Wayne Grudem",
+    works: ["Teologia Sistemática (Popular/Reformada)"]
   },
   {
     name: "William Barclay",

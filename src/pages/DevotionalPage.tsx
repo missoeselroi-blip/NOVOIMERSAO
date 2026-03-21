@@ -157,6 +157,9 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const { user } = useAuth();
   const { saveTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
+  const [isReadingMode, setIsReadingMode] = useState(false);
+  const [readingFontSize, setReadingFontSize] = useState(18);
+  const [readingLineHeight, setReadingLineHeight] = useState(1.6);
   const [showMissionary, setShowMissionary] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState<DevotionalTheme | null>(null);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -544,11 +547,23 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 <CalendarIcon size={20} className="text-emerald-600" />
-                {currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                {currentDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase()}
               </h3>
               <div className="flex gap-2">
-                <button onClick={handlePrevMonth} className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full"><ChevronLeft size={20} /></button>
-                <button onClick={handleNextMonth} className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full"><ChevronRight size={20} /></button>
+                <button 
+                  onClick={handlePrevMonth} 
+                  className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-full text-emerald-600 transition-colors"
+                  aria-label="Mês anterior"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+                <button 
+                  onClick={handleNextMonth} 
+                  className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 rounded-full text-emerald-600 transition-colors"
+                  aria-label="Próximo mês"
+                >
+                  <ChevronRight size={20} />
+                </button>
               </div>
             </div>
 
@@ -561,7 +576,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
               ))}
               {[...Array(daysInMonth)].map((_, i) => {
                 const day = i + 1;
-                const isToday = day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth();
+                const isToday = day === new Date().getDate() && currentDate.getMonth() === new Date().getMonth() && currentDate.getFullYear() === new Date().getFullYear();
                 const dayStr = String(day).padStart(2, '0');
                 const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0');
                 const book = DEVOTIONAL_MATRIX[`${dayStr}/${monthStr}`];
@@ -573,11 +588,14 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                     title={book ? `Leitura: ${book}` : undefined}
                     className={`aspect-square flex flex-col items-center justify-center rounded-xl text-sm font-bold transition-all relative group ${
                       isToday 
-                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20' 
+                        ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 ring-2 ring-emerald-200' 
                         : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-stone-700 dark:text-zinc-300'
                     }`}
                   >
                     {day}
+                    {isToday && (
+                      <div className="absolute top-1 right-1 w-1.5 h-1.5 bg-white rounded-full" />
+                    )}
                     {book && (
                       <div className="absolute -bottom-1 w-1 h-1 rounded-full bg-amber-400 opacity-0 group-hover:opacity-100 transition-opacity" />
                     )}
@@ -638,6 +656,13 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                   </div>
                   <div className="flex gap-2">
                     <button 
+                      onClick={() => setIsReadingMode(!isReadingMode)}
+                      className={cn("p-2 rounded-full transition-colors", isReadingMode ? "bg-emerald-100 text-emerald-700" : "hover:bg-stone-200 dark:hover:bg-zinc-700")}
+                      title="Modo Leitura"
+                    >
+                      <BookOpen size={20} />
+                    </button>
+                    <button 
                       onClick={() => toggleFavorite(devotionalResult)} 
                       className={cn(
                         "p-2 rounded-full transition-colors",
@@ -654,7 +679,10 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                   </div>
                 </div>
                 
-                <div className="flex-1 p-10 overflow-y-auto custom-scrollbar">
+                <div 
+                  className={cn("flex-1 p-10 overflow-y-auto custom-scrollbar", isReadingMode && "max-w-3xl mx-auto")}
+                  style={isReadingMode ? { fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight } : {}}
+                >
                   <MarkdownRenderer content={devotionalResult} />
                   
                   <div className="mt-12 pt-12 border-t border-stone-100 dark:border-zinc-800">

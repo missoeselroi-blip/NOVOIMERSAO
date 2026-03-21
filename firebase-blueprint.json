@@ -116,6 +116,16 @@
       },
       "required": ["userId", "subject", "type", "content", "score"]
     },
+    "TheologyTermsAcceptance": {
+      "title": "Theology Terms Acceptance",
+      "description": "Records user acceptance of theology course terms",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "acceptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "acceptedAt"]
+    },
     "AudioCollection": {
       "title": "Audio Collection",
       "description": "User generated audio search results and theology content",
@@ -180,6 +190,10 @@
     "/theologySummaries/{summaryId}": {
       "schema": "TheologySummary",
       "description": "Theology subject summaries"
+    },
+    "/theologyTermsAcceptance/{userId}": {
+      "schema": "TheologyTermsAcceptance",
+      "description": "User theology terms acceptance records"
     },
     "/audioCollection/{audioId}": {
       "schema": "AudioCollection",

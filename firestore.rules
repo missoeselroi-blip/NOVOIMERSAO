@@ -135,8 +135,8 @@ service cloud.firestore {
     // Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || (request.auth.token.email == "imersaobiblicapp@gmail.com" && request.auth.token.email_verified == true));
-      allow update: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
     }
 
     match /theologyProgress/{userId} {
@@ -152,6 +152,10 @@ service cloud.firestore {
     match /careerProgress/{userId} {
       allow read: if isAuthenticated();
       allow write: if isOwner(userId) || isAdmin();
+      
+      match /monthlyHistory/{monthId} {
+        allow read, write: if isOwner(userId) || isAdmin();
+      }
     }
 
     match /notes/{noteId} {
@@ -182,6 +186,10 @@ service cloud.firestore {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidTheologySummary(request.resource.data);
       allow update, delete: if isAdmin();
+    }
+
+    match /theologyTermsAcceptance/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
     }
 
     match /audioCollection/{audioId} {

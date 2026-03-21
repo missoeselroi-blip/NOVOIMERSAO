@@ -85,7 +85,14 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
     setResult('');
     setAudioUrl(null);
     try {
-      const prompt = `Pesquise o termo teológico "${searchTarget}" agregando insights das seguintes Bíblias de Estudo: Pentecostal, Thompson, Plenitude, Genebra e NVI de Estudo, além de enciclopédias, dicionários e concordâncias bíblicas. Estruture os resultados para distinguir claramente as perspectivas calvinistas e arminianas sobre o tema, oferecendo uma visão abrangente e equilibrada. Cite fontes e versículos relevantes.`;
+      const prompt = `Pesquise o termo teológico "${searchTarget}" agregando insights das seguintes Bíblias de Estudo: Pentecostal, Thompson, Plenitude, Genebra e NVI de Estudo, além de enciclopédias, dicionários e concordâncias bíblicas. 
+      Consulte também as seguintes obras de referência:
+      - Teologia Sistemática de Wayne Grudem (popular/reformada)
+      - Teologia Sistemática de Stanley Horton (pentecostal)
+      - Teologia Sistemática de Millard Erickson (batista)
+      - Dogmática Reformada de Herman Bavinck
+      
+      Estruture os resultados para distinguir claramente as perspectivas calvinistas e arminianas sobre o tema, oferecendo uma visão abrangente e equilibrada. Cite fontes e versículos relevantes.`;
       const response = await geminiService.generateText(prompt, "Você é um PhD em Teologia.");
       setResult(response);
       

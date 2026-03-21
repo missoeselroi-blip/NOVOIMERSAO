@@ -29,7 +29,6 @@ import {
   Save,
   Copy,
   Volume2,
-  Hourglass,
   Pencil,
   Quote,
   ExternalLink,
@@ -52,7 +51,8 @@ import {
   Mic,
   Mic2,
   Music,
-  Play
+  Play,
+  Coins
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
@@ -90,6 +90,7 @@ enum OperationType {
 
 import { FeedbackSection } from '../components/FeedbackSection';
 import { SpeechGenerator } from '../components/SpeechGenerator';
+import { CreditsQuotasTab } from '../components/CreditsQuotasTab';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
@@ -277,6 +278,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
+    { id: 'credits-quotas', label: 'Créditos/Quotas', icon: <Coins size={18} /> },
   ];
 
   const [lessonResult, setLessonResult] = useState('');
@@ -306,6 +308,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isGeneratingSlides, setIsGeneratingSlides] = useState(false);
   const [creationPopup, setCreationPopup] = useState<{ show: boolean, title: string, content: string } | null>(null);
 
+  const [isReadingMode, setIsReadingMode] = useState(false);
+  const fontSizeMap: Record<string, number> = { 'xs': 12, 'sm': 14, 'base': 16, 'lg': 18, 'xl': 20, '2xl': 24, '3xl': 30 };
+  const [readingFontSize, setReadingFontSize] = useState(fontSizeMap[fontSize] || 16);
+  const [readingLineHeight, setReadingLineHeight] = useState(lineHeight);
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
@@ -2850,50 +2856,89 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       </div>
 
       {/* Tabs - Creative Button Grid */}
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Módulos de Estudo</h3>
-        <button 
-          onClick={() => setIsHistoryOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-200 transition-all"
-        >
-          <History size={16} />
-          Histórico
-        </button>
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-6 border-b border-stone-100 dark:border-zinc-800">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveTab(tab.id);
-              scrollToSearch();
-              setResult('');
-              setSlidesResult('');
-              setDebateResult('');
-              setSelectedBible('');
-              setSearchQuery('');
-              setNotebookSearchQuery('');
-            }}
-            className={cn(
-              "flex flex-col items-center justify-center gap-3 p-4 rounded-2xl text-xs font-bold transition-all border",
-              activeTab === tab.id 
-                ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/20 scale-105" 
-                : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800 hover:border-emerald-200 dark:hover:border-emerald-900/50"
-            )}
+      {!isReadingMode && (
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Módulos de Estudo</h3>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setIsReadingMode(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white text-xs font-bold rounded-xl hover:bg-emerald-700 transition-all"
+            >
+              <BookOpen size={16} />
+              Modo Leitura
+            </button>
+            <button 
+              onClick={() => setIsHistoryOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-200 transition-all"
+            >
+              <History size={16} />
+              Histórico
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {isReadingMode && (
+        <div className="fixed top-4 right-4 z-[100] flex items-center gap-2 p-2 bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 shadow-xl">
+          <button 
+            onClick={() => setIsReadingMode(false)}
+            className="px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-200"
           >
-            <div className={cn(
-              "p-2 rounded-xl",
-              activeTab === tab.id ? "bg-white/20" : "bg-stone-100 dark:bg-zinc-800 text-emerald-600"
-            )}>
-              {tab.icon}
-            </div>
-            <span className="text-center">{tab.label}</span>
+            Sair do Modo Leitura
           </button>
-        ))}
-      </div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setReadingFontSize(prev => Math.max(12, prev - 2))} className="p-2 hover:bg-stone-100 rounded-full">A-</button>
+            <span className="text-xs font-bold">{readingFontSize}px</span>
+            <button onClick={() => setReadingFontSize(prev => Math.min(32, prev + 2))} className="p-2 hover:bg-stone-100 rounded-full">A+</button>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={() => setReadingLineHeight(prev => Math.max(1.2, prev - 0.1))} className="p-2 hover:bg-stone-100 rounded-full">Esp-</button>
+            <span className="text-xs font-bold">{readingLineHeight.toFixed(1)}</span>
+            <button onClick={() => setReadingLineHeight(prev => Math.min(2.5, prev + 0.1))} className="p-2 hover:bg-stone-100 rounded-full">Esp+</button>
+          </div>
+        </div>
+      )}
+
+      {!isReadingMode && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-6 border-b border-stone-100 dark:border-zinc-800">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => {
+                setActiveTab(tab.id);
+                scrollToSearch();
+                setResult('');
+                setSlidesResult('');
+                setDebateResult('');
+                setSelectedBible('');
+                setSearchQuery('');
+                setNotebookSearchQuery('');
+              }}
+              className={cn(
+                "flex flex-col items-center justify-center gap-3 p-4 rounded-2xl text-xs font-bold transition-all border",
+                activeTab === tab.id 
+                  ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/20 scale-105" 
+                  : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800 hover:border-emerald-200 dark:hover:border-emerald-900/50"
+              )}
+            >
+              <div className={cn(
+                "p-2 rounded-xl",
+                activeTab === tab.id ? "bg-white/20" : "bg-stone-100 dark:bg-zinc-800 text-emerald-600"
+              )}>
+                {tab.icon}
+              </div>
+              <span className="text-center">{tab.label}</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Content Area */}
-      <div ref={searchInputRef} className="min-h-[400px]">
+      <div 
+        ref={searchInputRef} 
+        className={cn("min-h-[400px]", isReadingMode && "max-w-3xl mx-auto")}
+        style={isReadingMode ? { fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight } : {}}
+      >
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -3045,7 +3090,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     >
                       {isLoading && loadingSource === selectedBible ? (
                         <>
-                          <Hourglass className="animate-spin" size={18} />
+                          <BookOpen className="animate-pulse" size={18} />
                           Aguarde...
                         </>
                       ) : (
@@ -3328,7 +3373,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     >
                       {isLoading && loadingSource === selectedBible ? (
                         <>
-                          <Hourglass className="animate-spin" size={18} />
+                          <BookOpen className="animate-pulse" size={18} />
                           Aguarde...
                         </>
                       ) : (
@@ -5485,6 +5530,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </div>
                 ))}
               </div>
+            )}
+
+            {activeTab === 'credits-quotas' && (
+              <CreditsQuotasTab />
             )}
           </motion.div>
         </AnimatePresence>

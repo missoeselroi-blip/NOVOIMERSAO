@@ -40,7 +40,13 @@ import {
   StickyNote,
   RefreshCw,
   Shield,
-  Scale
+  ShieldCheck,
+  Scale,
+  Maximize,
+  Minimize,
+  RotateCw,
+  ZoomIn,
+  ZoomOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -110,8 +116,10 @@ const THEOLOGY_SUBJECTS = [
   { title: 'Teologia Sistemática (Calvinista e Arminiana)', desc: 'Perspectivas Comparadas', topics: ['Calvinismo', 'Arminianismo', 'Panorama'], prereq: 'Exegética', icon: Brain },
   { title: 'Evangelismo/Missões', desc: 'A Proclamação do Evangelho', topics: ['Fundamentos', 'Estratégias', 'Panorama'], prereq: 'Teologia Sistemática (Calvinista e Arminiana)', icon: Sparkles },
   { title: 'Liderança Cristã', desc: 'O Modelo Bíblico de Liderança', topics: ['Modelos Bíblicos', 'Autoridade e Submissão', 'O Líder Servo', 'Panorama'], prereq: 'Evangelismo/Missões', icon: Shield },
-  { title: 'Filosofia e Sociologia', desc: 'O Cristão e a Sociedade', topics: ['Antropologia', 'Ética e Moral', 'Sistemas Políticos', 'Panorama'], prereq: 'Liderança Cristã', icon: Scale },
-  { title: 'As Dispensações', desc: 'O Plano de Deus para os Séculos', topics: ['Inocência', 'Consciência', 'Governo Humano', 'Promessa', 'Lei', 'Graça', 'Reino', 'Panorama'], prereq: 'Filosofia e Sociologia', icon: BookOpen },
+  { title: 'Filosofia', desc: 'O Cristão e o Pensamento', topics: ['Filosofia Essencial', 'Ética e Moral', 'Panorama'], prereq: 'Liderança Cristã', icon: Scale },
+  { title: 'Sociologia', desc: 'O Cristão e a Sociedade', topics: ['Antropologia Cultural', 'Sistemas Políticos', 'Panorama'], prereq: 'Filosofia', icon: Users },
+  { title: 'Apologética', desc: 'A Defesa da Fé Cristã', topics: ['Seitas e Heresias', 'Religiões no Brasil', 'Defesa Bíblica', 'Panorama'], prereq: 'Sociologia', icon: ShieldCheck },
+  { title: 'As Dispensações', desc: 'O Plano de Deus para os Séculos', topics: ['Inocência', 'Consciência', 'Governo Humano', 'Promessa', 'Lei', 'Graça', 'Reino', 'Panorama'], prereq: 'Apologética', icon: BookOpen },
 ];
 
 const getMaxChapters = (subject: string) => subject === 'As Dispensações' ? 7 : 5;
@@ -122,6 +130,9 @@ interface TheologyPageProps {
 
 export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
+  const [isReadingMode, setIsReadingMode] = useState(false);
+  const [readingFontSize, setReadingFontSize] = useState(18);
+  const [readingLineHeight, setReadingLineHeight] = useState(1.6);
   const { user, isInitialLoading } = useAuth();
   const { showToast } = useToast();
   
@@ -218,10 +229,47 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [showSlidesModal, setShowSlidesModal] = useState(false);
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [rotation, setRotation] = useState(0);
 
   // Section Tracking State
   const currentSectionRef = useRef('HOME');
   const sectionStartTimeRef = useRef(Date.now());
+  const [hasAcceptedTerms, setHasAcceptedTerms] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      const checkTerms = async () => {
+        try {
+          const docRef = doc(db, 'theologyTermsAcceptance', user.id);
+          const docSnap = await getDoc(docRef);
+          setHasAcceptedTerms(docSnap.exists());
+        } catch (error) {
+          console.error("Error checking terms:", error);
+          setHasAcceptedTerms(false);
+        }
+      };
+      checkTerms();
+    } else {
+      setHasAcceptedTerms(true);
+    }
+  }, [user]);
+
+  const handleAcceptTerms = async () => {
+    if (!user) return;
+    try {
+      await setDoc(doc(db, 'theologyTermsAcceptance', user.id), {
+        userId: user.id,
+        acceptedAt: new Date().toISOString()
+      });
+      setHasAcceptedTerms(true);
+      showToast("Termos aceitos com sucesso!", "success");
+    } catch (error) {
+      console.error("Error accepting terms:", error);
+      showToast("Erro ao aceitar termos.", "error");
+    }
+  };
 
   const getActiveSection = () => {
     if (showSearch) return 'SEARCH';
@@ -303,23 +351,39 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   }, []);
 
   const BIBLIOLOGIA_SLIDES = [
-    "https://storage.googleapis.com/mcp-user-attachments/67db8759600e00002069818b/67db87b1600e000020698196/input_file_0.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8759600e00002069818b/67db87b1600e000020698196/input_file_1.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8759600e00002069818b/67db87b1600e000020698196/input_file_2.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_0.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_1.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_2.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_3.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db89f5600e00002069819d/67db8a23600e0000206981a8/input_file_4.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_0.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_1.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_2.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_3.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8c06600e0000206981b2/67db8c35600e0000206981bd/input_file_4.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_0.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_1.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_2.png",
-    "https://storage.googleapis.com/mcp-user-attachments/67db8ed3600e0000206981c2/67db8ee5600e0000206981cd/input_file_3.png"
+    "https://i.postimg.cc/Y2fCsmnr/Slide1.png",
+    "https://i.postimg.cc/BZcnV1Yq/Slide2.png",
+    "https://i.postimg.cc/44bxShL4/Slide3.png",
+    "https://i.postimg.cc/sf9gNZ63/Slide4.png",
+    "https://i.postimg.cc/h4bt57yG/Slide5.png",
+    "https://i.postimg.cc/1Rc3jNCX/Slide6.png",
+    "https://i.postimg.cc/QNkdyW4t/Slide7.png",
+    "https://i.postimg.cc/xjy14bxq/Slide8.png",
+    "https://i.postimg.cc/Wp61HJWd/Slide9.png",
+    "https://i.postimg.cc/HsYkDsRd/Slide10.png",
+    "https://i.postimg.cc/wTqj8TZx/Slide11.png",
+    "https://i.postimg.cc/hPDtWP6D/Slide12.png",
+    "https://i.postimg.cc/28kSR8MS/Slide13.png",
+    "https://i.postimg.cc/ncFhbcgL/Slide14.png",
+    "https://i.postimg.cc/RVSZ5VyN/Slide15.png",
+    "https://i.postimg.cc/WbN1LbCF/Slide16.png",
+    "https://i.postimg.cc/wTqj8TZt/Slide17.png"
+  ];
+
+  const TEONTOLOGIA_SLIDES = [
+    "https://i.postimg.cc/VLhvqPZm/Slide1.png",
+    "https://i.postimg.cc/wTrMXY4T/Slide2.png",
+    "https://i.postimg.cc/VLhvqPZY/Slide3.png",
+    "https://i.postimg.cc/rFHs12Zq/Slide4.png",
+    "https://i.postimg.cc/X7Pqf61X/Slide5.png",
+    "https://i.postimg.cc/m2nkYWpk/Slide6.png",
+    "https://i.postimg.cc/9Fk0dHgr/Slide7.png",
+    "https://i.postimg.cc/fTPycQqV/Slide8.png",
+    "https://i.postimg.cc/024jY1Xm/Slide9.png",
+    "https://i.postimg.cc/YqP06BDQ/Slide10.png",
+    "https://i.postimg.cc/hPYvLRZT/Slide11.png",
+    "https://i.postimg.cc/15dXG17r/Slide12.png",
+    "https://i.postimg.cc/8zr5wXxv/Slide13.png"
   ];
 
   const BIBLIOLOGIA_INFOGRAPHIC = "https://picsum.photos/seed/bibliologia-infographic/1200/1600";
@@ -563,8 +627,49 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         subjectSpecificPrompt = "Apresente estratégias práticas de evangelismo pessoal e transcultural, com foco em missões modernas.";
       } else if (subject === 'Liderança Cristã') {
         subjectSpecificPrompt = `Explore os modelos de liderança na Bíblia. Inclua obrigatoriamente um capítulo dedicado a "Autoridade e Submissão" (autoridades instituídas, submissão à luz da Palavra, mundo espiritual). Enfatize o papel do líder cristão: servir, amar, proteger e cuidar, seguindo o exemplo de Cristo com Seus discípulos. Aborde o conceito do Bom Pastor que dá a vida pelas ovelhas, a diferença entre autoridade e autoritarismo, e a corrupção do poder.`;
-      } else if (subject === 'Filosofia e Sociologia') {
-        subjectSpecificPrompt = `Descreva o básico da filosofia e sociologia para o obreiro: como a sociedade é estabelecida, conceitos de antropologia, etnocentrismo, cultura, ética, moral, identidades culturais e tribais. Aborde a luta de classes (classe dominante vs operária), conceitos bíblicos de injustiça social e igualdade, como Jesus atendeu os rejeitados. Esclareça o surgimento dos movimentos de esquerda e direita, o sistema político, constituição, direitos e deveres do cidadão cristão, e a influência da herança brasileira na visão de Deus e do sistema.`;
+      } else if (subject === 'Filosofia') {
+        subjectSpecificPrompt = `Gere o material baseado nas seguintes fontes:
+        - Filosofia Essencial para Cristãos (Filipe Fontes, Jonas Madureira)
+        - O Líder Cristão (A.W. Tozer)
+        - O Custo do Discipulado (Dietrich Bonhoeffer)
+        - Confissões (Santo Agostinho)
+        - Filosofia Essencial para Cristãos (C.S. Lewis)
+        
+        Aborde os conceitos fundamentais da filosofia sob uma ótica cristã, explorando a relação entre fé e razão, ética, moral e a busca pela verdade.`;
+      } else if (subject === 'Sociologia') {
+        subjectSpecificPrompt = `Gere o material baseado nas seguintes fontes:
+        - O Cristão e a Sociologia (David Lyon)
+        - Cristianismo Puro e Simples (C.S. Lewis)
+        - Sociedade e Espiritualidade (Ed. Vida Nova)
+        - Antropologia Cultural: Uma Perspectiva Cristã (Paul G. Hiebert)
+        - A Política de Jesus (John Howard Yoder)
+        - Religião e Revolução (Wallace Cabral Ribeiro)
+        - A Busca da Moral (Stanley Grenz)
+        - Sociologia (Anthony Giddens)
+        
+        Aborde como a sociedade é estabelecida, conceitos de antropologia, etnocentrismo, cultura, luta de classes, sistemas políticos e os deveres do cidadão cristão na sociedade.`;
+      } else if (subject === 'Apologética') {
+        subjectSpecificPrompt = `Gere o material baseado nas fontes das Bíblias apologéticas. 
+        Cite todas as religiões, seitas e igrejas heréticas presentes no Brasil. 
+        
+        DEFINIÇÃO DE SEITA (Use obrigatoriamente):
+        Seitas são religiões e igrejas que não aceitam a Trindade (Deus Pai, Deus Filho e Deus Espírito Santo). Não reconhecem qualquer um como Deus e Pessoa. Seitas também acrescentam outras divindades ou atribuem os atributos incomunicáveis de Deus para os homens. Adição ou retirada de livros e ensinamentos inspirados além da Bíblia.
+
+        SINAIS DE UMA SEITA (Aborde detalhadamente):
+        1. Exclusivismo: Dizer ser a única igreja verdadeira.
+        2. Falsas Profecias: Líderes que profetizam e não se cumpre.
+        3. Escravidão Espiritual: Controle excessivo sobre a vida dos membros.
+        4. Negação da Divindade de Cristo ou da Trindade.
+        5. Fontes de autoridade além da Bíblia.
+
+        CATEGORIAS A ABORDAR:
+        - Religiões Orientais (Budismo, Hinduísmo, etc.)
+        - Seitas Pseudo-Cristãs (Testemunhas de Jeová, Mórmons, Adventismo - analisar pontos doutrinários, etc.)
+        - Espiritismo e suas vertentes.
+        - Religiões de Matriz Africana.
+        - Movimentos Heréticos Modernos.
+        
+        Apresente a defesa bíblica para cada ponto de heresia encontrado.`;
       } else if (subject === 'As Dispensações') {
         subjectSpecificPrompt = `Gere a matéria baseada na Bíblia Scofield e nas obras de C.I. Scofield, Zélio Cabral e Jacques André-Monard. Insira um capítulo para cada uma das sete dispensações (Inocência, Consciência, Governo Humano, Promessa, Lei, Graça e Reino). Explique detalhadamente cada período, a responsabilidade do homem, o fracasso e o julgamento divino em cada dispensação.`;
       }
@@ -1147,6 +1252,32 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     );
   }
 
+  if (hasAcceptedTerms === null) {
+    return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin text-emerald-600" size={48} /></div>;
+  }
+
+  if (!hasAcceptedTerms) {
+    return (
+      <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-stone-200 dark:border-zinc-800 mt-10">
+        <h2 className="text-2xl font-bold mb-6 text-emerald-900 dark:text-emerald-400">Termo de Uso</h2>
+        <div className="prose dark:prose-invert mb-8 text-stone-600 dark:text-zinc-400">
+          <p>1. Este é um Curso Livre de Teologia Básica gerado por IA e sem nenhum vínculo com escolas, faculdades, seminários ou igrejas.</p>
+          <p>2. As fontes, estruturas, atividades e avaliações são pré-estabelecidas por meio de prompts pelo desenvolvedor do App, mas que conferem certa liberdade de criação pela IA. O que pode gerar erros.</p>
+          <h3>Observações Importantes:</h3>
+          <p>3. Os cursos livres online no Brasil são amparados pela Lei nº 9.394/1996 (LDB - Diretrizes e Bases da Educação Nacional) e regulamentados pelo Decreto nº 5.154/2004.</p>
+          <p>4. Esta modalidade não exige autorização do MEC, por serem cursos de capacitação e atualização, e possuírem natureza de educação não-formal. Como não entitulam nível superior ou técnico, não precisam de reconhecimento ou autorização do MEC.</p>
+          <p>5. A Certificação: Os certificados têm valor meramente de comprovação de aprendizado, mas não conferem títulos acadêmicos ou eclesiásticos.</p>
+        </div>
+        <button 
+          onClick={handleAcceptTerms}
+          className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all"
+        >
+          Li e Concordo
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-24">
       {showSearch ? (
@@ -1659,7 +1790,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                     <div className="flex gap-2">
                       <button 
                         onClick={() => {
-                          if (selectedSubject === 'Bibliologia') {
+                          if (selectedSubject === 'Bibliologia' || selectedSubject === 'Teontologia') {
                             setCurrentSlideIndex(0);
                             setShowSlidesModal(true);
                           } else {
@@ -1674,7 +1805,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                         <div className="text-left">
                           <div className="font-bold">Slides</div>
                           <div className="text-xs text-stone-500">
-                            {selectedSubject === 'Bibliologia' ? 'Ver apresentação de slides' : 'Apresentação visual'}
+                            {(selectedSubject === 'Bibliologia' || selectedSubject === 'Teontologia') ? 'Ver apresentação de slides' : 'Apresentação visual'}
                           </div>
                         </div>
                       </button>
@@ -1727,64 +1858,137 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
           {/* Summary Evaluation Modal */}
           <AnimatePresence>
             {showSlidesModal && (
-              <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+              <div className={cn(
+                "fixed inset-0 z-[70] flex items-center justify-center bg-black/80 backdrop-blur-md transition-all",
+                isFullscreen ? "p-0" : "p-4"
+              )}>
                 <motion.div 
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.9 }}
-                  className="bg-white dark:bg-zinc-900 w-full max-w-5xl h-[90vh] rounded-[3rem] overflow-hidden shadow-2xl flex flex-col"
+                  className={cn(
+                    "bg-white dark:bg-zinc-900 overflow-hidden shadow-2xl flex flex-col transition-all",
+                    isFullscreen ? "w-full h-full rounded-none" : "w-full max-w-5xl h-[90vh] rounded-[3rem]"
+                  )}
                 >
-                  <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center shrink-0">
+                  <div className="p-4 md:p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center shrink-0 bg-white dark:bg-zinc-900 z-10">
                     <div className="flex items-center gap-3">
-                      <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-2xl">
-                        <Presentation size={24} />
+                      <div className="p-2 md:p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-2xl">
+                        <Presentation size={20} />
                       </div>
                       <div>
-                        <h3 className="text-xl font-bold">Slides: Bibliologia</h3>
-                        <p className="text-sm text-stone-500">Página {currentSlideIndex + 1} de {BIBLIOLOGIA_SLIDES.length}</p>
+                        <h3 className="text-lg md:text-xl font-bold">Slides: {selectedSubject}</h3>
+                        <p className="text-xs md:text-sm text-stone-500">Página {currentSlideIndex + 1} de {selectedSubject === 'Bibliologia' ? BIBLIOLOGIA_SLIDES.length : TEONTOLOGIA_SLIDES.length}</p>
                       </div>
                     </div>
-                    <button 
-                      onClick={() => setShowSlidesModal(false)}
-                      className="p-3 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
-                    >
-                      <X size={24} />
-                    </button>
+                    <div className="flex items-center gap-1 md:gap-2">
+                      <button 
+                        onClick={() => setRotation(prev => (prev + 90) % 360)}
+                        className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-600 dark:text-zinc-400"
+                        title="Girar"
+                      >
+                        <RotateCw size={20} />
+                      </button>
+                      <button 
+                        onClick={() => setIsZoomed(!isZoomed)}
+                        className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-600 dark:text-zinc-400"
+                        title={isZoomed ? "Reduzir" : "Ampliar"}
+                      >
+                        {isZoomed ? <ZoomOut size={20} /> : <ZoomIn size={20} />}
+                      </button>
+                      <button 
+                        onClick={() => setIsFullscreen(!isFullscreen)}
+                        className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-600 dark:text-zinc-400"
+                        title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+                      >
+                        {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowSlidesModal(false);
+                          setIsFullscreen(false);
+                          setIsZoomed(false);
+                          setRotation(0);
+                        }}
+                        className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-600 dark:text-zinc-400"
+                      >
+                        <X size={24} />
+                      </button>
+                    </div>
                   </div>
                   
-                  <div className="flex-1 overflow-auto p-4 flex items-center justify-center bg-stone-100 dark:bg-zinc-950 relative group">
-                    <img 
-                      src={BIBLIOLOGIA_SLIDES[currentSlideIndex]} 
-                      alt={`Slide ${currentSlideIndex + 1}`}
-                      className="max-w-full max-h-full object-contain rounded-xl shadow-lg"
-                      referrerPolicy="no-referrer"
-                    />
-                    
-                    <button 
-                      onClick={() => setCurrentSlideIndex(prev => Math.max(0, prev - 1))}
-                      disabled={currentSlideIndex === 0}
-                      className="absolute left-4 p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-full shadow-lg text-stone-800 dark:text-white disabled:opacity-30 transition-all opacity-0 group-hover:opacity-100"
+                  <div className="flex-1 overflow-hidden relative bg-stone-100 dark:bg-zinc-950 flex items-center justify-center">
+                    <motion.div
+                      drag={!isZoomed ? "x" : false}
+                      dragConstraints={{ left: 0, right: 0 }}
+                      onDragEnd={(_, info) => {
+                        const slides = selectedSubject === 'Bibliologia' ? BIBLIOLOGIA_SLIDES : TEONTOLOGIA_SLIDES;
+                        if (info.offset.x > 100 && currentSlideIndex > 0) {
+                          setCurrentSlideIndex(prev => prev - 1);
+                        } else if (info.offset.x < -100 && currentSlideIndex < slides.length - 1) {
+                          setCurrentSlideIndex(prev => prev + 1);
+                        }
+                      }}
+                      className="w-full h-full flex items-center justify-center p-0 md:p-4"
                     >
-                      <ArrowLeft size={24} />
-                    </button>
+                      <motion.img 
+                        key={currentSlideIndex}
+                        src={selectedSubject === 'Bibliologia' ? BIBLIOLOGIA_SLIDES[currentSlideIndex] : TEONTOLOGIA_SLIDES[currentSlideIndex]} 
+                        alt={`Slide ${currentSlideIndex + 1}`}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ 
+                          opacity: 1, 
+                          x: 0,
+                          scale: isZoomed ? 2 : 1,
+                          rotate: rotation
+                        }}
+                        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                        onDoubleClick={() => setIsZoomed(!isZoomed)}
+                        className={cn(
+                          "max-w-full max-h-full transition-all duration-300 cursor-zoom-in",
+                          isZoomed ? "object-cover cursor-zoom-out" : "object-contain rounded-xl shadow-lg"
+                        )}
+                        referrerPolicy="no-referrer"
+                      />
+                    </motion.div>
                     
-                    <button 
-                      onClick={() => setCurrentSlideIndex(prev => Math.min(BIBLIOLOGIA_SLIDES.length - 1, prev + 1))}
-                      disabled={currentSlideIndex === BIBLIOLOGIA_SLIDES.length - 1}
-                      className="absolute right-4 p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-full shadow-lg text-stone-800 dark:text-white disabled:opacity-30 transition-all opacity-0 group-hover:opacity-100"
-                    >
-                      <ArrowRight size={24} />
-                    </button>
+                    {!isZoomed && (
+                      <>
+                        <button 
+                          onClick={() => setCurrentSlideIndex(prev => Math.max(0, prev - 1))}
+                          disabled={currentSlideIndex === 0}
+                          className="absolute left-4 p-3 md:p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-full shadow-lg text-stone-800 dark:text-white disabled:opacity-30 transition-all opacity-0 group-hover:opacity-100 z-20 hidden md:block"
+                        >
+                          <ArrowLeft size={24} />
+                        </button>
+                        
+                        <button 
+                          onClick={() => {
+                            const slides = selectedSubject === 'Bibliologia' ? BIBLIOLOGIA_SLIDES : TEONTOLOGIA_SLIDES;
+                            setCurrentSlideIndex(prev => Math.min(slides.length - 1, prev + 1));
+                          }}
+                          disabled={currentSlideIndex === (selectedSubject === 'Bibliologia' ? BIBLIOLOGIA_SLIDES.length - 1 : TEONTOLOGIA_SLIDES.length - 1)}
+                          className="absolute right-4 p-3 md:p-4 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-sm rounded-full shadow-lg text-stone-800 dark:text-white disabled:opacity-30 transition-all opacity-0 group-hover:opacity-100 z-20 hidden md:block"
+                        >
+                          <ArrowRight size={24} />
+                        </button>
+                      </>
+                    )}
+
+                    {/* Mobile Swipe Indicator */}
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/20 backdrop-blur-sm px-3 py-1 rounded-full text-[10px] text-white font-bold md:hidden">
+                      DESLIZE PARA NAVEGAR
+                    </div>
                   </div>
 
-                  <div className="p-6 border-t border-stone-100 dark:border-zinc-800 flex justify-center gap-2 overflow-x-auto shrink-0 bg-white dark:bg-zinc-900">
-                    {BIBLIOLOGIA_SLIDES.map((_, idx) => (
+                  <div className="p-4 md:p-6 border-t border-stone-100 dark:border-zinc-800 flex justify-center gap-2 overflow-x-auto shrink-0 bg-white dark:bg-zinc-900">
+                    {(selectedSubject === 'Bibliologia' ? BIBLIOLOGIA_SLIDES : TEONTOLOGIA_SLIDES).map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentSlideIndex(idx)}
                         className={cn(
-                          "w-3 h-3 rounded-full transition-all",
-                          currentSlideIndex === idx ? "bg-emerald-500 w-8" : "bg-stone-200 dark:bg-zinc-700 hover:bg-stone-300"
+                          "w-2 h-2 md:w-3 md:h-3 rounded-full transition-all",
+                          currentSlideIndex === idx ? "bg-emerald-500 w-6 md:w-8" : "bg-stone-200 dark:bg-zinc-700 hover:bg-stone-300"
                         )}
                       />
                     ))}
@@ -1985,13 +2189,25 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
             </div>
 
             <div className="min-h-[500px] relative">
+              <div className="flex justify-end mb-4">
+                <button 
+                  onClick={() => setIsReadingMode(!isReadingMode)}
+                  className={cn("p-2 rounded-full transition-colors", isReadingMode ? "bg-emerald-100 text-emerald-700" : "hover:bg-stone-200 dark:hover:bg-zinc-700")}
+                  title="Modo Leitura"
+                >
+                  <BookOpen size={20} />
+                </button>
+              </div>
               {isLoading ? (
                 <div className="absolute inset-0 flex flex-col items-center justify-center space-y-4">
                   <Loader2 className="animate-spin text-emerald-600" size={48} />
                   <p className="text-stone-500 font-medium animate-pulse">Buscando sabedoria teológica...</p>
                 </div>
               ) : (
-                <div className="prose dark:prose-invert max-w-none">
+                <div 
+                  className={cn("prose dark:prose-invert max-w-none", isReadingMode && "max-w-3xl mx-auto")}
+                  style={isReadingMode ? { fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight } : {}}
+                >
                   <MarkdownRenderer content={chapterContent[currentChapter] || ''} />
                   <div className="mt-8 flex justify-end">
                     <button

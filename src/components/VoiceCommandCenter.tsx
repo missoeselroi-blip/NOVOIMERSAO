@@ -22,11 +22,19 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
     console.log('Processing command:', command);
 
     // Navigation commands
-    if (command.includes('abrir bíblia online') || command.includes('abrir bíblia') || command.includes('estudo bíblico')) {
+    if (command.includes('ir para início') || command.includes('ir para inicio') || command.includes('abrir início')) {
+      playAcceptedBeep();
+      navigate('/');
+      playCompletedBeep();
+      showToast('Indo para o Início... 🏠', 'success');
+      return true;
+    }
+
+    if (command.includes('abrir bíblia online') || command.includes('abrir bíblia') || command.includes('estudo bíblico') || command.includes('ir para imersão')) {
       playAcceptedBeep();
       navigate('/study');
       playCompletedBeep();
-      showToast('Abrindo Bíblia Online...', 'success');
+      showToast('Abrindo Bíblia Online... 📖', 'success');
       return true;
     }
 
@@ -34,23 +42,83 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
       playAcceptedBeep();
       navigate('/study?tab=outline');
       playCompletedBeep();
-      showToast('Abrindo seção de Esboços...', 'success');
+      showToast('Abrindo seção de Esboços... ✍️', 'success');
       return true;
     }
 
-    if (command.includes('abrir devocional')) {
+    if (command.includes('abrir devocional') || command.includes('ir para devocional')) {
       playAcceptedBeep();
       navigate('/devotional');
       playCompletedBeep();
-      showToast('Abrindo Devocional...', 'success');
+      showToast('Abrindo Devocional... ❤️', 'success');
       return true;
     }
 
-    if (command.includes('abrir teologia')) {
+    if (command.includes('abrir teologia') || command.includes('ir para teologia')) {
       playAcceptedBeep();
       navigate('/theology');
       playCompletedBeep();
-      showToast('Abrindo Teologia...', 'success');
+      showToast('Abrindo Teologia... 🎓', 'success');
+      return true;
+    }
+
+    if (command.includes('abrir caderno') || command.includes('ir para caderno')) {
+      playAcceptedBeep();
+      navigate('/notebook');
+      playCompletedBeep();
+      showToast('Abrindo seu Caderno... 📓', 'success');
+      return true;
+    }
+
+    if (command.includes('abrir notícias') || command.includes('ir para notícias')) {
+      playAcceptedBeep();
+      navigate('/news');
+      playCompletedBeep();
+      showToast('Abrindo Notícias... 📰', 'success');
+      return true;
+    }
+
+    if (command.includes('abrir perfil') || command.includes('ir para perfil')) {
+      playAcceptedBeep();
+      navigate('/profile');
+      playCompletedBeep();
+      showToast('Abrindo seu Perfil... 👤', 'success');
+      return true;
+    }
+
+    if (command.includes('abrir créditos') || command.includes('ir para créditos')) {
+      playAcceptedBeep();
+      navigate('/credits');
+      playCompletedBeep();
+      showToast('Abrindo Créditos... 🎖️', 'success');
+      return true;
+    }
+
+    if (command.includes('abrir contato') || command.includes('ir para contato')) {
+      playAcceptedBeep();
+      navigate('/contact');
+      playCompletedBeep();
+      showToast('Abrindo Contato... 📧', 'success');
+      return true;
+    }
+
+    // Feature commands
+    if (command.includes('ativar pensamento profundo')) {
+      playAcceptedBeep();
+      // This would need a global state or event, but for now we show the toast
+      // and the user can see it's a valid command.
+      // In a real app, we'd use a context or custom event.
+      window.dispatchEvent(new CustomEvent('toggle-deep-thinking', { detail: true }));
+      playCompletedBeep();
+      showToast('Pensamento Profundo Ativado! 🧠✨', 'success');
+      return true;
+    }
+
+    if (command.includes('desativar pensamento profundo')) {
+      playAcceptedBeep();
+      window.dispatchEvent(new CustomEvent('toggle-deep-thinking', { detail: false }));
+      playCompletedBeep();
+      showToast('Pensamento Profundo Desativado.', 'info');
       return true;
     }
 

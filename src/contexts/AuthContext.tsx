@@ -219,6 +219,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user || !db) return;
 
+    const checkAndResetMonthly = async () => {
+      const now = new Date();
+      const monthId = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      const careerDocRef = doc(db, 'careerProgress', user.id);
+      const careerDoc = await getDoc(careerDocRef);
+      
+      if (careerDoc.exists()) {
+        const data = careerDoc.data();
+        const lastReset = data.lastReset || '0000-00';
+        
+        if (lastReset !== monthId) {
+          // Save current stats to history
+          const historyDocRef = doc(db, 'careerProgress', user.id, 'monthlyHistory', lastReset);
+          await setDoc(historyDocRef, {
+            points: data.points || 0,
+            rankId: data.rankId || 1,
+            stars: data.stars || 0,
+            savedAt: new Date().toISOString()
+          });
+          
+          // Reset current stats
+          await updateDoc(careerDocRef, {
+            points: 0,
+            lastReset: monthId
+          });
+        }
+      }
+    };
+    
+    checkAndResetMonthly();
+
     const theologyUnsub = onSnapshot(doc(db, 'theologyProgress', user.id), (doc) => {
       if (doc.exists()) setTheologyProgress(doc.data());
     }, (error) => {

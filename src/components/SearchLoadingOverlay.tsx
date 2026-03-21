@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Hourglass, Loader2 } from 'lucide-react';
+import { BookOpen, Loader2 } from 'lucide-react';
 
 interface SearchLoadingOverlayProps {
   isVisible: boolean;
@@ -44,7 +44,7 @@ export function SearchLoadingOverlay({ isVisible, message = "Pesquisando..." }: 
                 }}
                 className="absolute inset-0 flex items-center justify-center text-emerald-600"
               >
-                <Hourglass size={48} strokeWidth={1.5} />
+                <BookOpen size={48} strokeWidth={1.5} />
               </motion.div>
             </div>
             

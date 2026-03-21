@@ -245,6 +245,67 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     setSearchResults(results);
   };
 
+  const handleVoiceResult = (text: string) => {
+    const command = text.toLowerCase().trim();
+    
+    // Navigation commands
+    if (command.includes('ir para início') || command.includes('ir para inicio')) {
+      onNavigate('home');
+      showToast('Indo para o Início... 🏠', 'success');
+      return;
+    }
+    if (command.includes('ir para teologia')) {
+      onNavigate('theology');
+      showToast('Abrindo Teologia... 🎓', 'success');
+      return;
+    }
+    if (command.includes('ir para estudo bíblico') || command.includes('ir para estudo biblico') || command.includes('ir para imersão')) {
+      onNavigate('study');
+      showToast('Abrindo Estudo Bíblico... 📖', 'success');
+      return;
+    }
+    if (command.includes('ir para caderno')) {
+      onNavigate('notebook');
+      showToast('Abrindo seu Caderno... 📓', 'success');
+      return;
+    }
+    if (command.includes('ir para notícias') || command.includes('ir para noticias')) {
+      setIsNewsModalOpen(true);
+      showToast('Abrindo Notícias... 📰', 'success');
+      return;
+    }
+    if (command.includes('ir para perfil')) {
+      onNavigate('profile');
+      showToast('Abrindo seu Perfil... 👤', 'success');
+      return;
+    }
+    if (command.includes('ir para créditos') || command.includes('ir para creditos')) {
+      onNavigate('credits');
+      showToast('Abrindo Créditos... 🎖️', 'success');
+      return;
+    }
+    if (command.includes('ir para contato')) {
+      onNavigate('contact');
+      showToast('Abrindo Contato... 📧', 'success');
+      return;
+    }
+
+    // Feature commands
+    if (command.includes('ativar pensamento profundo')) {
+      setDeepThinking(true);
+      showToast('Pensamento Profundo Ativado! 🧠✨', 'success');
+      return;
+    }
+    if (command.includes('desativar pensamento profundo')) {
+      setDeepThinking(false);
+      showToast('Pensamento Profundo Desativado.', 'info');
+      return;
+    }
+
+    // Default search
+    handleAppSearch(text);
+  };
+
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const dailyVerse = verses[currentVerseIndex];
   const [isFavorited, setIsFavorited] = useState(false);
@@ -294,6 +355,14 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [showQuickTips, setShowQuickTips] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleDeepThinkingEvent = (e: any) => {
+      setDeepThinking(e.detail);
+    };
+    window.addEventListener('toggle-deep-thinking', handleDeepThinkingEvent);
+    return () => window.removeEventListener('toggle-deep-thinking', handleDeepThinkingEvent);
+  }, [setDeepThinking]);
 
   useEffect(() => {
     const hasSeenTips = localStorage.getItem('has_seen_quick_tips');
@@ -608,7 +677,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400" size={20} />
             <input 
               type="text"
-              placeholder="⚓ Pesquisar no App, Meu Caderno e Fontes Bíblicas..."
+              placeholder="Pesquisar no App, Meu Caderno e Fontes Bíblicas..."
               value={appSearchQuery}
               onChange={(e) => handleAppSearch(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
@@ -628,7 +697,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                 <Brain size={18} />
                 {deepThinking && <span className="text-[10px] font-black uppercase tracking-widest hidden md:block">Deep Thinking</span>}
               </button>
-              <AudioSearchButton onResult={(text) => handleAppSearch(text)} />
+              <AudioSearchButton onResult={handleVoiceResult} />
               <button 
                 className="text-stone-300 hover:text-emerald-600 transition-colors"
                 title="Pesquisa Global: App, Caderno e Fontes Bíblicas"

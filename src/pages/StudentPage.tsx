@@ -38,7 +38,7 @@ const THEOLOGY_SUBJECTS = [
   'Eclesiologia', 'Escatologia', 'Angeologia', 
   'Hermenêutica Bíblica', 'Homilética', 'Exegética', 
   'Teologia Sistemática (Calvinista e Arminiana)', 'Evangelismo/Missões',
-  'Liderança Cristã', 'Filosofia e Sociologia', 'As Dispensações'
+  'Liderança Cristã', 'Filosofia', 'Sociologia', 'Apologética', 'As Dispensações'
 ];
 
 import { useAuth } from '../contexts/AuthContext';
