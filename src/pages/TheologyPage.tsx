@@ -61,6 +61,7 @@ import { AudioSearchButton } from '../components/AudioSearchButton';
 import jsPDF from 'jspdf';
 
 import { auth, db } from '../lib/firebase';
+import { playCompletedBeep } from '../lib/audioUtils';
 import { doc, getDoc, setDoc, updateDoc, onSnapshot, collection, addDoc, increment } from 'firebase/firestore';
 
 enum OperationType {
@@ -100,30 +101,7 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 };
 
-const THEOLOGY_SUBJECTS = [
-  { title: 'Bibliologia', desc: 'A Doutrina das Escrituras', topics: ['Origem e Natureza', 'Inspiração', 'Inerrância', 'Panorama'], prereq: null, icon: Book },
-  { title: 'Teontologia', desc: 'A Doutrina de Deus', topics: ['Atributos', 'A Trindade', 'Panorama'], prereq: 'Bibliologia', icon: Crown },
-  { title: 'Cristologia', desc: 'A Doutrina de Cristo', topics: ['Divindade e Humanidade', 'A Obra de Cristo', 'Panorama'], prereq: 'Teontologia', icon: Cross },
-  { title: 'Pneumatologia', desc: 'A Doutrina do Espírito Santo', topics: ['A Pessoa do Espírito', 'Os Dons', 'Panorama'], prereq: 'Cristologia', icon: Flame },
-  { title: 'Antropologia Bíblica', desc: 'O Estudo sobre o Homem', topics: ['Criação', 'Constituição', 'Panorama'], prereq: 'Pneumatologia', icon: User },
-  { title: 'Hamartiologia', desc: 'O Estudo sobre o Pecado', topics: ['Natureza', 'Consequências', 'Panorama'], prereq: 'Antropologia Bíblica', icon: AlertTriangle },
-  { title: 'Soteriologia', desc: 'A Doutrina da Salvação', topics: ['A Graça', 'Justificação', 'Panorama'], prereq: 'Hamartiologia', icon: Heart },
-  { title: 'Eclesiologia', desc: 'A Doutrina da Igreja', topics: ['Missão', 'Ordenanças', 'Panorama'], prereq: 'Soteriologia', icon: Users },
-  { title: 'Escatologia', desc: 'A Doutrina das Últimas Coisas', topics: ['Arrebatamento', 'Milênio', 'Panorama'], prereq: 'Eclesiologia', icon: Hourglass },
-  { title: 'Angeologia', desc: 'Anjos e Demônios', topics: ['Os Anjos', 'A Queda', 'Panorama'], prereq: 'Escatologia', icon: Feather },
-  { title: 'Hermenêutica Bíblica', desc: 'A Interpretação da Bíblia', topics: ['Princípios', 'Regras', 'Panorama'], prereq: 'Angeologia', icon: Key },
-  { title: 'Homilética', desc: 'A Arte da Pregação', topics: ['Estrutura', 'Entrega', 'Panorama'], prereq: 'Hermenêutica Bíblica', icon: Mic },
-  { title: 'Exegética', desc: 'A Interpretação Profunda do Texto', topics: ['Análise Gramatical', 'Contexto Histórico', 'Panorama'], prereq: 'Hermenêutica Bíblica', icon: BookOpen },
-  { title: 'Teologia Sistemática (Calvinista e Arminiana)', desc: 'Perspectivas Comparadas', topics: ['Calvinismo', 'Arminianismo', 'Panorama'], prereq: 'Exegética', icon: Brain },
-  { title: 'Evangelismo/Missões', desc: 'A Proclamação do Evangelho', topics: ['Fundamentos', 'Estratégias', 'Panorama'], prereq: 'Teologia Sistemática (Calvinista e Arminiana)', icon: Sparkles },
-  { title: 'Liderança Cristã', desc: 'O Modelo Bíblico de Liderança', topics: ['Modelos Bíblicos', 'Autoridade e Submissão', 'O Líder Servo', 'Panorama'], prereq: 'Evangelismo/Missões', icon: Shield },
-  { title: 'Filosofia', desc: 'O Cristão e o Pensamento', topics: ['Filosofia Essencial', 'Ética e Moral', 'Panorama'], prereq: 'Liderança Cristã', icon: Scale },
-  { title: 'Sociologia', desc: 'O Cristão e a Sociedade', topics: ['Antropologia Cultural', 'Sistemas Políticos', 'Panorama'], prereq: 'Filosofia', icon: Users },
-  { title: 'Apologética', desc: 'A Defesa da Fé Cristã', topics: ['Seitas e Heresias', 'Religiões no Brasil', 'Defesa Bíblica', 'Panorama'], prereq: 'Sociologia', icon: ShieldCheck },
-  { title: 'As Dispensações', desc: 'O Plano de Deus para os Séculos', topics: ['Inocência', 'Consciência', 'Governo Humano', 'Promessa', 'Lei', 'Graça', 'Reino', 'Panorama'], prereq: 'Apologética', icon: BookOpen },
-];
-
-const getMaxChapters = (subject: string) => subject === 'As Dispensações' ? 7 : 5;
+import { THEOLOGY_SUBJECTS, getMaxChapters } from '../constants/theology';
 
 interface TheologyPageProps {
   onNavigate: (tab: string) => void;
@@ -220,6 +198,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
 
   // Debate State
   const [showDebateModal, setShowDebateModal] = useState(false);
@@ -270,6 +249,12 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       console.error("Error accepting terms:", error);
       showToast("Erro ao aceitar termos.", "error");
     }
+  };
+
+  const triggerFeedback = () => {
+    playCompletedBeep();
+    setShowFeedback(true);
+    setTimeout(() => setShowFeedback(false), 2000);
   };
 
   const getActiveSection = () => {
@@ -614,6 +599,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       [subject]: newSubjectProgress
     });
 
+    triggerFeedback();
     showToast(`Atividade acessada! ✨`, 'success');
   };
 
@@ -750,6 +736,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     }
 
     showToast("Parabéns! Você acertou todas as questões e pode avançar! 🎉", 'success');
+    triggerFeedback();
 
     // Update points in profile
     // Cada resposta certa vale um ponto
@@ -2545,6 +2532,18 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
           </div>
         )}
       </AnimatePresence>
+      {showFeedback && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.5 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.5 }}
+          className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none"
+        >
+          <div className="bg-emerald-500 text-white p-8 rounded-full shadow-2xl">
+            <CheckCircle size={64} />
+          </div>
+        </motion.div>
+      )}
       <AudioConfirmationModal 
         isOpen={isAudioConfirmModalOpen}
         onClose={() => setIsAudioConfirmModalOpen(false)}

@@ -102,6 +102,31 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
       return true;
     }
 
+    if (command.includes('abrir fórum') || command.includes('ir para fórum')) {
+      playAcceptedBeep();
+      navigate('/forum');
+      playCompletedBeep();
+      showToast('Abrindo Fórum... 💬', 'success');
+      return true;
+    }
+
+    if (command.includes('abrir carreira') || command.includes('ir para carreira') || command.includes('quadro de honra')) {
+      playAcceptedBeep();
+      navigate('/career');
+      playCompletedBeep();
+      showToast('Abrindo Carreira... 🏆', 'success');
+      return true;
+    }
+
+    // Feature commands
+    if (command.includes('gerar lição') || command.includes('gerar comentário')) {
+      playAcceptedBeep();
+      window.dispatchEvent(new CustomEvent('generate-lesson'));
+      playCompletedBeep();
+      showToast('Gerando lição... 📚', 'success');
+      return true;
+    }
+
     // Feature commands
     if (command.includes('ativar pensamento profundo')) {
       playAcceptedBeep();

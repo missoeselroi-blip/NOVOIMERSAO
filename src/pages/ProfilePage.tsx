@@ -17,7 +17,9 @@ import {
   Trash2,
   Calendar,
   Clock,
-  ArrowLeft
+  ArrowLeft,
+  Trophy,
+  Award
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -25,13 +27,54 @@ import { useAudioBox } from '../contexts/AudioBoxContext';
 import { useToast } from '../components/Toast';
 import { cn } from '../types';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
+import { THEOLOGY_SUBJECTS } from '../constants/theology';
+import { Medal } from '../components/Medal';
+import { generateCertificate } from '../lib/certificateGenerator';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { useEffect, useState } from 'react';
 
 export default function ProfilePage() {
   const { user, logout, updateUser, toggleFavorite, notes } = useAuth();
   const { tracks, deleteTrack } = useAudioBox();
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'info' | 'favorites' | 'notes' | 'audios' | 'settings' | 'stats'>('info');
+  const [activeTab, setActiveTab] = useState<'info' | 'favorites' | 'notes' | 'audios' | 'settings' | 'stats' | 'achievements'>('info');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [theologyProgress, setTheologyProgress] = useState<any>(null);
+
+  useEffect(() => {
+    if (user) {
+      const fetchProgress = async () => {
+        const docRef = doc(db, 'theologyProgress', user.id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setTheologyProgress(docSnap.data());
+        }
+      };
+      fetchProgress();
+    }
+  }, [user]);
+
+  const completedSubjects = THEOLOGY_SUBJECTS.filter(s => theologyProgress?.[s.title]?.completed);
+  const allCompleted = completedSubjects.length === THEOLOGY_SUBJECTS.length;
+
+  const handleDownloadCertificate = () => {
+    if (!allCompleted) return;
+    
+    // Calculate total hours and average grade
+    let totalHours = 0;
+    let totalGrade = 0;
+    THEOLOGY_SUBJECTS.forEach(s => {
+      const progress = theologyProgress?.[s.title];
+      if (progress) {
+        totalHours += (progress.studyTime || 0) / 3600;
+        totalGrade += (progress.evaluation || 0);
+      }
+    });
+    const avgGrade = totalGrade / THEOLOGY_SUBJECTS.length;
+
+    generateCertificate(user!.name, totalHours, avgGrade);
+  };
 
   // Settings state
   const [theme, setTheme] = useState(user?.settings?.theme || 'system');
@@ -58,6 +101,7 @@ export default function ProfilePage() {
 
   const tabs = [
     { id: 'info', label: 'Meu Perfil', icon: <UserIcon size={18} /> },
+    { id: 'achievements', label: 'Conquistas', icon: <Trophy size={18} /> },
     { id: 'stats', label: 'Estatísticas', icon: <Clock size={18} /> },
     { id: 'favorites', label: 'Favoritos', icon: <Heart size={18} /> },
     { id: 'notes', label: 'Meu Caderno', icon: <StickyNote size={18} /> },
@@ -158,6 +202,42 @@ export default function ProfilePage() {
                   <p className="text-lg font-medium uppercase tracking-widest text-emerald-600">{user.role}</p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'achievements' && (
+            <div className="space-y-8">
+              <h3 className="text-2xl font-bold flex items-center gap-2">
+                <Trophy className="text-amber-600" /> Conquistas Teológicas
+              </h3>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {THEOLOGY_SUBJECTS.map((subject) => (
+                  <Medal 
+                    key={subject.title} 
+                    subject={subject.title} 
+                    completed={!!theologyProgress?.[subject.title]?.completed} 
+                  />
+                ))}
+              </div>
+
+              {allCompleted && (
+                <div className="p-8 bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-900/30 rounded-[2.5rem] text-center space-y-6">
+                  <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                    <Award size={40} />
+                  </div>
+                  <h4 className="text-2xl font-bold">Parabéns! Curso Concluído!</h4>
+                  <p className="text-stone-600 dark:text-zinc-400 max-w-lg mx-auto">
+                    Você completou todas as matérias de teologia! Sua dedicação é admirável. Receba seu certificado oficial agora.
+                  </p>
+                  <button 
+                    onClick={handleDownloadCertificate}
+                    className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                  >
+                    Receber Certificado
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
