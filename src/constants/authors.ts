@@ -268,6 +268,10 @@ export const GOSPEL_AUTHORS = [
     ]
   },
   {
+    name: "Louis Berkhof",
+    works: ["Teologia Sistemática"]
+  },
+  {
     name: "Luciano Subirá",
     works: [
       "Até que Nada Mais Importe",
@@ -314,6 +318,10 @@ export const GOSPEL_AUTHORS = [
     ]
   },
   {
+    name: "Michael Horton",
+    works: ["A Fé Cristã", "O Deus que ama"]
+  },
+  {
     name: "Michael W. Goheen",
     works: ["A Igreja Missional na Bíblia", "Introdução à Cosmovisão Cristã (Coautor)", "O Drama das Escrituras (Coautor)"]
   },
@@ -326,6 +334,10 @@ export const GOSPEL_AUTHORS = [
     works: ["Perspectiva contemporânea e foco no contexto histórico do Novo Testamento."]
   },
   {
+    name: "Norman Geisler",
+    works: ["Teologia Sistemática", "Enciclopédia de Apologética Cristã"]
+  },
+  {
     name: "Paul G. Hiebert",
     works: ["Antropologia Cultural: Uma Perspectiva Cristã"]
   },
@@ -336,6 +348,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Priscilla Rocha Chaves (Pri de Luz)",
     works: ["Devocionais Pri de Luz", "Identidade e Propósito"]
+  },
+  {
+    name: "R.C. Sproul",
+    works: ["A Santidade de Deus", "Escolhidos por Deus", "Verdades Fundamentais da Fé Cristã"]
   },
   {
     name: "Rick Warren",
