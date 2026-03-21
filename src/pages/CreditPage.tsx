@@ -227,17 +227,26 @@ export default function CreditPage() {
         <div className="bg-stone-100 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800">
           <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
             <CreditCard className="text-blue-500" size={20} />
-            Quotas e Planos
+            Créditos vs. Quotas Firebase
           </h4>
-          <p className="text-sm text-stone-600 dark:text-zinc-400 leading-relaxed mb-4">
-            Seu plano atual define sua cota mensal de créditos. Precisa de mais? Você pode alterar seu plano a qualquer momento na página de configurações do perfil.
-          </p>
-          <button 
-            onClick={() => window.location.href = '/profile'}
-            className="text-sm font-bold text-emerald-600 hover:text-emerald-700 underline"
-          >
-            Alterar Plano
-          </button>
+          <div className="text-sm text-stone-600 dark:text-zinc-400 leading-relaxed space-y-3">
+            <p>
+              <strong className="text-stone-800 dark:text-zinc-100">Créditos de IA:</strong> Utilizados para processar ações inteligentes, como geração de textos, resumos e análises profundas. Você os compra conforme a necessidade.
+            </p>
+            <p>
+              <strong className="text-stone-800 dark:text-zinc-100">Quotas Firebase/Google Cloud:</strong> Definem o limite de uso do seu banco de dados (Firestore) para leitura, escrita e armazenamento. Esses limites são determinados pelo seu plano no Firebase (Spark ou Blaze) e são <strong className="text-stone-800 dark:text-zinc-100">renovados diariamente</strong>.
+            </p>
+          </div>
+          <div className="mt-6">
+            <a 
+              href="https://firebase.google.com/pricing"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-bold text-emerald-600 hover:text-emerald-700 underline"
+            >
+              VER PLANOS
+            </a>
+          </div>
         </div>
       </div>
     </div>

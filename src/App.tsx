@@ -72,8 +72,9 @@ const RedacaoPage = lazy(() => import('./pages/RedacaoPage'));
 const StudentPage = lazy(() => import('./pages/StudentPage'));
 const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazy(() => import('./pages/TheologySearchPage'));
-const TheologyPage = lazy(() => import('./pages/TheologyPage'));
+import TheologyPage from './pages/TheologyPage';
 const MissionaryPage = lazy(() => import('./pages/MissionaryPage'));
+
 const MissionaryBulkResults = lazy(() => import('./pages/MissionaryBulkResults'));
 const AudioBoxPage = lazy(() => import('./pages/AudioBoxPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
