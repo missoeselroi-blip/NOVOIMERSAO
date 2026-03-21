@@ -23,9 +23,9 @@ async function startServer() {
     const { amount, description } = req.body;
     try {
       // Map amount to price
-      let unit_amount = 1990;
-      if (amount === 300) unit_amount = 4990;
-      if (amount === 1000) unit_amount = 12990;
+      let unit_amount = Math.round(1990 * 1.20);
+      if (amount === 300) unit_amount = Math.round(4990 * 1.20);
+      if (amount === 1000) unit_amount = Math.round(12990 * 1.20);
 
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],

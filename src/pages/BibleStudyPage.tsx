@@ -92,7 +92,8 @@ enum OperationType {
 
 import { FeedbackSection } from '../components/FeedbackSection';
 import { SpeechGenerator } from '../components/SpeechGenerator';
-import { CreditsQuotasTab } from '../components/CreditsQuotasTab';
+import { CreditInfoTip } from '../components/CreditInfoTip';
+import { CreditCostBadge } from '../components/CreditCostBadge';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
@@ -158,6 +159,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [loadingSource, setLoadingSource] = useState<string | null>(null);
   const [selectedBible, setSelectedBible] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('');
+  const [authorSearchQuery, setAuthorSearchQuery] = useState('');
   const [selectedWork, setSelectedWork] = useState('');
   const [compareVersion, setCompareVersion] = useState('Almeida');
   const [previousTab, setPreviousTab] = useState<string | null>(null);
@@ -280,7 +282,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
-    { id: 'credits-quotas', label: 'Créditos/Quotas', icon: <Coins size={18} /> },
     { id: 'video-generation', label: 'Geração de Vídeo', icon: <Video size={18} /> },
   ];
 
@@ -2730,6 +2731,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               
               <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar prose dark:prose-invert max-w-none">
                 <MarkdownRenderer content={creationPopup.content} />
+                <CreditInfoTip />
               </div>
 
               <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex gap-3">
@@ -3248,6 +3250,39 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
             {activeTab === 'authors' && (
               <div className="space-y-6">
+                <div className="relative">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+                  <input 
+                    type="text"
+                    placeholder="Pesquisar autor por nome ou especialidade..."
+                    value={authorSearchQuery}
+                    onChange={(e) => setAuthorSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
+                  />
+                </div>
+                
+                {authorSearchQuery && (
+                  <div className="bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl p-4 shadow-sm max-h-60 overflow-y-auto">
+                    {GOSPEL_AUTHORS.filter(a => 
+                      a.name.toLowerCase().includes(authorSearchQuery.toLowerCase()) ||
+                      a.works.some(w => w.toLowerCase().includes(authorSearchQuery.toLowerCase()))
+                    ).map(author => (
+                      <button
+                        key={author.name}
+                        onClick={() => {
+                          setSelectedAuthor(author.name);
+                          setAuthorSearchQuery('');
+                        }}
+                        className="w-full text-left p-3 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl"
+                      >
+                        <div className="font-bold">{author.name}</div>
+                        <div className="text-xs text-stone-500">{author.works.join(', ')}</div>
+                        {(author as any).biography && <div className="text-xs text-stone-400 mt-1 italic">{(author as any).biography}</div>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
@@ -3495,6 +3530,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       >
                         {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
                         ⚓ Gerar
+                        <CreditCostBadge cost={estimateCredits(creationType)} />
                       </button>
                     </div>
                   </div>
@@ -5539,9 +5575,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               </div>
             )}
 
-            {activeTab === 'credits-quotas' && (
-              <CreditsQuotasTab />
-            )}
           </motion.div>
         </AnimatePresence>
 
@@ -5696,6 +5729,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   ) : (
                     <div className="prose dark:prose-invert max-w-none">
                       <MarkdownRenderer content={searchPopup.result} onSearch={handleWikiSearch} />
+                      <CreditInfoTip />
                     </div>
                   )}
                 </div>

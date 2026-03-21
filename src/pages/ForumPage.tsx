@@ -21,6 +21,7 @@ import { ForumPost, RANKS } from '../types/forum';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
+import { CreditInfoTip } from '../components/CreditInfoTip';
 
 const RULES = [
   "Proibido palavrões e linguagem ofensiva.",
@@ -330,6 +331,10 @@ export default function ForumPage() {
             )}
           </motion.div>
         ))}
+      </div>
+
+      <div className="p-4">
+        <CreditInfoTip />
       </div>
 
       <AudioConfirmationModal

@@ -21,6 +21,7 @@ import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
+import { CreditInfoTip } from '../components/CreditInfoTip';
 
 export default function NewsPage() {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
@@ -295,6 +296,7 @@ export default function NewsPage() {
             </div>
           </div>
         </div>
+        <CreditInfoTip />
       </div>
     </div>
   );

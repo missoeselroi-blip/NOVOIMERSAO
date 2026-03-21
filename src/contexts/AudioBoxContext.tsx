@@ -92,7 +92,7 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (voice.includes('ninar')) voiceName = 'Zephyr';
     else if (voice.includes('energético')) voiceName = 'Puck';
 
-    const prompt = `Fale o seguinte texto com um tom ${emotion} e voz de ${voice}: ${text}`;
+    const prompt = `Fale o seguinte texto com um tom ${emotion} e voz de ${voice}: ${text.slice(0, 5000)}`;
 
     try {
       const response = await ai.models.generateContent({

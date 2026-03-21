@@ -265,10 +265,12 @@ export const geminiService = {
           .replace(/>\s/g, '') 
           .replace(/-\s/g, '') 
           .replace(/\n+/g, ' ') 
-          .slice(0, 10000)
+          .slice(0, 5000) // Reduced to 5000 for stability
           .trim();
 
         if (!cleanText) return null;
+
+        console.log("Generating speech for:", { voiceName, textLength: cleanText.length });
 
         const response = await ai.models.generateContent({
           model: "gemini-2.5-flash-preview-tts",
@@ -282,8 +284,14 @@ export const geminiService = {
             },
           },
         });
+        
+        console.log("TTS Response received:", response);
+
         const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (!base64Audio) return null;
+        if (!base64Audio) {
+          console.error("No audio data in response:", response);
+          return null;
+        }
 
         return this.pcmToWav(base64Audio, 24000);
       } catch (error) {

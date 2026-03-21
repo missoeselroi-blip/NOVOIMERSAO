@@ -60,6 +60,7 @@ declare global {
 const HomePage = lazy(() => import('./pages/HomePage'));
 const BibleStudyPage = lazy(() => import('./pages/BibleStudyPage'));
 const StorePage = lazy(() => import('./pages/StorePage'));
+const CreditPage = lazy(() => import('./pages/CreditPage'));
 const PostsPage = lazy(() => import('./pages/PostsPage'));
 const ContactPage = lazy(() => import('./pages/ContactPage'));
 const ForumPage = lazy(() => import('./pages/ForumPage'));
@@ -163,6 +164,7 @@ function AppContent() {
     { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
+    { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
     { id: 'donate', label: 'Doe', subtitle: 'Apoie este ministério', icon: <HeartHandshake size={20} />, component: <DonatePage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Trophy size={20} />, component: <CareerPage /> },

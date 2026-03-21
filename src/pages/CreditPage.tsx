@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Coins, 
   History, 
@@ -13,6 +13,7 @@ import {
 import { motion } from 'framer-motion';
 import { useCredits } from '../contexts/CreditContext';
 import { cn } from '../types';
+import { useToast } from '../components/Toast';
 
 import { loadStripe } from '@stripe/stripe-js';
 
@@ -21,32 +22,56 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
 export default function CreditPage() {
   const { balance, history, addCredits } = useCredits();
 
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [showAllHistory, setShowAllHistory] = useState(false);
+  const { showToast } = useToast();
+
+  const displayedHistory = showAllHistory ? history : history.slice(0, 5);
+
   const handlePurchase = async (amount: number, description: string) => {
+    setIsPurchasing(true);
+    console.log('handlePurchase called', { amount, description });
     const stripe = await stripePromise;
-    if (!stripe) return;
+    console.log('stripePromise resolved', { stripe });
+    if (!stripe) {
+      console.error('Stripe not initialized');
+      showToast('Erro ao inicializar pagamento. Verifique sua conexão.', 'error');
+      setIsPurchasing(false);
+      return;
+    }
 
     try {
+      console.log('Fetching checkout session...');
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount, description }),
       });
+      console.log('Response received', response);
+      if (!response.ok) {
+        throw new Error(`Server returned ${response.status}`);
+      }
       const session = await response.json();
+      console.log('Session data', session);
 
       if (session.id) {
         await (stripe as any).redirectToCheckout({ sessionId: session.id });
       } else {
-        console.error('Failed to create checkout session');
+        console.error('Failed to create checkout session', session);
+        showToast('Erro ao iniciar pagamento. Tente novamente mais tarde.', 'error');
       }
     } catch (error) {
       console.error('Error:', error);
+      showToast('Erro ao conectar com o serviço de pagamento.', 'error');
+    } finally {
+      setIsPurchasing(false);
     }
   };
 
   const purchaseOptions = [
-    { amount: 100, price: 'R$ 19,90', label: 'Básico', icon: <Zap className="text-blue-500" /> },
-    { amount: 300, price: 'R$ 49,90', label: 'Popular', icon: <Coins className="text-emerald-500" />, popular: true },
-    { amount: 1000, price: 'R$ 129,90', label: 'Premium', icon: <ShieldCheck className="text-purple-500" /> },
+    { amount: 100, price: 'R$ 23,88', label: 'Básico', icon: <Zap className="text-blue-500" /> },
+    { amount: 300, price: 'R$ 59,88', label: 'Popular', icon: <Coins className="text-emerald-500" />, popular: true },
+    { amount: 1000, price: 'R$ 155,88', label: 'Premium', icon: <ShieldCheck className="text-purple-500" /> },
   ];
 
   return (
@@ -106,14 +131,16 @@ export default function CreditPage() {
               </div>
               <button 
                 onClick={() => handlePurchase(option.amount, `Compra de pacote ${option.label}`)}
+                disabled={isPurchasing}
                 className={cn(
                   "w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all",
                   option.popular 
                     ? "bg-emerald-600 text-white hover:bg-emerald-700" 
-                    : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 hover:bg-stone-200"
+                    : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 hover:bg-stone-200",
+                  isPurchasing && "opacity-50 cursor-not-allowed"
                 )}
               >
-                Comprar <ArrowRight size={16} />
+                {isPurchasing ? 'Processando...' : <>Comprar <ArrowRight size={16} /></>}
               </button>
             </motion.div>
           ))}
@@ -137,28 +164,40 @@ export default function CreditPage() {
               <p>Nenhuma transação encontrada.</p>
             </div>
           ) : (
-            history.map((item) => (
-              <div key={item.id} className="p-6 flex items-center justify-between hover:bg-stone-50/50 dark:hover:bg-zinc-800/30 transition-colors">
-                <div className="flex items-center gap-4">
+            <>
+              {displayedHistory.map((item) => (
+                <div key={item.id} className="p-6 flex items-center justify-between hover:bg-stone-50/50 dark:hover:bg-zinc-800/30 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className={cn(
+                      "p-3 rounded-2xl",
+                      item.type === 'consumption' ? "bg-red-50 dark:bg-red-900/20 text-red-600" : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600"
+                    )}>
+                      {item.type === 'consumption' ? <TrendingDown size={20} /> : <TrendingUp size={20} />}
+                    </div>
+                    <div>
+                      <div className="font-bold text-stone-800 dark:text-zinc-100">{item.description}</div>
+                      <div className="text-xs text-stone-400">{new Date(item.date).toLocaleString('pt-BR')}</div>
+                    </div>
+                  </div>
                   <div className={cn(
-                    "p-3 rounded-2xl",
-                    item.type === 'consumption' ? "bg-red-50 dark:bg-red-900/20 text-red-600" : "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600"
+                    "text-lg font-display font-bold",
+                    item.type === 'consumption' ? "text-red-600" : "text-emerald-600"
                   )}>
-                    {item.type === 'consumption' ? <TrendingDown size={20} /> : <TrendingUp size={20} />}
-                  </div>
-                  <div>
-                    <div className="font-bold text-stone-800 dark:text-zinc-100">{item.description}</div>
-                    <div className="text-xs text-stone-400">{new Date(item.date).toLocaleString('pt-BR')}</div>
+                    {item.type === 'consumption' ? '-' : '+'}{item.amount}
                   </div>
                 </div>
-                <div className={cn(
-                  "text-lg font-display font-bold",
-                  item.type === 'consumption' ? "text-red-600" : "text-emerald-600"
-                )}>
-                  {item.type === 'consumption' ? '-' : '+'}{item.amount}
+              ))}
+              {history.length > 5 && (
+                <div className="p-4 text-center">
+                  <button 
+                    onClick={() => setShowAllHistory(!showAllHistory)}
+                    className="text-sm font-bold text-emerald-600 hover:text-emerald-700"
+                  >
+                    {showAllHistory ? 'Ver menos' : 'Ver mais...'}
+                  </button>
                 </div>
-              </div>
-            ))
+              )}
+            </>
           )}
         </div>
       </div>
@@ -188,15 +227,17 @@ export default function CreditPage() {
         <div className="bg-stone-100 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800">
           <h4 className="text-lg font-bold mb-4 flex items-center gap-2">
             <CreditCard className="text-blue-500" size={20} />
-            Precisa de mais?
+            Quotas e Planos
           </h4>
           <p className="text-sm text-stone-600 dark:text-zinc-400 leading-relaxed mb-4">
-            Nossos pacotes são projetados para atender desde o estudante casual até o pregador que prepara sermões semanais exaustivos.
+            Seu plano atual define sua cota mensal de créditos. Precisa de mais? Você pode alterar seu plano a qualquer momento na página de configurações do perfil.
           </p>
-          <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">
-            <ShieldCheck size={16} />
-            Pagamento Seguro via Stripe
-          </div>
+          <button 
+            onClick={() => window.location.href = '/profile'}
+            className="text-sm font-bold text-emerald-600 hover:text-emerald-700 underline"
+          >
+            Alterar Plano
+          </button>
         </div>
       </div>
     </div>

@@ -50,6 +50,7 @@ enum OperationType {
 }
 
 import { FeedbackSection } from '../components/FeedbackSection';
+import { CreditInfoTip } from '../components/CreditInfoTip';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
@@ -989,6 +990,10 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           Consulte o calendário para ver o livro base de cada dia.
         </p>
       </footer>
+
+      <div className="px-4 pb-8">
+        <CreditInfoTip />
+      </div>
 
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}
