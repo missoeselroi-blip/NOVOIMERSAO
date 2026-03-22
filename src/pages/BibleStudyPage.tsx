@@ -145,6 +145,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const { balance, consumeCredits, estimateCredits } = useCredits();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<string>('bibles');
+  const processedParams = useRef({ search: null, outline: null, tab: null });
   const [searchQuery, setSearchQuery] = useState('');
   const [result, setResult] = useState('');
   const [resultThought, setResultThought] = useState('');
@@ -277,7 +278,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'narration', label: 'Geração Narração', icon: <Volume2 size={18} /> },
     { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
-    { id: 'commentary', label: 'Comentário/Debate Bíblico', icon: <MessageSquare size={18} /> },
+    { id: 'commentary', label: 'Debate Bíblico', icon: <MessageSquare size={18} /> },
     { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
@@ -420,14 +421,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
     setIsSuggestingCommentators(true);
     try {
-      const prompt = `Com base no tema ou versículo "${topic}", identifique os dois comentaristas bíblicos ou teólogos que mais se aprofundaram ou têm as visões mais relevantes sobre este assunto específico. 
-      Retorne apenas os nomes dos dois autores, separados por vírgula. Não adicione mais nada.`;
+      const prompt = `Com base no tema ou versículo "${topic}", identifique os quatro comentaristas bíblicos ou teólogos que mais se aprofundaram ou têm as visões mais relevantes sobre este assunto específico. 
+      Retorne apenas os nomes dos quatro autores, separados por vírgula. Não adicione mais nada.`;
       
       const response = await geminiService.generateText(prompt);
       const suggested = response.split(',').map(s => s.trim()).filter(s => s.length > 0);
       if (suggested.length > 0) {
         setSelectedCommentators(suggested);
-        showToast(`Sugeridos: ${suggested.join(' e ')}`, "success");
+        showToast(`Sugeridos: ${suggested.join(', ')}`, "success");
       }
     } catch (error) {
       console.error("Erro ao sugerir comentaristas:", error);
@@ -2127,16 +2128,26 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     const outlineParam = searchParams.get('outline');
     const tabParam = searchParams.get('tab');
 
+    if (search === processedParams.current.search && 
+        outlineParam === processedParams.current.outline && 
+        tabParam === processedParams.current.tab) return;
+
+    processedParams.current = { search, outline: outlineParam, tab: tabParam };
+
+    console.log('useEffect searchParams:', { search, outlineParam, tabParam });
+
     if (tabParam) {
       setActiveTab(tabParam);
     }
 
     if (search) {
+      console.log('Processing search:', search);
       setSearchQuery(search);
       handleSearch(undefined, search);
       // Clear params to avoid re-triggering
       setSearchParams({}, { replace: true });
     } else if (outlineParam) {
+      console.log('Processing outline:', outlineParam);
       setTopic(outlineParam);
       handleGenerateOutline(outlineParam);
       setSearchParams({}, { replace: true });
@@ -2416,7 +2427,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     showToast("Gerando seu PDF... Quase pronto! 📄💎", 'info');
     try {
       const opt = {
-        margin:       15,
+        margin:       25,
         filename:     `esboco-${topic.slice(0, 20)}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
@@ -2442,8 +2453,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           }
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] },
-        margin:       [25, 25, 25, 25]
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
       };
 
       await html2pdf().set(opt).from(outlineRef.current).save();
@@ -4684,52 +4694,54 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
             {(activeTab === 'commentary' || activeTab === 'compare') && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
-                    <input
-                      type="text"
-                      placeholder={activeTab === 'compare' ? "⚓ Digite o versículo (ex: João 3:16)" : "⚓ O que você deseja pesquisar?"}
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      className="w-full pl-12 pr-12 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
-                    />
-                    <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                      <AudioSearchButton onResult={(text) => { setSearchQuery(text); handleSearch(text); }} />
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col md:flex-row gap-4">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
+                      <input
+                        type="text"
+                        placeholder={activeTab === 'compare' ? "⚓ Digite o versículo (ex: João 3:16)" : "⚓ O que você deseja pesquisar?"}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                        className="w-full pl-12 pr-12 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                      />
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        <AudioSearchButton onResult={(text) => { setSearchQuery(text); handleSearch(text); }} />
+                      </div>
                     </div>
+                    {activeTab === 'compare' && (
+                      <select 
+                        value={compareVersion}
+                        onChange={(e) => setCompareVersion(e.target.value)}
+                        className="px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none"
+                      >
+                        <option value="Almeida Revista e Corrigida">Almeida Revista e Corrigida</option>
+                        <option value="Almeida Revista Atualizada">Almeida Revista Atualizada</option>
+                        <option value="Almeida Corrigida Fiel">Almeida Corrigida Fiel</option>
+                        <option value="Almeida século 21">Almeida século 21</option>
+                        <option value="NAA">Nova Almeida Atualizada</option>
+                        <option value="Nova Versão Transformadora">Nova Versão Transformadora</option>
+                        <option value="Nova Versão Internacional">Nova Versão Internacional</option>
+                        <option value="Tradução Brasileira">Tradução Brasileira</option>
+                        <option value="Bíblia Viva">Bíblia Viva</option>
+                        <option value="Bíblia de Jerusalém">Bíblia de Jerusalém</option>
+                        <option value="Bíblia Pastoral">Bíblia Pastoral</option>
+                        <option value="Bíblia da CNBB">Bíblia da CNBB</option>
+                        <option value="KJV">King James Version (EN)</option>
+                        <option value="Vulgata">Vulgata Latina</option>
+                        <option value="VT Hebraico">VT Hebraico</option>
+                        <option value="NT Grego">NT Grego</option>
+                      </select>
+                    )}
                   </div>
-                  {activeTab === 'compare' && (
-                    <select 
-                      value={compareVersion}
-                      onChange={(e) => setCompareVersion(e.target.value)}
-                      className="px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none"
-                    >
-                      <option value="Almeida Revista e Corrigida">Almeida Revista e Corrigida</option>
-                      <option value="Almeida Revista Atualizada">Almeida Revista Atualizada</option>
-                      <option value="Almeida Corrigida Fiel">Almeida Corrigida Fiel</option>
-                      <option value="Almeida século 21">Almeida século 21</option>
-                      <option value="NAA">Nova Almeida Atualizada</option>
-                      <option value="Nova Versão Transformadora">Nova Versão Transformadora</option>
-                      <option value="Nova Versão Internacional">Nova Versão Internacional</option>
-                      <option value="Tradução Brasileira">Tradução Brasileira</option>
-                      <option value="Bíblia Viva">Bíblia Viva</option>
-                      <option value="Bíblia de Jerusalém">Bíblia de Jerusalém</option>
-                      <option value="Bíblia Pastoral">Bíblia Pastoral</option>
-                      <option value="Bíblia da CNBB">Bíblia da CNBB</option>
-                      <option value="KJV">King James Version (EN)</option>
-                      <option value="Vulgata">Vulgata Latina</option>
-                      <option value="VT Hebraico">VT Hebraico</option>
-                      <option value="NT Grego">NT Grego</option>
-                    </select>
-                  )}
                   <button
                     onClick={() => handleSearch()}
                     disabled={isLoading}
-                    className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                    ⚓ Pesquisar
+                    ⚓ Pesquisa Geral
                   </button>
                 </div>
 
@@ -4782,108 +4794,45 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   <div className="space-y-12">
                     {/* Section 1: Comprehensive Commentary */}
                     <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl shadow-stone-200/50 dark:shadow-none">
-                      <div className="flex items-center justify-between mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
-                            <MessageSquare size={24} />
-                          </div>
-                          <div>
-                            <h3 className="text-xl font-bold text-stone-800 dark:text-zinc-100">Comentário Bíblico Profundo</h3>
-                            <p className="text-sm text-stone-500 dark:text-zinc-400">Recursos exaustivos: Comentários, Bíblias de Estudo, Enciclopédias e Dicionários</p>
-                          </div>
+                      <div className="flex items-center gap-3 mb-6">
+                        <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
+                          <MessageSquare size={24} />
                         </div>
-                        <button
-                          onClick={handleSuggestCommentators}
-                          disabled={isSuggestingCommentators || !topic}
-                          className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl hover:bg-emerald-100 transition-all text-sm font-bold disabled:opacity-50"
-                        >
-                          {isSuggestingCommentators ? <Loader2 className="animate-spin" size={16} /> : <Brain size={16} />}
-                          Sugerir Autores
-                        </button>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                        <div className="space-y-4">
-                          <div className="flex items-center justify-between">
-                            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Autores Principais</label>
-                            <button 
-                              onClick={() => setSelectedCommentators([...selectedCommentators, ''])}
-                              className="text-emerald-600 hover:text-emerald-700 text-xs font-bold flex items-center gap-1"
-                            >
-                              <Plus size={14} /> Adicionar
-                            </button>
-                          </div>
-                          <div className="space-y-2">
-                            {selectedCommentators.map((name, index) => (
-                              <div key={index} className="flex gap-2">
-                                <div className="relative flex-1">
-                                  <input
-                                    type="text"
-                                    value={name}
-                                    onChange={(e) => {
-                                      const newNames = [...selectedCommentators];
-                                      newNames[index] = e.target.value;
-                                      setSelectedCommentators(newNames);
-                                    }}
-                                    placeholder="Nome do comentarista"
-                                    className="w-full p-3 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm"
-                                    list="commentators-list"
-                                  />
-                                  <datalist id="commentators-list">
-                                    {commentators.map(c => <option key={c.name} value={c.name} />)}
-                                  </datalist>
-                                </div>
-                                {selectedCommentators.length > 1 && (
-                                  <button 
-                                    onClick={() => setSelectedCommentators(selectedCommentators.filter((_, i) => i !== index))}
-                                    className="p-3 text-stone-400 hover:text-red-500 transition-all"
-                                  >
-                                    <Trash2 size={18} />
-                                  </button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="space-y-6">
-                          <div className="space-y-2">
-                            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Versão Bíblica</label>
-                            <select 
-                              value={selectedCommentaryVersion}
-                              onChange={(e) => setSelectedCommentaryVersion(e.target.value)}
-                              className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                            >
-                              {commentaryVersions.map(v => (
-                                <option key={v} value={v}>{v}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
-                            <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium leading-relaxed">
-                              Esta pesquisa integra automaticamente comentários bíblicos, bíblias de estudo, enciclopédias e dicionários bíblicos para um resultado exaustivo.
-                            </p>
-                          </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-stone-800 dark:text-zinc-100">Comentário Profundo do Autor</h3>
+                          <p className="text-sm text-stone-500 dark:text-zinc-400">Recursos exaustivos: Comentários, Bíblias de Estudo, Enciclopédias e Dicionários</p>
                         </div>
                       </div>
+                      
+                      <div className="mb-8">
+                        <p className="text-sm text-stone-500 dark:text-zinc-400 mb-4">Clique no botão abaixo para pesquisar os quatro principais autores que abordam o assunto pesquisado.</p>
+                      </div>
 
-                      <div className="space-y-4">
-                        <div className="relative">
-                          <input 
-                            type="text"
-                            value={topic}
-                            onChange={(e) => setTopic(e.target.value)}
-                            placeholder="Ex: João 3:16 ou 'A Graça de Deus'"
-                            className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent focus:border-emerald-500 rounded-[2rem] outline-none transition-all shadow-inner text-lg"
-                          />
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
-                            <button 
-                              onClick={handleGenerateCommentary}
-                              disabled={isGeneratingCommentary || !topic}
-                              className="p-4 bg-emerald-600 text-white rounded-2xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-600/20"
-                            >
-                              {isGeneratingCommentary ? <Loader2 className="animate-spin" size={24} /> : <Search size={24} />}
-                            </button>
-                          </div>
+                      <div className="space-y-6">
+                        <input 
+                          type="text"
+                          value={topic}
+                          onChange={(e) => setTopic(e.target.value)}
+                          placeholder="Pesquisa Geral"
+                          className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent focus:border-emerald-500 rounded-[2rem] outline-none transition-all shadow-inner text-lg"
+                        />
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <button 
+                            onClick={handleGenerateCommentary}
+                            disabled={isGeneratingCommentary || !topic}
+                            className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                          >
+                            {isGeneratingCommentary ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
+                            Pesquisa Geral
+                          </button>
+                          <button
+                            onClick={handleSuggestCommentators}
+                            disabled={isSuggestingCommentators || !topic}
+                            className="flex-1 py-4 bg-white dark:bg-zinc-800 text-emerald-600 border-2 border-emerald-600 rounded-2xl hover:bg-emerald-50 dark:hover:bg-zinc-700 transition-all font-bold disabled:opacity-50 flex items-center justify-center gap-2"
+                          >
+                            {isSuggestingCommentators ? <Loader2 className="animate-spin" size={20} /> : <Brain size={20} />}
+                            Sugerir Autores
+                          </button>
                         </div>
                       </div>
 
@@ -4953,8 +4902,68 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </div>
                         </div>
                         <p className="text-xs text-stone-400 italic ml-4">
-                          * A IA selecionará automaticamente dois autores de peso para o debate baseado no tema, mas você pode alterar os autores na seção acima se desejar.
+                          * A IA selecionará automaticamente dois autores de peso para o debate baseado no tema, mas você pode alterar os autores na seção abaixo se desejar.
                         </p>
+                      </div>
+
+                      {/* Author and Bible Version Selection */}
+                      <div className="mt-8 pt-8 border-t border-stone-100 dark:border-zinc-800">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Autores Principais</label>
+                              <button 
+                                onClick={() => setSelectedCommentators([...selectedCommentators, ''])}
+                                className="text-emerald-600 hover:text-emerald-700 text-xs font-bold flex items-center gap-1"
+                              >
+                                <Plus size={14} /> Adicionar
+                              </button>
+                            </div>
+                            <div className="space-y-2">
+                              {selectedCommentators.map((name, index) => (
+                                <div key={index} className="flex gap-2">
+                                  <div className="relative flex-1">
+                                    <input
+                                      type="text"
+                                      value={name}
+                                      onChange={(e) => {
+                                        const newNames = [...selectedCommentators];
+                                        newNames[index] = e.target.value;
+                                        setSelectedCommentators(newNames);
+                                      }}
+                                      placeholder="Nome do comentarista"
+                                      className="w-full p-3 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all text-sm"
+                                      list="commentators-list"
+                                    />
+                                    <datalist id="commentators-list">
+                                      {commentators.map(c => <option key={c.name} value={c.name} />)}
+                                    </datalist>
+                                  </div>
+                                  {selectedCommentators.length > 1 && (
+                                    <button 
+                                      onClick={() => setSelectedCommentators(selectedCommentators.filter((_, i) => i !== index))}
+                                      className="p-3 text-stone-400 hover:text-red-500 transition-all"
+                                    >
+                                      <Trash2 size={18} />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="space-y-4">
+                            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Versão Bíblica</label>
+                            <select 
+                              value={selectedCommentaryVersion}
+                              onChange={(e) => setSelectedCommentaryVersion(e.target.value)}
+                              className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                            >
+                              {commentaryVersions.map(v => (
+                                <option key={v} value={v}>{v}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
                       </div>
 
                       {commentaryDebateResult && (
