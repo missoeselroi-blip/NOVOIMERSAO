@@ -14,6 +14,8 @@ import {
   MessageCircle,
   Sparkles,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Loader2,
   FileText,
   Download,
@@ -135,6 +137,68 @@ interface StudyHistoryItem {
 }
 
 import { SearchLoadingOverlay } from '../components/SearchLoadingOverlay';
+
+const ExpandableMarkdown = ({ content, onSearch }: { content: string, onSearch?: (q: string) => void }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  if (!content) return null;
+
+  const getIntroduction = (text: string) => {
+    const lines = text.split('\n');
+    let intro = '';
+    let foundIntro = false;
+    
+    for (const line of lines) {
+      const lowerLine = line.toLowerCase();
+      if (lowerLine.includes('introdução') || lowerLine.includes('## introdução') || lowerLine.includes('# introdução')) {
+        foundIntro = true;
+        intro += line + '\n';
+        continue;
+      }
+      if (foundIntro) {
+        // Stop if we hit another header or after a few paragraphs
+        if (line.startsWith('#') || (line.trim() === '' && intro.split('\n').length > 10)) {
+          break;
+        }
+        intro += line + '\n';
+      }
+    }
+    
+    if (!foundIntro || intro.trim().length < 100) {
+      // Fallback: first two paragraphs or 500 chars
+      const paragraphs = text.split('\n\n');
+      const fallback = paragraphs.slice(0, 2).join('\n\n');
+      return fallback.length > 500 ? fallback.substring(0, 500) + '...' : fallback;
+    }
+    return intro;
+  };
+
+  const introduction = getIntroduction(content);
+  const hasMore = content.trim().length > introduction.trim().length;
+
+  return (
+    <div className="space-y-4">
+      <div className={cn("prose dark:prose-invert max-w-none transition-all duration-500", !isExpanded && "max-h-[400px] overflow-hidden relative")}>
+        <MarkdownRenderer content={isExpanded ? content : introduction} onSearch={onSearch} />
+        {!isExpanded && hasMore && (
+          <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white dark:from-zinc-900 via-white/90 dark:via-zinc-900/90 to-transparent pointer-events-none" />
+        )}
+      </div>
+      {hasMore && (
+        <button 
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-2 px-8 py-3 bg-stone-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all text-sm mx-auto shadow-sm"
+        >
+          {isExpanded ? (
+            <><ChevronUp size={18} /> Ler Menos</>
+          ) : (
+            <><ChevronDown size={18} /> Ler Mais</>
+          )}
+        </button>
+      )}
+    </div>
+  );
+};
 
 export default function BibleStudyPage({ deepThinking, setDeepThinking, onNavigate }: BibleStudyPageProps) {
   const { user, notes: firestoreNotes, toggleFavorite } = useAuth();
@@ -2746,7 +2810,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               </div>
               
               <div className="flex-1 p-8 md:p-12 overflow-y-auto custom-scrollbar prose dark:prose-invert max-w-none">
-                <MarkdownRenderer content={creationPopup.content} />
+                <ExpandableMarkdown content={creationPopup.content} />
                 <CreditInfoTip />
               </div>
 
@@ -3018,7 +3082,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ref={resultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
-                      <MarkdownRenderer content={verseContent} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={verseContent} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-2">
                       <button
@@ -3150,7 +3214,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ref={resultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
-                      <MarkdownRenderer content={result} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={result} onSearch={handleWikiSearch} />
                       <div className="mt-8 pt-8 border-t border-stone-100 dark:border-zinc-800">
                         <FeedbackSection page="Imersão Bíblica" context={activeTab} />
                       </div>
@@ -3374,7 +3438,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ref={bibleResultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
-                      <MarkdownRenderer content={result} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={result} onSearch={handleWikiSearch} />
                     </div>
                     
                     <div className="flex flex-wrap gap-3">
@@ -3466,7 +3530,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ref={bibleResultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
-                      <MarkdownRenderer content={result} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={result} onSearch={handleWikiSearch} />
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
@@ -3588,7 +3652,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <button onClick={() => setShowLeaderGuide(true)} className={cn("px-6 py-2 rounded-full font-bold transition-all", showLeaderGuide ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}>Guia do Líder</button>
                     </div>
                     <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={showLeaderGuide ? leaderGuide : lessonResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={showLeaderGuide ? leaderGuide : lessonResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -3629,7 +3693,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={studyResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={studyResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -3696,7 +3760,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             }}
                           />
                         ) : (
-                          <MarkdownRenderer content={outline} onSearch={handleWikiSearch} />
+                          <ExpandableMarkdown content={outline} onSearch={handleWikiSearch} />
                         )}
                       </div>
                     </div>
@@ -3755,7 +3819,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={debateResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={debateResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -3789,7 +3853,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={devotionalResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={devotionalResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -3826,7 +3890,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={messageResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={messageResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -3912,7 +3976,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           }}
                         />
                       ) : (
-                        <MarkdownRenderer content={bookletResult} onSearch={handleWikiSearch} />
+                        <ExpandableMarkdown content={bookletResult} onSearch={handleWikiSearch} />
                       )}
                     </div>
                     <div className="flex flex-wrap gap-3">
@@ -4231,7 +4295,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               className="w-full h-[500px] p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none font-mono text-sm"
                             />
                           ) : (
-                            <MarkdownRenderer
+                            <ExpandableMarkdown
                               content={storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater || '' :
                                storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories || '' :
                                storiesTheaterResult.bibleStory || ''}
@@ -4388,7 +4452,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </div>
                         </div>
                       ) : (
-                        <MarkdownRenderer 
+                        <ExpandableMarkdown 
                           content={
                             kidsActiveTab === 'children' ? (kidsResult?.children || '') :
                             kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') :
@@ -4741,7 +4805,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                    ⚓ Pesquisa Geral
+                    ⚓ {activeTab === 'commentary' ? 'Pesquisar Autor' : 'Pesquisa Geral'}
                   </button>
                 </div>
 
@@ -4761,7 +4825,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={result} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={result} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex gap-3">
                       <button
@@ -4823,7 +4887,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             className="flex-1 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
                           >
                             {isGeneratingCommentary ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                            Pesquisa Geral
+                            Pesquisar Autor
                           </button>
                           <button
                             onClick={handleSuggestCommentators}
@@ -4855,7 +4919,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                 <Trash2 size={16} />
                               </button>
                             </div>
-                            <MarkdownRenderer content={commentaryResult} onSearch={handleWikiSearch} />
+                            <ExpandableMarkdown content={commentaryResult} onSearch={handleWikiSearch} />
                           </div>
                           <div className="flex gap-3">
                             <button
@@ -4876,13 +4940,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <Users size={24} />
                         </div>
                         <div>
-                          <h3 className="text-xl font-bold text-stone-800 dark:text-zinc-100">Debate Teológico</h3>
+                          <h3 className="text-xl font-bold text-stone-800 dark:text-zinc-100">Debate bíblico</h3>
                           <p className="text-sm text-stone-500 dark:text-zinc-400">Confronte visões de diferentes autores para um estudo mais profundo</p>
                         </div>
                       </div>
 
                       <div className="space-y-6 mb-8">
-                        <div className="relative">
+                        <div className="flex flex-col gap-4">
                           <input 
                             type="text"
                             value={commentaryDebateTopic || topic}
@@ -4890,16 +4954,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             placeholder="Tema para o debate..."
                             className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent focus:border-amber-500 rounded-[2rem] outline-none transition-all shadow-inner text-lg"
                           />
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2">
-                            <button 
-                              onClick={handleGenerateCommentaryDebate}
-                              disabled={isGeneratingCommentaryDebate || (!commentaryDebateTopic && !topic)}
-                              className="px-8 py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-700 disabled:opacity-50 transition-all shadow-lg shadow-amber-600/20 flex items-center gap-2"
-                            >
-                              {isGeneratingCommentaryDebate ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}
-                              Criar Debate
-                            </button>
-                          </div>
+                          <button 
+                            onClick={handleGenerateCommentaryDebate}
+                            disabled={isGeneratingCommentaryDebate || (!commentaryDebateTopic && !topic)}
+                            className="w-full py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-700 disabled:opacity-50 transition-all shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2"
+                          >
+                            {isGeneratingCommentaryDebate ? <Loader2 className="animate-spin" size={20} /> : <Zap size={20} />}
+                            Criar Debate
+                          </button>
                         </div>
                         <p className="text-xs text-stone-400 italic ml-4">
                           * A IA selecionará automaticamente dois autores de peso para o debate baseado no tema, mas você pode alterar os autores na seção abaixo se desejar.
@@ -4985,7 +5047,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                 <Trash2 size={16} />
                               </button>
                             </div>
-                            <MarkdownRenderer content={commentaryDebateResult} onSearch={handleWikiSearch} />
+                            <ExpandableMarkdown content={commentaryDebateResult} onSearch={handleWikiSearch} />
                           </div>
                           <div className="flex gap-3">
                             <button
@@ -5436,7 +5498,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={meaningResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={meaningResult} onSearch={handleWikiSearch} />
                     </div>
 
                     {(meaningSource.includes('Gemini') || meaningSource.includes('ChatGPT') || meaningSource.includes('IA')) && (
@@ -5538,7 +5600,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     )}
                     <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={wikiResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={wikiResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">
                       <button
@@ -5634,7 +5696,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   
                   {resourceStudyResult && (
                     <div className="prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={resourceStudyResult} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={resourceStudyResult} onSearch={handleWikiSearch} />
                     </div>
                   )}
                 </div>
@@ -5746,7 +5808,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
                   ) : (
                     <div className="prose dark:prose-invert max-w-none">
-                      <MarkdownRenderer content={searchPopup.result} onSearch={handleWikiSearch} />
+                      <ExpandableMarkdown content={searchPopup.result} onSearch={handleWikiSearch} />
                       <CreditInfoTip />
                     </div>
                   )}
