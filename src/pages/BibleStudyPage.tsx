@@ -835,11 +835,19 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       Priorize a versão "A Mensagem" (Eugene H. Peterson) se disponível, ou uma versão de estudo equivalente. Apresente também a versão Almeida Corrigida Fiel (ACF) ou NVI para comparação.
       Se for um capítulo inteiro, formate de maneira legível com os números dos versículos.
       
-      Além do texto, adicione uma breve explicação do contexto histórico ou teológico desta passagem (máximo 3 parágrafos).
+      ESTRUTURA ADICIONAL OBRIGATÓRIA:
+      1. **Fundo Histórico**: Explique detalhadamente o contexto histórico, social e cultural da passagem.
+      2. **Descobertas Arqueológicas**: Apresente as descobertas arqueológicas mais contundentes e relevantes que corroboram ou iluminam este texto.
+      3. **Informações do Autor**: Forneça informações biográficas e teológicas relevantes sobre o autor e seu propósito específico nesta escrita.
+      4. **Aplicação Pessoal**:
+         - **Introdução**: Uma breve introdução conectando o texto à realidade atual.
+         - **Desenvolvimento em Pontos**: Lições práticas divididas em pontos claros.
+         - **Conclusão**: Uma síntese inspiradora para a vida do leitor.
+      5. **Pesquisa Complementar**: Sugira outros textos bíblicos, temas ou termos para estudo aprofundado.
       
       IMPORTANTE: Transforme termos importantes em links clicáveis no formato [Termo](search:Termo).`;
       
-      const response = await geminiService.generateTextWithThought(prompt, "Você é um bibliotecário bíblico preciso.", deepThinking);
+      const response = await geminiService.generateTextWithThought(prompt, "Você é um erudito bíblico, arqueólogo e mentor espiritual altamente capacitado.", deepThinking);
       setVerseContent(response.text);
       setVerseContentThought(response.thought);
       
