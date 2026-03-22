@@ -338,7 +338,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
     <div className="space-y-8 relative">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div>
-          <h2 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400">Caderno</h2>
+          <h2 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400">Meu Caderno</h2>
         </div>
         <div className="flex gap-3">
           <button
