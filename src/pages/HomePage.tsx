@@ -468,7 +468,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       const audioUrl = await geminiService.generateSpeech(pendingAudioText, 'Zephyr');
       if (audioUrl) {
         const audio = new Audio(audioUrl);
-        audio.play();
+        audio.oncanplaythrough = () => {
+          audio.play().catch(e => console.error("Error playing audio:", e));
+        };
         
         // Auto-save to Audio Box
         try {

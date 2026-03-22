@@ -107,8 +107,16 @@ export default function ForumPage() {
     setIsGeneratingSpeech(true);
     try {
       const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      if (!audioUrl) {
+        showToast("Erro ao gerar áudio.", 'error');
+        setIsGeneratingSpeech(false);
+        setPendingSpeechText('');
+        return;
+      }
       const audio = new Audio(audioUrl);
-      await audio.play();
+      audio.oncanplaythrough = () => {
+        audio.play().catch(e => console.error("Error playing audio:", e));
+      };
       showToast("Reproduzindo áudio... 🔊✨");
 
       // Auto-save to Audio Box

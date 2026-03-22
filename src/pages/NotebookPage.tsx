@@ -296,8 +296,16 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
     setIsGeneratingSpeech(true);
     try {
       const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      if (!audioUrl) {
+        showToast("Erro ao gerar áudio.", 'error');
+        setIsGeneratingSpeech(false);
+        setPendingSpeechText('');
+        return;
+      }
       const audio = new Audio(audioUrl);
-      await audio.play();
+      audio.oncanplaythrough = () => {
+        audio.play().catch(e => console.error("Error playing audio:", e));
+      };
       showToast("Reproduzindo áudio... 🔊✨");
 
       // Auto-save to Audio Box
@@ -357,7 +365,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       {/* Categories and Customization */}
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
         <div className="flex bg-stone-100 dark:bg-zinc-800 p-1 rounded-2xl overflow-x-auto max-w-full">
-          {['Todos', 'Anotações', 'Esboços', 'Estudos', 'Histórias', 'Teatro', 'Outros'].map((cat) => (
+          {['Todos', 'Anotações', 'Esboços', 'Estudos', 'Histórias', 'Teatro', 'Teologia', 'Outros'].map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat as any)}
@@ -423,6 +431,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                   <option value="Estudos">Estudos</option>
                   <option value="Histórias">Histórias</option>
                   <option value="Teatro">Teatro</option>
+                  <option value="Teologia">Teologia</option>
                   <option value="Outros">Outros</option>
                 </select>
               </div>

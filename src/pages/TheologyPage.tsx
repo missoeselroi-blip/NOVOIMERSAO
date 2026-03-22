@@ -169,7 +169,9 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
       if (audioUrl) {
         const audio = new Audio(audioUrl);
-        audio.play();
+        audio.oncanplaythrough = () => {
+          audio.play().catch(e => console.error("Error playing audio:", e));
+        };
         showToast("Iniciando leitura... Ouça com atenção! 🔊✨", 'success');
       } else {
         showToast("Erro ao gerar áudio.", 'error');

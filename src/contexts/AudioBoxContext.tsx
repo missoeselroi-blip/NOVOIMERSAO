@@ -283,9 +283,11 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const deleteTrack = async (id: string) => {
+    console.log('AudioBoxContext: Deleting track:', id);
     if (user) {
       try {
         const trackDoc = await getDoc(doc(db, 'audio_box', id));
+        console.log('Track doc exists:', trackDoc.exists());
         if (trackDoc.exists()) {
           const data = trackDoc.data();
           if (data.audioUrl.startsWith('local:')) {
@@ -294,11 +296,13 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
         await deleteDoc(doc(db, 'audio_box', id)).catch(err => handleFirestoreError(err, OperationType.DELETE, `audio_box/${id}`));
+        console.log('Track deleted from Firestore');
       } catch (error) {
         console.error("Error deleting track from Firestore:", error);
         throw error;
       }
     } else {
+      console.log('AudioBoxContext: Deleting offline track');
       const saved = localStorage.getItem('audio_box_tracks');
       if (saved) {
         const currentTracks = JSON.parse(saved);
@@ -310,6 +314,7 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const updatedTracks = currentTracks.filter((t: AudioTrack) => t.id !== id);
         localStorage.setItem('audio_box_tracks', JSON.stringify(updatedTracks));
         setTracks(tracks.filter(t => t.id !== id));
+        console.log('Track deleted from localStorage');
       }
     }
   };

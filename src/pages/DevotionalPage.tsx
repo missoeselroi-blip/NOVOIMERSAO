@@ -25,7 +25,11 @@ import {
   MessageCircle,
   Bookmark,
   BookmarkCheck,
-  Share2 as ShareIcon,
+  Share2,
+  RotateCcw,
+  RotateCw,
+  Play,
+  Pause,
   Zap as ChallengeIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -82,7 +86,7 @@ import { DEVOTIONAL_MATRIX } from '../constants/devotionals';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import MissionaryPage from './MissionaryPage';
 
-type DevotionalTheme = 'Criança' | 'Novo Convertido' | 'Discípulo' | 'Líder' | 'Teólogo' | 'Pastor' | 'Missionário' | 'Afastado';
+type DevotionalTheme = 'Kids' | 'Teen' | 'Casado' | 'Novo Convertido' | 'Discípulo' | 'Líder' | 'Teólogo' | 'Pastor' | 'Missionário' | 'Afastado';
 
 interface ThemeConfig {
   id: DevotionalTheme;
@@ -94,11 +98,25 @@ interface ThemeConfig {
 
 const THEMES: ThemeConfig[] = [
   { 
-    id: 'Criança', 
-    label: 'Criança', 
+    id: 'Kids', 
+    label: 'Kids', 
     icon: <Baby size={20} />, 
     color: 'bg-blue-500',
     prompt: 'Gere uma mensagem com linguagem infantil (7-9 anos). Foco no amor de Deus e obediência. Use parábolas de Jesus. Linguagem simples e direta.'
+  },
+  { 
+    id: 'Teen', 
+    label: 'Teen', 
+    icon: <Users size={20} />, 
+    color: 'bg-purple-500',
+    prompt: 'Gere mensagens com temas de interesse de adolescentes (13-17 anos), como identidade, propósito, amizades, desafios escolares, pressão social, relacionamento com pais e fé. Linguagem jovem, dinâmica e empática.'
+  },
+  { 
+    id: 'Casado', 
+    label: 'Casado', 
+    icon: <Heart size={20} />, 
+    color: 'bg-rose-500',
+    prompt: 'Gere mensagens voltadas para o matrimônio, seus desafios e suas alegrias. Motive o perdão, respeito, amor, lealdade e fidelidade. Fale sobre o papel de sacerdote do homem e mulher sábia que edifica a casa, criação de filhos, cuidar um do outro, zelo pela casa, sonhos, planejar, momento a sós, cuidar da aparência, cuidado com ciúmes, egoísmo, monotonia, sexo, intimidade e amizade.'
   },
   { 
     id: 'Novo Convertido', 
@@ -180,6 +198,51 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+  const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
+  const [isPrayerConfirmOpen, setIsPrayerConfirmOpen] = useState(false);
+  const [prayerType, setPrayerType] = useState('Agradecimento');
+  const [customPrayerTheme, setCustomPrayerTheme] = useState('');
+  const [prayerAudio, setPrayerAudio] = useState<string | null>(null);
+  const prayerAudioRef = React.useRef<HTMLAudioElement | null>(null);
+  const bgMusicRef = React.useRef<HTMLAudioElement | null>(null);
+
+  const handleGeneratePrayer = async () => {
+    setIsGeneratingPrayer(true);
+    showToast("Gerando sua oração... 🙏", "info");
+    try {
+      const types = ['Agradecimento', 'Adoração', 'Entrega', 'Cura', 'Libertação', 'Salvação', 'Direção', 'Família', 'Emprego', 'Provisão', 'Proteção', 'Livramento', 'Avivamento', 'Consolo'];
+      let selectedType = prayerType;
+      if (prayerType === 'Escolha pra mim') {
+        selectedType = types[Math.floor(Math.random() * types.length)];
+      } else if (prayerType === 'Outro') {
+        selectedType = customPrayerTheme || 'Geral';
+      }
+      
+      const prompt = `Gere uma oração gospel de ${selectedType}, com estilo carinhoso, consolador e motivador, focado em fé, adoração, graça, pedido de orientação do Espírito Santo e agradecimento pelas provisões diárias. Cite versículos da bíblia e salmos que evocam a fé, coragem, consolo, o Poder, glória e a proteção de Deus. A oração deve ser curta, profunda e emocionante.`;
+      
+      const prayerText = await geminiService.generateText(prompt, "Você é um mentor espiritual com voz acolhedora.");
+      const randomVoice = Math.random() > 0.5 ? 'Kore' : 'Puck';
+      const audioUrl = await geminiService.generateSpeech(prayerText, randomVoice as any);
+      
+      if (audioUrl) {
+        setPrayerAudio(audioUrl);
+        showToast("Oração gerada! Ouvindo agora... 🎧✨");
+        setTimeout(() => {
+          if (bgMusicRef.current) {
+            bgMusicRef.current.volume = 0.2;
+            bgMusicRef.current.play().catch(e => console.error("Error playing background music:", e));
+          }
+        }, 500);
+      } else {
+        showToast("Erro ao gerar áudio da oração.");
+      }
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar oração.", "error");
+    } finally {
+      setIsGeneratingPrayer(false);
+    }
+  };
 
   useEffect(() => {
     if (location.state?.text) {
@@ -500,26 +563,127 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       ) : (
         <>
           <header className="text-center space-y-4">
-            <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center justify-center gap-4">
-                <img 
-                  src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-                  alt="Logo" 
-                  className="w-8 h-8 object-contain"
-                  referrerPolicy="no-referrer"
-                />
-                <h2 className="text-3xl font-display font-bold text-emerald-900 dark:text-emerald-400">Devocional Diário</h2>
-                <img 
-                  src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-                  alt="Logo" 
-                  className="w-8 h-8 object-contain"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
-
+            <div className="flex justify-center gap-4">
+              <button
+                onClick={() => setIsPrayerConfirmOpen(true)}
+                disabled={isGeneratingPrayer}
+                className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-full hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2"
+              >
+                {isGeneratingPrayer ? <Loader2 size={18} className="animate-spin" /> : <span>🙏</span>}
+                Posso Orar Por Você?
+              </button>
             </div>
             <p className="text-stone-500 dark:text-zinc-400">Escolha o tema para o Devocional de hoje</p>
           </header>
+          
+          {isPrayerConfirmOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl border border-stone-200 dark:border-zinc-800">
+                <h3 className="text-xl font-bold mb-4">Gerar Oração</h3>
+                <p className="text-sm text-stone-500 mb-6">A geração demora cerca de um minuto.</p>
+                <div className="space-y-4 mb-6">
+                  <select 
+                    value={prayerType} 
+                    onChange={(e) => {
+                      setPrayerType(e.target.value);
+                      if (e.target.value !== 'Outro') setCustomPrayerTheme('');
+                    }}
+                    className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800"
+                  >
+                    <option value="Escolha pra mim">Escolha pra mim</option>
+                    {['Agradecimento', 'Adoração', 'Entrega', 'Cura', 'Libertação', 'Salvação', 'Direção', 'Família', 'Emprego', 'Provisão', 'Proteção', 'Livramento', 'Avivamento', 'Consolo'].map(t => <option key={t} value={t}>{t}</option>)}
+                    <option value="Outro">Outro (especifique)</option>
+                  </select>
+                  {prayerType === 'Outro' && (
+                    <input
+                      type="text"
+                      value={customPrayerTheme}
+                      onChange={(e) => setCustomPrayerTheme(e.target.value)}
+                      placeholder="Qual o tema da oração?"
+                      className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800"
+                    />
+                  )}
+                </div>
+                <div className="flex gap-4">
+                  <button onClick={() => setIsPrayerConfirmOpen(false)} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200">Cancelar</button>
+                  <button onClick={() => { setIsPrayerConfirmOpen(false); handleGeneratePrayer(); }} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20">Gerar</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {prayerAudio && (
+            <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 border-t border-stone-200 dark:border-zinc-800 p-4 shadow-lg z-40">
+              <div className="max-w-2xl mx-auto flex items-center gap-4">
+                <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime -= 10; }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><RotateCcw size={20} /></button>
+                <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.paused ? prayerAudioRef.current.play() : prayerAudioRef.current.pause(); }} className="p-4 bg-emerald-600 text-white rounded-full hover:bg-emerald-700">
+                  {prayerAudioRef.current?.paused ? <Play size={24} /> : <Pause size={24} />}
+                </button>
+                <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime += 10; }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><RotateCw size={20} /></button>
+                
+                <div className="flex-1 h-2 bg-stone-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                  <div className="h-full bg-emerald-600" style={{ width: `${audioProgress}%` }}></div>
+                </div>
+
+                <button onClick={() => {
+                  if (prayerAudio) {
+                    const link = document.createElement('a');
+                    link.href = prayerAudio;
+                    link.download = 'oracao.mp3';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }
+                }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Download size={20} /></button>
+                <button onClick={async () => {
+                  if (prayerAudio) {
+                    try {
+                      const response = await fetch(prayerAudio);
+                      const blob = await response.blob();
+                      const file = new File([blob], 'oracao.mp3', { type: 'audio/mpeg' });
+                      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({
+                          files: [file],
+                          title: 'Minha Oração',
+                          text: 'Ouça esta oração que gerei.',
+                        });
+                      } else {
+                        alert('Compartilhamento não suportado neste navegador.');
+                      }
+                    } catch (error) {
+                      if ((error as Error).name !== 'AbortError') {
+                        console.error('Erro ao compartilhar:', error);
+                      }
+                    }
+                  }
+                }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Share2 size={20} /></button>
+                <button onClick={async () => {
+                  if (prayerAudio) {
+                    try {
+                      await saveTrack('Oração Gerada', 'Oração', prayerAudio, 'Oração', 'Inspiradora');
+                      showToast("Áudio salvo na Coletânea! 🎵", 'success');
+                    } catch (saveError) {
+                      console.error("Error saving to audio box:", saveError);
+                      showToast("Erro ao salvar áudio.", 'error');
+                    }
+                  }
+                }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Save size={20} /></button>
+              </div>
+            </div>
+          )}
+
+          {prayerAudio && (
+            <audio ref={prayerAudioRef} src={prayerAudio} autoPlay onEnded={() => {
+              if (bgMusicRef.current) {
+                bgMusicRef.current.pause();
+                bgMusicRef.current.currentTime = 0;
+              }
+            }} onTimeUpdate={(e) => {
+              const audio = e.currentTarget;
+              setAudioProgress((audio.currentTime / audio.duration) * 100);
+            }} />
+          )}
+          <audio ref={bgMusicRef} src="https://firebasestorage.googleapis.com/v0/b/imersao-biblica-ia.firebasestorage.app/o/meditao-luz-das-estrelas.mp3?alt=media" loop />
 
       {/* Theme Selection */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
@@ -772,7 +936,6 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                           onClick={() => {
                             navigator.share({
                               title: 'Áudio Devocional',
-                              url: narrationAudio
                             }).catch((err: any) => {
                               if (err.name !== 'AbortError') {
                                 console.error(err);
@@ -781,7 +944,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                           }}
                           className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
                         >
-                          <ShareIcon size={14} /> Compartilhar
+                          <Share2 size={14} /> Compartilhar
                         </button>
                       </div>
                       <button 

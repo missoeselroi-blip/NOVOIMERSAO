@@ -59,7 +59,9 @@ export default function TheologySearchPage({ initialQuery = '' }: TheologySearch
       if (url) {
         setAudioUrl(url);
         const audio = new Audio(url);
-        audio.play();
+        audio.oncanplaythrough = () => {
+          audio.play().catch(e => console.error("Error playing audio:", e));
+        };
         showToast("Iniciando leitura... Ouça com atenção! 🔊✨", 'success');
         
         // Scroll to result after a short delay to allow rendering

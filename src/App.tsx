@@ -44,6 +44,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
+import { NavigationMenu } from './components/NavigationMenu';
 import ErrorBoundary from './components/ErrorBoundary';
 import { useAccessibility } from './contexts/AccessibilityContext';
 
@@ -119,7 +120,7 @@ function AppContent() {
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">
         <div className="text-center space-y-6">
           <img 
-            src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
+            src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
             alt="Logo" 
             className="w-20 h-20 object-contain mx-auto animate-pulse"
             referrerPolicy="no-referrer"
@@ -242,7 +243,7 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
+              src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
               alt="App Icon" 
               className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
@@ -651,14 +652,14 @@ function AppContent() {
       )}>
         <div className="flex items-center justify-center gap-3">
           <img 
-            src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
+            src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
             alt="Logo" 
             className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"
           />
           <p>© {new Date().getFullYear()} Imersão Bíblica IA • Mergulhando na Palavra</p>
           <img 
-            src="https://i.postimg.cc/fy0xzPn4/android-chrome-512x512.png" 
+            src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
             alt="Logo" 
             className="w-5 h-5 object-contain"
             referrerPolicy="no-referrer"

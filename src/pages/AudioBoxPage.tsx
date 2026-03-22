@@ -96,15 +96,18 @@ export default function AudioBoxPage() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    console.log('Attempting to delete track:', id);
     if (window.confirm('Deseja realmente excluir este áudio?')) {
       try {
         await deleteTrack(id);
+        console.log('Track deleted successfully');
         showToast('Áudio excluído com sucesso!', 'success');
         if (selectedTrackId === id) {
           setSelectedTrackId(null);
           setIsPlaying(false);
         }
       } catch (error) {
+        console.error('Error deleting track:', error);
         showToast('Erro ao excluir áudio.', 'error');
       }
     }
@@ -124,8 +127,11 @@ export default function AudioBoxPage() {
       navigator.share({
         title: track.title,
         text: track.text || track.subject,
-        url: track.audioUrl
-      }).catch(console.error);
+      }).catch((err) => {
+        if (err.name !== 'AbortError') {
+          console.error(err);
+        }
+      });
     } else {
       showToast('Compartilhamento não suportado neste navegador.', 'info');
     }

@@ -1648,7 +1648,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       if (audioUrl) {
         const audio = new Audio(audioUrl);
         audioRef.current = audio;
-        audio.play();
+        audio.oncanplaythrough = () => {
+          audio.play().catch(e => console.error("Error playing audio:", e));
+        };
         showToast("Iniciando leitura... Ouça com atenção! 🔊✨", 'success');
         
         audio.onended = () => {

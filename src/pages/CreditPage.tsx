@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCredits } from '../contexts/CreditContext';
+import { CreditTooltip } from '../components/CreditTooltip';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
 
@@ -94,6 +95,7 @@ export default function CreditPage() {
             <div className="flex items-center gap-2 opacity-80 mb-2">
               <Coins size={20} />
               <span className="font-medium uppercase tracking-wider text-xs">Saldo Atual</span>
+              <CreditTooltip />
             </div>
             <div className="text-6xl font-display font-bold mb-6">{balance}</div>
             <p className="text-emerald-100 text-sm leading-relaxed">

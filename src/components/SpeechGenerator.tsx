@@ -160,7 +160,6 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({
       await navigator.share({
         title: title || 'Áudio Gerado',
         text: text.substring(0, 100) + '...',
-        url: window.location.href
       });
     } catch (error) {
       if ((error as Error).name !== 'AbortError') {

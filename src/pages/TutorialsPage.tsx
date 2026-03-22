@@ -79,10 +79,18 @@ export default function TutorialsPage() {
     setIsLoadingAudio(true);
     try {
       const audioUrl = await geminiService.generateSpeech(pendingSpeechText);
+      if (!audioUrl) {
+        showToast("Erro ao gerar áudio.", 'error');
+        setIsLoadingAudio(false);
+        setPendingSpeechText('');
+        return;
+      }
       const audio = new Audio(audioUrl);
+      audio.oncanplaythrough = () => {
+        audio.play().catch(e => console.error("Error playing audio:", e));
+      };
       audio.onended = () => setIsPlaying(false);
       setIsPlaying(true);
-      await audio.play();
       showToast("Reproduzindo áudio do tutorial... 🔊✨");
 
       // Auto-save to Audio Box

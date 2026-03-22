@@ -87,7 +87,11 @@ export default function NewsPage() {
       const audio = await geminiService.generateSpeech(text.slice(0, 1000));
       if (audio) {
         const audioObj = new Audio(audio);
-        audioObj.play();
+        audioObj.oncanplaythrough = () => {
+          audioObj.play().catch(e => console.error("Error playing audio:", e));
+        };
+      } else {
+        showToast("Erro ao gerar áudio.", 'error');
       }
     } catch (error) {
       console.error(error);
