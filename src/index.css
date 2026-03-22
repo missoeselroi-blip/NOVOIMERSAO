@@ -1,76 +1,9 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=JetBrains+Mono:wght@400;500&family=Outfit:wght@400;500;600;700&family=Lexend:wght@300;400;500;600&display=swap');
 @import url('https://fonts.cdnfonts.com/css/open-dyslexic');
-@import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Playfair Display", serif;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
-  --font-display: "Outfit", sans-serif;
-  --font-dyslexic: "OpenDyslexic", "Lexend", sans-serif;
-
-  /* Theme Variables */
-  --color-app-bg: var(--app-bg);
-  --color-app-text: var(--app-text);
-  --color-app-accent: var(--app-accent);
-  --color-app-surface: var(--app-surface);
-  --color-app-border: var(--app-border);
-  --color-app-muted: var(--app-muted);
-
-  /* Force core colors to hex to avoid oklch parsing errors in html2canvas */
-  /* Deep Blue Palette (replacing emerald) */
-  --color-emerald-50: #eff6ff;
-  --color-emerald-100: #dbeafe;
-  --color-emerald-200: #bfdbfe;
-  --color-emerald-300: #93c5fd;
-  --color-emerald-400: #60a5fa;
-  --color-emerald-500: #3b82f6;
-  --color-emerald-600: #1e40af;
-  --color-emerald-700: #1e3a8a;
-  --color-emerald-800: #172554;
-  --color-emerald-900: #0f172a;
-  --color-emerald-950: #020617;
-
-  --color-stone-50: #f9f8f7;
-  --color-stone-100: #f3f2f0;
-  --color-stone-200: #e7e5e1;
-  --color-stone-300: #d6d3cd;
-  --color-stone-400: #a8a29e;
-  --color-stone-500: #78716c;
-  --color-stone-600: #57534e;
-  --color-stone-700: #44403c;
-  --color-stone-800: #292524;
-  --color-stone-900: #1c1917;
-  --color-stone-950: #0c0a09;
-
-  --color-blue-50: #eff6ff;
-  --color-blue-100: #dbeafe;
-  --color-blue-200: #bfdbfe;
-  --color-blue-300: #93c5fd;
-  --color-blue-400: #60a5fa;
-  --color-blue-500: #3b82f6;
-  --color-blue-600: #1e40af;
-  --color-blue-700: #1e3a8a;
-  --color-blue-800: #172554;
-  --color-blue-900: #0f172a;
-  --color-blue-950: #020617;
-  --color-rose-500: #f43f5e;
-  --color-rose-600: #e11d48;
-  --color-pink-500: #ec4899;
-  --color-pink-600: #db2777;
-  --color-amber-500: #f59e0b;
-  --color-amber-600: #d97706;
-  --color-indigo-500: #6366f1;
-  --color-indigo-600: #4f46e5;
-  --color-purple-500: #a855f7;
-  --color-purple-600: #9333ea;
-  --color-red-500: #ef4444;
-  --color-red-600: #dc2626;
-  --color-zinc-100: #f4f4f5;
-  --color-zinc-300: #d4d4d8;
-  --color-zinc-800: #27272a;
-  --color-zinc-900: #18181b;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 @layer base {
   :root {
@@ -80,6 +13,60 @@
     --app-surface: #ffffff;
     --app-border: #d1d9e6;
     --app-muted: #4a5568;
+
+    /* Force core colors to hex to avoid oklch parsing errors in html2canvas */
+    /* Deep Blue Palette (replacing emerald) */
+    --color-emerald-50: #eff6ff;
+    --color-emerald-100: #dbeafe;
+    --color-emerald-200: #bfdbfe;
+    --color-emerald-300: #93c5fd;
+    --color-emerald-400: #60a5fa;
+    --color-emerald-500: #3b82f6;
+    --color-emerald-600: #1e40af;
+    --color-emerald-700: #1e3a8a;
+    --color-emerald-800: #172554;
+    --color-emerald-900: #0f172a;
+    --color-emerald-950: #020617;
+
+    --color-stone-50: #f9f8f7;
+    --color-stone-100: #f3f2f0;
+    --color-stone-200: #e7e5e1;
+    --color-stone-300: #d6d3cd;
+    --color-stone-400: #a8a29e;
+    --color-stone-500: #78716c;
+    --color-stone-600: #57534e;
+    --color-stone-700: #44403c;
+    --color-stone-800: #292524;
+    --color-stone-900: #1c1917;
+    --color-stone-950: #0c0a09;
+
+    --color-blue-50: #eff6ff;
+    --color-blue-100: #dbeafe;
+    --color-blue-200: #bfdbfe;
+    --color-blue-300: #93c5fd;
+    --color-blue-400: #60a5fa;
+    --color-blue-500: #3b82f6;
+    --color-blue-600: #1e40af;
+    --color-blue-700: #1e3a8a;
+    --color-blue-800: #172554;
+    --color-blue-900: #0f172a;
+    --color-blue-950: #020617;
+    --color-rose-500: #f43f5e;
+    --color-rose-600: #e11d48;
+    --color-pink-500: #ec4899;
+    --color-pink-600: #db2777;
+    --color-amber-500: #f59e0b;
+    --color-amber-600: #d97706;
+    --color-indigo-500: #6366f1;
+    --color-indigo-600: #4f46e5;
+    --color-purple-500: #a855f7;
+    --color-purple-600: #9333ea;
+    --color-red-500: #ef4444;
+    --color-red-600: #dc2626;
+    --color-zinc-100: #f4f4f5;
+    --color-zinc-300: #d4d4d8;
+    --color-zinc-800: #27272a;
+    --color-zinc-900: #18181b;
   }
 
   .dark {
