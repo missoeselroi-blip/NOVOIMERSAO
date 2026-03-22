@@ -26,8 +26,11 @@ import { cn } from '../types';
 import { db } from '../lib/firebase';
 import { query, collection, orderBy, limit, getDocs } from 'firebase/firestore';
 
+import { useShare } from '../utils/share';
+
 export default function AudioBoxPage() {
   const { tracks, deleteTrack, isLoading } = useAudioBox();
+  const { share } = useShare();
   const { showToast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null);
@@ -121,20 +124,12 @@ export default function AudioBoxPage() {
     a.click();
   };
 
-  const handleShare = (track: any, e: React.MouseEvent) => {
+  const handleShare = async (track: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (navigator.share) {
-      navigator.share({
-        title: track.title,
-        text: track.text || track.subject,
-      }).catch((err) => {
-        if (err.name !== 'AbortError') {
-          console.error(err);
-        }
-      });
-    } else {
-      showToast('Compartilhamento não suportado neste navegador.', 'info');
-    }
+    await share({
+      title: track.title,
+      text: track.text || track.subject,
+    });
   };
 
   return (

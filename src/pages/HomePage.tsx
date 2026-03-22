@@ -60,6 +60,8 @@ import { collection, addDoc } from 'firebase/firestore';
 
 import { AudioSearchButton } from '../components/AudioSearchButton';
 
+import { useShare } from '../utils/share';
+
 interface HomePageProps {
   onNavigate: (tab: string) => void;
   deepThinking: boolean;
@@ -71,10 +73,19 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
   const { user, toggleFavorite } = useAuth();
+  const { share } = useShare();
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+
+  const handleShareApp = async () => {
+    await share({
+      title: 'Imersão Bíblica',
+      text: 'Confira este aplicativo incrível para estudo bíblico e devocional!',
+      url: window.location.origin,
+    });
+  };
 
   const getGreeting = () => {
     const hour = new Date().getHours();
@@ -562,6 +573,22 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             </p>
           </motion.div>
         </div>
+      </div>
+
+      {/* App Action Buttons */}
+      <div className="flex flex-col sm:flex-row gap-4 -mt-6 mb-12">
+        <motion.button 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={handleShareApp}
+          className="w-full py-5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-[2rem] flex items-center justify-center gap-3 font-bold text-stone-700 dark:text-zinc-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-all shadow-lg group"
+        >
+          <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Share2 size={20} className="text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <span className="text-sm md:text-base">Compartilhar App</span>
+        </motion.button>
       </div>
 
       {/* Daily Verse Section */}

@@ -71,6 +71,10 @@ export const GOSPEL_AUTHORS = [
     works: ["Bom Dia, Espírito Santo", "Bem-vindo, Espírito Santo", "O Sangue"]
   },
   {
+    name: "Bento Oliveira",
+    works: ["Bíblia de Estudo de Batalha Espiritual", "Guerra Espiritual"]
+  },
+  {
     name: "Bráulio Brandão",
     works: ["A Glória de Cristo", "O Conhecimento de Deus", "Teologia Reformada"]
   },
@@ -201,6 +205,10 @@ export const GOSPEL_AUTHORS = [
     works: ["Metanoia", "O Poder da Profecia", "Filhos da Luz"]
   },
   {
+    name: "Jimmy Swaggart",
+    works: ["Bíblia de Estudo do Expositor", "Comentários Bíblicos"]
+  },
+  {
     name: "João Calvino",
     works: ["As Institutas da Religião Cristã", "Comentários Bíblicos"]
   },
@@ -220,6 +228,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "John MacArthur",
     works: ["Perspectiva conservadora e foco na exposição versículo por versículo."]
+  },
+  {
+    name: "John Maxwell",
+    works: ["Bíblia de Estudo de Liderança", "As 21 Irrefutáveis Leis da Liderança", "Ouro de Liderança"]
   },
   {
     name: "John Piper",
@@ -405,6 +417,10 @@ export const GOSPEL_AUTHORS = [
   {
     name: "Søren Kierkegaard",
     works: ["Temor e Tremor", "O Desespero Humano", "As Obras do Amor"]
+  },
+  {
+    name: "Tim LaHaye",
+    works: ["Bíblia de Estudo de Profecias", "Deixados para Trás", "Temperamentos Transformados"]
   },
   {
     name: "Timothy Keller",

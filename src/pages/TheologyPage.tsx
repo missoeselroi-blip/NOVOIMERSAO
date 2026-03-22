@@ -103,6 +103,8 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
 
 import { THEOLOGY_SUBJECTS, getMaxChapters } from '../constants/theology';
 
+import { useShare } from '../utils/share';
+
 interface TheologyPageProps {
   onNavigate: (tab: string) => void;
 }
@@ -113,6 +115,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [readingFontSize, setReadingFontSize] = useState(18);
   const [readingLineHeight, setReadingLineHeight] = useState(1.6);
   const { user, isInitialLoading } = useAuth();
+  const { share } = useShare();
   const { showToast } = useToast();
   
   // Initial state from localStorage with safety
@@ -2354,17 +2357,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 </button>
                 <button 
                   onClick={async () => {
-                    if (navigator.share && chapterContent[currentChapter]) {
-                      try {
-                        await navigator.share({
-                          title: `Teologia: ${selectedSubject} - Cap ${currentChapter}`,
-                          text: chapterContent[currentChapter],
-                        });
-                      } catch (err: any) { 
-                        if (err.name !== 'AbortError') {
-                          console.error(err); 
-                        }
-                      }
+                    if (chapterContent[currentChapter]) {
+                      await share({
+                        title: `Teologia: ${selectedSubject} - Cap ${currentChapter}`,
+                        text: chapterContent[currentChapter],
+                      });
                     }
                   }}
                   className="p-3 md:p-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-2xl hover:bg-stone-200 transition-all"

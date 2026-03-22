@@ -29,6 +29,8 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
+import { useShare } from '../utils/share';
+
 interface Note {
   id: string;
   title: string;
@@ -49,6 +51,7 @@ import { doc, addDoc, updateDoc, deleteDoc, collection } from 'firebase/firestor
 
 export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const { user, notes: firestoreNotes, isInitialLoading } = useAuth();
+  const { share } = useShare();
   const { saveTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { showToast } = useToast();
@@ -270,20 +273,10 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   };
 
   const handleShare = async (note: Note) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: note.title,
-          text: note.content,
-        });
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
-        }
-      }
-    } else {
-      handleCopy(`${note.title}\n\n${note.content}`);
-    }
+    await share({
+      title: note.title,
+      text: note.content,
+    });
   };
 
   const handleListen = (text: string) => {

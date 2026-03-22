@@ -21,8 +21,11 @@ import { cn } from '../types';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { CreditInfoTip } from '../components/CreditInfoTip';
 
+import { useShare } from '../utils/share';
+
 export default function RedacaoPage() {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
+  const { share } = useShare();
   const { showToast } = useToast();
   const [text, setText] = useState('');
   const [isEvaluating, setIsEvaluating] = useState(false);
@@ -173,18 +176,7 @@ export default function RedacaoPage() {
   };
 
   const handleShare = async () => {
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: 'Minha Redação', text });
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error(err);
-        }
-      }
-    } else {
-      navigator.clipboard.writeText(text);
-      showToast("Copiado para a área de transferência! 📋");
-    }
+    await share({ title: 'Minha Redação', text });
   };
 
   return (

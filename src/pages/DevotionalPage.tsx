@@ -86,6 +86,8 @@ import { DEVOTIONAL_MATRIX } from '../constants/devotionals';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import MissionaryPage from './MissionaryPage';
 
+import { useShare } from '../utils/share';
+
 type DevotionalTheme = 'Kids' | 'Teen' | 'Casado' | 'Novo Convertido' | 'Discípulo' | 'Líder' | 'Teólogo' | 'Pastor' | 'Missionário' | 'Afastado';
 
 interface ThemeConfig {
@@ -172,6 +174,7 @@ const THEMES: ThemeConfig[] = [
 export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
   const location = useLocation();
   const { showToast } = useToast();
+  const { share } = useShare();
   const { isOffline } = useOffline();
   const { user } = useAuth();
   const { saveTrack } = useAudioBox();
@@ -637,24 +640,11 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                 }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Download size={20} /></button>
                 <button onClick={async () => {
                   if (prayerAudio) {
-                    try {
-                      const response = await fetch(prayerAudio);
-                      const blob = await response.blob();
-                      const file = new File([blob], 'oracao.mp3', { type: 'audio/mpeg' });
-                      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        await navigator.share({
-                          files: [file],
-                          title: 'Minha Oração',
-                          text: 'Ouça esta oração que gerei.',
-                        });
-                      } else {
-                        alert('Compartilhamento não suportado neste navegador.');
-                      }
-                    } catch (error) {
-                      if ((error as Error).name !== 'AbortError') {
-                        console.error('Erro ao compartilhar:', error);
-                      }
-                    }
+                    await share({
+                      title: 'Minha Oração',
+                      text: 'Ouça esta oração que gerei.',
+                      url: prayerAudio
+                    });
                   }
                 }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Share2 size={20} /></button>
                 <button onClick={async () => {
@@ -949,13 +939,11 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                           <Download size={14} /> Baixar Áudio
                         </button>
                         <button 
-                          onClick={() => {
-                            navigator.share({
+                          onClick={async () => {
+                            await share({
                               title: 'Áudio Devocional',
-                            }).catch((err: any) => {
-                              if (err.name !== 'AbortError') {
-                                console.error(err);
-                              }
+                              text: `Devocional de hoje: ${selectedTheme}`,
+                              url: narrationAudio
                             });
                           }}
                           className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"

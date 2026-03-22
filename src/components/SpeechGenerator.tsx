@@ -20,6 +20,8 @@ import { useToast } from './Toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
 
+import { useShare } from '../utils/share';
+
 interface SpeechGeneratorProps {
   initialText?: string;
   initialAudioUrl?: string;
@@ -40,6 +42,7 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({
   onSaveToNotebook 
 }) => {
   const { generateAudio, saveTrack } = useAudioBox();
+  const { share } = useShare();
   const { showToast } = useToast();
   
   const [text, setText] = useState(initialText);
@@ -156,16 +159,11 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({
 
   const handleShare = async () => {
     if (!audioUrl) return;
-    try {
-      await navigator.share({
-        title: title || 'Áudio Gerado',
-        text: text.substring(0, 100) + '...',
-      });
-    } catch (error) {
-      if ((error as Error).name !== 'AbortError') {
-        showToast("Erro ao compartilhar.", "error");
-      }
-    }
+    await share({
+      title: title || 'Áudio Gerado',
+      text: text.substring(0, 100) + '...',
+      url: audioUrl
+    });
   };
 
   return (

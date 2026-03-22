@@ -119,6 +119,8 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 };
 
+import { useShare } from '../utils/share';
+
 interface BibleStudyPageProps {
   deepThinking: boolean;
   setDeepThinking?: (value: boolean) => void;
@@ -207,6 +209,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const { showToast } = useToast();
   const { isOffline, downloadedChapters, downloadedMaterials, downloadChapter, downloadMaterial } = useOffline();
   const { balance, consumeCredits, estimateCredits } = useCredits();
+  const { share } = useShare();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<string>('bibles');
   const processedParams = useRef({ search: null, outline: null, tab: null });
@@ -1598,22 +1601,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   const handleShareNote = async (note: { title: string, content: string }) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: note.title,
-          text: note.content,
-        });
-        showToast("Compartilhando página! 🕊️");
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('Erro ao compartilhar:', err);
-        }
-      }
-    } else {
-      navigator.clipboard.writeText(`${note.title}\n\n${note.content}`);
-      showToast("Copiado para a área de transferência! 📋");
-    }
+    await share({
+      title: note.title,
+      text: note.content,
+    });
   };
 
   const [relatedResources, setRelatedResources] = useState<{ title: string, type: string, url: string }[]>([]);
@@ -2021,22 +2012,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   const handleShareContent = async (title: string, text: string) => {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: title,
-          text: text,
-        });
-        showToast("Compartilhando a benção! 🕊️✨");
-      } catch (err: any) {
-        if (err.name !== 'AbortError') {
-          console.error('Erro ao compartilhar:', err);
-        }
-      }
-    } else {
-      navigator.clipboard.writeText(text);
-      showToast("Copiado para a área de transferência! 📋✨");
-    }
+    await share({
+      title: title,
+      text: text,
+    });
   };
 
   const handleShareResult = () => {
@@ -2531,6 +2510,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   const studyBibles = [
+    "Bíblia do Homem",
+    "Bíblia de Estudo MacArthur",
+    "Bíblia de Estudo Ryrie",
+    "Bíblia de Estudo Holman",
+    "Bíblia de Estudo da Reforma",
+    "Bíblia de Estudo Arqueológica",
+    "Bíblia de Estudo King James",
     "Bíblia de Estudo A Mensagem",
     "Bíblia de Estudos Palavras-Chave",
     "Bíblia Apologética com apócrifos",
@@ -2582,7 +2568,30 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "Bíblia Shedd",
     "Bíblia Thompson",
     "Bíblia Scofield",
+    "Bíblia de Estudo do Expositor (Jimmy Swaggart)",
+    "Bíblia de Estudo de Liderança (John Maxwell)",
+    "Bíblia de Estudo da Mulher Cristã",
+    "Bíblia de Estudo de Profecias (Tim LaHaye)",
+    "Bíblia de Estudo de Avivamento e Renovação Espiritual",
+    "Bíblia de Estudo de Casais",
+    "Bíblia de Estudo de Arqueologia Bíblica (SBB)",
+    "Bíblia de Estudo de Pregação Expositiva (Hernandes Dias Lopes)",
+    "Bíblia de Estudo de Batalha Espiritual (Bento Oliveira)",
+    "Bíblia de Estudo de Vida Cristã",
+    "Bíblia de Estudo de Santidade",
+    "Bíblia de Estudo de Oração",
     "Bíblia Tradução do Novo mundo (Versão TJ)",
+    "NIV (New International Version - EN)",
+    "ESV (English Standard Version - EN)",
+    "KJV (King James Version - EN)",
+    "NKJV (New King James Version - EN)",
+    "NASB (New American Standard Bible - EN)",
+    "NLT (New Living Translation - EN)",
+    "NRSV (New Revised Standard Version - EN)",
+    "Reina Valera (Espanhol - ES)",
+    "Biblia de las Américas (Espanhol - ES)",
+    "Louis Segond (Francês - FR)",
+    "Lutherbibel (Alemão - DE)",
     "Comentário Bíblico Beacon",
     "Comentário bíblico expositivo Wiersbe",
     "Comentário Bíblico Matthew Henry",
@@ -4766,7 +4775,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         type="text"
                         placeholder={activeTab === 'compare' ? "⚓ Digite o versículo (ex: João 3:16)" : "⚓ O que você deseja pesquisar?"}
                         value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSearchQuery(val);
+                          if (activeTab === 'commentary') {
+                            setTopic(val);
+                            setCommentaryDebateTopic(val);
+                          }
+                        }}
                         onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                         className="w-full pl-12 pr-12 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
                       />
@@ -4876,7 +4892,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <input 
                           type="text"
                           value={topic}
-                          onChange={(e) => setTopic(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setTopic(val);
+                            setSearchQuery(val);
+                            setCommentaryDebateTopic(val);
+                          }}
                           placeholder="Pesquisa Geral"
                           className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent focus:border-emerald-500 rounded-[2rem] outline-none transition-all shadow-inner text-lg"
                         />
@@ -4950,7 +4971,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <input 
                             type="text"
                             value={commentaryDebateTopic || topic}
-                            onChange={(e) => setCommentaryDebateTopic(e.target.value)}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setCommentaryDebateTopic(val);
+                              setSearchQuery(val);
+                              setTopic(val);
+                            }}
                             placeholder="Tema para o debate..."
                             className="w-full p-6 bg-stone-50 dark:bg-zinc-800 border-2 border-transparent focus:border-amber-500 rounded-[2rem] outline-none transition-all shadow-inner text-lg"
                           />
@@ -5736,17 +5762,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </button>
                   <button
                     onClick={async () => {
-                      if (navigator.share && resourceStudyResult) {
-                        try {
-                          await navigator.share({
-                            title: 'Recurso Bíblico',
-                            text: resourceStudyResult,
-                          });
-                        } catch (err: any) { 
-                          if (err.name !== 'AbortError') {
-                            console.error(err); 
-                          }
-                        }
+                      if (resourceStudyResult) {
+                        await share({
+                          title: 'Recurso Bíblico',
+                          text: resourceStudyResult,
+                        });
                       }
                     }}
                     className="flex-1 min-w-[140px] py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-100 flex items-center justify-center gap-2 transition-all"
@@ -5845,15 +5865,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </button>
                   <button
                     onClick={async () => {
-                      if (navigator.share) {
-                        try {
-                          await navigator.share({ title: `Pesquisa: ${searchPopup.query}`, text: searchPopup.result });
-                        } catch (err: any) { 
-                          if (err.name !== 'AbortError') {
-                            console.error(err); 
-                          }
-                        }
-                      }
+                      await share({ 
+                        title: `Pesquisa: ${searchPopup.query}`, 
+                        text: searchPopup.result 
+                      });
                     }}
                     className="flex-1 py-2 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm"
                   >
