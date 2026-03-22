@@ -2174,36 +2174,35 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
+  // Handle URL search parameters
   useEffect(() => {
     const search = searchParams.get('search');
     const outlineParam = searchParams.get('outline');
     const tabParam = searchParams.get('tab');
 
+    // Skip if we've already processed these exact parameters
     if (search === processedParams.current.search && 
         outlineParam === processedParams.current.outline && 
         tabParam === processedParams.current.tab) return;
 
+    // Update ref immediately to prevent re-entry
     processedParams.current = { search, outline: outlineParam, tab: tabParam };
 
-    console.log('useEffect searchParams:', { search, outlineParam, tabParam });
-
-    if (tabParam) {
+    if (tabParam && tabParam !== activeTab) {
       setActiveTab(tabParam);
     }
 
     if (search) {
-      console.log('Processing search:', search);
       setSearchQuery(search);
       handleSearch(undefined, search);
       // Clear params to avoid re-triggering
       setSearchParams({}, { replace: true });
     } else if (outlineParam) {
-      console.log('Processing outline:', outlineParam);
       setTopic(outlineParam);
       handleGenerateOutline(outlineParam);
       setSearchParams({}, { replace: true });
     }
-  }, [searchParams]);
+  }, [searchParams, activeTab]);
 
   useEffect(() => {
     if (result || verseContent || messageResult || meaningResult || wikiResult || lessonResult || musicResult || narrationAudio) {

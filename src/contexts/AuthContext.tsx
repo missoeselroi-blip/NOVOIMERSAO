@@ -321,19 +321,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let localTotalTime = metrics.totalTime;
     const interval = setInterval(() => {
       localTotalTime += 1;
-      setMetrics(prev => ({ ...prev, totalTime: localTotalTime }));
       
       // Sync to Firestore every 5 minutes (300 seconds) to reduce write operations
       if (localTotalTime % 300 === 0 && db) {
         const metricsDocRef = doc(db, 'metrics', user.id);
         updateDoc(metricsDocRef, { totalTime: localTotalTime }).catch(err => {
-          // If we hit a resource-exhausted error, we should stop trying to write for a while
           if (err.message.includes('resource-exhausted')) {
             console.error("Firestore quota exceeded. Slowing down metrics updates.");
           } else {
             console.error("Error updating metrics:", err);
           }
         });
+        
+        // Only update state when syncing to Firestore to avoid per-second re-renders
+        setMetrics(prev => ({ ...prev, totalTime: localTotalTime }));
       }
     }, 1000);
 
