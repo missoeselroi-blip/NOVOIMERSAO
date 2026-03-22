@@ -221,7 +221,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       const prompt = `Gere uma oração gospel de ${selectedType}, com estilo carinhoso, consolador e motivador, focado em fé, adoração, graça, pedido de orientação do Espírito Santo e agradecimento pelas provisões diárias. Cite versículos da bíblia e salmos que evocam a fé, coragem, consolo, o Poder, glória e a proteção de Deus. A oração deve ser curta, profunda e emocionante.`;
       
       const prayerText = await geminiService.generateText(prompt, "Você é um mentor espiritual com voz acolhedora.");
-      const randomVoice = Math.random() > 0.5 ? 'Kore' : 'Puck';
+      const randomVoice = Math.random() > 0.5 ? 'Fenrir' : 'Charon';
       const audioUrl = await geminiService.generateSpeech(prayerText, randomVoice as any);
       
       if (audioUrl) {
@@ -229,7 +229,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         showToast("Oração gerada! Ouvindo agora... 🎧✨");
         setTimeout(() => {
           if (bgMusicRef.current) {
-            bgMusicRef.current.volume = 0.2;
+            bgMusicRef.current.volume = 0.4;
             bgMusicRef.current.play().catch(e => console.error("Error playing background music:", e));
           }
         }, 500);
@@ -674,10 +674,26 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
           {prayerAudio && (
             <audio ref={prayerAudioRef} src={prayerAudio} autoPlay onEnded={() => {
-              if (bgMusicRef.current) {
-                bgMusicRef.current.pause();
-                bgMusicRef.current.currentTime = 0;
-              }
+              setTimeout(() => {
+                if (bgMusicRef.current) {
+                  const audio = bgMusicRef.current;
+                  const fadeDuration = 2000; // 2 seconds
+                  const steps = 20;
+                  const stepTime = fadeDuration / steps;
+                  const volumeStep = audio.volume / steps;
+
+                  const fadeInterval = setInterval(() => {
+                    if (audio.volume > volumeStep) {
+                      audio.volume -= volumeStep;
+                    } else {
+                      audio.pause();
+                      audio.currentTime = 0;
+                      audio.volume = 0.4; // Reset to original volume
+                      clearInterval(fadeInterval);
+                    }
+                  }, stepTime);
+                }
+              }, 3000); // 3 seconds delay
             }} onTimeUpdate={(e) => {
               const audio = e.currentTarget;
               setAudioProgress((audio.currentTime / audio.duration) * 100);

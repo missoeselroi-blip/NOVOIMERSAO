@@ -2442,7 +2442,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           }
         },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
-        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] },
+        margin:       [25, 25, 25, 25]
       };
 
       await html2pdf().set(opt).from(outlineRef.current).save();
