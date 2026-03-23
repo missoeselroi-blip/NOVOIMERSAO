@@ -79,12 +79,38 @@
   }
 
   .devotional {
-    --app-bg: #1a140e;
-    --app-text: #e2d1b9;
-    --app-accent: #d97706;
-    --app-surface: #261d13;
-    --app-border: #3f3223;
-    --app-muted: #8c7862;
+    --app-bg: #fdfcf0; /* Cream Light */
+    --app-text: #4b3621; /* Coffee Brown */
+    --app-accent: #c0a080; /* Latte Tan */
+    --app-surface: #ffffff; /* Pure White */
+    --app-border: #eed2b1; /* Soft Beige */
+    --app-muted: #8c7862; /* Muted Sepia */
+
+    /* Cream Palette Overrides for Emerald */
+    --color-emerald-50: #fdfcf0;
+    --color-emerald-100: #f7e9d7;
+    --color-emerald-200: #eed2b1;
+    --color-emerald-300: #e1c699;
+    --color-emerald-400: #d4b483;
+    --color-emerald-500: #c0a080;
+    --color-emerald-600: #6f4e37;
+    --color-emerald-700: #4b3621;
+    --color-emerald-800: #3d2b1f;
+    --color-emerald-900: #2c1e1e;
+    --color-emerald-950: #1b1212;
+
+    /* Cream Palette Overrides for Blue */
+    --color-blue-50: #fdfcf0;
+    --color-blue-100: #f7e9d7;
+    --color-blue-200: #eed2b1;
+    --color-blue-300: #e1c699;
+    --color-blue-400: #d4b483;
+    --color-blue-500: #c0a080;
+    --color-blue-600: #6f4e37;
+    --color-blue-700: #4b3621;
+    --color-blue-800: #3d2b1f;
+    --color-blue-900: #2c1e1e;
+    --color-blue-950: #1b1212;
   }
 
   body {

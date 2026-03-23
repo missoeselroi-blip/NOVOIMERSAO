@@ -151,7 +151,7 @@ function AppContent() {
 
   const isDarkMode = theme === 'dark';
   const isDevotionalMode = theme === 'devotional';
-  const isDarkOrDevotional = isDarkMode || isDevotionalMode;
+  const isDark = isDarkMode; // Devotional is now light (cream)
 
   const mainNavItems = [
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
@@ -214,22 +214,22 @@ function AppContent() {
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className={cn(
           "absolute -top-[10%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[160px] opacity-20 transition-all duration-1000",
-          isDarkOrDevotional ? "bg-emerald-900/40" : "bg-emerald-100"
+          isDarkMode ? "bg-emerald-900/40" : (isDevotionalMode ? "bg-amber-200/40" : "bg-emerald-100")
         )} />
         <div className={cn(
           "absolute top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full blur-[160px] opacity-10 transition-all duration-1000",
-          isDarkOrDevotional ? "bg-blue-900/30" : "bg-blue-50"
+          isDarkMode ? "bg-blue-900/30" : (isDevotionalMode ? "bg-orange-200/30" : "bg-blue-50")
         )} />
         <div className={cn(
           "absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] rounded-full blur-[160px] opacity-15 transition-all duration-1000",
-          isDarkOrDevotional ? "bg-purple-900/20" : "bg-purple-50"
+          isDarkMode ? "bg-purple-900/20" : (isDevotionalMode ? "bg-stone-200/20" : "bg-purple-50")
         )} />
       </div>
 
       {/* Navigation */}
       <nav className={cn(
         "fixed top-0 w-full z-50 border-b backdrop-blur-md",
-        isDarkOrDevotional ? "bg-app-surface/80 border-app-border" : "bg-white/80 border-stone-200"
+        isDark ? "bg-app-surface/80 border-app-border" : "bg-white/80 border-stone-200"
       )}>
         {isOffline && (
           <div className="bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest py-1 text-center">
@@ -377,7 +377,7 @@ function AppContent() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         <div className={cn(
           "flex items-center justify-around h-16 border-t backdrop-blur-lg px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]",
-          isDarkOrDevotional ? "bg-app-surface/90 border-app-border" : "bg-white/90 border-stone-200"
+          isDark ? "bg-app-surface/90 border-app-border" : "bg-white/90 border-stone-200"
         )}>
           {mainNavItems.map((item) => (
             <button
@@ -387,7 +387,7 @@ function AppContent() {
                 "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative",
                 activeTab === item.id 
                   ? "text-emerald-600" 
-                  : isDarkOrDevotional ? "text-zinc-500" : "text-stone-400"
+                  : isDark ? "text-zinc-500" : "text-stone-400"
               )}
             >
               {activeTab === item.id && (
@@ -443,7 +443,7 @@ function AppContent() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={cn(
                 "fixed top-0 right-0 bottom-0 w-[80%] max-w-sm z-[60] md:hidden shadow-2xl flex flex-col",
-                isDarkOrDevotional ? "bg-app-surface" : "bg-white"
+                isDark ? "bg-app-surface" : "bg-white"
               )}
             >
               <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between">
@@ -647,7 +647,7 @@ function AppContent() {
 
       <footer className={cn(
         "py-8 border-t text-center text-sm",
-        isDarkOrDevotional ? "border-app-border text-app-muted" : "border-stone-200 text-stone-500"
+        isDark ? "border-app-border text-app-muted" : "border-stone-200 text-stone-500"
       )}>
         <div className="flex items-center justify-center gap-3">
           <img 

@@ -1,4 +1,5 @@
 import express from 'express';
+console.log("Starting server...");
 import path from 'path';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
@@ -13,7 +14,17 @@ dotenv.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+// Stripe Client (Lazy Initialization)
+let stripeClient: Stripe | null = null;
+
+function getStripe() {
+  if (!stripeClient) {
+    const apiKey = process.env.STRIPE_SECRET_KEY;
+    if (!apiKey) throw new Error("STRIPE_SECRET_KEY is missing");
+    stripeClient = new Stripe(apiKey);
+  }
+  return stripeClient;
+}
 
 // AI Clients (Lazy Initialization)
 let openaiClient: OpenAI | null = null;
@@ -38,6 +49,7 @@ function getAnthropic() {
 }
 
 async function startServer() {
+  console.log("startServer called");
   const app = express();
   const PORT = process.env.PORT || 3000;
 
@@ -133,6 +145,7 @@ async function startServer() {
   app.post("/api/create-checkout-session", async (req, res) => {
     const { amount, description } = req.body;
     try {
+      const stripe = getStripe();
       // Map amount to price
       let unit_amount = Math.round(1990 * 1.20);
       if (amount === 300) unit_amount = Math.round(4990 * 1.20);
