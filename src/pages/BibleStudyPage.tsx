@@ -79,6 +79,7 @@ import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { WifiOff } from 'lucide-react';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { useAuth } from '../contexts/AuthContext';
+import { compressImage } from '../utils/imageUtils';
 import { auth, db } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
@@ -646,8 +647,20 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     scrollToSearch();
   };
 
-  const handleSaveToNotebook = (title: string, content: string) => {
-    setPendingNote({ title, content });
+  const handleSaveToNotebook = async (title: string, content: string) => {
+    let finalContent = content;
+    
+    // If content is a base64 image string, compress it
+    if (content.startsWith('data:image')) {
+      showToast("Otimizando imagem para o caderno... ⏳", 'info');
+      try {
+        finalContent = await compressImage(content, 800, 800, 0.6);
+      } catch (e) {
+        console.error("Error compressing image:", e);
+      }
+    }
+
+    setPendingNote({ title, content: finalContent });
     setIsNotebookModalOpen(true);
   };
 

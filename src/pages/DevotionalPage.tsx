@@ -206,6 +206,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const [prayerType, setPrayerType] = useState('Agradecimento');
   const [customPrayerTheme, setCustomPrayerTheme] = useState('');
   const [prayerAudio, setPrayerAudio] = useState<string | null>(null);
+  const [isPlayingPrayer, setIsPlayingPrayer] = useState(false);
   const prayerAudioRef = React.useRef<HTMLAudioElement | null>(null);
   const bgMusicRef = React.useRef<HTMLAudioElement | null>(null);
 
@@ -622,92 +623,161 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
               dragMomentum={false}
               initial={{ opacity: 0, scale: 0.9, x: '-50%', y: '-50%' }}
               animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
-              className="fixed top-1/2 left-1/2 bg-app-surface border border-app-border p-6 rounded-[2.5rem] shadow-2xl z-50 w-[95%] max-w-2xl cursor-move"
+              className="fixed top-1/2 left-1/2 bg-app-surface border border-app-border p-8 rounded-[3rem] shadow-2xl z-50 w-[95%] max-w-2xl cursor-move"
             >
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded-full uppercase tracking-widest shadow-lg pointer-events-none">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-full uppercase tracking-widest shadow-lg pointer-events-none flex items-center gap-2">
+                <Sparkles size={12} />
                 Oração em Áudio (Arraste para mover)
               </div>
               
               <button 
-                onClick={() => setPrayerAudio(null)}
-                className="absolute -top-2 -right-2 p-2 bg-stone-100 dark:bg-zinc-800 text-stone-500 rounded-full shadow-lg hover:scale-110 transition-all z-10"
+                onClick={() => {
+                  if (prayerAudioRef.current) prayerAudioRef.current.pause();
+                  setPrayerAudio(null);
+                  setIsPlayingPrayer(false);
+                }}
+                className="absolute -top-2 -right-2 p-2.5 bg-white dark:bg-zinc-800 text-stone-500 rounded-full shadow-xl hover:scale-110 transition-all z-10 border border-stone-100 dark:border-zinc-700"
               >
-                <X size={16} />
+                <X size={18} />
               </button>
-
-              <div className="flex items-center gap-4">
-                <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime -= 10; }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><RotateCcw size={20} /></button>
-                <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.paused ? prayerAudioRef.current.play() : prayerAudioRef.current.pause(); }} className="p-4 bg-emerald-600 text-white rounded-full hover:bg-emerald-700">
-                  {prayerAudioRef.current?.paused ? <Play size={24} /> : <Pause size={24} />}
-                </button>
-                <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime += 10; }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><RotateCw size={20} /></button>
-                
-                <div className="flex-1 h-2 bg-stone-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-600" style={{ width: `${audioProgress}%` }}></div>
+              
+              <div className="space-y-6 mt-4">
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime -= 10; }} 
+                      className="p-3 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-400 transition-colors"
+                      title="Voltar 10s"
+                    >
+                      <RotateCcw size={24} />
+                    </button>
+                    
+                    <button 
+                      onClick={() => { 
+                        if(prayerAudioRef.current) {
+                          if (prayerAudioRef.current.paused) {
+                            prayerAudioRef.current.play();
+                            setIsPlayingPrayer(true);
+                          } else {
+                            prayerAudioRef.current.pause();
+                            setIsPlayingPrayer(false);
+                          }
+                        }
+                      }} 
+                      className="w-16 h-16 bg-emerald-600 text-white rounded-full hover:bg-emerald-700 shadow-lg shadow-emerald-600/30 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                    >
+                      {isPlayingPrayer ? <Pause size={32} fill="currentColor" /> : <Play size={32} fill="currentColor" className="ml-1" />}
+                    </button>
+                    
+                    <button 
+                      onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime += 10; }} 
+                      className="p-3 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800 text-stone-600 dark:text-zinc-400 transition-colors"
+                      title="Avançar 10s"
+                    >
+                      <RotateCw size={24} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden relative">
+                      <motion.div 
+                        className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${audioProgress}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-[11px] text-stone-500 font-mono font-medium">
+                      <span>{Math.floor((audioProgress / 100 * (prayerAudioRef.current?.duration || 0)) / 60)}:{(Math.floor((audioProgress / 100 * (prayerAudioRef.current?.duration || 0)) % 60)).toString().padStart(2, '0')}</span>
+                      <span>{Math.floor((prayerAudioRef.current?.duration || 0) / 60)}:{(Math.floor((prayerAudioRef.current?.duration || 0) % 60)).toString().padStart(2, '0')}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex gap-1">
-                  <button onClick={() => {
-                    if (prayerAudio) {
-                      const link = document.createElement('a');
-                      link.href = prayerAudio;
-                      link.download = 'oracao.mp3';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }
-                  }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800" title="Baixar"><Download size={20} /></button>
-                  <button onClick={async () => {
-                    if (prayerAudio) {
+                <div className="grid grid-cols-3 gap-3">
+                  <button 
+                    onClick={() => {
+                      if (prayerAudio) {
+                        const link = document.createElement('a');
+                        link.href = prayerAudio;
+                        link.download = 'oracao.mp3';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }
+                    }} 
+                    className="py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 flex items-center justify-center gap-2 text-xs transition-all"
+                  >
+                    <Download size={16} /> Baixar
+                  </button>
+                  
+                  <button 
+                    onClick={async () => {
                       await share({
                         title: 'Minha Oração',
                         text: 'Ouça esta oração que gerei.',
-                        url: prayerAudio
+                        url: prayerAudio || ''
                       });
-                    }
-                  }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800" title="Compartilhar"><Share2 size={20} /></button>
-                  <button onClick={async () => {
-                    if (prayerAudio) {
-                      try {
-                        await saveTrack('Oração Gerada', 'Oração', prayerAudio, 'Oração', 'Inspiradora');
-                        showToast("Áudio salvo na Coletânea! 🎵", 'success');
-                      } catch (saveError) {
-                        console.error("Error saving to audio box:", saveError);
-                        showToast("Erro ao salvar áudio.", 'error');
+                    }} 
+                    className="py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 flex items-center justify-center gap-2 text-xs transition-all"
+                  >
+                    <Share2 size={16} /> Compartilhar
+                  </button>
+                  
+                  <button 
+                    onClick={async () => {
+                      if (prayerAudio) {
+                        try {
+                          await saveTrack('Oração Gerada', 'Oração', prayerAudio, 'Oração', 'Inspiradora');
+                          showToast("Áudio salvo na Coletânea! 🎵", 'success');
+                        } catch (saveError) {
+                          console.error("Error saving to audio box:", saveError);
+                          showToast("Erro ao salvar áudio.", 'error');
+                        }
                       }
-                    }
-                  }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800" title="Salvar na Coletânea"><Save size={20} /></button>
+                    }}
+                    className="py-3 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 font-bold rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 flex items-center justify-center gap-2 text-xs transition-all"
+                  >
+                    <Volume2 size={16} /> Salvar
+                  </button>
                 </div>
               </div>
-            </motion.div>
-          )}
 
-          {prayerAudio && (
-            <audio ref={prayerAudioRef} src={prayerAudio} autoPlay onEnded={() => {
-              setTimeout(() => {
-                if (bgMusicRef.current) {
-                  const audio = bgMusicRef.current;
-                  const fadeDuration = 2000; // 2 seconds
-                  const steps = 20;
-                  const stepTime = fadeDuration / steps;
-                  const volumeStep = audio.volume / steps;
+              <audio 
+                ref={prayerAudioRef}
+                src={prayerAudio}
+                autoPlay
+                onTimeUpdate={(e) => {
+                  const progress = (e.currentTarget.currentTime / e.currentTarget.duration) * 100;
+                  setAudioProgress(progress);
+                }}
+                onEnded={() => {
+                  setIsPlayingPrayer(false);
+                  setTimeout(() => {
+                    if (bgMusicRef.current) {
+                      const audio = bgMusicRef.current;
+                      const fadeDuration = 2000; // 2 seconds
+                      const steps = 20;
+                      const stepTime = fadeDuration / steps;
+                      const volumeStep = audio.volume / steps;
 
-                  const fadeInterval = setInterval(() => {
-                    if (audio.volume > volumeStep) {
-                      audio.volume -= volumeStep;
-                    } else {
-                      audio.pause();
-                      audio.currentTime = 0;
-                      audio.volume = 0.4; // Reset to original volume
-                      clearInterval(fadeInterval);
+                      const fadeInterval = setInterval(() => {
+                        if (audio.volume > volumeStep) {
+                          audio.volume -= volumeStep;
+                        } else {
+                          audio.pause();
+                          audio.currentTime = 0;
+                          audio.volume = 0.4; // Reset to original volume
+                          clearInterval(fadeInterval);
+                        }
+                      }, stepTime);
                     }
-                  }, stepTime);
-                }
-              }, 3000); // 3 seconds delay
-            }} onTimeUpdate={(e) => {
-              const audio = e.currentTarget;
-              setAudioProgress((audio.currentTime / audio.duration) * 100);
-            }} />
+                  }, 3000);
+                }}
+                onPlay={() => setIsPlayingPrayer(true)}
+                onPause={() => setIsPlayingPrayer(false)}
+                className="hidden"
+              />
+            </motion.div>
           )}
           <audio ref={bgMusicRef} src="https://firebasestorage.googleapis.com/v0/b/imersao-biblica-ia.firebasestorage.app/o/meditao-luz-das-estrelas.mp3?alt=media" loop />
 

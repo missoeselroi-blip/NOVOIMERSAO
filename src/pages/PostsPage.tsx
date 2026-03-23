@@ -21,6 +21,7 @@ import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { Save, Coins } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { compressImage } from '../utils/imageUtils';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useCredits } from '../contexts/CreditContext';
@@ -146,10 +147,22 @@ export default function PostsPage() {
     showToast("Rascunho do post salvo! 🎨✨");
   };
 
-  const handleSaveToNotebook = () => {
+  const handleSaveToNotebook = async () => {
+    let finalBgImage = bgImage;
+    
+    // If it's a base64 string, compress it before saving to notebook
+    if (bgImage.startsWith('data:image')) {
+      showToast("Otimizando imagem para o caderno... ⏳", 'info');
+      try {
+        finalBgImage = await compressImage(bgImage, 800, 800, 0.6);
+      } catch (e) {
+        console.error("Error compressing image:", e);
+      }
+    }
+
     setPendingNote({
       title: `Post: ${reference}`,
-      content: `Versículo: ${verse}\nReferência: ${reference}\nImagem: ${bgImage}`
+      content: `Versículo: ${verse}\nReferência: ${reference}\nImagem: ${finalBgImage}`
     });
     setIsNotebookModalOpen(true);
   };

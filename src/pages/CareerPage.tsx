@@ -42,6 +42,7 @@ const MOCK_USER: UserProfile = {
 const LEADERBOARD: UserProfile[] = [];
 
 import { useAuth } from '../contexts/AuthContext';
+import { compressImage } from '../utils/imageUtils';
 import { useCredits } from '../contexts/CreditContext';
 import { geminiService } from '../services/geminiService';
 import { db } from '../lib/firebase';
@@ -157,10 +158,13 @@ export default function CareerPage() {
       
       const imageUrl = await geminiService.generateImage(prompt);
       if (imageUrl) {
-        await updateUser({ avatar: imageUrl });
+        // Compress image before saving to Firestore to avoid 1MB limit
+        const compressedUrl = await compressImage(imageUrl, 512, 512, 0.7);
+        
+        await updateUser({ avatar: compressedUrl });
         // Also update career progress doc for leaderboard
         const careerDocRef = doc(db, 'careerProgress', user.id);
-        await updateDoc(careerDocRef, { avatar: imageUrl });
+        await updateDoc(careerDocRef, { avatar: compressedUrl });
         showToast("Avatar gerado com sucesso! Ficou incrível! ⚓✨", 'success');
       } else {
         showToast("Erro ao gerar avatar. Tente novamente.", 'error');
