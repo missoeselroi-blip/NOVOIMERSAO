@@ -11,8 +11,6 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
-
   // Request logging
   app.use((req, res, next) => {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
@@ -40,12 +38,21 @@ async function startServer() {
 
     // SPA fallback
     app.get("*", async (req, res, next) => {
-      if (req.path.startsWith('/api') || req.path.includes('.')) return next();
+      const url = req.originalUrl;
+
+      // Skip API and files with dots (likely static assets not handled by Vite)
+      if (url.startsWith('/api') || url.includes('.')) {
+        return next();
+      }
 
       try {
         const indexPath = path.resolve(__dirname, 'index.html');
         let template = fs.readFileSync(indexPath, 'utf-8');
         
+        // Apply Vite HTML transforms
+        template = await vite.transformIndexHtml(url, template);
+
+        // Inject API Key
         const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
         if (apiKey) {
           template = template.replace(
@@ -54,8 +61,7 @@ async function startServer() {
           );
         }
         
-        const html = await vite.transformIndexHtml(req.originalUrl, template);
-        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
         vite.ssrFixStacktrace(e as any);
         next(e);
