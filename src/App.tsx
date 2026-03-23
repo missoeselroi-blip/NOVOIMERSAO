@@ -1,5 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
-import { lazyWithRetry } from './utils/lazyWithRetry';
+import { lazyWithRetry } from './utils/lazyWithRetry.ts';
 import { 
   HashRouter as Router,
   Routes,
@@ -44,10 +44,10 @@ import {
   ShieldCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from './types';
-import { NavigationMenu } from './components/NavigationMenu';
-import ErrorBoundary from './components/ErrorBoundary';
-import { useAccessibility } from './contexts/AccessibilityContext';
+import { cn } from './types.ts';
+import { NavigationMenu } from './components/NavigationMenu.tsx';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
+import { useAccessibility } from './contexts/AccessibilityContext.tsx';
 
 declare global {
   interface Window {
@@ -74,24 +74,24 @@ const RedacaoPage = lazyWithRetry(() => import('./pages/RedacaoPage'));
 const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazyWithRetry(() => import('./pages/TheologySearchPage'));
-import TheologyPage from './pages/TheologyPage';
+import TheologyPage from './pages/TheologyPage.tsx';
 const MissionaryPage = lazyWithRetry(() => import('./pages/MissionaryPage'));
 
 const MissionaryBulkResults = lazyWithRetry(() => import('./pages/MissionaryBulkResults'));
 const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));
 const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
 
-import { ToastProvider, useToast } from './components/Toast';
-import { CreditProvider, useCredits } from './contexts/CreditContext';
-import { OfflineProvider, useOffline } from './contexts/OfflineContext';
-import { ThemeProvider, useTheme } from './contexts/ThemeContext';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { AccessibilityProvider } from './contexts/AccessibilityContext';
-import { AudioBoxProvider } from './contexts/AudioBoxContext';
-import { AccessibilityControls } from './components/AccessibilityControls';
-import { VoiceCommandCenter } from './components/VoiceCommandCenter';
-import AuthModal from './components/AuthModal';
-import { MicrophonePermissionModal } from './components/MicrophonePermissionModal';
+import { ToastProvider, useToast } from './components/Toast.tsx';
+import { CreditProvider, useCredits } from './contexts/CreditContext.tsx';
+import { OfflineProvider, useOffline } from './contexts/OfflineContext.tsx';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext.tsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
+import { AccessibilityProvider } from './contexts/AccessibilityContext.tsx';
+import { AudioBoxProvider } from './contexts/AudioBoxContext.tsx';
+import { AccessibilityControls } from './components/AccessibilityControls.tsx';
+import { VoiceCommandCenter } from './components/VoiceCommandCenter.tsx';
+import AuthModal from './components/AuthModal.tsx';
+import { MicrophonePermissionModal } from './components/MicrophonePermissionModal.tsx';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 
 function AppContent() {

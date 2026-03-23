@@ -24,82 +24,54 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  let vite: any;
-  let vitePromise: Promise<void> | null = null;
+  if (process.env.NODE_ENV !== "production") {
+    console.log("Starting Vite in middleware mode...");
+    const vite = await createViteServer({
+      server: { 
+        middlewareMode: true, 
+        hmr: false,
+        host: '0.0.0.0'
+      },
+      appType: "spa",
+    });
 
-  const initVite = async () => {
-    if (vitePromise) return vitePromise;
-    vitePromise = (async () => {
+    // Use vite's connect instance as middleware
+    app.use(vite.middlewares);
+
+    // SPA fallback
+    app.get("*", async (req, res, next) => {
+      if (req.path.startsWith('/api') || req.path.includes('.')) return next();
+
       try {
-        console.log("Starting Vite...");
-        vite = await createViteServer({
-          server: { 
-            middlewareMode: true, 
-            hmr: false,
-            host: '0.0.0.0'
-          },
-          appType: "spa",
-        });
-        console.log("Vite is ready.");
-      } catch (err) {
-        console.error("Failed to start Vite:", err);
-        vitePromise = null; // Allow retry
-        throw err;
+        const indexPath = path.resolve(__dirname, 'index.html');
+        let template = fs.readFileSync(indexPath, 'utf-8');
+        
+        const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+        if (apiKey) {
+          template = template.replace(
+            '</head>',
+            `<script>window.GEMINI_API_KEY = ${JSON.stringify(apiKey)};</script></head>`
+          );
+        }
+        
+        const html = await vite.transformIndexHtml(req.originalUrl, template);
+        res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
+      } catch (e) {
+        vite.ssrFixStacktrace(e as any);
+        next(e);
       }
-    })();
-    return vitePromise;
-  };
-
-  // Middleware to wait for Vite
-  app.use(async (req, res, next) => {
-    if (req.path.startsWith('/api')) return next();
-    
-    try {
-      if (!vite) {
-        await initVite();
-      }
-      return vite.middlewares(req, res, next);
-    } catch (err) {
-      console.error("Vite middleware error:", err);
-      res.status(503).send("Servidor em inicialização. Por favor, aguarde e atualize a página.");
-    }
-  });
-
-  app.get("*", async (req, res, next) => {
-    if (req.path.startsWith('/api')) return next();
-    if (req.method !== 'GET' || !req.accepts('html')) return next();
-
-    try {
-      if (!vite) await initVite();
-      
-      const indexPath = path.resolve(__dirname, 'index.html');
-      if (!fs.existsSync(indexPath)) {
-        return res.status(404).send('index.html not found');
-      }
-
-      let template = fs.readFileSync(indexPath, 'utf-8');
-      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
-      
-      if (apiKey) {
-        template = template.replace(
-          '</head>',
-          `<script>window.GEMINI_API_KEY = ${JSON.stringify(apiKey)};</script></head>`
-        );
-      }
-      
-      const html = await vite.transformIndexHtml(req.originalUrl, template);
-      res.status(200).set({ 'Content-Type': 'text/html' }).end(html);
-    } catch (e) {
-      if (vite) vite.ssrFixStacktrace(e as any);
-      next(e);
-    }
-  });
+    });
+  } else {
+    const distPath = path.resolve(__dirname, 'dist');
+    app.use(express.static(distPath));
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith('/api')) return next();
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server listening on http://0.0.0.0:${PORT}`);
-    initVite().catch(err => {
-      console.error("Initial Vite startup failed:", err);
-    });
   });
 }
 
