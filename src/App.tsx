@@ -116,6 +116,13 @@ function AppContent() {
     }
   }, [user, pendingTab, navigate]);
 
+  useEffect(() => {
+    const key = import.meta.env.VITE_GEMINI_API_KEY || (process.env as any).GEMINI_API_KEY;
+    if (!key) {
+      console.warn("⚠️ GEMINI_API_KEY não detectada no frontend. Verifique 'Settings > Secrets'.");
+    }
+  }, []);
+
   if (isInitialLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">

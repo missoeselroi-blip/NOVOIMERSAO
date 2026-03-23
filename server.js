@@ -14,11 +14,12 @@ app.use(express.json());
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on http://0.0.0.0:${PORT}`);
   console.log(`GEMINI_API_KEY present: ${!!process.env.GEMINI_API_KEY}`);
+  console.log(`API_KEY present: ${!!process.env.API_KEY}`);
 });
 
 // Health check
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok" });
+  res.json({ status: "ok", viteReady: isViteReady });
 });
 
 // API routes
@@ -26,15 +27,45 @@ app.post("/api/contact", (req, res) => {
   res.json({ success: true });
 });
 
+let vite;
+let isViteReady = false;
+
+// Middleware to handle requests before Vite is ready
+app.use((req, res, next) => {
+  if (!isViteReady && !req.path.startsWith('/api')) {
+    return res.status(200).send(`
+      <html>
+        <head>
+          <title>Carregando...</title>
+          <style>
+            body { font-family: sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; background: #f5f5f0; }
+            .loader { text-align: center; }
+            .spinner { border: 4px solid rgba(0,0,0,0.1); border-left-color: #059669; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+            @keyframes spin { to { transform: rotate(360deg); } }
+          </style>
+          <meta http-equiv="refresh" content="2">
+        </head>
+        <body>
+          <div class="loader">
+            <div class="spinner"></div>
+            <p>Iniciando aplicação, por favor aguarde...</p>
+          </div>
+        </body>
+      </html>
+    `);
+  }
+  next();
+});
+
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
     console.log("Initializing Vite in middleware mode...");
     try {
       const { createServer: createViteServer } = await import('vite');
-      const vite = await createViteServer({
+      vite = await createViteServer({
         server: { 
           middlewareMode: true,
-          hmr: false, // Disable HMR for this environment
+          hmr: false,
           host: '0.0.0.0',
           port: 3000
         },
@@ -56,7 +87,8 @@ async function startServer() {
         }
       });
       
-      console.log("Vite middleware attached.");
+      isViteReady = true;
+      console.log("Vite middleware attached and ready.");
     } catch (err) {
       console.error("Vite initialization failed:", err);
     }
@@ -66,6 +98,7 @@ async function startServer() {
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
+    isViteReady = true;
   }
 }
 

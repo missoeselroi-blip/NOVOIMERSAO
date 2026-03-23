@@ -11,9 +11,10 @@ export default defineConfig(({ mode }) => {
   
   // Priority: 
   // 1. process.env.GEMINI_API_KEY (System environment)
-  // 2. env.GEMINI_API_KEY (Loaded from .env files)
-  // 3. env.VITE_GEMINI_API_KEY (Vite standard)
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || "";
+  // 2. process.env.API_KEY (Alternative system environment)
+  // 3. env.GEMINI_API_KEY (Loaded from .env files)
+  // 4. env.VITE_GEMINI_API_KEY (Vite standard)
+  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || "";
 
   return {
     plugins: [react()],
