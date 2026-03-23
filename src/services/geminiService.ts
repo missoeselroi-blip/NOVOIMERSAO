@@ -276,7 +276,7 @@ export const geminiService = {
           model: "gemini-2.5-flash-preview-tts",
           contents: [{ parts: [{ text: cleanText }] }],
           config: {
-            responseModalities: ["AUDIO"],
+            responseModalities: [Modality.AUDIO],
             speechConfig: {
               voiceConfig: {
                 prebuiltVoiceConfig: { voiceName },

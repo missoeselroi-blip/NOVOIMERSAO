@@ -239,9 +239,10 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       } else {
         showToast("Erro ao gerar áudio da oração.");
       }
-    } catch (error) {
-      console.error(error);
-      showToast("Erro ao gerar oração.", "error");
+    } catch (error: any) {
+      console.error("Prayer Generation Error:", error);
+      const errorMessage = error?.message || "Erro desconhecido";
+      showToast(`Erro ao gerar oração: ${errorMessage}`, "error");
     } finally {
       setIsGeneratingPrayer(false);
     }

@@ -120,7 +120,7 @@ function AppContent() {
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">
         <div className="text-center space-y-6">
           <img 
-            src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
+            src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
             alt="Logo" 
             className="w-20 h-20 object-contain mx-auto animate-pulse"
             referrerPolicy="no-referrer"
@@ -671,22 +671,24 @@ function AppContent() {
 
 export default function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <ThemeProvider>
-          <AccessibilityProvider>
-            <OfflineProvider>
-              <ToastProvider>
-                <CreditProvider>
-                  <AudioBoxProvider>
-                    <AppContent />
-                  </AudioBoxProvider>
-                </CreditProvider>
-              </ToastProvider>
-            </OfflineProvider>
-          </AccessibilityProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <AuthProvider>
+          <ThemeProvider>
+            <AccessibilityProvider>
+              <OfflineProvider>
+                <ToastProvider>
+                  <CreditProvider>
+                    <AudioBoxProvider>
+                      <AppContent />
+                    </AudioBoxProvider>
+                  </CreditProvider>
+                </ToastProvider>
+              </OfflineProvider>
+            </AccessibilityProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </Router>
+    </ErrorBoundary>
   );
 }

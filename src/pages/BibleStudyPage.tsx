@@ -2518,6 +2518,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const studyBibles = [
     "Bíblia do Homem",
+    "Bíblia de Estudo Desafios de Todo Homem",
     "Bíblia de Estudo MacArthur",
     "Bíblia de Estudo Ryrie",
     "Bíblia de Estudo Holman",
