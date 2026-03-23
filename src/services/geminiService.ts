@@ -47,8 +47,8 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
+const MAX_RETRIES = 5; // Increased from 3
+const RETRY_DELAY = 2000; // Increased from 1000
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -58,6 +58,10 @@ const handleApiError = (error: any) => {
   if (error?.status === 429 || errorMessage.includes("RESOURCE_EXHAUSTED")) {
     console.warn("Gemini API Quota Exceeded (429).");
     throw new Error("Limite de cota do Gemini excedido. Por favor, aguarde um momento ou tente novamente mais tarde. ⏳");
+  }
+
+  if (error?.status === 503 || errorMessage.includes("high demand") || errorMessage.includes("UNAVAILABLE")) {
+    throw new Error("O Google Gemini está com alta demanda no momento. 📈 Por favor, tente novamente em alguns segundos. Isso é temporário!");
   }
 
   if (errorMessage.includes("API_KEY_INVALID") || errorMessage.includes("key is not valid")) {
