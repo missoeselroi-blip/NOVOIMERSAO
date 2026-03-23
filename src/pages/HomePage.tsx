@@ -83,7 +83,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     await share({
       title: 'Imersão Bíblica',
       text: 'Confira este aplicativo incrível para estudo bíblico e devocional!',
-      url: window.location.origin,
+      url: 'https://imersaobiblicaia.com',
     });
   };
 
@@ -536,7 +536,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
   const shareToSocial = (platform: string) => {
     const text = `"${dailyVerse.text}" - ${dailyVerse.reference} #ImersaoBiblica`;
-    const url = window.location.href;
+    const url = 'https://imersaobiblicaia.com';
     
     if (platform === 'whatsapp') {
       window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
@@ -582,10 +582,10 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           onClick={handleShareApp}
-          className="w-full py-5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-[2rem] flex items-center justify-center gap-3 font-bold text-stone-700 dark:text-zinc-300 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-all shadow-lg group"
+          className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-200/50 dark:shadow-none group"
         >
-          <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Share2 size={20} className="text-emerald-600 dark:text-emerald-400" />
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Share2 size={20} className="text-white" />
           </div>
           <span className="text-sm md:text-base">Compartilhar App</span>
         </motion.button>
