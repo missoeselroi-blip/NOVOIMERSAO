@@ -97,7 +97,21 @@ async function startVite() {
 }
 
 // Start listening IMMEDIATELY
-app.listen(PORT, '0.0.0.0', () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on http://0.0.0.0:${PORT}`);
-  startVite();
+  startVite().catch(err => {
+    console.error("CRITICAL: Vite failed to start:", err);
+  });
+});
+
+server.on('error', (err) => {
+  console.error("Server error:", err);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
 });
