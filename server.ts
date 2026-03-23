@@ -27,6 +27,10 @@ async function startServer() {
     } else {
       // Serve static files in production
       const distPath = path.resolve(process.cwd(), 'dist');
+      console.log(`Serving static files from: ${distPath}`);
+      if (!fs.existsSync(distPath)) {
+        console.error('ERROR: dist directory not found! Did you run npm run build?');
+      }
       app.use(express.static(distPath));
     }
 
