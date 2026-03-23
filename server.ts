@@ -11,32 +11,27 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  console.log('Starting server initialization...');
-
   try {
     // Vite middleware for development
     const vite = await createViteServer({
       server: { 
         middlewareMode: true,
-        host: '0.0.0.0',
-        port: 3000,
         hmr: false // Disable HMR as per guidelines
       },
-      appType: 'spa',
+      appType: 'custom',
     });
-
-    console.log('Vite server created successfully.');
 
     // Use vite's connect instance as middleware
-    app.use((req, res, next) => {
-      console.log(`Incoming request: ${req.method} ${req.url}`);
-      next();
-    });
     app.use(vite.middlewares);
 
     // Serve index.html for all non-API routes
     app.get('*', async (req, res, next) => {
       const url = req.originalUrl;
+
+      // Ignore requests for files with extensions (should be handled by Vite or return 404)
+      if (url.includes('.') && !url.endsWith('.html')) {
+        return next();
+      }
 
       try {
         // 1. Read index.html
@@ -63,7 +58,7 @@ async function startServer() {
     });
 
     app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on http://0.0.0.0:${PORT}`);
+      console.log(`Listening on ${PORT}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
