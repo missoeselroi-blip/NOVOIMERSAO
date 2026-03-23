@@ -8,13 +8,21 @@ const getAI = () => {
 
   const getValidKey = (key: any) => {
     if (!key || typeof key !== 'string') return null;
-    const trimmed = key.trim().replace(/['"]/g, ''); // Remove quotes if present
-    if (!trimmed || trimmed === "undefined" || trimmed === "null" || trimmed === "") return null;
-    return trimmed;
+    // Remove quotes, whitespace, and invisible zero-width characters
+    const cleaned = key.trim()
+      .replace(/['"]/g, '')
+      .replace(/[\u200B-\u200D\uFEFF]/g, ''); 
+    
+    if (!cleaned || cleaned === "undefined" || cleaned === "null") return null;
+    return cleaned;
   };
 
-  // Try multiple sources for the API key
-  let apiKey = getValidKey(import.meta.env.VITE_GEMINI_API_KEY);
+  // Try multiple sources for the API key, prioritizing runtime injection
+  let apiKey = getValidKey((window as any).RUNTIME_ENV?.VITE_GEMINI_API_KEY);
+  
+  if (!apiKey) {
+    apiKey = getValidKey(import.meta.env.VITE_GEMINI_API_KEY);
+  }
   
   if (!apiKey) {
     apiKey = getValidKey((process.env as any).GEMINI_API_KEY);
@@ -26,10 +34,6 @@ const getAI = () => {
   
   if (!apiKey) {
     apiKey = getValidKey((window as any).GEMINI_API_KEY);
-  }
-
-  if (!apiKey) {
-    apiKey = getValidKey((window as any).VITE_GEMINI_API_KEY);
   }
   
   if (!apiKey) {

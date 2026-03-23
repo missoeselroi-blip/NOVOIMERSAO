@@ -51,6 +51,13 @@ async function startServer() {
           template = fs.readFileSync(path.resolve(process.cwd(), 'dist/index.html'), 'utf-8');
         }
 
+        // Inject runtime environment variables for the frontend
+        const runtimeEnv = {
+          VITE_GEMINI_API_KEY: process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "",
+        };
+        const envScript = `<script>window.RUNTIME_ENV = ${JSON.stringify(runtimeEnv)};</script>`;
+        template = template.replace('</head>', `${envScript}</head>`);
+
         res.status(200).set({ 'Content-Type': 'text/html' }).end(template);
       } catch (e) {
         if (!isProd && vite && e instanceof Error) {
