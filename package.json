@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "npm run clean && vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:vite --external:stripe --external:express --external:dotenv",
+    "build": "npm run clean && vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --external:vite --external:stripe --external:express --external:dotenv --external:openai --external:@anthropic-ai/sdk --external:axios",
     "start": "node dist/server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
@@ -24,6 +24,7 @@
     "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^12.10.0",
+    "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",
     "html2pdf.js": "^0.14.0",
     "idb": "^8.0.3",
