@@ -25,6 +25,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { useCredits } from '../contexts/CreditContext';
 import html2canvas from 'html2canvas';
+import { multiAiService } from '../services/multiAiService';
 
 export default function PostsPage() {
   const { fontFamily: accFontFamily, fontSize: accFontSize, lineHeight: accLineHeight } = useAccessibility();
@@ -44,6 +45,7 @@ export default function PostsPage() {
   const [aspectRatio, setAspectRatio] = useState('1:1'); // 1:1, 9:16, 4:5
   const [isGeneratingBg, setIsGeneratingBg] = useState(false);
   const [imageDescription, setImageDescription] = useState("");
+  const [aiProvider, setAiProvider] = useState<'gemini' | 'openai' | 'stability'>('gemini');
 
   const postRef = useRef<HTMLDivElement>(null);
 
@@ -66,13 +68,22 @@ export default function PostsPage() {
         ? `A high-quality, professional image for a Christian post. Description: ${imageDescription}. Style: cinematic, peaceful, spiritual.`
         : `A beautiful, high-quality, spiritual and inspiring background image for a Christian quote about: ${verse}. Style: professional photography, cinematic lighting, peaceful atmosphere.`;
       
-      const response = await geminiService.generateImage(prompt);
+      let response: string | null = null;
+      
+      if (aiProvider === 'gemini') {
+        response = await geminiService.generateImage(prompt);
+      } else if (aiProvider === 'openai') {
+        response = await multiAiService.generateOpenAiImage(prompt);
+      } else if (aiProvider === 'stability') {
+        response = await multiAiService.generateStabilityImage(prompt);
+      }
+
       if (response) {
-        consumeCredits(cost, `Geração de imagem IA: ${imageDescription || verse.substring(0, 20)}...`);
+        consumeCredits(cost, `Geração de imagem IA (${aiProvider}): ${imageDescription || verse.substring(0, 20)}...`);
         setBgImage(response);
-        showToast("Imagem gerada com sucesso! Glória a Deus! 🙌✨");
+        showToast(`Imagem gerada com sucesso via ${aiProvider.toUpperCase()}! Glória a Deus! 🙌✨`);
       } else {
-        showToast("Não conseguimos gerar a imagem agora. Tente novamente.", 'error');
+        showToast(`Não conseguimos gerar a imagem com ${aiProvider.toUpperCase()} agora. Tente novamente ou mude o provedor.`, 'error');
       }
     } catch (error) {
       console.error('Error generating image:', error);
@@ -340,6 +351,26 @@ export default function PostsPage() {
                   >
                     <Layout size={16} />
                     {ratio.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-stone-500 uppercase tracking-wider">Provedor de IA</label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['gemini', 'openai', 'stability'] as const).map((provider) => (
+                  <button
+                    key={provider}
+                    onClick={() => setAiProvider(provider)}
+                    className={cn(
+                      "p-2 rounded-lg text-[10px] font-bold border transition-all capitalize",
+                      aiProvider === provider 
+                        ? "bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-900" 
+                        : "border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-800"
+                    )}
+                  >
+                    {provider}
                   </button>
                 ))}
               </div>

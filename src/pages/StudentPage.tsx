@@ -31,6 +31,7 @@ import {
 import TheologyPage from './TheologyPage';
 import RedacaoPage from './RedacaoPage';
 import { cn } from '../types';
+import { multiAiService } from '../services/multiAiService';
 
 const THEOLOGY_SUBJECTS = [
   'Bibliologia', 'Teontologia', 'Cristologia', 'Pneumatologia', 
@@ -53,12 +54,30 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
   const [isResetting, setIsResetting] = useState(false);
   const [summaries, setSummaries] = useState<any[]>([]);
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
+  const [recommendations, setRecommendations] = useState<string>("");
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   useEffect(() => {
-    if (activeSubTab === 'summaries' && user) {
-      loadSummaries();
+    if (activeSubTab === 'profile' && user && !recommendations) {
+      loadRecommendations();
     }
   }, [activeSubTab, user]);
+
+  const loadRecommendations = async () => {
+    if (!user) return;
+    setIsLoadingRecommendations(true);
+    try {
+      const result = await multiAiService.getPersonalizedRecommendations(
+        { name: user.name, email: user.email },
+        { completedSubjects, totalPoints }
+      );
+      if (result) setRecommendations(result);
+    } catch (error) {
+      console.error("Error loading recommendations:", error);
+    } finally {
+      setIsLoadingRecommendations(false);
+    }
+  };
 
   const loadSummaries = async () => {
     if (!user) return;
@@ -532,11 +551,29 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                   </div>
                 </div>
 
-                <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
-                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <Brain size={20} className="text-purple-500" />
-                    Estatísticas
-                  </h3>
+                  <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                      <Brain size={20} className="text-purple-500" />
+                      Recomendações Personalizadas (Claude AI)
+                    </h3>
+                    {isLoadingRecommendations ? (
+                      <div className="flex items-center gap-2 text-stone-500 italic">
+                        <Loader2 className="animate-spin" size={16} /> Analisando seu perfil...
+                      </div>
+                    ) : recommendations ? (
+                      <div className="prose dark:prose-invert text-sm text-stone-600 dark:text-zinc-400">
+                        {recommendations}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-stone-500 italic">Nenhuma recomendação disponível no momento.</p>
+                    )}
+                  </div>
+
+                  <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                    <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                      <Brain size={20} className="text-purple-500" />
+                      Estatísticas
+                    </h3>
                   <div className="space-y-4">
                     <div className="flex justify-between items-center py-3 border-b border-stone-50 dark:border-zinc-800">
                       <span className="text-sm text-stone-500">Média de Notas</span>

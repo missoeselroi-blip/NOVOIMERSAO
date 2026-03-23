@@ -18,6 +18,7 @@ import { useAccessibility } from '../contexts/AccessibilityContext';
 import { cn } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useToast } from '../components/Toast';
+import { multiAiService } from '../services/multiAiService';
 
 export default function ContactPage() {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
@@ -30,11 +31,19 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSent, setIsSent] = useState(false);
+  const [sentiment, setSentiment] = useState<any>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
+      // Analyze sentiment first
+      const sentimentResult = await multiAiService.analyzeSentiment(formData.message);
+      if (sentimentResult) {
+        setSentiment(sentimentResult);
+        console.log("Sentiment Analysis:", sentimentResult);
+      }
+
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
