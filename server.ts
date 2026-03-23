@@ -9,12 +9,15 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  const isProd = process.env.NODE_ENV === 'production';
+  // Only use production mode if NODE_ENV is production AND dist folder exists
+  const distPath = path.resolve(process.cwd(), 'dist');
+  const isProd = process.env.NODE_ENV === 'production' && fs.existsSync(distPath);
   const PORT = Number(process.env.PORT) || 3000;
 
   try {
     let vite;
     if (!isProd) {
+      console.log('Starting in DEVELOPMENT mode (Vite middleware)');
       // Vite middleware for development
       vite = await createViteServer({
         server: { 
@@ -25,12 +28,9 @@ async function startServer() {
       });
       app.use(vite.middlewares);
     } else {
+      console.log('Starting in PRODUCTION mode (Serving static files)');
       // Serve static files in production
-      const distPath = path.resolve(process.cwd(), 'dist');
       console.log(`Serving static files from: ${distPath}`);
-      if (!fs.existsSync(distPath)) {
-        console.error('ERROR: dist directory not found! Did you run npm run build?');
-      }
       app.use(express.static(distPath));
     }
 

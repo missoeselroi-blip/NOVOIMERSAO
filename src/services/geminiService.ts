@@ -7,22 +7,29 @@ const getAI = () => {
   // 3. window.GEMINI_API_KEY (Manual fallback)
 
   const getValidKey = (key: any) => {
-    if (typeof key !== 'string') return null;
-    const trimmed = key.trim();
+    if (!key || typeof key !== 'string') return null;
+    const trimmed = key.trim().replace(/['"]/g, ''); // Remove quotes if present
     if (!trimmed || trimmed === "undefined" || trimmed === "null" || trimmed === "") return null;
     return trimmed;
   };
 
+  // Try multiple sources for the API key
   let apiKey = getValidKey(import.meta.env.VITE_GEMINI_API_KEY);
   
   if (!apiKey) {
-    try {
-      apiKey = getValidKey(process.env.GEMINI_API_KEY);
-    } catch (e) {}
+    apiKey = getValidKey((process.env as any).GEMINI_API_KEY);
   }
 
   if (!apiKey) {
+    apiKey = getValidKey((process.env as any).VITE_GEMINI_API_KEY);
+  }
+  
+  if (!apiKey) {
     apiKey = getValidKey((window as any).GEMINI_API_KEY);
+  }
+
+  if (!apiKey) {
+    apiKey = getValidKey((window as any).VITE_GEMINI_API_KEY);
   }
   
   if (!apiKey) {
