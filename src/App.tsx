@@ -1,4 +1,5 @@
-import React, { useState, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { lazyWithRetry } from './utils/lazyWithRetry';
 import { 
   HashRouter as Router,
   Routes,
@@ -58,27 +59,27 @@ declare global {
 }
 
 // Lazy loaded pages
-const HomePage = lazy(() => import('./pages/HomePage'));
-const BibleStudyPage = lazy(() => import('./pages/BibleStudyPage'));
-const StorePage = lazy(() => import('./pages/StorePage'));
-const CreditPage = lazy(() => import('./pages/CreditPage'));
-const PostsPage = lazy(() => import('./pages/PostsPage'));
-const ContactPage = lazy(() => import('./pages/ContactPage'));
-const ForumPage = lazy(() => import('./pages/ForumPage'));
-const CareerPage = lazy(() => import('./pages/CareerPage'));
-const DonatePage = lazy(() => import('./pages/DonatePage'));
-const NotebookPage = lazy(() => import('./pages/NotebookPage'));
-const DevotionalPage = lazy(() => import('./pages/DevotionalPage'));
-const RedacaoPage = lazy(() => import('./pages/RedacaoPage'));
-const StudentPage = lazy(() => import('./pages/StudentPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
-const TheologySearchPage = lazy(() => import('./pages/TheologySearchPage'));
+const HomePage = lazyWithRetry(() => import('./pages/HomePage'));
+const BibleStudyPage = lazyWithRetry(() => import('./pages/BibleStudyPage'));
+const StorePage = lazyWithRetry(() => import('./pages/StorePage'));
+const CreditPage = lazyWithRetry(() => import('./pages/CreditPage'));
+const PostsPage = lazyWithRetry(() => import('./pages/PostsPage'));
+const ContactPage = lazyWithRetry(() => import('./pages/ContactPage'));
+const ForumPage = lazyWithRetry(() => import('./pages/ForumPage'));
+const CareerPage = lazyWithRetry(() => import('./pages/CareerPage'));
+const DonatePage = lazyWithRetry(() => import('./pages/DonatePage'));
+const NotebookPage = lazyWithRetry(() => import('./pages/NotebookPage'));
+const DevotionalPage = lazyWithRetry(() => import('./pages/DevotionalPage'));
+const RedacaoPage = lazyWithRetry(() => import('./pages/RedacaoPage'));
+const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
+const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
+const TheologySearchPage = lazyWithRetry(() => import('./pages/TheologySearchPage'));
 import TheologyPage from './pages/TheologyPage';
-const MissionaryPage = lazy(() => import('./pages/MissionaryPage'));
+const MissionaryPage = lazyWithRetry(() => import('./pages/MissionaryPage'));
 
-const MissionaryBulkResults = lazy(() => import('./pages/MissionaryBulkResults'));
-const AudioBoxPage = lazy(() => import('./pages/AudioBoxPage'));
-const AdminPage = lazy(() => import('./pages/AdminPage'));
+const MissionaryBulkResults = lazyWithRetry(() => import('./pages/MissionaryBulkResults'));
+const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));
+const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
