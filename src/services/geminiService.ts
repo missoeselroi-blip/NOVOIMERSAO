@@ -1,42 +1,32 @@
 import { GoogleGenAI, Modality, ThinkingLevel, Type } from "@google/genai";
 
 const getAI = () => {
-  // Priority order for API Key:
-  // 1. process.env.GEMINI_API_KEY (Defined in vite.config.ts from environment)
-  // 2. import.meta.env.VITE_GEMINI_API_KEY (Vite standard)
-  // 3. window.GEMINI_API_KEY (Fallback for manual entry in index.html)
+  // Priority:
+  // 1. import.meta.env.VITE_GEMINI_API_KEY (Vite standard)
+  // 2. process.env.GEMINI_API_KEY (Defined in vite.config.ts)
+  // 3. window.GEMINI_API_KEY (Manual fallback)
 
   const getValidKey = (key: any) => {
     if (typeof key !== 'string') return null;
     const trimmed = key.trim();
-    if (!trimmed || trimmed === "undefined" || trimmed === "null") return null;
+    if (!trimmed || trimmed === "undefined" || trimmed === "null" || trimmed === "") return null;
     return trimmed;
   };
 
-  let apiKey = "";
-  try {
-    apiKey = process.env.GEMINI_API_KEY || "";
-  } catch (e) {}
-
-  if (!apiKey || apiKey === "undefined" || apiKey === "null") {
-    apiKey = import.meta.env.VITE_GEMINI_API_KEY || "";
+  let apiKey = getValidKey(import.meta.env.VITE_GEMINI_API_KEY);
+  
+  if (!apiKey) {
+    try {
+      apiKey = getValidKey(process.env.GEMINI_API_KEY);
+    } catch (e) {}
   }
 
-  const validatedKey = getValidKey(apiKey);
-  
-  if (!validatedKey) {
-    const windowKey = getValidKey((window as any).GEMINI_API_KEY);
-    if (windowKey) {
-      apiKey = windowKey;
-    } else {
-      apiKey = "";
-    }
-  } else {
-    apiKey = validatedKey;
+  if (!apiKey) {
+    apiKey = getValidKey((window as any).GEMINI_API_KEY);
   }
   
   if (!apiKey) {
-    throw new Error("Chave de API não encontrada. Clique no ícone de engrenagem (Settings) > Secrets e adicione GEMINI_API_KEY com seu código AIza... 🔑");
+    throw new Error("Chave de API não encontrada. Por favor, adicione GEMINI_API_KEY em 'Settings > Secrets' no seu painel de controle. 🔑");
   }
   
   return new GoogleGenAI({ apiKey });

@@ -13,6 +13,7 @@ app.use(express.json());
 // Start listening IMMEDIATELY to satisfy the proxy
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server listening on http://0.0.0.0:${PORT}`);
+  console.log(`GEMINI_API_KEY present: ${!!process.env.GEMINI_API_KEY}`);
 });
 
 // Health check
