@@ -86,7 +86,17 @@ async function startServer() {
         
         const url = req.originalUrl;
         try {
-          const template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+          let template = fs.readFileSync(path.resolve(__dirname, 'index.html'), 'utf-8');
+          
+          // Inject API Key as a fallback
+          const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+          if (apiKey) {
+            template = template.replace(
+              '</head>',
+              `<script>window.GEMINI_API_KEY = ${JSON.stringify(apiKey)};</script></head>`
+            );
+          }
+          
           const html = await vite.transformIndexHtml(url, template);
           res.status(200).set({ "Content-Type": "text/html" }).end(html);
         } catch (e: any) {
