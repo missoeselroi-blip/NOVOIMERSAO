@@ -52,8 +52,12 @@ async function startServer() {
         }
 
         // Inject runtime environment variables for the frontend
+        const rawKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
+        const maskedKey = rawKey ? `${rawKey.substring(0, 4)}...${rawKey.substring(rawKey.length - 4)}` : "NOT_FOUND";
+        console.log(`Injected API Key to frontend: ${maskedKey} (Length: ${rawKey.length})`);
+
         const runtimeEnv = {
-          VITE_GEMINI_API_KEY: process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "",
+          VITE_GEMINI_API_KEY: rawKey,
         };
         const envScript = `<script>window.RUNTIME_ENV = ${JSON.stringify(runtimeEnv)};</script>`;
         template = template.replace('</head>', `${envScript}</head>`);

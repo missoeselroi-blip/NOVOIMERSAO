@@ -39,6 +39,10 @@ const getAI = () => {
   if (!apiKey) {
     throw new Error("Chave de API não encontrada. Por favor, adicione GEMINI_API_KEY em 'Settings > Secrets' no seu painel de controle. 🔑");
   }
+
+  // Debug log to help user verify the key (masked for security)
+  const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
+  console.log(`🔑 Gemini API Key detected (Masked): ${maskedKey} | Length: ${apiKey.length}`);
   
   return new GoogleGenAI({ apiKey });
 };
