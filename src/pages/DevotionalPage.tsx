@@ -581,7 +581,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           
           {isPrayerConfirmOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-              <div className="bg-white dark:bg-zinc-900 p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl border border-stone-200 dark:border-zinc-800">
+              <div className="bg-app-surface p-8 rounded-3xl max-w-sm w-full text-center shadow-2xl border border-app-border">
                 <h3 className="text-xl font-bold mb-4">Gerar Oração</h3>
                 <p className="text-sm text-stone-500 mb-6">A geração demora cerca de um minuto.</p>
                 <div className="space-y-4 mb-6">
@@ -616,7 +616,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           )}
 
           {prayerAudio && (
-            <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-zinc-900 border-t border-stone-200 dark:border-zinc-800 p-4 shadow-lg z-40">
+            <div className="fixed bottom-0 left-0 right-0 bg-app-surface border-t border-app-border p-4 shadow-lg z-40">
               <div className="max-w-2xl mx-auto flex items-center gap-4">
                 <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime -= 10; }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><RotateCcw size={20} /></button>
                 <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.paused ? prayerAudioRef.current.play() : prayerAudioRef.current.pause(); }} className="p-4 bg-emerald-600 text-white rounded-full hover:bg-emerald-700">
@@ -700,7 +700,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
               selectedTheme === theme.id 
                 ? `${theme.color} text-white border-transparent shadow-lg scale-105` 
-                : 'bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:border-emerald-300'
+                : 'bg-app-surface border-app-border text-app-muted hover:border-emerald-300'
             }`}
           >
             <div className={`p-2 rounded-xl ${selectedTheme === theme.id ? 'bg-white/20' : 'bg-stone-50 dark:bg-zinc-800'}`}>
@@ -714,7 +714,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Calendar */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+          <div className="bg-app-surface p-6 rounded-[2.5rem] border border-app-border shadow-sm">
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-bold text-lg flex items-center gap-2">
                 <CalendarIcon size={20} className="text-emerald-600" />
@@ -777,7 +777,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           </div>
 
           {selectedTheme && (
-            <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm">
+            <div className="bg-app-surface p-6 rounded-3xl border border-app-border shadow-sm">
               <h4 className="text-sm font-bold text-stone-400 uppercase tracking-widest mb-3 flex items-center gap-2">
                 <BookOpen size={16} />
                 Leitura do Dia
@@ -804,7 +804,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                 initial={{ opacity: 0 }} 
                 animate={{ opacity: 1 }} 
                 exit={{ opacity: 0 }}
-                className="h-full min-h-[400px] flex flex-col items-center justify-center bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 p-12 text-center space-y-6"
+                className="h-full min-h-[400px] flex flex-col items-center justify-center bg-app-surface rounded-[2.5rem] border border-app-border p-12 text-center space-y-6"
               >
                 <Loader2 className="animate-spin text-emerald-600" size={48} />
                 <div className="space-y-2">
@@ -816,9 +816,9 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
               <motion.div 
                 initial={{ opacity: 0, y: 20 }} 
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl overflow-hidden flex flex-col h-full"
+                className="bg-app-surface rounded-[2.5rem] border border-app-border shadow-xl overflow-hidden flex flex-col h-full"
               >
-                <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center bg-stone-50 dark:bg-zinc-800/50">
+                <div className="p-6 border-b border-app-border flex justify-between items-center bg-app-surface/50">
                   <div className="flex items-center gap-3">
                     <div className="p-2 bg-emerald-600 text-white rounded-xl">
                       <BookOpen size={20} />
@@ -888,7 +888,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                   </div>
 
                   {narrationAudio && (
-                    <div className="w-full bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-700 shadow-sm">
+                    <div className="w-full bg-app-surface p-4 rounded-2xl border border-app-border shadow-sm">
                       <div className="flex items-center gap-4 mb-2">
                         <button 
                           onClick={() => {
@@ -1112,7 +1112,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
               <motion.div
                 key={fav.id}
                 layout
-                className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm relative group"
+                className="bg-app-surface p-6 rounded-3xl border border-app-border shadow-sm relative group"
               >
                 <button 
                   onClick={() => toggleFavorite(fav.content)}

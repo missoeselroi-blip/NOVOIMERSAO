@@ -151,6 +151,7 @@ function AppContent() {
 
   const isDarkMode = theme === 'dark';
   const isDevotionalMode = theme === 'devotional';
+  const isDarkOrDevotional = isDarkMode || isDevotionalMode;
 
   const mainNavItems = [
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
@@ -186,8 +187,7 @@ function AppContent() {
 
   return (
     <div className={cn(
-      "min-h-screen transition-colors duration-700 relative overflow-hidden",
-      isDarkMode ? "bg-app-bg text-app-text" : "bg-app-bg text-app-text",
+      "min-h-screen transition-colors duration-700 relative overflow-hidden bg-app-bg text-app-text",
       fontFamily === 'dyslexic' ? 'font-dyslexic' : 
       fontFamily === 'serif' ? 'font-serif' : 
       fontFamily === 'mono' ? 'font-mono' : 'font-sans',
@@ -211,26 +211,25 @@ function AppContent() {
         />
       )}
 
-      {/* Decorative Background Elements */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
         <div className={cn(
           "absolute -top-[10%] -left-[10%] w-[60%] h-[60%] rounded-full blur-[160px] opacity-20 transition-all duration-1000",
-          isDarkMode ? "bg-emerald-900/40" : "bg-emerald-100"
+          isDarkOrDevotional ? "bg-emerald-900/40" : "bg-emerald-100"
         )} />
         <div className={cn(
           "absolute top-[20%] -right-[10%] w-[50%] h-[50%] rounded-full blur-[160px] opacity-10 transition-all duration-1000",
-          isDarkMode ? "bg-blue-900/30" : "bg-blue-50"
+          isDarkOrDevotional ? "bg-blue-900/30" : "bg-blue-50"
         )} />
         <div className={cn(
           "absolute -bottom-[10%] left-[20%] w-[40%] h-[40%] rounded-full blur-[160px] opacity-15 transition-all duration-1000",
-          isDarkMode ? "bg-purple-900/20" : "bg-purple-50"
+          isDarkOrDevotional ? "bg-purple-900/20" : "bg-purple-50"
         )} />
       </div>
 
       {/* Navigation */}
       <nav className={cn(
         "fixed top-0 w-full z-50 border-b backdrop-blur-md",
-        isDarkMode ? "bg-zinc-900/80 border-zinc-800" : "bg-white/80 border-stone-200"
+        isDarkOrDevotional ? "bg-app-surface/80 border-app-border" : "bg-white/80 border-stone-200"
       )}>
         {isOffline && (
           <div className="bg-amber-500 text-white text-[10px] font-bold uppercase tracking-widest py-1 text-center">
@@ -295,24 +294,24 @@ function AppContent() {
               );
             })}
             
-            <div className="flex items-center gap-2 bg-stone-100 dark:bg-zinc-800 p-1 rounded-full">
+            <div className="flex items-center gap-2 bg-app-surface/50 border border-app-border p-1 rounded-full">
               <button
                 onClick={() => setTheme('light')}
-                className={cn("p-1.5 rounded-full transition-all", theme === 'light' ? "bg-white shadow-sm text-amber-500" : "text-stone-400 hover:text-stone-600")}
+                className={cn("p-1.5 rounded-full transition-all", theme === 'light' ? "bg-white shadow-sm text-amber-500" : "text-app-muted hover:text-app-text")}
                 title="Modo Claro"
               >
                 <Sun size={18} />
               </button>
               <button
                 onClick={() => setTheme('dark')}
-                className={cn("p-1.5 rounded-full transition-all", theme === 'dark' ? "bg-zinc-700 shadow-sm text-blue-400" : "text-stone-400 hover:text-stone-600")}
+                className={cn("p-1.5 rounded-full transition-all", theme === 'dark' ? "bg-zinc-700 shadow-sm text-blue-400" : "text-app-muted hover:text-app-text")}
                 title="Modo Escuro"
               >
                 <Moon size={18} />
               </button>
               <button
                 onClick={() => setTheme('devotional')}
-                className={cn("p-1.5 rounded-full transition-all", theme === 'devotional' ? "bg-amber-100 shadow-sm text-amber-700" : "text-stone-400 hover:text-stone-600")}
+                className={cn("p-1.5 rounded-full transition-all", theme === 'devotional' ? "bg-amber-900/30 shadow-sm text-amber-400" : "text-app-muted hover:text-app-text")}
                 title="Momento Devocional"
               >
                 <Coffee size={18} />
@@ -378,7 +377,7 @@ function AppContent() {
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50">
         <div className={cn(
           "flex items-center justify-around h-16 border-t backdrop-blur-lg px-2 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]",
-          isDarkMode ? "bg-zinc-900/90 border-zinc-800" : "bg-white/90 border-stone-200"
+          isDarkOrDevotional ? "bg-app-surface/90 border-app-border" : "bg-white/90 border-stone-200"
         )}>
           {mainNavItems.map((item) => (
             <button
@@ -388,7 +387,7 @@ function AppContent() {
                 "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative",
                 activeTab === item.id 
                   ? "text-emerald-600" 
-                  : isDarkMode ? "text-zinc-500" : "text-stone-400"
+                  : isDarkOrDevotional ? "text-zinc-500" : "text-stone-400"
               )}
             >
               {activeTab === item.id && (
@@ -444,7 +443,7 @@ function AppContent() {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className={cn(
                 "fixed top-0 right-0 bottom-0 w-[80%] max-w-sm z-[60] md:hidden shadow-2xl flex flex-col",
-                isDarkMode ? "bg-zinc-900" : "bg-white"
+                isDarkOrDevotional ? "bg-app-surface" : "bg-white"
               )}
             >
               <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between">
@@ -648,7 +647,7 @@ function AppContent() {
 
       <footer className={cn(
         "py-8 border-t text-center text-sm",
-        isDarkMode ? "border-zinc-800 text-zinc-500" : "border-stone-200 text-stone-500"
+        isDarkOrDevotional ? "border-app-border text-app-muted" : "border-stone-200 text-stone-500"
       )}>
         <div className="flex items-center justify-center gap-3">
           <img 

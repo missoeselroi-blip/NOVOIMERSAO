@@ -79,12 +79,12 @@
   }
 
   .devotional {
-    --app-bg: #fffbf2;
-    --app-text: #433422;
-    --app-accent: #b45309;
-    --app-surface: #fef3c7;
-    --app-border: #fde68a;
-    --app-muted: #92400e;
+    --app-bg: #1a140e;
+    --app-text: #e2d1b9;
+    --app-accent: #d97706;
+    --app-surface: #261d13;
+    --app-border: #3f3223;
+    --app-muted: #8c7862;
   }
 
   body {

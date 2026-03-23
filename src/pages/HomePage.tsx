@@ -595,7 +595,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative overflow-hidden rounded-[2.5rem] bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 shadow-xl p-8 md:p-12"
+        className="relative overflow-hidden rounded-[2.5rem] bg-app-surface border border-app-border shadow-xl p-8 md:p-12"
       >
         <div className="absolute top-0 right-0 p-8 opacity-5">
           <Book size={120} className="text-emerald-600" />
@@ -747,7 +747,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 10 }}
-                  className="absolute top-full left-0 right-0 mt-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-3xl shadow-2xl z-50 max-h-[400px] overflow-y-auto p-3"
+                  className="absolute top-full left-0 right-0 mt-3 bg-app-surface border border-app-border rounded-3xl shadow-2xl z-50 max-h-[400px] overflow-y-auto p-3"
                 >
                   {searchResults.length === 0 ? (
                     <div className="p-10 text-center text-stone-500 text-sm">
@@ -793,7 +793,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.03 }}
-            className="group relative flex flex-col bg-white dark:bg-zinc-900 border border-stone-100 dark:border-zinc-800 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+            className="group relative flex flex-col bg-app-surface border border-app-border rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
           >
             {/* Action Button */}
             <button 
