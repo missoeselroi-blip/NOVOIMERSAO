@@ -617,8 +617,25 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           )}
 
           {prayerAudio && (
-            <div className="fixed bottom-0 left-0 right-0 bg-app-surface border-t border-app-border p-4 shadow-lg z-40">
-              <div className="max-w-2xl mx-auto flex items-center gap-4">
+            <motion.div 
+              drag
+              dragMomentum={false}
+              initial={{ opacity: 0, scale: 0.9, x: '-50%', y: '-50%' }}
+              animate={{ opacity: 1, scale: 1, x: '-50%', y: '-50%' }}
+              className="fixed top-1/2 left-1/2 bg-app-surface border border-app-border p-6 rounded-[2.5rem] shadow-2xl z-50 w-[95%] max-w-2xl cursor-move"
+            >
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded-full uppercase tracking-widest shadow-lg pointer-events-none">
+                Oração em Áudio (Arraste para mover)
+              </div>
+              
+              <button 
+                onClick={() => setPrayerAudio(null)}
+                className="absolute -top-2 -right-2 p-2 bg-stone-100 dark:bg-zinc-800 text-stone-500 rounded-full shadow-lg hover:scale-110 transition-all z-10"
+              >
+                <X size={16} />
+              </button>
+
+              <div className="flex items-center gap-4">
                 <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.currentTime -= 10; }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><RotateCcw size={20} /></button>
                 <button onClick={() => { if(prayerAudioRef.current) prayerAudioRef.current.paused ? prayerAudioRef.current.play() : prayerAudioRef.current.pause(); }} className="p-4 bg-emerald-600 text-white rounded-full hover:bg-emerald-700">
                   {prayerAudioRef.current?.paused ? <Play size={24} /> : <Pause size={24} />}
@@ -629,38 +646,40 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                   <div className="h-full bg-emerald-600" style={{ width: `${audioProgress}%` }}></div>
                 </div>
 
-                <button onClick={() => {
-                  if (prayerAudio) {
-                    const link = document.createElement('a');
-                    link.href = prayerAudio;
-                    link.download = 'oracao.mp3';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                  }
-                }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Download size={20} /></button>
-                <button onClick={async () => {
-                  if (prayerAudio) {
-                    await share({
-                      title: 'Minha Oração',
-                      text: 'Ouça esta oração que gerei.',
-                      url: prayerAudio
-                    });
-                  }
-                }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Share2 size={20} /></button>
-                <button onClick={async () => {
-                  if (prayerAudio) {
-                    try {
-                      await saveTrack('Oração Gerada', 'Oração', prayerAudio, 'Oração', 'Inspiradora');
-                      showToast("Áudio salvo na Coletânea! 🎵", 'success');
-                    } catch (saveError) {
-                      console.error("Error saving to audio box:", saveError);
-                      showToast("Erro ao salvar áudio.", 'error');
+                <div className="flex gap-1">
+                  <button onClick={() => {
+                    if (prayerAudio) {
+                      const link = document.createElement('a');
+                      link.href = prayerAudio;
+                      link.download = 'oracao.mp3';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
                     }
-                  }
-                }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800"><Save size={20} /></button>
+                  }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800" title="Baixar"><Download size={20} /></button>
+                  <button onClick={async () => {
+                    if (prayerAudio) {
+                      await share({
+                        title: 'Minha Oração',
+                        text: 'Ouça esta oração que gerei.',
+                        url: prayerAudio
+                      });
+                    }
+                  }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800" title="Compartilhar"><Share2 size={20} /></button>
+                  <button onClick={async () => {
+                    if (prayerAudio) {
+                      try {
+                        await saveTrack('Oração Gerada', 'Oração', prayerAudio, 'Oração', 'Inspiradora');
+                        showToast("Áudio salvo na Coletânea! 🎵", 'success');
+                      } catch (saveError) {
+                        console.error("Error saving to audio box:", saveError);
+                        showToast("Erro ao salvar áudio.", 'error');
+                      }
+                    }
+                  }} className="p-2 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800" title="Salvar na Coletânea"><Save size={20} /></button>
+                </div>
               </div>
-            </div>
+            </motion.div>
           )}
 
           {prayerAudio && (

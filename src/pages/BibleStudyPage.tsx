@@ -770,6 +770,20 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       const author = GOSPEL_AUTHORS.find(a => a.name === selectedAuthor);
       let worksContext = author ? `Baseie sua resposta principalmente nas obras de ${author.name}: ${author.works.join(', ')}.` : '';
       
+      // Prioritization logic
+      const lowerQuery = (searchQuery || '').toLowerCase();
+      const isFaithReason = lowerQuery.includes('fé') || lowerQuery.includes('razão') || lowerQuery.includes('apologética') || lowerQuery.includes('ateísmo');
+      const isAnthropology = lowerQuery.includes('antropologia') || lowerQuery.includes('ateísmo');
+
+      if (selectedAuthor === 'TODOS OS AUTORES' || !selectedAuthor) {
+        if (isFaithReason) {
+          worksContext += " Dê prioridade especial à visão de Tassos Lycurgo para este tema.";
+        }
+        if (isAnthropology) {
+          worksContext += " Dê prioridade especial à visão de Rodrigo Silva para este tema.";
+        }
+      }
+
       if (selectedAuthor === 'Apóstolo Paulo') {
         worksContext += " Além das cartas paulinas, utilize o livro de Atos dos Apóstolos para extrair discursos, ensinamentos e o contexto de suas viagens missionárias.";
       }
@@ -5962,6 +5976,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           </div>
         )}
       </AnimatePresence>
+      
+      <div className="max-w-4xl mx-auto px-4 pb-12">
+        <CreditInfoTip />
+      </div>
     </div>
   );
 }

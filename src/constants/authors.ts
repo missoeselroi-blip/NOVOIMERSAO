@@ -4,6 +4,14 @@ export const GOSPEL_AUTHORS = [
     works: ["Consulte a visão de todos os autores simultaneamente para uma perspectiva abrangente."]
   },
   {
+    name: "Tassos Lycurgo",
+    works: ["Fé e Razão", "Ateísmo", "Apologética", "Defesa da Fé"]
+  },
+  {
+    name: "Rodrigo Silva",
+    works: ["Antropologia", "Ateísmo", "Arqueologia Bíblica", "A Bíblia e a História"]
+  },
+  {
     name: "A.W. Tozer",
     works: [
       "A Busca de Deus",

@@ -14,7 +14,8 @@ import {
   ShieldCheck,
   Award,
   Camera,
-  UserCheck
+  UserCheck,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -38,24 +39,23 @@ const MOCK_USER: UserProfile = {
   trend: 'up'
 };
 
-const LEADERBOARD: UserProfile[] = [
-  { ...MOCK_USER, id: '1', name: 'João Silva', rankId: 5, trend: 'up' },
-  { id: '2', name: 'Maria Santos', nickname: 'Missionária Maria', avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Officer4&clothesColor=2d4a2d&hat=military&hairColor=241c11', rankId: 8, stars: 3, membershipMonths: 8, accessPerWeek: 6, hoursPerMonth: 7, shares: 25, forumParticipations: 15, contributions: 50, authorized: true, trend: 'up' },
-  { id: '3', name: 'Pedro Oliveira', nickname: 'Irmão Pedro', avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Soldier4&clothesColor=3c5e3c&hat=military&hairColor=472731', rankId: 4, stars: 3, membershipMonths: 4, accessPerWeek: 3, hoursPerMonth: 3, shares: 10, forumParticipations: 5, contributions: 0, authorized: true, trend: 'down' },
-  { id: '4', name: 'Ana Costa', nickname: 'Ana Pregadora', avatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=High2&clothesColor=1e331e&hat=military&hairColor=d1d1d1&accessories=sunglasses', rankId: 10, stars: 2, membershipMonths: 10, accessPerWeek: 8, hoursPerMonth: 9, shares: 40, forumParticipations: 30, contributions: 100, authorized: true, trend: 'stable' },
-];
+const LEADERBOARD: UserProfile[] = [];
 
 import { useAuth } from '../contexts/AuthContext';
+import { useCredits } from '../contexts/CreditContext';
+import { geminiService } from '../services/geminiService';
 import { db } from '../lib/firebase';
-import { doc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
 export default function CareerPage() {
-  const { user, careerProgress, metrics, isInitialLoading } = useAuth();
+  const { user, careerProgress, metrics, isInitialLoading, updateUser } = useAuth();
+  const { consumeCredits, estimateCredits } = useCredits();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'ranks' | 'leaderboard'>('profile');
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(true);
+  const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
 
   // Initialize career progress if it doesn't exist
   useEffect(() => {
@@ -75,42 +75,39 @@ export default function CareerPage() {
     }
   }, [user, careerProgress, isInitialLoading]);
 
-  // Fetch leaderboard
+  // Fetch leaderboard with real-time updates
   useEffect(() => {
     if (activeTab === 'leaderboard') {
-      const fetchLeaderboard = async () => {
-        setLoadingLeaderboard(true);
-        try {
-          const q = query(collection(db, 'careerProgress'), orderBy('points', 'desc'), limit(10));
-          const snapshot = await getDocs(q);
-          const data = snapshot.docs.map(doc => {
-            const progressData = doc.data();
-            return {
-              id: progressData.userId || doc.id,
-              name: progressData.name || 'Membro da Marinha',
-              nickname: progressData.nickname || 'Recruta',
-              avatar: progressData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${progressData.userId || doc.id}`,
-              rankId: progressData.rankId || 1,
-              stars: progressData.stars || 0,
-              points: progressData.points || 0,
-              trend: progressData.trend || 'stable',
-              authorized: progressData.authorized || false,
-              membershipMonths: progressData.membershipMonths || 0,
-              accessPerWeek: progressData.accessPerWeek || 0,
-              hoursPerMonth: progressData.hoursPerMonth || 0,
-              shares: progressData.shares || 0,
-              forumParticipations: progressData.forumParticipations || 0,
-              contributions: progressData.contributions || 0
-            } as UserProfile;
-          });
-          setLeaderboard(data);
-        } catch (error) {
-          console.error("Error fetching leaderboard:", error);
-        } finally {
-          setLoadingLeaderboard(false);
-        }
-      };
-      fetchLeaderboard();
+      setLoadingLeaderboard(true);
+      const q = query(collection(db, 'careerProgress'), orderBy('points', 'desc'), limit(10));
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const data = snapshot.docs.map(doc => {
+          const progressData = doc.data();
+          return {
+            id: progressData.userId || doc.id,
+            name: progressData.name || 'Membro da Marinha',
+            nickname: progressData.nickname || 'Recruta',
+            avatar: progressData.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${progressData.userId || doc.id}`,
+            rankId: progressData.rankId || 1,
+            stars: progressData.stars || 0,
+            points: progressData.points || 0,
+            trend: progressData.trend || 'stable',
+            authorized: progressData.authorized || false,
+            membershipMonths: progressData.membershipMonths || 0,
+            accessPerWeek: progressData.accessPerWeek || 0,
+            hoursPerMonth: progressData.hoursPerMonth || 0,
+            shares: progressData.shares || 0,
+            forumParticipations: progressData.forumParticipations || 0,
+            contributions: progressData.contributions || 0
+          } as UserProfile;
+        });
+        setLeaderboard(data);
+        setLoadingLeaderboard(false);
+      }, (error) => {
+        console.error("Error fetching leaderboard:", error);
+        setLoadingLeaderboard(false);
+      });
+      return () => unsubscribe();
     }
   }, [activeTab]);
 
@@ -143,6 +140,37 @@ export default function CareerPage() {
 
   const handleSharePromotion = () => {
     showToast("Compartilhando sua promoção nas redes sociais! 🕊️✨");
+  };
+
+  const handleGenerateAvatar = async () => {
+    const cost = estimateCredits('avatar');
+    if (!consumeCredits(cost, 'Geração de Avatar')) {
+      showToast(`Créditos insuficientes. Você precisa de ${cost} créditos.`, 'error');
+      return;
+    }
+
+    setIsGeneratingAvatar(true);
+    showToast("Gerando seu novo avatar... 🎨✨", 'info');
+
+    try {
+      const prompt = `A professional and heroic military avatar for a member of the "Celestial Navy" (Marinha Celestial). The character should look like a brave christian soldier, with a modern military uniform inspired by naval officers, but with spiritual and celestial elements (subtle light glows, cross symbols). High quality digital art style, clean lines, professional character design. Rank: ${currentRank.name}.`;
+      
+      const imageUrl = await geminiService.generateImage(prompt);
+      if (imageUrl) {
+        await updateUser({ avatar: imageUrl });
+        // Also update career progress doc for leaderboard
+        const careerDocRef = doc(db, 'careerProgress', user.id);
+        await updateDoc(careerDocRef, { avatar: imageUrl });
+        showToast("Avatar gerado com sucesso! Ficou incrível! ⚓✨", 'success');
+      } else {
+        showToast("Erro ao gerar avatar. Tente novamente.", 'error');
+      }
+    } catch (error) {
+      console.error("Error generating avatar:", error);
+      showToast("Erro ao gerar avatar.", 'error');
+    } finally {
+      setIsGeneratingAvatar(false);
+    }
   };
 
   return (
@@ -216,13 +244,18 @@ export default function CareerPage() {
               </div>
               
               <div className="flex flex-col items-center text-center space-y-4">
-                  <div className="w-32 h-32 rounded-full border-4 border-emerald-700 p-1 bg-emerald-50 dark:bg-emerald-900/20">
+                  <div className="w-32 h-32 rounded-full border-4 border-emerald-700 p-1 bg-emerald-50 dark:bg-emerald-900/20 relative group">
                     <img 
-                      src={currentRank.image} 
+                      src={user.avatar || currentRank.image} 
                       alt={user.name} 
-                      className="w-full h-full rounded-full"
+                      className="w-full h-full rounded-full object-cover"
                       referrerPolicy="no-referrer"
                     />
+                    {isGeneratingAvatar && (
+                      <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+                        <Loader2 className="animate-spin text-white" size={32} />
+                      </div>
+                    )}
                   </div>
                 
                 <div>
@@ -234,27 +267,27 @@ export default function CareerPage() {
                   {currentRank.name}
                 </div>
 
-                <div className="w-full pt-6 grid grid-cols-2 gap-4">
-                  <div className="bg-stone-50 dark:bg-zinc-800 p-4 rounded-3xl text-center">
-                    <p className="text-[10px] uppercase font-bold text-stone-400 mb-1">Categoria</p>
-                    <p className="font-bold text-sm">{currentRank.category}</p>
-                  </div>
-                  <div className="bg-stone-50 dark:bg-zinc-800 p-4 rounded-3xl text-center">
-                    <p className="text-[10px] uppercase font-bold text-stone-400 mb-1">Tendência</p>
-                    <div className="flex items-center justify-center gap-1">
-                      {(currentCareer.trend || 'stable') === 'up' ? <TrendingUp className="text-emerald-500" size={16} /> : <TrendingDown className="text-red-500" size={16} />}
-                      <p className="font-bold text-sm">{(currentCareer.trend || 'stable') === 'up' ? 'Evoluindo' : 'Regredindo'}</p>
+                <div className="w-full pt-4 space-y-3">
+                  <button 
+                    onClick={handleGenerateAvatar}
+                    disabled={isGeneratingAvatar}
+                    className="w-full py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all flex flex-col items-center justify-center gap-1 shadow-lg shadow-emerald-600/20 disabled:opacity-50"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Camera size={18} />
+                      {user.avatar ? 'Trocar Avatar' : 'Gerar Avatar'}
                     </div>
-                  </div>
-                </div>
+                    <span className="text-[10px] opacity-80">Custo: {estimateCredits('avatar')} créditos</span>
+                  </button>
 
-                <button 
-                  onClick={handleSharePromotion}
-                  className="w-full py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
-                >
-                  <Share2 size={18} />
-                  Compartilhar Patente
-                </button>
+                  <button 
+                    onClick={handleSharePromotion}
+                    className="w-full py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Share2 size={18} />
+                    Compartilhar Patente
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -393,7 +426,6 @@ export default function CareerPage() {
                   <th className="px-8 py-4">Patente</th>
                   <th className="px-8 py-4">Estrelas</th>
                   <th className="px-8 py-4">Tendência</th>
-                  <th className="px-8 py-4">Ação</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-zinc-800">
@@ -406,7 +438,7 @@ export default function CareerPage() {
                           <img 
                             src={member.avatar} 
                             alt={member.name} 
-                            className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-800"
+                            className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-800 object-cover"
                             referrerPolicy="no-referrer"
                           />
                           <div>
@@ -431,11 +463,6 @@ export default function CareerPage() {
                         {(member.trend || 'stable') === 'up' && <TrendingUp className="text-emerald-500" size={20} />}
                         {(member.trend || 'stable') === 'down' && <TrendingDown className="text-red-500" size={20} />}
                         {(member.trend || 'stable') === 'stable' && <div className="w-5 h-1 bg-stone-300 rounded-full" />}
-                      </td>
-                      <td className="px-8 py-4">
-                        <button className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-xl text-stone-400 transition-colors">
-                          <ChevronRight size={20} />
-                        </button>
                       </td>
                     </tr>
                   );

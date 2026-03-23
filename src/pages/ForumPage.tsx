@@ -32,34 +32,7 @@ const RULES = [
   "Pena para violação: Exclusão imediata do fórum e perda de patente."
 ];
 
-const MOCK_POSTS: ForumPost[] = [
-  {
-    id: '1',
-    author: 'Pastor João',
-    authorRank: 'Capitão',
-    content: 'A paz do Senhor a todos! O que estão achando da nova ferramenta de criação de esboços?',
-    timestamp: '2 horas atrás',
-    likes: 12,
-    replies: [
-      {
-        id: '1-1',
-        author: 'Irmão Marcos',
-        authorRank: 'Sargento',
-        content: 'Tem me ajudado muito nas pregações de domingo!',
-        timestamp: '1 hora atrás'
-      }
-    ]
-  },
-  {
-    id: '2',
-    author: 'Missionária Ana',
-    authorRank: 'Tenente-Coronel',
-    content: 'Gostaria de compartilhar um versículo que tocou meu coração hoje: Salmos 23.',
-    timestamp: '5 horas atrás',
-    likes: 25,
-    replies: []
-  }
-];
+const MOCK_POSTS: ForumPost[] = [];
 
 export default function ForumPage() {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();

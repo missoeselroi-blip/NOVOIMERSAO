@@ -17,13 +17,13 @@ export const THEOLOGY_SUBJECTS = [
   { title: 'Hermenêutica Bíblica', desc: 'A Interpretação da Bíblia', topics: ['Princípios', 'Regras', 'Panorama'], prereq: 'Angeologia', icon: Key },
   { title: 'Homilética', desc: 'A Arte da Pregação', topics: ['Estrutura', 'Entrega', 'Panorama'], prereq: 'Hermenêutica Bíblica', icon: Mic },
   { title: 'Exegética', desc: 'A Interpretação Profunda do Texto', topics: ['Análise Gramatical', 'Contexto Histórico', 'Panorama'], prereq: 'Hermenêutica Bíblica', icon: BookOpen },
-  { title: 'Teologia Sistemática (Calvinista e Arminiana)', desc: 'Perspectivas Comparadas', topics: ['Calvinismo', 'Arminianismo', 'Panorama'], prereq: 'Exegética', icon: Brain },
-  { title: 'Evangelismo/Missões', desc: 'A Proclamação do Evangelho', topics: ['Fundamentos', 'Estratégias', 'Panorama'], prereq: 'Teologia Sistemática (Calvinista e Arminiana)', icon: Sparkles },
+  { title: 'Visão Calvinista vs Arminiana', desc: 'Perspectivas Comparadas', topics: ['Calvinismo', 'Arminianismo', 'Panorama'], prereq: 'Exegética', icon: Brain },
+  { title: 'Evangelismo/Missões', desc: 'A Proclamação do Evangelho', topics: ['Fundamentos', 'Estratégias', 'Panorama'], prereq: 'Visão Calvinista vs Arminiana', icon: Sparkles },
   { title: 'Liderança Cristã', desc: 'O Modelo Bíblico de Liderança', topics: ['Modelos Bíblicos', 'Autoridade e Submissão', 'O Líder Servo', 'Panorama'], prereq: 'Evangelismo/Missões', icon: Shield },
   { title: 'Filosofia', desc: 'O Cristão e o Pensamento', topics: ['Filosofia Essencial', 'Ética e Moral', 'Panorama'], prereq: 'Liderança Cristã', icon: Scale },
   { title: 'Sociologia', desc: 'O Cristão e a Sociedade', topics: ['Antropologia Cultural', 'Sistemas Políticos', 'Panorama'], prereq: 'Filosofia', icon: Users },
   { title: 'Apologética', desc: 'A Defesa da Fé Cristã', topics: ['Seitas e Heresias', 'Religiões no Brasil', 'Defesa Bíblica', 'Panorama'], prereq: 'Sociologia', icon: ShieldCheck },
-  { title: 'As Dispensações', desc: 'O Plano de Deus para os Séculos', topics: ['Inocência', 'Consciência', 'Governo Humano', 'Promessa', 'Lei', 'Graça', 'Reino', 'Panorama'], prereq: 'Apologética', icon: BookOpen },
+  { title: 'As Sete Dispensações', desc: 'O Plano de Deus para os Séculos', topics: ['Inocência', 'Consciência', 'Governo Humano', 'Promessa', 'Lei', 'Graça', 'Reino', 'Panorama'], prereq: 'Apologética', icon: BookOpen },
 ];
 
-export const getMaxChapters = (subject: string) => subject === 'As Dispensações' ? 7 : 5;
+export const getMaxChapters = (subject: string) => subject === 'As Sete Dispensações' ? 7 : 5;

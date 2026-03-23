@@ -29,6 +29,7 @@ import {
   Flame,
   Crown,
   AlertTriangle,
+  ShieldAlert,
   Heart,
   Users,
   Hourglass,
@@ -968,7 +969,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
 
   const openSummaryModal = (type: string) => {
     if (selectedSubject === 'Bibliologia') {
-      if (type === 'Vídeo Resumo') {
+      if (type === 'Vídeo-Aula') {
         window.open("https://youtu.be/P2YVpigLsCY", "_blank");
         return;
       }
@@ -1285,28 +1286,6 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     return <div className="flex justify-center items-center h-screen"><Loader2 className="animate-spin text-emerald-600" size={48} /></div>;
   }
 
-  if (!hasAcceptedTerms) {
-    return (
-      <div className="max-w-2xl mx-auto p-8 bg-white dark:bg-zinc-900 rounded-3xl shadow-xl border border-stone-200 dark:border-zinc-800 mt-10">
-        <h2 className="text-2xl font-bold mb-6 text-emerald-900 dark:text-emerald-400">Termo de Uso</h2>
-        <div className="prose dark:prose-invert mb-8 text-stone-600 dark:text-zinc-400">
-          <p>1. Este é um Curso Livre de Teologia Básica gerado por IA e sem nenhum vínculo com escolas, faculdades, seminários ou igrejas.</p>
-          <p>2. As fontes, estruturas, atividades e avaliações são pré-estabelecidas por meio de prompts pelo desenvolvedor do App, mas que conferem certa liberdade de criação pela IA. O que pode gerar erros.</p>
-          <h3>Observações Importantes:</h3>
-          <p>3. Os cursos livres online no Brasil são amparados pela Lei nº 9.394/1996 (LDB - Diretrizes e Bases da Educação Nacional) e regulamentados pelo Decreto nº 5.154/2004.</p>
-          <p>4. Esta modalidade não exige autorização do MEC, por serem cursos de capacitação e atualização, e possuírem natureza de educação não-formal. Como não entitulam nível superior ou técnico, não precisam de reconhecimento ou autorização do MEC.</p>
-          <p>5. A Certificação: Os certificados têm valor meramente de comprovação de aprendizado, mas não conferem títulos acadêmicos ou eclesiásticos.</p>
-        </div>
-        <button 
-          onClick={handleAcceptTerms}
-          className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all"
-        >
-          Li e Concordo
-        </button>
-      </div>
-    );
-  }
-
   return (
     <div className="max-w-6xl mx-auto space-y-8 pb-24">
       {showSearch ? (
@@ -1450,6 +1429,22 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 </div>
               </button>
             )}
+          </div>
+
+          {/* Termos de Uso Section at the bottom */}
+          <div className="mt-20 p-10 bg-stone-50 dark:bg-zinc-800/50 rounded-[3rem] border border-stone-200 dark:border-zinc-800 space-y-6">
+            <div className="flex items-center gap-3 text-emerald-900 dark:text-emerald-400">
+              <ShieldAlert size={24} />
+              <h2 className="text-2xl font-bold">Termo de Uso - Teologia</h2>
+            </div>
+            <div className="prose dark:prose-invert max-w-none text-sm text-stone-600 dark:text-zinc-400">
+              <p>1. Este é um Curso Livre de Teologia Básica gerada por IA e sem nenhum vínculo com escolas, faculdades, seminários ou igrejas.</p>
+              <p>2. As fontes, estruturas, atividades e avaliações são pré-estabelecidas por meio de prompts pelo desenvolvedor do App, mas que conferem certa liberdade de criação pela IA, o que pode gerar erros.</p>
+              <h3 className="text-lg font-bold mt-4 mb-2">Observações Importantes:</h3>
+              <p>3. Os cursos livres online no Brasil são amparados pela Lei nº 9.394/1996 (LDB - Diretrizes e Bases da Educação Nacional) e regulamentados pelo Decreto nº 5.154/2004.</p>
+              <p>4. Esta modalidade não exige autorização do MEC, por serem cursos de capacitação e atualização, e possuírem natureza de educação não-formal. Como não intitulam nível superior ou técnico, não precisam de reconhecimento ou autorização do MEC.</p>
+              <p>5. A Certificação: Os certificados têm valor meramente de comprovação de aprendizado, mas não conferem títulos acadêmicos ou eclesiásticos.</p>
+            </div>
           </div>
 
           {/* Conclusion Modal */}
@@ -1801,14 +1796,14 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                           <Play size={24} />
                         </div>
                         <div className="text-left">
-                          <div className="font-bold">{selectedSubject === 'Bibliologia' ? 'Vídeo Resumo' : 'Vídeo'}</div>
+                          <div className="font-bold">{selectedSubject === 'Bibliologia' ? 'Vídeo-Aula' : 'Vídeo'}</div>
                           <div className="text-xs text-stone-500">
-                            {selectedSubject === 'Bibliologia' ? 'Assista ao resumo no YouTube' : 'Assista à vídeo-aula'}
+                            {selectedSubject === 'Bibliologia' ? 'Assista à vídeo-aula no YouTube' : 'Assista à vídeo-aula'}
                           </div>
                         </div>
                       </button>
                       <button
-                        onClick={() => openSummaryModal(selectedSubject === 'Bibliologia' ? 'Vídeo Resumo' : 'Vídeo')}
+                        onClick={() => openSummaryModal(selectedSubject === 'Bibliologia' ? 'Vídeo-Aula' : 'Vídeo')}
                         className="p-4 bg-stone-50 dark:bg-zinc-800/50 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700 rounded-3xl flex flex-col items-center justify-center gap-2 transition-all text-stone-600 dark:text-zinc-400 w-24"
                       >
                         <FileText size={20} />

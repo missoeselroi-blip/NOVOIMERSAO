@@ -9,9 +9,10 @@ const __dirname = path.dirname(__filename);
 
 async function startServer() {
   const app = express();
-  // Only use production mode if NODE_ENV is production AND dist folder exists
+  // Only use production mode if NODE_ENV is production AND dist/index.html folder exists
   const distPath = path.resolve(process.cwd(), 'dist');
-  const isProd = process.env.NODE_ENV === 'production' && fs.existsSync(distPath);
+  const distIndexHtml = path.resolve(distPath, 'index.html');
+  const isProd = process.env.NODE_ENV === 'production' && fs.existsSync(distIndexHtml);
   const PORT = Number(process.env.PORT) || 3000;
 
   try {
@@ -38,17 +39,25 @@ async function startServer() {
     app.get('*', async (req, res, next) => {
       const url = req.originalUrl;
 
-      if (url.includes('.') && !url.endsWith('.html')) {
+      // Skip API routes or static files that should be handled by express.static or vite
+      if (url.startsWith('/api/') || (url.includes('.') && !url.endsWith('.html'))) {
         return next();
       }
 
       try {
         let template;
         if (!isProd && vite) {
-          template = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+          const indexPath = path.resolve(process.cwd(), 'index.html');
+          if (!fs.existsSync(indexPath)) {
+            throw new Error(`Development index.html not found at ${indexPath}`);
+          }
+          template = fs.readFileSync(indexPath, 'utf-8');
           template = await vite.transformIndexHtml(url, template);
         } else {
-          template = fs.readFileSync(path.resolve(process.cwd(), 'dist/index.html'), 'utf-8');
+          if (!fs.existsSync(distIndexHtml)) {
+            throw new Error(`Production index.html not found at ${distIndexHtml}`);
+          }
+          template = fs.readFileSync(distIndexHtml, 'utf-8');
         }
 
         // Inject runtime environment variables for the frontend

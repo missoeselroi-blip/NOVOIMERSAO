@@ -27,6 +27,7 @@ import { db } from '../lib/firebase';
 import { query, collection, orderBy, limit, getDocs } from 'firebase/firestore';
 
 import { useShare } from '../utils/share';
+import { CreditInfoTip } from '../components/CreditInfoTip';
 
 export default function AudioBoxPage() {
   const { tracks, deleteTrack, isLoading } = useAudioBox();
@@ -38,30 +39,6 @@ export default function AudioBoxPage() {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const [topStudents, setTopStudents] = useState<any[]>([]);
-  const [isLoadingTop, setIsLoadingTop] = useState(false);
-
-  useEffect(() => {
-    const fetchTopStudents = async () => {
-      setIsLoadingTop(true);
-      try {
-        const q = query(
-          collection(db, 'careerProgress'),
-          orderBy('points', 'desc')
-        );
-        const snapshot = await getDocs(q);
-        const students = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setTopStudents(students);
-      } catch (error) {
-        console.error("Error fetching top students:", error);
-      } finally {
-        setIsLoadingTop(false);
-      }
-    };
-
-    fetchTopStudents();
-  }, []);
 
   const filteredTracks = tracks.filter(track => 
     track.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -257,75 +234,6 @@ export default function AudioBoxPage() {
             </AnimatePresence>
           </div>
         )}
-
-        {/* Quadro de Honra Section */}
-        <div className="mt-20">
-          <div className="flex items-center gap-4 mb-8">
-            <div className="p-3 bg-amber-500 text-white rounded-2xl shadow-lg shadow-amber-500/20">
-              <Trophy size={32} />
-            </div>
-            <div>
-              <h2 className="text-3xl font-black text-stone-900 dark:text-white tracking-tighter uppercase">Quadro de Honra</h2>
-              <p className="text-stone-500 dark:text-zinc-400 font-medium">Os 10 alunos com maior pontuação na jornada.</p>
-            </div>
-          </div>
-
-          {isLoadingTop ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="animate-spin text-amber-500" size={32} />
-            </div>
-          ) : topStudents.length === 0 ? (
-            <div className="bg-stone-100 dark:bg-zinc-900/50 rounded-3xl p-12 text-center border-2 border-dashed border-stone-200 dark:border-zinc-800">
-              <p className="text-stone-500 font-bold uppercase tracking-widest text-xs">Nenhum aluno no ranking ainda.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {topStudents.map((student, index) => (
-                <motion.div
-                  key={student.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                  className="bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 p-4 flex items-center gap-4 hover:shadow-lg transition-all"
-                >
-                  <div className={cn(
-                    "w-12 h-12 rounded-xl flex items-center justify-center font-black text-xl shadow-sm",
-                    index === 0 ? "bg-amber-100 text-amber-600 border border-amber-200" :
-                    index === 1 ? "bg-stone-100 text-stone-600 border border-stone-200" :
-                    index === 2 ? "bg-orange-100 text-orange-600 border border-orange-200" :
-                    "bg-stone-50 text-stone-400 border border-stone-100"
-                  )}>
-                    {index + 1}
-                  </div>
-                  
-                  <div className="w-12 h-12 rounded-full overflow-hidden bg-stone-100 border-2 border-white dark:border-zinc-800 shadow-sm">
-                    <img 
-                      src={student.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${student.displayName || student.id}`} 
-                      alt={student.displayName}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-stone-900 dark:text-white truncate">{student.displayName || 'Aluno'}</h4>
-                    <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                      <Medal size={12} className="text-amber-500" />
-                      {student.level || 'Iniciante'}
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="flex items-center gap-1 justify-end text-amber-600 font-black text-lg">
-                      <Star size={16} fill="currentColor" />
-                      {student.points || 0}
-                    </div>
-                    <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">Pontos</p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Persistent Player */}
@@ -403,6 +311,10 @@ export default function AudioBoxPage() {
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
       />
+      
+      <div className="max-w-4xl mx-auto px-4 pb-12">
+        <CreditInfoTip />
+      </div>
     </div>
   );
 }

@@ -41,7 +41,8 @@ import {
   Pencil,
   LogIn,
   Volume2,
-  ShieldCheck
+  ShieldCheck,
+  RefreshCw
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -64,10 +65,10 @@ const BibleStudyPage = lazyWithRetry(() => import('./pages/BibleStudyPage'));
 const StorePage = lazyWithRetry(() => import('./pages/StorePage'));
 const CreditPage = lazyWithRetry(() => import('./pages/CreditPage'));
 const PostsPage = lazyWithRetry(() => import('./pages/PostsPage'));
-const ContactPage = lazyWithRetry(() => import('./pages/ContactPage'));
 const ForumPage = lazyWithRetry(() => import('./pages/ForumPage'));
 const CareerPage = lazyWithRetry(() => import('./pages/CareerPage'));
-const DonatePage = lazyWithRetry(() => import('./pages/DonatePage'));
+const WhoAmIPage = lazyWithRetry(() => import('./pages/WhoAmIPage'));
+const ContactPage = lazyWithRetry(() => import('./pages/ContactPage'));
 const NotebookPage = lazyWithRetry(() => import('./pages/NotebookPage'));
 const DevotionalPage = lazyWithRetry(() => import('./pages/DevotionalPage'));
 const RedacaoPage = lazyWithRetry(() => import('./pages/RedacaoPage'));
@@ -105,8 +106,10 @@ function AppContent() {
 
   const activeTab = location.pathname.substring(1) || 'home';
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [deepThinking, setDeepThinking] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
 
   useEffect(() => {
@@ -176,10 +179,10 @@ function AppContent() {
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
-    { id: 'donate', label: 'Doe', subtitle: 'Apoie este ministério', icon: <HeartHandshake size={20} />, component: <DonatePage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Trophy size={20} />, component: <CareerPage /> },
-    { id: 'contact', label: 'Contato', subtitle: 'Fale conosco', icon: <Mail size={20} />, component: <ContactPage /> },
+    { id: 'who-am-i', label: 'Quem Somos?', subtitle: 'Nossa história', icon: <User size={20} />, component: <WhoAmIPage onNavigate={handleNavigate} /> },
+    { id: 'contact', label: 'Contato', subtitle: 'Fale conosco', icon: <Mail size={20} />, component: <ContactPage />, hidden: true },
     { id: 'login-nav', label: 'Entrar', icon: <LogIn size={20} />, component: <div />, hidden: true },
     { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'theology-search', label: 'Busca de Teologia', subtitle: 'Pesquisa avançada', icon: <Search size={20} />, component: <TheologySearchPage />, hidden: true },
@@ -327,39 +330,82 @@ function AppContent() {
             </div>
 
             {user ? (
-              <div className="flex items-center gap-3 pl-4 border-l border-stone-200 dark:border-zinc-800">
-                <button
-                  onClick={() => handleNavigate('profile')}
-                  className="flex items-center gap-2 group"
+              <div className="relative">
+                <button 
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  className="flex items-center gap-2 md:gap-3 p-1 md:pr-4 rounded-full hover:bg-stone-100 dark:hover:bg-zinc-800 transition-all border border-transparent hover:border-stone-200 dark:hover:border-zinc-700"
                 >
-                  <img 
-                    src={user.photoURL} 
-                    alt={user.name} 
-                    className="w-8 h-8 rounded-full border-2 border-emerald-500 group-hover:scale-110 transition-transform"
-                    referrerPolicy="no-referrer"
-                  />
+                  <div className="relative">
+                    <img 
+                      src={user.photoURL || `https://ui-avatars.com/api/?name=${user.name}&background=random`} 
+                      alt="Profile" 
+                      className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-emerald-500 shadow-lg"
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-emerald-500 border-2 border-white dark:border-zinc-900 rounded-full shadow-sm" />
+                  </div>
                   <div className="hidden lg:block text-left">
                     <p className="text-xs font-bold leading-none">{user.name}</p>
                     <p className="text-[10px] text-stone-400 uppercase tracking-widest">Membro</p>
                   </div>
                 </button>
-                <button
-                  onClick={() => handleNavigate('student-profile')}
-                  className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"
-                  title="Página do Aluno"
-                >
-                  <GraduationCap size={18} />
-                </button>
-                <button
-                  onClick={() => {
-                    logout();
-                    showToast("Sessão encerrada. Até logo! 👋");
-                  }}
-                  className="p-2 text-stone-400 hover:text-red-500 transition-colors"
-                  title="Sair"
-                >
-                  <LogOut size={18} />
-                </button>
+
+                {/* Profile Dropdown Menu */}
+                <AnimatePresence>
+                  {isProfileMenuOpen && (
+                    <>
+                      <div 
+                        className="fixed inset-0 z-40" 
+                        onClick={() => setIsProfileMenuOpen(false)} 
+                      />
+                      <motion.div 
+                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                        className="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 rounded-3xl shadow-2xl border border-stone-200 dark:border-zinc-800 overflow-hidden z-50"
+                      >
+                        <div className="p-4 bg-stone-50 dark:bg-zinc-800/50 border-b border-stone-100 dark:border-zinc-800">
+                          <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest mb-1">Sua Conta</p>
+                          <p className="text-sm font-bold truncate">{user.email}</p>
+                        </div>
+                        <div className="p-2">
+                          <button 
+                            onClick={() => {
+                              handleNavigate('profile');
+                              setIsProfileMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-stone-600 dark:text-zinc-300 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
+                          >
+                            <User size={18} className="text-emerald-600" />
+                            Abrir Perfil
+                          </button>
+                          <button 
+                            onClick={() => {
+                              setIsAuthModalOpen(true);
+                              setIsProfileMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-stone-600 dark:text-zinc-300 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
+                          >
+                            <RefreshCw size={18} className="text-blue-600" />
+                            Trocar de Perfil
+                          </button>
+                          <div className="h-px bg-stone-100 dark:bg-zinc-800 my-2 mx-2" />
+                          <button 
+                            onClick={() => {
+                              logout();
+                              setIsProfileMenuOpen(false);
+                              showToast("Sessão encerrada. Até logo! 👋");
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-colors"
+                          >
+                            <LogOut size={18} />
+                            Sair
+                          </button>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
               </div>
             ) : (
               <button
@@ -649,28 +695,95 @@ function AppContent() {
         onClose={() => setIsAuthModalOpen(false)} 
       />
 
+      <AnimatePresence>
+        {isTermsModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsTermsModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-2xl bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl overflow-hidden border border-stone-200 dark:border-zinc-800"
+            >
+              <div className="p-8 md:p-10">
+                <div className="flex justify-between items-center mb-8">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl">
+                      <FileText size={28} />
+                    </div>
+                    <h2 className="text-3xl font-black text-stone-900 dark:text-white tracking-tighter uppercase">Termos de Uso</h2>
+                  </div>
+                  <button 
+                    onClick={() => setIsTermsModalOpen(false)}
+                    className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
+
+                <div className="prose dark:prose-invert max-h-[60vh] overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-zinc-800">
+                  <p className="text-stone-600 dark:text-zinc-400 leading-relaxed">
+                    1. Este é um Curso Livre de Teologia Básica gerada por IA e sem nenhum vínculo com escolas, faculdades, seminários ou igrejas.
+                  </p>
+                  <p className="text-stone-600 dark:text-zinc-400 leading-relaxed">
+                    2. As fontes, estruturas, atividades e avaliações são pré-estabelecidas por meio de prompts pelo desenvolvedor do App, mas que conferem certa liberdade de criação pela IA, o que pode gerar erros.
+                  </p>
+                  <h3 className="text-xl font-bold text-stone-900 dark:text-white mt-6 mb-4">Observações Importantes:</h3>
+                  <p className="text-stone-600 dark:text-zinc-400 leading-relaxed">
+                    3. Os cursos livres online no Brasil são amparados pela Lei nº 9.394/1996 (LDB - Diretrizes e Bases da Educação Nacional) e regulamentados pelo Decreto nº 5.154/2004.
+                  </p>
+                  <p className="text-stone-600 dark:text-zinc-400 leading-relaxed">
+                    4. Esta modalidade não exige autorização do MEC, por serem cursos de capacitação e atualização, e possuírem natureza de educação não-formal. Como não intitulam nível superior ou técnico, não precisam de reconhecimento ou autorização do MEC.
+                  </p>
+                  <p className="text-stone-600 dark:text-zinc-400 leading-relaxed">
+                    5. A Certificação: Os certificados têm valor meramente de comprovação de aprendizado, mas não conferem títulos acadêmicos ou eclesiásticos.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setIsTermsModalOpen(false)}
+                  className="w-full mt-10 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
+                >
+                  Entendido
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AccessibilityControls />
       <VoiceCommandCenter />
       <MicrophonePermissionModal />
 
       <footer className={cn(
-        "py-8 border-t text-center text-sm",
+        "py-12 border-t text-center",
         isDark ? "border-app-border text-app-muted" : "border-stone-200 text-stone-500"
       )}>
-        <div className="flex items-center justify-center gap-3">
-          <img 
-            src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
-            alt="Logo" 
-            className="w-5 h-5 object-contain"
-            referrerPolicy="no-referrer"
-          />
-          <p>© {new Date().getFullYear()} Imersão Bíblica IA • Mergulhando na Palavra</p>
-          <img 
-            src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
-            alt="Logo" 
-            className="w-5 h-5 object-contain"
-            referrerPolicy="no-referrer"
-          />
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex flex-col items-center gap-6">
+            <div className="flex items-center justify-center gap-3">
+              <img 
+                src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
+                alt="Logo" 
+                className="w-6 h-6 object-contain opacity-50"
+                referrerPolicy="no-referrer"
+              />
+              <p className="font-bold tracking-tight">© {new Date().getFullYear()} Imersão Bíblica IA • Mergulhando na Palavra</p>
+              <img 
+                src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
+                alt="Logo" 
+                className="w-6 h-6 object-contain opacity-50"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+          </div>
         </div>
       </footer>
     </div>

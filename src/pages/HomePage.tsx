@@ -39,7 +39,8 @@ import {
   Volume2,
   Loader2,
   Info,
-  GraduationCap
+  GraduationCap,
+  User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
@@ -59,7 +60,7 @@ import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
 import { AudioSearchButton } from '../components/AudioSearchButton';
-
+import { CreditInfoTip } from '../components/CreditInfoTip';
 import { useShare } from '../utils/share';
 
 interface HomePageProps {
@@ -78,6 +79,29 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
+  const handleInstallApp = async () => {
+    if (!deferredPrompt) {
+      showToast("Para instalar o App, clique nos três pontinhos do navegador e selecione 'Instalar Aplicativo' ou 'Adicionar à tela de início'. 📲", "info");
+      return;
+    }
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      showToast("Obrigado por instalar o App! 🙌✨", "success");
+    }
+    setDeferredPrompt(null);
+  };
 
   const handleShareApp = async () => {
     await share({
@@ -120,10 +144,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     { id: 'notebook', label: 'Meu Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-amber-600" />, color: 'bg-amber-50 dark:bg-amber-900/20 shadow-amber-100/50', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-pink-600" />, color: 'bg-pink-50 dark:bg-pink-900/20 shadow-pink-100/50', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-indigo-600" />, color: 'bg-indigo-50 dark:bg-indigo-900/20 shadow-indigo-100/50', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'donate', label: 'Doe', desc: 'Ajude este projeto.', icon: <HeartHandshake size={20} className="text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20 shadow-red-100/50', image: 'https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20 shadow-red-100/50', image: 'https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png' },
     { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20 shadow-orange-100/50', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
-    { id: 'contact', label: 'Contato', desc: 'Fale conosco.', icon: <Mail size={20} className="text-cyan-600" />, color: 'bg-cyan-50 dark:bg-cyan-900/20 shadow-cyan-100/50', image: 'https://images.unsplash.com/photo-1512486130939-2c4f79935e4f?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-sky-600" />, color: 'bg-sky-50 dark:bg-sky-900/20 shadow-sky-100/50', onClick: () => setIsNewsModalOpen(true) },
   ];
 
@@ -582,12 +605,30 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           onClick={handleShareApp}
-          className="w-full py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-200/50 dark:shadow-none group"
+          className="flex-1 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-200/50 dark:shadow-none group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Share2 size={20} className="text-white" />
           </div>
           <span className="text-sm md:text-base">Compartilhar App</span>
+        </motion.button>
+
+        <motion.button 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          onClick={handleInstallApp}
+          className="flex-1 py-5 bg-white dark:bg-zinc-900 text-emerald-600 border-2 border-emerald-600/20 rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-emerald-50 dark:hover:bg-zinc-800 transition-all shadow-lg group"
+        >
+          <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <img 
+              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
+              alt="App Icon" 
+              className="w-6 h-6 object-contain"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <span className="text-sm md:text-base">Instalar App</span>
         </motion.button>
       </div>
 
@@ -1359,6 +1400,10 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         onConfirm={confirmPlayAudio}
         isLoading={isAudioLoading}
       />
+      
+      <div className="max-w-4xl mx-auto px-4 pb-12">
+        <CreditInfoTip />
+      </div>
     </div>
   );
 }

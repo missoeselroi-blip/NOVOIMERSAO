@@ -40,6 +40,7 @@ interface User {
   name: string;
   email: string;
   photoURL?: string;
+  avatar?: string;
   joinDate: string;
   role: 'admin' | 'user';
   favorites?: Favorite[];
