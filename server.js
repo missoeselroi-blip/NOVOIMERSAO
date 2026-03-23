@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function startServer() {
-  console.log("Starting server initialization...");
+  console.log("Starting ESM server from server.js...");
   const app = express();
   const PORT = 3000;
 
@@ -17,17 +17,13 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // Minimal route to confirm server is up
-  app.get("/api/test", (req, res) => {
-    res.send("Server is listening and responding to API requests.");
+  // Start listening immediately
+  app.listen(Number(PORT), "0.0.0.0", () => {
+    console.log(`ESM Server listening on http://0.0.0.0:${PORT}`);
   });
 
-  // Start listening as soon as possible to satisfy the proxy
-  const server = app.listen(Number(PORT), "0.0.0.0", () => {
-    console.log(`Server listening on http://0.0.0.0:${PORT}`);
-  });
-
-  // Vite middleware initialization (after listening)
+  // Vite middleware
+  /*
   if (process.env.NODE_ENV !== "production") {
     console.log("Initializing Vite middleware...");
     try {
@@ -37,18 +33,21 @@ async function startServer() {
         appType: "spa",
       });
       app.use(vite.middlewares);
-      console.log("Vite middleware initialized and added.");
+      console.log("Vite middleware initialized.");
     } catch (error) {
-      console.error("Failed to initialize Vite middleware:", error);
+      console.error("Vite error:", error);
     }
   } else {
-    console.log("Serving static files from dist...");
     const distPath = path.join(__dirname, "dist");
     app.use(express.static(distPath));
     app.get("*", (req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
+  */
+  app.get("*", (req, res) => {
+    res.send("Server is running without Vite middleware. If you see this, Vite is the problem.");
+  });
 }
 
 startServer().catch(err => {
