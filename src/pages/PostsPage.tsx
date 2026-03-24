@@ -80,7 +80,7 @@ export default function PostsPage() {
       }
 
       if (response) {
-        consumeCredits(cost, `Geração de imagem IA (${aiProvider}): ${imageDescription || verse.substring(0, 20)}...`);
+        await consumeCredits(cost, `Geração de imagem IA (${aiProvider}): ${imageDescription || verse.substring(0, 20)}...`);
         setBgImage(response);
         showToast(`Imagem gerada com sucesso via ${aiProvider.toUpperCase()}! Glória a Deus! 🙌✨`);
       } else {

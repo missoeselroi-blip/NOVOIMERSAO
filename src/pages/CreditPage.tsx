@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Coins, 
   History, 
@@ -8,7 +9,8 @@ import {
   Zap,
   ShieldCheck,
   Clock,
-  ArrowRight
+  ArrowRight,
+  Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCredits } from '../contexts/CreditContext';
@@ -24,8 +26,62 @@ export default function CreditPage() {
   const { balance, history, addCredits } = useCredits();
 
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const { showToast } = useToast();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const success = query.get('success');
+    const sessionId = query.get('session_id');
+
+    if (success === 'true' && sessionId) {
+      // Check if this session has already been processed to avoid duplicates
+      const processedSessions = JSON.parse(localStorage.getItem('processed_stripe_sessions') || '[]');
+      if (processedSessions.includes(sessionId)) {
+        // Already processed, just clear the URL
+        navigate('/credits', { replace: true });
+        return;
+      }
+
+      verifySession(sessionId);
+    } else if (query.get('canceled') === 'true') {
+      showToast('Pagamento cancelado.', 'info');
+      navigate('/credits', { replace: true });
+    }
+  }, [location.search]);
+
+  const verifySession = async (sessionId: string) => {
+    setIsVerifying(true);
+    try {
+      const response = await fetch('/api/verify-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+
+      const data = await response.json();
+      if (data.success && data.credits > 0) {
+        await addCredits(data.credits, `Compra de pacote (${data.credits} créditos)`);
+        showToast(`Sucesso! ${data.credits} créditos foram adicionados à sua conta.`, 'success');
+        
+        // Save session ID to avoid duplicates
+        const processedSessions = JSON.parse(localStorage.getItem('processed_stripe_sessions') || '[]');
+        processedSessions.push(sessionId);
+        localStorage.setItem('processed_stripe_sessions', JSON.stringify(processedSessions));
+      } else {
+        showToast('Não foi possível confirmar o pagamento.', 'error');
+      }
+    } catch (error) {
+      console.error('Error verifying session:', error);
+      showToast('Erro ao verificar pagamento.', 'error');
+    } finally {
+      setIsVerifying(false);
+      navigate('/credits', { replace: true });
+    }
+  };
 
   const displayedHistory = showAllHistory ? history : history.slice(0, 5);
 
@@ -77,6 +133,17 @@ export default function CreditPage() {
 
   return (
     <div className="space-y-12 pb-20">
+      {/* Loading Overlay for Verification */}
+      {isVerifying && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center">
+          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] text-center space-y-4 shadow-2xl border border-stone-200 dark:border-zinc-800">
+            <Loader2 className="animate-spin text-emerald-600 mx-auto" size={48} />
+            <h3 className="text-xl font-bold">Verificando Pagamento...</h3>
+            <p className="text-stone-500 dark:text-zinc-400">Aguarde um momento enquanto confirmamos sua compra.</p>
+          </div>
+        </div>
+      )}
+
       <header>
         <div className="flex items-center justify-center gap-4">
           <h2 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400">Créditos de IA</h2>

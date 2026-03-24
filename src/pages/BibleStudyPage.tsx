@@ -1054,7 +1054,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           setKidsResult(data);
           setKidsIllustration(null);
           setNarrationAudio(null);
-          consumeCredits(cost, `Geração de Material Infantil: ${topic}`);
+          await consumeCredits(cost, `Geração de Material Infantil: ${topic}`);
           showToast("Material infantil gerado com sucesso! 🎨✨");
           addToHistory({
             tab: 'creation-tool',
@@ -1092,7 +1092,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       if (imageUrl) {
         setKidsIllustration(imageUrl);
         setKidsActiveTab('illustration');
-        consumeCredits(cost, `Ilustração IA Infantil: ${topic}`);
+        await consumeCredits(cost, `Ilustração IA Infantil: ${topic}`);
         showToast("Ilustração gerada com sucesso! 🎨✨");
       } else {
         showToast("Erro ao gerar ilustração. Tente novamente.");
@@ -1193,7 +1193,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       if (response) {
         setMusicData(response);
         setMusicResult(response.lyrics);
-        consumeCredits(cost, `Composição Completa: ${musicStyle}`);
+        await consumeCredits(cost, `Composição Completa: ${musicStyle}`);
         showToast("Composição gerada com sucesso! 📝🎸", 'success');
       }
     } catch (error) {
@@ -1233,7 +1233,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       
       if (audioUrl) {
         setMusicAudioUrl(audioUrl);
-        consumeCredits(cost, `Geração de Música: ${musicStyle}`);
+        await consumeCredits(cost, `Geração de Música: ${musicStyle}`);
         showToast("Música gerada com sucesso! 🎵✨");
       } else {
         showToast("Erro ao gerar o áudio da música.");
@@ -1298,14 +1298,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     printWindow.document.close();
   };
 
-  const handleUnifiedCreation = () => {
+  const handleUnifiedCreation = async () => {
     const cost = estimateCredits(creationType);
     
     setShowCreditConfirm({
       show: true,
       cost,
-      action: () => {
-        if (consumeCredits(cost, `Geração de ${creationType}: ${topic}`)) {
+      action: async () => {
+        if (await consumeCredits(cost, `Geração de ${creationType}: ${topic}`)) {
           if (creationType === 'lesson') handleCreateLesson();
           else if (creationType === 'study') handleCreateStudy();
           else if (creationType === 'outline') handleGenerateOutline();

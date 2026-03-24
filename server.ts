@@ -23,7 +23,7 @@ async function startServer() {
     }
 
     const { amount, price, description } = req.body;
-    const appUrl = process.env.APP_URL || 'http://localhost:3000';
+    const appUrl = process.env.APP_URL || `https://${req.get('host')}`;
 
     // Cálculo da Taxa de 20% (Inclusa no preço total)
     const totalAmountInCents = Math.round(price * 100);
@@ -58,8 +58,8 @@ async function startServer() {
           },
         ],
         mode: 'payment',
-        success_url: `${appUrl}/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}/credits?canceled=true`,
+        success_url: `${appUrl}/#/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${appUrl}/#/credits?canceled=true`,
         metadata: {
           credits_to_add: amount.toString(),
           base_price: price.toString(),
@@ -69,6 +69,32 @@ async function startServer() {
       res.json({ id: session.id, url: session.url });
     } catch (error: any) {
       console.error('Stripe error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/verify-checkout-session', async (req, res) => {
+    if (!stripe) {
+      return res.status(500).json({ error: 'Stripe is not configured on the server' });
+    }
+
+    const { sessionId } = req.body;
+
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      
+      if (session.payment_status === 'paid') {
+        const creditsToAdd = parseInt(session.metadata?.credits_to_add || '0');
+        res.json({ 
+          success: true, 
+          credits: creditsToAdd,
+          customer_email: session.customer_details?.email 
+        });
+      } else {
+        res.json({ success: false, error: 'Payment not completed' });
+      }
+    } catch (error: any) {
+      console.error('Verification error:', error);
       res.status(500).json({ error: error.message });
     }
   });

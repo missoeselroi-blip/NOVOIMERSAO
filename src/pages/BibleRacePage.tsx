@@ -514,7 +514,7 @@ const BibleRacePage: React.FC = () => {
   const changeAvatar = async () => {
     if (!user) return;
     const cost = 10;
-    if (consumeCredits(cost, "Troca de Avatar da Corrida")) {
+    if (await consumeCredits(cost, "Troca de Avatar da Corrida")) {
       setIsChangingAvatar(true);
       try {
         const newAvatar = `https://api.dicebear.com/7.x/avataaars/svg?seed=${Date.now()}`;

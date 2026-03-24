@@ -145,7 +145,7 @@ export default function CareerPage() {
 
   const handleGenerateAvatar = async () => {
     const cost = estimateCredits('avatar');
-    if (!consumeCredits(cost, 'Geração de Avatar')) {
+    if (!(await consumeCredits(cost, 'Geração de Avatar'))) {
       showToast(`Créditos insuficientes. Você precisa de ${cost} créditos.`, 'error');
       return;
     }

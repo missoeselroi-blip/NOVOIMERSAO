@@ -67,7 +67,7 @@ export const VeoVideoGenerator: React.FC = () => {
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
         setVideoUrl(url);
-        consumeCredits(cost, `Geração de Vídeo Veo: ${prompt}`);
+        await consumeCredits(cost, `Geração de Vídeo Veo: ${prompt}`);
         showToast("Vídeo gerado com sucesso! 🎬✨", "success");
       } else {
         showToast("Erro ao gerar vídeo.", "error");
