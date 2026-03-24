@@ -29,24 +29,20 @@ export default function CreditPage() {
 
   const displayedHistory = showAllHistory ? history : history.slice(0, 5);
 
-  const handlePurchase = async (amount: number, description: string) => {
+  const handlePurchase = async (amount: number, price: number, description: string) => {
     setIsPurchasing(true);
-    console.log('handlePurchase called', { amount, description });
     const stripe = await stripePromise;
-    console.log('stripePromise resolved', { stripe });
     if (!stripe) {
-      console.error('Stripe not initialized');
-      showToast('Erro ao inicializar pagamento. Verifique sua conexão.', 'error');
+      showToast('Erro ao inicializar Stripe.', 'error');
       setIsPurchasing(false);
       return;
     }
 
     try {
-      console.log('Fetching checkout session...');
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, description }),
+        body: JSON.stringify({ amount, price, description }),
       });
       console.log('Response received', response);
       if (!response.ok) {
@@ -70,9 +66,9 @@ export default function CreditPage() {
   };
 
   const purchaseOptions = [
-    { amount: 100, price: 'R$ 23,88', label: 'Básico', icon: <Zap className="text-blue-500" /> },
-    { amount: 300, price: 'R$ 59,88', label: 'Popular', icon: <Coins className="text-emerald-500" />, popular: true },
-    { amount: 1000, price: 'R$ 155,88', label: 'Premium', icon: <ShieldCheck className="text-purple-500" /> },
+    { amount: 100, price: 23.88, label: 'Básico', icon: <Zap className="text-blue-500" /> },
+    { amount: 300, price: 59.88, label: 'Popular', icon: <Coins className="text-emerald-500" />, popular: true },
+    { amount: 1000, price: 155.88, label: 'Premium', icon: <ShieldCheck className="text-purple-500" /> },
   ];
 
   return (
@@ -129,10 +125,12 @@ export default function CreditPage() {
                 </div>
                 <h4 className="text-xl font-bold mb-1">{option.amount} Créditos</h4>
                 <p className="text-stone-400 text-xs mb-4">{option.label}</p>
-                <div className="text-2xl font-display font-bold text-emerald-600 dark:text-emerald-400 mb-6">{option.price}</div>
+                <div className="text-2xl font-display font-bold text-emerald-600 dark:text-emerald-400 mb-6">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(option.price)}
+                </div>
               </div>
               <button 
-                onClick={() => handlePurchase(option.amount, `Compra de pacote ${option.label}`)}
+                onClick={() => handlePurchase(option.amount, option.price, `Pacote ${option.amount} Créditos`)}
                 disabled={isPurchasing}
                 className={cn(
                   "w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all",
