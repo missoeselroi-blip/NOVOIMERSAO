@@ -65,7 +65,6 @@ declare global {
 const HomePage = lazyWithRetry(() => import('./pages/HomePage'));
 const BibleStudyPage = lazyWithRetry(() => import('./pages/BibleStudyPage'));
 const StorePage = lazyWithRetry(() => import('./pages/StorePage'));
-const CreditPage = lazyWithRetry(() => import('./pages/CreditPage'));
 const PostsPage = lazyWithRetry(() => import('./pages/PostsPage'));
 const ForumPage = lazyWithRetry(() => import('./pages/ForumPage'));
 const CareerPage = lazyWithRetry(() => import('./pages/CareerPage'));
@@ -79,7 +78,8 @@ const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazyWithRetry(() => import('./pages/TheologySearchPage'));
 import TheologyPage from './pages/TheologyPage';
-const MissionaryPage = lazyWithRetry(() => import('./pages/MissionaryPage'));
+import CreditPage from './pages/CreditPage';
+import MissionaryPage from './pages/MissionaryPage';
 
 const MissionaryBulkResults = lazyWithRetry(() => import('./pages/MissionaryBulkResults'));
 const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));

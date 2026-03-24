@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCredits } from '../contexts/CreditContext';
+import { useAuth } from '../contexts/AuthContext';
 import { CreditTooltip } from '../components/CreditTooltip';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
@@ -24,6 +25,7 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
 
 export default function CreditPage() {
   const { balance, history, addCredits } = useCredits();
+  const { user } = useAuth();
 
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -52,6 +54,31 @@ export default function CreditPage() {
       navigate('/credits', { replace: true });
     }
   }, [location.search]);
+
+  // Listen for success message from popup (after callback completes)
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Validate origin is from AI Studio preview or localhost
+      const origin = event.origin;
+      if (!origin.endsWith('.run.app') && !origin.includes('localhost') && !origin.includes('google.com')) {
+        return;
+      }
+
+      if (event.data?.type === 'STRIPE_PAYMENT_SUCCESS') {
+        console.log('[Stripe] Payment success message received', event.data);
+        const sessionId = event.data.sessionId;
+        if (sessionId) {
+          verifySession(sessionId);
+        }
+      } else if (event.data?.type === 'STRIPE_PAYMENT_CANCEL') {
+        console.log('[Stripe] Payment cancel message received');
+        showToast('Pagamento cancelado pelo usuário.', 'info');
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
 
   const verifySession = async (sessionId: string) => {
     setIsVerifying(true);
@@ -86,40 +113,67 @@ export default function CreditPage() {
   const displayedHistory = showAllHistory ? history : history.slice(0, 5);
 
   const handlePurchase = async (amount: number, price: number, description: string) => {
-    setIsPurchasing(true);
-    const stripe = await stripePromise;
-    if (!stripe) {
-      showToast('Erro ao inicializar Stripe.', 'error');
-      setIsPurchasing(false);
+    if (!user) {
+      showToast('Por favor, faça login para comprar créditos.', 'error');
       return;
     }
 
+    const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+    if (!stripePublicKey) {
+      console.error('VITE_STRIPE_PUBLIC_KEY is missing');
+      showToast('⚠️ Erro de configuração: Chave pública do Stripe não encontrada nas configurações do App.', 'error');
+      return;
+    }
+
+    setIsPurchasing(true);
+    
+    // Open a blank window immediately to preserve user gesture
+    const checkoutWindow = window.open('about:blank', '_blank');
+    if (!checkoutWindow) {
+      showToast('O bloqueador de pop-ups impediu a abertura. Por favor, autorize pop-ups para este site.', 'error');
+      setIsPurchasing(false);
+      return;
+    }
+    
+    // Show a loading message in the new window
+    checkoutWindow.document.write(`
+      <div style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center;">
+        <h1 style="color: #059669;">Preparando seu checkout...</h1>
+        <p style="color: #6b7280;">Aguarde um momento enquanto conectamos com o Stripe.</p>
+        <div style="width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #059669; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+      </div>
+    `);
+
     try {
-      const response = await fetch('/api/create-checkout-session', {
+      const apiUrl = `${window.location.origin}/api/create-checkout-session`;
+      console.log(`[Stripe] Fetching session from: ${apiUrl}`, { amount, price, userId: user.id });
+      
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount, price, description }),
+        body: JSON.stringify({ amount, price, description, userId: user.id }),
       });
-      console.log('Response received', response);
+
       if (!response.ok) {
-        throw new Error(`Server returned ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server returned ${response.status}`);
       }
+
       const session = await response.json();
-      console.log('Session data', session);
+      console.log('Session data received:', session);
 
       if (session.url) {
-        // Abre em uma nova aba para evitar bloqueio de iframe
-        const checkoutWindow = window.open(session.url, '_blank');
-        if (!checkoutWindow) {
-          showToast('O bloqueador de pop-ups impediu a abertura. Por favor, autorize pop-ups para este site.', 'error');
-        }
+        checkoutWindow.location.href = session.url;
       } else {
-        console.error('Failed to create checkout session', session);
+        checkoutWindow.close();
+        console.error('Failed to create checkout session: No URL returned', session);
         showToast('Erro ao iniciar pagamento. Tente novamente mais tarde.', 'error');
       }
-    } catch (error) {
-      console.error('Error:', error);
-      showToast('Erro ao conectar com o serviço de pagamento.', 'error');
+    } catch (error: any) {
+      console.error('Purchase error:', error);
+      if (checkoutWindow) checkoutWindow.close();
+      showToast(error.message || 'Erro ao conectar com o serviço de pagamento.', 'error');
     } finally {
       setIsPurchasing(false);
     }

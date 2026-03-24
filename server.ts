@@ -4,17 +4,114 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Initialize Firebase Admin
+const apps = getApps();
+if (!apps || apps.length === 0) {
+  try {
+    initializeApp({
+      projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
+    });
+    console.log('Firebase Admin initialized successfully');
+  } catch (error) {
+    console.error('Error initializing Firebase Admin:', error);
+  }
+}
+
+const db = getFirestore();
+
 async function startServer() {
   const app = express();
-  app.use(express.json());
-  
+
   // Initialize Stripe
   const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
+  if (!stripeSecretKey) {
+    console.warn('⚠️ STRIPE_SECRET_KEY is missing in environment variables');
+  }
+  if (!process.env.STRIPE_WEBHOOK_SECRET) {
+    console.warn('⚠️ STRIPE_WEBHOOK_SECRET is missing. Webhooks will not work.');
+  }
+  if (!process.env.APP_URL) {
+    console.warn('⚠️ APP_URL is missing. Using request headers as fallback.');
+  }
   const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+
+  // Stripe Webhook - MUST be before express.json()
+  app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'] as string;
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+
+    if (!webhookSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET is not set');
+      return res.status(400).send('Webhook Error: Secret not set');
+    }
+
+    if (!stripe) {
+      console.error('Stripe is not configured');
+      return res.status(500).send('Stripe not configured');
+    }
+
+    let event;
+
+    try {
+      event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err: any) {
+      console.error(`Webhook Error: ${err.message}`);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object as Stripe.Checkout.Session;
+      const userId = session.client_reference_id;
+      const creditsToAdd = parseInt(session.metadata?.credits_to_add || '0');
+
+      if (userId && creditsToAdd > 0) {
+        try {
+          const userCreditsRef = db.collection('userCredits').doc(userId);
+          
+          await db.runTransaction(async (transaction) => {
+            const doc = await transaction.get(userCreditsRef);
+            let currentBalance = 0;
+            
+            if (doc.exists) {
+              currentBalance = doc.data()?.balance || 0;
+            }
+
+            const newBalance = currentBalance + creditsToAdd;
+            transaction.set(userCreditsRef, {
+              userId,
+              balance: newBalance,
+              lastUpdated: FieldValue.serverTimestamp()
+            }, { merge: true });
+
+            // Add transaction record
+            const txRef = db.collection('creditTransactions').doc();
+            transaction.set(txRef, {
+              userId,
+              type: 'purchase',
+              amount: creditsToAdd,
+              description: `Compra via Stripe (Webhook): ${session.id}`,
+              date: FieldValue.serverTimestamp()
+            });
+          });
+
+          console.log(`Successfully added ${creditsToAdd} credits to user ${userId} via webhook`);
+        } catch (error) {
+          console.error('Error updating credits via webhook:', error);
+        }
+      }
+    }
+
+    res.json({ received: true });
+  });
+
+  app.use(express.json());
 
   // API Routes
   app.post('/api/create-checkout-session', async (req, res) => {
@@ -22,8 +119,38 @@ async function startServer() {
       return res.status(500).json({ error: 'Stripe is not configured on the server' });
     }
 
-    const { amount, price, description } = req.body;
-    const appUrl = process.env.APP_URL || `https://${req.get('host')}`;
+    const { amount, price, description, userId } = req.body;
+    
+    // Forçamos a URL do seu app para evitar o domínio do Google AI Studio
+    let baseUrl = process.env.APP_URL || "";
+    
+    if (!baseUrl) {
+      const host = req.get('host');
+      if (host) {
+        const protocol = req.protocol;
+        baseUrl = `${protocol}://${host}`;
+      }
+    }
+    
+    // Tenta detectar se estamos no ambiente de preview (pre)
+    const hostHeader = req.get('host') || '';
+    if (hostHeader.includes('ais-pre') || (req.headers['x-forwarded-host'] as string)?.includes('ais-pre')) {
+      // Se detectarmos que é o ambiente de preview, mas não temos APP_URL, podemos tentar inferir
+      // Mas se baseUrl já foi definido via host, ele deve estar correto.
+    }
+    
+    // Se o usuário configurou uma APP_URL válida, ela tem prioridade (já tratada acima)
+
+    if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
+    
+    // Usamos rotas limpas no servidor como ponte (sem o #)
+    const successUrl = `${baseUrl}/payment-success?session_id={CHECKOUT_SESSION_ID}`;
+    const cancelUrl = `${baseUrl}/payment-cancel`;
+
+    console.log(`[Stripe] Criando checkout:
+      - Usuário: ${userId}
+      - Base URL: ${baseUrl}
+      - Sucesso (Ponte): ${successUrl}`);
 
     // Cálculo da Taxa de 20% (Inclusa no preço total)
     const totalAmountInCents = Math.round(price * 100);
@@ -31,8 +158,10 @@ async function startServer() {
     const feeAmount = totalAmountInCents - baseAmount; // Valor da taxa (20% do valor base)
 
     try {
+      console.log(`Creating checkout session for user ${userId}, amount ${amount}`);
       const session = await stripe.checkout.sessions.create({
         payment_method_types: ['card'],
+        client_reference_id: userId,
         line_items: [
           {
             price_data: {
@@ -58,8 +187,8 @@ async function startServer() {
           },
         ],
         mode: 'payment',
-        success_url: `${appUrl}/#/credits?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${appUrl}/#/credits?canceled=true`,
+        success_url: successUrl,
+        cancel_url: cancelUrl,
         metadata: {
           credits_to_add: amount.toString(),
           base_price: price.toString(),
@@ -99,6 +228,49 @@ async function startServer() {
     }
   });
 
+  // Bridge Pages for Stripe Redirects (Handles HashRouter in iframes)
+  app.get('/payment-success', (req, res) => {
+    const sessionId = req.query.session_id;
+    res.send(`
+      <html>
+        <body style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f9fafb; margin: 0; text-align: center;">
+          <h2 style="color: #059669;">Pagamento Confirmado!</h2>
+          <p>Sincronizando com o aplicativo...</p>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({ 
+                type: 'STRIPE_PAYMENT_SUCCESS', 
+                sessionId: '${sessionId}' 
+              }, '*');
+              setTimeout(() => window.close(), 1000);
+            } else {
+              window.location.href = '/#/credits?success=true&session_id=${sessionId}';
+            }
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
+  app.get('/payment-cancel', (req, res) => {
+    res.send(`
+      <html>
+        <body style="font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; background: #f9fafb; margin: 0; text-align: center;">
+          <h2 style="color: #4b5563;">Pagamento Cancelado</h2>
+          <p>Voltando para o aplicativo...</p>
+          <script>
+            if (window.opener) {
+              window.opener.postMessage({ type: 'STRIPE_PAYMENT_CANCEL' }, '*');
+              setTimeout(() => window.close(), 1000);
+            } else {
+              window.location.href = '/#/credits?canceled=true';
+            }
+          </script>
+        </body>
+      </html>
+    `);
+  });
+
   // Only use production mode if NODE_ENV is production AND dist/index.html folder exists
   const distPath = path.resolve(process.cwd(), 'dist');
   const distIndexHtml = path.resolve(distPath, 'index.html');
@@ -113,7 +285,7 @@ async function startServer() {
       vite = await createViteServer({
         server: { 
           middlewareMode: true,
-          hmr: false 
+          hmr: false,
         },
         appType: 'custom',
       });
