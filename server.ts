@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -11,19 +12,40 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Firebase Admin
+let db: any;
 const apps = getApps();
 if (!apps || apps.length === 0) {
   try {
-    initializeApp({
-      projectId: process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID,
-    });
-    console.log('Firebase Admin initialized successfully');
+    let projectId = process.env.VITE_FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT_ID;
+    let databaseId = process.env.FIRESTORE_DATABASE_ID;
+    
+    // Try to read from config file if env is missing
+    try {
+      const configPath = path.resolve(process.cwd(), 'firebase-applet-config.json');
+      if (fs.existsSync(configPath)) {
+        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+        if (!projectId) projectId = config.projectId;
+        if (!databaseId) databaseId = config.firestoreDatabaseId;
+      }
+    } catch (e) {
+      console.warn('Could not read firebase-applet-config.json for Admin initialization');
+    }
+
+    if (projectId) {
+      initializeApp({ projectId });
+      console.log(`Firebase Admin initialized successfully for project: ${projectId}`);
+      db = getFirestore(databaseId || '(default)');
+    } else {
+      console.warn('⚠️ Firebase Project ID missing. Admin SDK may not work correctly.');
+      db = getFirestore();
+    }
   } catch (error) {
     console.error('Error initializing Firebase Admin:', error);
+    db = getFirestore();
   }
+} else {
+  db = getFirestore();
 }
-
-const db = getFirestore();
 
 async function startServer() {
   const app = express();
@@ -113,8 +135,14 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Logging middleware for API routes
+  app.use('/api', (req, res, next) => {
+    console.log(`[API] ${req.method} ${req.url}`);
+    next();
+  });
+
   // API Routes
-  app.post('/api/create-checkout-session', async (req, res) => {
+  app.post(['/api/create-checkout-session', '/api/create-checkout-session/'], async (req, res) => {
     if (!stripe) {
       return res.status(500).json({ error: 'Stripe is not configured on the server' });
     }
@@ -226,6 +254,24 @@ async function startServer() {
       console.error('Verification error:', error);
       res.status(500).json({ error: error.message });
     }
+  });
+
+  // 404 handler for API routes
+  app.all('/api/*', (req, res) => {
+    console.warn(`[API 404] ${req.method} ${req.url}`);
+    res.status(404).json({ error: `Route ${req.method} ${req.url} not found` });
+  });
+
+  // Global Error Handler for API
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('[Server Error]', err);
+    if (req.path.startsWith('/api/')) {
+      return res.status(err.status || 500).json({ 
+        error: err.message || 'Internal Server Error',
+        details: process.env.NODE_ENV === 'development' ? err.stack : undefined
+      });
+    }
+    next(err);
   });
 
   // Bridge Pages for Stripe Redirects (Handles HashRouter in iframes)

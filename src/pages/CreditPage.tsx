@@ -89,6 +89,12 @@ export default function CreditPage() {
         body: JSON.stringify({ sessionId }),
       });
 
+      if (!response.ok) {
+        const text = await response.text();
+        console.error(`[Stripe] Verify error response (${response.status}):`, text);
+        throw new Error(`Erro ao verificar sessão (${response.status})`);
+      }
+
       const data = await response.json();
       if (data.success && data.credits > 0) {
         await addCredits(data.credits, `Compra de pacote (${data.credits} créditos)`);
@@ -146,7 +152,7 @@ export default function CreditPage() {
     `);
 
     try {
-      const apiUrl = `${window.location.origin}/api/create-checkout-session`;
+      const apiUrl = '/api/create-checkout-session';
       console.log(`[Stripe] Fetching session from: ${apiUrl}`, { amount, price, userId: user.id });
       
       const response = await fetch(apiUrl, {
@@ -156,7 +162,14 @@ export default function CreditPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        const text = await response.text();
+        console.error(`[Stripe] Error response (${response.status}):`, text);
+        let errorData;
+        try {
+          errorData = JSON.parse(text);
+        } catch (e) {
+          errorData = { error: `Erro do servidor (${response.status}). O servidor retornou uma página HTML em vez de JSON.` };
+        }
         throw new Error(errorData.error || `Server returned ${response.status}`);
       }
 
