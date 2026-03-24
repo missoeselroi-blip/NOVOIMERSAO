@@ -51,8 +51,12 @@ export default function CreditPage() {
       const session = await response.json();
       console.log('Session data', session);
 
-      if (session.id) {
-        await (stripe as any).redirectToCheckout({ sessionId: session.id });
+      if (session.url) {
+        // Abre em uma nova aba para evitar bloqueio de iframe
+        const checkoutWindow = window.open(session.url, '_blank');
+        if (!checkoutWindow) {
+          showToast('O bloqueador de pop-ups impediu a abertura. Por favor, autorize pop-ups para este site.', 'error');
+        }
       } else {
         console.error('Failed to create checkout session', session);
         showToast('Erro ao iniciar pagamento. Tente novamente mais tarde.', 'error');

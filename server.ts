@@ -66,7 +66,7 @@ async function startServer() {
         }
       });
 
-      res.json({ id: session.id });
+      res.json({ id: session.id, url: session.url });
     } catch (error: any) {
       console.error('Stripe error:', error);
       res.status(500).json({ error: error.message });
