@@ -156,6 +156,73 @@
           "additionalProperties": { "type": "integer" }
         }
       }
+    },
+    "BibleRaceProgress": {
+      "title": "Bible Race Progress",
+      "description": "Tracks user progress, points and streaks in the Bible Race",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "currentBook": { "type": "string" },
+        "currentChapter": { "type": "integer" },
+        "points": { "type": "integer" },
+        "monthlyPoints": { "type": "integer" },
+        "annualPoints": { "type": "integer" },
+        "dailyReadCount": { "type": "integer" },
+        "streakDays": { "type": "integer" },
+        "lastReadDate": { "type": "string" },
+        "medals": { "type": "array", "items": { "type": "string" } },
+        "finishedBooksCount": { "type": "integer" },
+        "publicMessage": { "type": "string" },
+        "userJoinDate": { "type": "string", "format": "date-time" },
+        "lastUpdate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "currentBook", "currentChapter", "points"]
+    },
+    "BibleRaceMessage": {
+      "title": "Bible Race Message",
+      "description": "Messages sent between users in the Bible Race",
+      "type": "object",
+      "properties": {
+        "fromUserId": { "type": "string" },
+        "fromUserName": { "type": "string" },
+        "toUserId": { "type": "string" },
+        "message": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fromUserId", "toUserId", "message", "createdAt"]
+    },
+    "BibleRaceChampion": {
+      "title": "Bible Race Champion",
+      "description": "Historical champions of the Bible Race",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "points": { "type": "integer" },
+        "period": { "type": "string" },
+        "type": { "type": "string", "enum": ["monthly", "annual", "overall"] },
+        "wonAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "points", "type", "wonAt"]
+    },
+    "JournalEntry": {
+      "title": "Journal Entry",
+      "description": "User personal journal entries with Bible verses and reflections",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "verseReference": { "type": "string" },
+        "topic": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "content", "createdAt"]
     }
   },
   "firestore": {
@@ -198,6 +265,22 @@
     "/audioCollection/{audioId}": {
       "schema": "AudioCollection",
       "description": "User audio collection"
+    },
+    "/bibleRaceProgress/{userId}": {
+      "schema": "BibleRaceProgress",
+      "description": "User Bible Race progress and scores"
+    },
+    "/bibleRaceMessages/{messageId}": {
+      "schema": "BibleRaceMessage",
+      "description": "Bible Race user messages"
+    },
+    "/bibleRaceChampions/{championId}": {
+      "schema": "BibleRaceChampion",
+      "description": "Historical Bible Race champions"
+    },
+    "/journalEntries/{entryId}": {
+      "schema": "JournalEntry",
+      "description": "User journal entries"
     }
   }
 }

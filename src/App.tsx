@@ -11,6 +11,7 @@ import {
 import { 
   Home, 
   BookOpen, 
+  Book,
   FileText, 
   GraduationCap, 
   Image as ImageIcon, 
@@ -42,7 +43,8 @@ import {
   LogIn,
   Volume2,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Medal
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -70,6 +72,7 @@ const CareerPage = lazyWithRetry(() => import('./pages/CareerPage'));
 const WhoAmIPage = lazyWithRetry(() => import('./pages/WhoAmIPage'));
 const ContactPage = lazyWithRetry(() => import('./pages/ContactPage'));
 const NotebookPage = lazyWithRetry(() => import('./pages/NotebookPage'));
+const JournalPage = lazyWithRetry(() => import('./pages/JournalPage'));
 const DevotionalPage = lazyWithRetry(() => import('./pages/DevotionalPage'));
 const RedacaoPage = lazyWithRetry(() => import('./pages/RedacaoPage'));
 const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
@@ -81,6 +84,7 @@ const MissionaryPage = lazyWithRetry(() => import('./pages/MissionaryPage'));
 const MissionaryBulkResults = lazyWithRetry(() => import('./pages/MissionaryBulkResults'));
 const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));
 const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
+const BibleRacePage = lazyWithRetry(() => import('./pages/BibleRacePage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -148,7 +152,7 @@ function AppContent() {
   }
 
   const handleNavigate = (tabId: string) => {
-    const protectedTabs = ['theology', 'career', 'notebook'];
+    const protectedTabs = ['theology', 'career', 'notebook', 'journal'];
     if (protectedTabs.includes(tabId) && !user) {
       setPendingTab(tabId);
       setIsAuthModalOpen(true);
@@ -170,7 +174,8 @@ function AppContent() {
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
-  ];  const navItems = [
+  ];
+  const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
@@ -180,8 +185,8 @@ function AppContent() {
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
-    { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Trophy size={20} />, component: <CareerPage /> },
-    { id: 'who-am-i', label: 'Quem Somos?', subtitle: 'Nossa história', icon: <User size={20} />, component: <WhoAmIPage onNavigate={handleNavigate} /> },
+    { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
+    { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
     { id: 'contact', label: 'Contato', subtitle: 'Fale conosco', icon: <Mail size={20} />, component: <ContactPage />, hidden: true },
     { id: 'login-nav', label: 'Entrar', icon: <LogIn size={20} />, component: <div />, hidden: true },
     { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={handleNavigate} />, hidden: true },
@@ -191,6 +196,7 @@ function AppContent() {
     { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
     { id: 'profile', label: 'Perfil', subtitle: 'Sua conta e preferências', icon: <User size={20} />, component: <ProfilePage />, hidden: true },
     { id: 'admin', label: 'Painel ADM', subtitle: 'Administração do Sistema', icon: <ShieldCheck size={20} />, component: <AdminPage />, hidden: true },
+    { id: 'who-am-i', label: 'Quem Somos?', subtitle: 'Nossa história', icon: <User size={20} />, component: <WhoAmIPage onNavigate={handleNavigate} /> },
   ];
 
   const activeItem = navItems.find(item => item.id === activeTab);

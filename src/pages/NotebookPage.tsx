@@ -28,6 +28,7 @@ import { geminiService } from '../services/geminiService';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import JournalPage from './JournalPage';
 
 import { useShare } from '../utils/share';
 
@@ -63,6 +64,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [activeView, setActiveView] = useState<'notes' | 'journal'>('notes');
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [pendingSpeechText, setPendingSpeechText] = useState('');
@@ -337,25 +339,68 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   return (
     <div className="space-y-8 relative">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-        <div>
-          <h2 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400">Meu Caderno</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400">
+            {activeView === 'notes' ? 'Meu Caderno' : 'Meu Diário'}
+          </h2>
+          <div className="flex bg-stone-100 dark:bg-zinc-800 p-1 rounded-xl">
+            <button
+              onClick={() => setActiveView('notes')}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
+                activeView === 'notes' 
+                  ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" 
+                  : "text-stone-400 hover:text-stone-600"
+              )}
+            >
+              Notas
+            </button>
+            <button
+              onClick={() => setActiveView('journal')}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
+                activeView === 'journal' 
+                  ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" 
+                  : "text-stone-400 hover:text-stone-600"
+              )}
+            >
+              Diário
+            </button>
+          </div>
         </div>
         <div className="flex gap-3">
-          <button
-            onClick={() => {
-              setIsFormOpen(true);
-              setEditingNoteId(null);
-              setCurrentNote({ title: '', content: '', category: 'Anotações' });
-            }}
-            className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
-          >
-            <Plus size={20} />
-            Nova Página
-          </button>
+          {activeView === 'notes' ? (
+            <button
+              onClick={() => {
+                setIsFormOpen(true);
+                setEditingNoteId(null);
+                setCurrentNote({ title: '', content: '', category: 'Anotações' });
+              }}
+              className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
+            >
+              <Plus size={20} />
+              Nova Página
+            </button>
+          ) : (
+            <button
+              onClick={() => {
+                // This will be handled by the JournalPage component internally if we want, 
+                // but we can also trigger its "New Entry" if we refactor it.
+                // For now, let's just let JournalPage handle its own "New Entry" button.
+              }}
+              className="hidden"
+            >
+              Nova Reflexão
+            </button>
+          )}
         </div>
       </header>
 
-      {/* Categories and Customization */}
+      {activeView === 'journal' ? (
+        <JournalPage isSubView={true} />
+      ) : (
+        <>
+          {/* Categories and Customization */}
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
         <div className="flex bg-stone-100 dark:bg-zinc-800 p-1 rounded-2xl overflow-x-auto max-w-full">
           {['Todos', 'Anotações', 'Esboços', 'Estudos', 'Histórias', 'Teatro', 'Teologia', 'Outros'].map((cat) => (
@@ -624,8 +669,10 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           </div>
         )}
       </div>
+    </>
+  )}
 
-      <AnimatePresence>
+  <AnimatePresence>
         {noteToDelete && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
             <motion.div
@@ -671,26 +718,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
         onClose={() => setIsAudioConfirmModalOpen(false)}
         onConfirm={confirmGenerateSpeech}
       />
-
-      <footer className="pt-12 pb-6 border-t border-stone-200 dark:border-zinc-800 flex flex-col items-center gap-4">
-        <div className="flex items-center justify-center gap-3">
-          <img 
-            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-            alt="Logo" 
-            className="w-5 h-5 object-contain"
-            referrerPolicy="no-referrer"
-          />
-          <p className="text-stone-500 dark:text-zinc-400 font-medium">
-            Aplicativo Imersão Bíblia IA — {currentMonthYear.charAt(0).toUpperCase() + currentMonthYear.slice(1)}
-          </p>
-          <img 
-            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-            alt="Logo" 
-            className="w-5 h-5 object-contain"
-            referrerPolicy="no-referrer"
-          />
-        </div>
-      </footer>
     </div>
   );
 }

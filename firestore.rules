@@ -132,11 +132,77 @@ service cloud.firestore {
              data.audioUrl is string && isValidUrl(data.audioUrl);
     }
 
+    function isValidBibleRaceProgress(data) {
+      return data.keys().hasAll(['userId', 'currentBook', 'currentChapter', 'points']) &&
+             data.userId == request.auth.uid &&
+             data.currentBook is string &&
+             data.currentChapter is number &&
+             data.points is number &&
+             (!('monthlyPoints' in data) || data.monthlyPoints is number) &&
+             (!('annualPoints' in data) || data.annualPoints is number) &&
+             (!('streakDays' in data) || data.streakDays is number) &&
+             (!('medals' in data) || data.medals is list) &&
+             (!('finishedBooksCount' in data) || data.finishedBooksCount is number) &&
+             (!('publicMessage' in data) || (data.publicMessage is string && data.publicMessage.size() < 500)) &&
+             (!('userJoinDate' in data) || data.userJoinDate is string);
+    }
+
+    function isValidBibleRaceMessage(data) {
+      return data.keys().hasAll(['fromUserId', 'toUserId', 'message', 'createdAt']) &&
+             data.fromUserId == request.auth.uid &&
+             data.toUserId is string &&
+             data.message is string && data.message.size() < 1000 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidBibleRaceChampion(data) {
+      return data.keys().hasAll(['userId', 'userName', 'points', 'type', 'wonAt']) &&
+             data.userId is string &&
+             data.userName is string &&
+             data.points is number &&
+             data.type in ['monthly', 'annual', 'overall'] &&
+             data.wonAt is timestamp;
+    }
+
+    function isValidJournalEntry(data) {
+      return data.keys().hasAll(['userId', 'title', 'content', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() < 500 &&
+             data.content is string && data.content.size() < 50000 &&
+             (!('verseReference' in data) || (data.verseReference is string && data.verseReference.size() < 200)) &&
+             (!('topic' in data) || (data.topic is string && data.topic.size() < 200)) &&
+             data.createdAt is timestamp;
+    }
+
     // Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
       allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+    }
+
+    match /bibleRaceProgress/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidBibleRaceProgress(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /bibleRaceMessages/{messageId} {
+      allow read: if isAuthenticated() && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidBibleRaceMessage(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.fromUserId == request.auth.uid || resource.data.toUserId == request.auth.uid || isAdmin());
+    }
+
+    match /bibleRaceChampions/{championId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /journalEntries/{entryId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidJournalEntry(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidJournalEntry(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /theologyProgress/{userId} {
