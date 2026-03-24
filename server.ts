@@ -69,8 +69,8 @@ async function startServer() {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
     if (!webhookSecret) {
-      console.error('STRIPE_WEBHOOK_SECRET is not set');
-      return res.status(400).send('Webhook Error: Secret not set');
+      console.error('[Webhook] STRIPE_WEBHOOK_SECRET is not set in environment variables!');
+      return res.status(400).send('Webhook Error: Secret not configured');
     }
 
     if (!stripe) {
@@ -82,8 +82,9 @@ async function startServer() {
 
     try {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+      console.log(`[Webhook] Event verified: ${event.type}`);
     } catch (err: any) {
-      console.error(`Webhook Error: ${err.message}`);
+      console.error(`[Webhook] Signature verification failed: ${err.message}`);
       return res.status(400).send(`Webhook Error: ${err.message}`);
     }
 
@@ -142,6 +143,17 @@ async function startServer() {
   });
 
   // API Routes
+  app.get('/api/stripe-config', (req, res) => {
+    res.json({
+      hasSecretKey: !!process.env.STRIPE_SECRET_KEY,
+      hasPublicKey: !!process.env.VITE_STRIPE_PUBLIC_KEY,
+      hasWebhookSecret: !!process.env.STRIPE_WEBHOOK_SECRET,
+      mode: process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_') ? 'live' : 'test',
+      baseUrl: process.env.APP_URL || 'detectada automaticamente',
+      appUrlEnv: !!process.env.APP_URL
+    });
+  });
+
   app.post(['/api/create-checkout-session', '/api/create-checkout-session/'], async (req, res) => {
     if (!stripe) {
       return res.status(500).json({ error: 'Stripe is not configured on the server' });
@@ -153,21 +165,25 @@ async function startServer() {
     let baseUrl = process.env.APP_URL || "";
     
     if (!baseUrl) {
-      const host = req.get('host');
-      if (host) {
-        const protocol = req.protocol;
-        baseUrl = `${protocol}://${host}`;
+      // Tenta detectar via headers de proxy (comum no Cloud Run/AI Studio)
+      const forwardedHost = req.headers['x-forwarded-host'] as string;
+      const forwardedProto = req.headers['x-forwarded-proto'] as string || 'https';
+      
+      if (forwardedHost && !forwardedHost.includes('aistudio.google.com')) {
+        baseUrl = `${forwardedProto}://${forwardedHost}`;
+      } else {
+        const host = req.get('host');
+        if (host && !host.includes('aistudio.google.com')) {
+          baseUrl = `${req.protocol}://${host}`;
+        }
       }
     }
-    
-    // Tenta detectar se estamos no ambiente de preview (pre)
-    const hostHeader = req.get('host') || '';
-    if (hostHeader.includes('ais-pre') || (req.headers['x-forwarded-host'] as string)?.includes('ais-pre')) {
-      // Se detectarmos que é o ambiente de preview, mas não temos APP_URL, podemos tentar inferir
-      // Mas se baseUrl já foi definido via host, ele deve estar correto.
+
+    // Fallback de segurança: Se ainda estiver vazio ou for o domínio do AI Studio, 
+    // precisamos que o usuário configure o APP_URL nos Secrets.
+    if (!baseUrl || baseUrl.includes('aistudio.google.com')) {
+      console.warn('⚠️ Base URL não detectada corretamente ou aponta para o AI Studio. Use o segredo APP_URL.');
     }
-    
-    // Se o usuário configurou uma APP_URL válida, ela tem prioridade (já tratada acima)
 
     if (baseUrl.endsWith('/')) baseUrl = baseUrl.slice(0, -1);
     
@@ -235,24 +251,66 @@ async function startServer() {
       return res.status(500).json({ error: 'Stripe is not configured on the server' });
     }
 
-    const { sessionId } = req.body;
+    let { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'ID da sessão ou pagamento é obrigatório.' });
+    }
+
+    sessionId = sessionId.trim();
 
     try {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      console.log(`[Stripe] Verifying ID: ${sessionId}`);
+      
+      let session: Stripe.Checkout.Session;
+
+      if (sessionId.startsWith('pi_')) {
+        // Se o usuário forneceu um Payment Intent ID, buscamos a sessão associada
+        console.log(`[Stripe] Searching for session associated with Payment Intent: ${sessionId}`);
+        const sessions = await stripe.checkout.sessions.list({
+          payment_intent: sessionId,
+          limit: 1
+        });
+        
+        if (sessions.data.length === 0) {
+          return res.status(404).json({ error: 'Nenhuma sessão de checkout encontrada para este ID de pagamento (pi_...). Verifique se o ID está correto ou use o ID da sessão (cs_...).' });
+        }
+        session = sessions.data[0];
+      } else if (sessionId.startsWith('cs_')) {
+        // ID de sessão padrão
+        session = await stripe.checkout.sessions.retrieve(sessionId);
+      } else {
+        return res.status(400).json({ error: 'ID inválido. O ID deve começar com "cs_" (Sessão) ou "pi_" (Pagamento). Verifique o e-mail do Stripe.' });
+      }
       
       if (session.payment_status === 'paid') {
+        const userId = session.client_reference_id;
         const creditsToAdd = parseInt(session.metadata?.credits_to_add || '0');
+        
+        if (!userId) {
+          console.error('[Stripe] Session has no client_reference_id (userId)');
+          return res.status(400).json({ error: 'Sessão encontrada, mas não está vinculada a um usuário. Entre em contato com o suporte.' });
+        }
+
+        console.log(`[Stripe] Session ${session.id} is PAID. Adding ${creditsToAdd} credits to user ${userId}`);
+        
         res.json({ 
           success: true, 
           credits: creditsToAdd,
           customer_email: session.customer_details?.email 
         });
       } else {
-        res.json({ success: false, error: 'Payment not completed' });
+        console.log(`[Stripe] Session ${session.id} status is: ${session.payment_status}`);
+        res.json({ 
+          success: false, 
+          error: `O pagamento ainda está com status: ${session.payment_status}. Se você já pagou, aguarde alguns minutos para o Stripe processar.` 
+        });
       }
     } catch (error: any) {
-      console.error('Verification error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('[Stripe] Verification error:', error);
+      const message = error.type === 'StripeInvalidRequestError' 
+        ? 'ID não encontrado no Stripe. Verifique se você copiou o ID correto (cs_... ou pi_...).'
+        : 'Erro ao consultar o Stripe. Tente novamente em instantes.';
+      res.status(500).json({ error: message });
     }
   });
 
@@ -369,13 +427,20 @@ async function startServer() {
         }
 
         // Inject runtime environment variables for the frontend
-        const rawKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY || "";
-        const maskedKey = rawKey ? `${rawKey.substring(0, 4)}...${rawKey.substring(rawKey.length - 4)}` : "NOT_FOUND";
-        console.log(`Injected API Key to frontend: ${maskedKey} (Length: ${rawKey.length})`);
+        const runtimeEnv: Record<string, string> = {};
+        
+        // Inject all VITE_ variables from process.env
+        Object.keys(process.env).forEach(key => {
+          if (key.startsWith('VITE_')) {
+            runtimeEnv[key] = process.env[key] || "";
+          }
+        });
 
-        const runtimeEnv = {
-          VITE_GEMINI_API_KEY: rawKey,
-        };
+        // Ensure GEMINI_API_KEY is also available if not prefixed
+        if (!runtimeEnv.VITE_GEMINI_API_KEY) {
+          runtimeEnv.VITE_GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
+        }
+
         const envScript = `<script>window.RUNTIME_ENV = ${JSON.stringify(runtimeEnv)};</script>`;
         template = template.replace('</head>', `${envScript}</head>`);
 

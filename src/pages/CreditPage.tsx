@@ -10,7 +10,8 @@ import {
   ShieldCheck,
   Clock,
   ArrowRight,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useCredits } from '../contexts/CreditContext';
@@ -21,7 +22,12 @@ import { useToast } from '../components/Toast';
 
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || "");
+// Helper to get env vars from both Vite and Runtime (injected by server)
+const getEnv = (key: string) => {
+  return (window as any).RUNTIME_ENV?.[key] || import.meta.env[key] || "";
+};
+
+const stripePromise = loadStripe(getEnv('VITE_STRIPE_PUBLIC_KEY'));
 
 export default function CreditPage() {
   const { balance, history, addCredits } = useCredits();
@@ -29,6 +35,18 @@ export default function CreditPage() {
 
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [manualSessionId, setManualSessionId] = useState('');
+  const [showManualSync, setShowManualSync] = useState(false);
+  const [stripeConfig, setStripeConfig] = useState<any>(null);
+  const [showDebug, setShowDebug] = useState(false);
+
+  useEffect(() => {
+    // Check Stripe config on mount
+    fetch('/api/stripe-config')
+      .then(res => res.json())
+      .then(data => setStripeConfig(data))
+      .catch(err => console.error("Error fetching stripe config:", err));
+  }, []);
   const [showAllHistory, setShowAllHistory] = useState(false);
   const { showToast } = useToast();
   const location = useLocation();
@@ -81,6 +99,7 @@ export default function CreditPage() {
   }, []);
 
   const verifySession = async (sessionId: string) => {
+    if (!sessionId) return;
     setIsVerifying(true);
     try {
       const response = await fetch('/api/verify-checkout-session', {
@@ -97,22 +116,37 @@ export default function CreditPage() {
 
       const data = await response.json();
       if (data.success && data.credits > 0) {
-        await addCredits(data.credits, `Compra de pacote (${data.credits} créditos)`);
-        showToast(`Sucesso! ${data.credits} créditos foram adicionados à sua conta.`, 'success');
+        // Check if this session has already been processed to avoid duplicates
+        const processedSessions = JSON.parse(localStorage.getItem('processed_stripe_sessions') || '[]');
+        if (processedSessions.includes(sessionId)) {
+          showToast('Este pagamento já foi processado e os créditos adicionados.', 'info');
+          setIsVerifying(false);
+          return;
+        }
+
+        console.log(`[Stripe] Adding ${data.credits} credits for session ${sessionId}`);
+        await addCredits(data.credits, `Compra de pacote (${data.credits} créditos) - ID: ${sessionId.slice(-8)}`);
+        showToast(`Sucesso! ${data.credits} créditos foram adicionados à sua conta. 🙏✨`, 'success');
         
         // Save session ID to avoid duplicates
-        const processedSessions = JSON.parse(localStorage.getItem('processed_stripe_sessions') || '[]');
         processedSessions.push(sessionId);
         localStorage.setItem('processed_stripe_sessions', JSON.stringify(processedSessions));
+        
+        // Clear manual sync state
+        setManualSessionId('');
+        setShowManualSync(false);
       } else {
-        showToast('Não foi possível confirmar o pagamento.', 'error');
+        showToast(data.error || 'Pagamento ainda não processado ou não encontrado.', 'info');
       }
     } catch (error) {
       console.error('Error verifying session:', error);
-      showToast('Erro ao verificar pagamento.', 'error');
+      showToast('Erro ao verificar pagamento. Tente novamente em instantes.', 'error');
     } finally {
       setIsVerifying(false);
-      navigate('/credits', { replace: true });
+      // Only navigate if we are not doing a manual sync
+      if (!showManualSync) {
+        navigate('/credits', { replace: true });
+      }
     }
   };
 
@@ -124,7 +158,13 @@ export default function CreditPage() {
       return;
     }
 
-    const stripePublicKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+    const stripePublicKey = getEnv('VITE_STRIPE_PUBLIC_KEY');
+    
+    if (!stripePublicKey) {
+      showToast("Chave pública do Stripe não configurada. Verifique os Secrets.", "error");
+      setIsPurchasing(false);
+      return;
+    }
     if (!stripePublicKey) {
       console.error('VITE_STRIPE_PUBLIC_KEY is missing');
       showToast('⚠️ Erro de configuração: Chave pública do Stripe não encontrada nas configurações do App.', 'error');
@@ -285,6 +325,40 @@ export default function CreditPage() {
         </div>
       </div>
 
+      {/* Manual Sync Section */}
+      {showManualSync && (
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-3xl"
+        >
+          <h4 className="font-bold text-blue-800 dark:text-blue-400 mb-2 flex items-center gap-2">
+            <RefreshCw size={18} className={isVerifying ? "animate-spin" : ""} />
+            Sincronização Manual
+          </h4>
+          <p className="text-sm text-blue-600 dark:text-blue-300 mb-4">
+            Se você completou o pagamento mas os créditos não apareceram, cole o <strong>ID da Sessão</strong> (começa com <code>cs_...</code>) ou o <strong>ID do Pagamento</strong> (começa com <code>pi_...</code>) abaixo. Você encontra esses IDs no e-mail de confirmação do Stripe.
+          </p>
+          <div className="flex gap-2">
+            <input 
+              type="text" 
+              value={manualSessionId}
+              onChange={(e) => setManualSessionId(e.target.value)}
+              placeholder="cs_live_... ou pi_..."
+              className="flex-1 p-3 bg-white dark:bg-zinc-800 border border-blue-200 dark:border-blue-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <button 
+              onClick={() => verifySession(manualSessionId)}
+              disabled={!manualSessionId || isVerifying}
+              className="px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+            >
+              {isVerifying && <Loader2 size={16} className="animate-spin" />}
+              Sincronizar
+            </button>
+          </div>
+        </motion.div>
+      )}
+
       {/* History */}
       <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 overflow-hidden shadow-sm">
         <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between">
@@ -386,6 +460,50 @@ export default function CreditPage() {
             </a>
           </div>
         </div>
+      </div>
+      {/* Debug Info (Only visible if requested or in dev) */}
+      {(showDebug || process.env.NODE_ENV === 'development') && stripeConfig && (
+        <div className="mt-8 p-6 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-3xl text-xs font-mono">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-bold text-amber-800 dark:text-amber-400 uppercase tracking-widest">Diagnóstico de Pagamento</h4>
+            <button onClick={() => setShowDebug(false)} className="text-amber-600 hover:text-amber-800">Fechar</button>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <p className="mb-1"><span className="opacity-50">Secret Key:</span> {stripeConfig.hasSecretKey ? '✅ Configurada' : '❌ Faltando'}</p>
+              <p className="mb-1"><span className="opacity-50">Public Key:</span> {stripeConfig.hasPublicKey ? '✅ Configurada' : '❌ Faltando'}</p>
+              <p className="mb-1"><span className="opacity-50">Webhook:</span> {stripeConfig.hasWebhookSecret ? '✅ Configurada' : '⚠️ Faltando'}</p>
+            </div>
+            <div>
+              <p className="mb-1"><span className="opacity-50">Modo:</span> <span className={stripeConfig.mode === 'live' ? 'text-emerald-600 font-bold' : 'text-amber-600'}>{stripeConfig.mode.toUpperCase()}</span></p>
+              <p className="mb-1"><span className="opacity-50">Base URL:</span> {stripeConfig.baseUrl}</p>
+              <p className="mb-1"><span className="opacity-50">APP_URL Env:</span> {stripeConfig.appUrlEnv ? '✅ Sim' : '❌ Não'}</p>
+            </div>
+          </div>
+          {!stripeConfig.appUrlEnv && (
+            <div className="mt-4 p-3 bg-white/50 dark:bg-black/20 rounded-xl border border-amber-300 dark:border-amber-700">
+              <p className="text-amber-900 dark:text-amber-200">
+                <strong>Atenção:</strong> O segredo <code>APP_URL</code> não está configurado. Isso pode causar erros de redirecionamento (404) no Stripe. Configure-o com a URL do seu app.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="mt-12 text-center space-y-4">
+        <button 
+          onClick={() => setShowManualSync(!showManualSync)}
+          className="block mx-auto text-xs font-bold text-blue-600 hover:underline uppercase tracking-widest"
+        >
+          {showManualSync ? 'Ocultar Sincronização' : 'Pagou e não recebeu? Sincronize aqui'}
+        </button>
+        
+        <button 
+          onClick={() => setShowDebug(!showDebug)}
+          className="text-[10px] text-stone-400 uppercase tracking-widest hover:text-stone-600 transition-colors"
+        >
+          {showDebug ? 'Ocultar Diagnóstico' : 'Problemas técnicos? Verifique o status'}
+        </button>
       </div>
     </div>
   );
