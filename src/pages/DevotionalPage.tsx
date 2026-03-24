@@ -43,6 +43,7 @@ import { useAudioBox } from '../contexts/AudioBoxContext';
 import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { copyToClipboard } from '../utils/clipboard';
 
 enum OperationType {
   CREATE = 'create',
@@ -467,7 +468,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         break;
       case 'instagram':
         showToast("Copiado para o clipboard! Poste no seu Story. 📸");
-        navigator.clipboard.writeText(text);
+        copyToClipboard(text);
         return;
     }
     window.open(shareUrl, '_blank');

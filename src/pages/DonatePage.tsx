@@ -14,6 +14,7 @@ import {
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { copyToClipboard } from '../utils/clipboard';
 import { QRCodeCanvas } from 'qrcode.react';
 import { useToast } from '../components/Toast';
 import { cn } from '../types';
@@ -37,7 +38,7 @@ export default function DonatePage() {
 
   const handleCopyPix = () => {
     const pixKey = "22981588428";
-    navigator.clipboard.writeText(pixKey);
+    copyToClipboard(pixKey);
     showToast("Chave PIX copiada! 🙌✨");
   };
 

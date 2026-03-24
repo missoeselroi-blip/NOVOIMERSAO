@@ -50,6 +50,7 @@ import {
   ZoomOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { copyToClipboard } from '../utils/clipboard';
 import { useToast } from '../components/Toast';
 import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
@@ -1536,7 +1537,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                       {debateContent && (
                         <button 
                           onClick={() => {
-                            navigator.clipboard.writeText(debateContent);
+                            copyToClipboard(debateContent);
                             showToast("Debate copiado! 📋✨");
                           }}
                           className="p-2 hover:bg-white/20 rounded-full transition-colors"
@@ -1648,7 +1649,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                             imersaobiblicapp@gmail.com
                           </code>
                           <button 
-                            onClick={() => { navigator.clipboard.writeText('imersaobiblicapp@gmail.com'); showToast('Chave PIX copiada!'); }}
+                            onClick={() => { copyToClipboard('imersaobiblicapp@gmail.com'); showToast('Chave PIX copiada!'); }}
                             className="p-2 bg-emerald-100 text-emerald-600 rounded-xl hover:bg-emerald-200"
                           >
                             <Copy size={16} />
@@ -2341,7 +2342,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                 <button 
                   onClick={() => {
                     if (chapterContent[currentChapter]) {
-                      navigator.clipboard.writeText(chapterContent[currentChapter]);
+                      copyToClipboard(chapterContent[currentChapter]);
                       showToast("Conteúdo copiado! 📋✨");
                     }
                   }}

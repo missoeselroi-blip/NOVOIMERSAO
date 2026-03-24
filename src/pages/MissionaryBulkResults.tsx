@@ -13,6 +13,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { copyToClipboard } from '../utils/clipboard';
 import { useToast } from '../components/Toast';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
@@ -249,7 +250,7 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
               </div>
               <button 
                 onClick={() => {
-                  navigator.clipboard.writeText(`${d.title}\n${d.verse}\n${d.message}`);
+                  copyToClipboard(`${d.title}\n${d.verse}\n${d.message}`);
                   showToast("Copiado! 📋");
                 }}
                 className="p-2 text-stone-400 hover:text-emerald-600 transition-colors"

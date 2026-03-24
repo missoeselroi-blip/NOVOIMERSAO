@@ -19,6 +19,7 @@ import {
   Volume2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { copyToClipboard } from '../utils/clipboard';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
@@ -176,7 +177,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   };
 
   const handleCopy = (content: string) => {
-    navigator.clipboard.writeText(content);
+    copyToClipboard(content);
     showToast("Copiado para a área de transferência! 📋✨");
   };
 

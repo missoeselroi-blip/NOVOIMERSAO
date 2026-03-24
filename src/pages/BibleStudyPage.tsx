@@ -82,6 +82,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { compressImage } from '../utils/imageUtils';
 import { auth, db } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { copyToClipboard } from '../utils/clipboard';
 
 enum OperationType {
   CREATE = 'create',
@@ -1976,7 +1977,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
   const handleCopy = (text?: string) => {
     const contentToCopy = text || result;
-    navigator.clipboard.writeText(contentToCopy);
+    copyToClipboard(contentToCopy);
     showToast("Copiado! Agora é só colar onde quiser! 📋✨");
   };
 
@@ -2869,7 +2870,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                 </button>
                 <button 
                   onClick={() => {
-                    navigator.clipboard.writeText(creationPopup.content);
+                    copyToClipboard(creationPopup.content);
                     showToast("Copiado! 📋✨");
                   }} 
                   className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
@@ -3707,7 +3708,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(showLeaderGuide ? leaderGuide : lessonResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { copyToClipboard(showLeaderGuide ? leaderGuide : lessonResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
@@ -3748,7 +3749,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(studyResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { copyToClipboard(studyResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
@@ -3874,7 +3875,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(debateResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { copyToClipboard(debateResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleSaveToNotebook('Debate Teológico', debateResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                     </div>
@@ -3908,7 +3909,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(devotionalResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { copyToClipboard(devotionalResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
@@ -3945,7 +3946,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(messageResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { copyToClipboard(messageResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
@@ -4040,7 +4041,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             Ouvir
                           </button>
                           <button onClick={() => { setIsEditingOutline(true); setEditedOutline(bookletResult); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Edit size={18} /> Editar</button>
-                          <button onClick={() => { navigator.clipboard.writeText(bookletResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                          <button onClick={() => { copyToClipboard(bookletResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                           <button 
                             onClick={handleDownloadBookletPDF} 
                             disabled={isGeneratingPDF}
@@ -4598,7 +4599,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <button 
                         onClick={() => { 
                           const content = kidsActiveTab === 'illustration' ? kidsIllustration || '' : (kidsActiveTab === 'children' ? (kidsResult?.children || '') : kidsActiveTab === 'monitors' ? (kidsResult?.monitors || '') : (kidsResult?.activities || ''));
-                          navigator.clipboard.writeText(content); 
+                          copyToClipboard(content); 
                           showToast("Copiado! 📋✨"); 
                         }} 
                         className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
@@ -5367,7 +5368,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               </button>
                               <button 
                                 onClick={() => {
-                                  navigator.clipboard.writeText(`${note.title}\n\n${note.content}`);
+                                  copyToClipboard(`${note.title}\n\n${note.content}`);
                                   showToast("Copiado para a área de transferência! 📋");
                                 }}
                                 className="p-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 rounded-lg hover:bg-emerald-50 hover:text-emerald-600 transition-colors"
@@ -5600,7 +5601,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(meaningResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { copyToClipboard(meaningResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => handleWikiSearch(searchQuery)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
                       <button onClick={() => handleSaveToNotebook('Significado', meaningResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                     </div>
@@ -5672,7 +5673,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
                         Ouvir
                       </button>
-                      <button onClick={() => { navigator.clipboard.writeText(wikiResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { copyToClipboard(wikiResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                       <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
                       <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                       <button onClick={() => handleSaveToNotebook('Wiki Infinita', wikiResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
@@ -5786,7 +5787,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   <button
                     onClick={() => {
                       if (resourceStudyResult) {
-                        navigator.clipboard.writeText(resourceStudyResult);
+                        copyToClipboard(resourceStudyResult);
                         showToast("Texto copiado! 📋✨");
                       }
                     }}
@@ -5879,7 +5880,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     Ouvir
                   </button>
                   <button
-                    onClick={() => { navigator.clipboard.writeText(searchPopup.result); showToast("Copiado! 📋✨"); }}
+                    onClick={() => { copyToClipboard(searchPopup.result); showToast("Copiado! 📋✨"); }}
                     className="flex-1 py-2 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm"
                   >
                     <Copy size={16} /> Copiar
