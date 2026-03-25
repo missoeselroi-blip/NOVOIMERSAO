@@ -616,7 +616,6 @@ export default function CareerPage() {
               <tbody className="divide-y divide-stone-100 dark:divide-zinc-800">
                 {leaderboard
                   .filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()))
-                  .slice(0, searchTerm ? 50 : 10)
                   .map((member) => {
                     const rank = RANKS.find(r => r.id === member.rankId) || RANKS[0];
                     const actualRank = leaderboard.findIndex(l => l.id === member.id);

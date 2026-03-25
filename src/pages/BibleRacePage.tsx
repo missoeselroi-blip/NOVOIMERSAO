@@ -429,6 +429,7 @@ const BibleRacePage: React.FC = () => {
 
   const handleQuizAnswer = (answerIndex: number) => {
     const isCorrect = answerIndex === quizQuestions[currentQuizIndex].correctAnswer;
+    let pointsEarned = 0;
     
     if (isCorrect) {
       const elapsedTime = 60 - quizTimer;
@@ -437,7 +438,7 @@ const BibleRacePage: React.FC = () => {
       else if (elapsedTime <= 15) multiplier = 5;
       else if (elapsedTime <= 30) multiplier = 2;
       
-      const pointsEarned = 1 * multiplier;
+      pointsEarned = 1 * multiplier;
       setQuizScore(prev => prev + pointsEarned);
       showToast(`Correto! +${pointsEarned} pontos (Tempo: ${elapsedTime}s)`, "success");
     } else if (answerIndex !== -1) {
@@ -450,18 +451,20 @@ const BibleRacePage: React.FC = () => {
       setCurrentQuizIndex(prev => prev + 1);
       setQuizTimer(60);
     } else {
-      finishQuiz();
+      // Calculate final score including the last answer's points
+      const finalScore = quizScore + pointsEarned;
+      finishQuiz(finalScore);
     }
   };
 
-  const finishQuiz = async () => {
+  const finishQuiz = async (finalScore: number) => {
     if (!progress || !user) return;
     setIsQuizFinished(true);
     
     const progressRef = doc(db, 'bibleRaceProgress', user.id);
-    const newPoints = progress.points + quizScore;
-    const newMonthlyPoints = progress.monthlyPoints + quizScore;
-    const newAnnualPoints = (progress.annualPoints || 0) + quizScore;
+    const newPoints = progress.points + finalScore;
+    const newMonthlyPoints = progress.monthlyPoints + finalScore;
+    const newAnnualPoints = (progress.annualPoints || 0) + finalScore;
     
     // Check for next chapter
     let nextBook = progress.currentBook;
@@ -540,7 +543,7 @@ const BibleRacePage: React.FC = () => {
       console.error("Error syncing Bible Race points to career:", e);
     }
     
-    showToast(`Quiz finalizado! Você ganhou ${quizScore} pontos.`, "success");
+    showToast(`Quiz finalizado! Você ganhou ${finalScore} pontos.`, "success");
   };
 
   const changeAvatar = async () => {
@@ -959,7 +962,6 @@ const BibleRacePage: React.FC = () => {
                   <div className="space-y-4">
                     {leaderboard
                       .filter(u => u.userName.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .slice(0, searchTerm ? 50 : 10)
                       .map((user, index) => {
                         // Find actual rank in the full leaderboard
                         const actualRank = leaderboard.findIndex(l => l.userId === user.userId);
