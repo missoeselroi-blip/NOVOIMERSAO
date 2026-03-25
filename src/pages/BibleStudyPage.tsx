@@ -14,6 +14,7 @@ import {
   MessageCircle,
   Sparkles,
   ChevronRight,
+  ChevronLeft,
   ChevronDown,
   ChevronUp,
   Loader2,
@@ -60,7 +61,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { AudioSearchButton } from '../components/AudioSearchButton';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
@@ -204,6 +205,62 @@ const ExpandableMarkdown = ({ content, onSearch }: { content: string, onSearch?:
   );
 };
 
+const CATHOLIC_APOCRYPHA = [
+  { name: 'Tobias', description: 'Narra a história de Tobias e seu pai, destacando a providência divina e a intercessão do anjo Rafael.' },
+  { name: 'Judite', description: 'Relata a vitória de uma viúva judia sobre o general Holofernes, simbolizando a resistência do povo de Deus.' },
+  { name: '1 e 2 Macabeus', description: 'História da revolta dos Macabeus contra a opressão selêucida e a purificação do Templo.' },
+  { name: 'Sabedoria', description: 'Livro poético que exalta a sabedoria divina e critica a idolatria.' },
+  { name: 'Eclesiástico', description: 'ou Sirácida' },
+  { name: 'Baruc', description: 'incluindo a Carta de Jeremias' },
+  { name: 'Acréscimos em Ester e Daniel', description: 'incluindo Bel e o Dragão e a Oração de Azarias' }
+];
+
+const NT_APOCRYPHA = [
+  { name: 'Evangelho de Tomé', description: '114 ensinamentos filosóficos de Jesus' },
+  { name: 'Evangelho de Maria Madalena', description: 'Relata ensinamentos de Jesus sob a perspectiva de Maria' },
+  { name: 'Evangelho de Judas', description: 'Apresenta Judas como quem cumpriu uma missão divina' },
+  { name: 'Protoevangelho de Tiago', description: 'Detalhes sobre a infância de Maria e Jesus' },
+  { name: 'Apocalipse de Pedro', description: 'Descrições detalhadas do céu e inferno' },
+  { name: 'Atos de Paulo e Tecla', description: 'Narra a história de uma seguidora de Paulo' },
+  { name: 'Livro de Enoque', description: 'Relata visões sobre anjos caídos' }
+];
+
+const BIBLE_BOOKS = [
+  "Gênesis", "Êxodo", "Levítico", "Números", "Deuteronômio",
+  "Josué", "Juízes", "Rute", "1 Samuel", "2 Samuel",
+  "1 Reis", "2 Reis", "1 Crônicas", "2 Crônicas",
+  "Esdras", "Neemias", "Ester", "Jó", "Salmos",
+  "Provérbios", "Eclesiastes", "Cantares", "Isaías",
+  "Jeremias", "Lamentações", "Ezequiel", "Daniel",
+  "Oseias", "Joel", "Amós", "Obadias", "Jonas",
+  "Miqueias", "Naum", "Habacuque", "Sofonias",
+  "Ageu", "Zacarias", "Malaquias",
+  "Mateus", "Marcos", "Lucas", "João", "Atos",
+  "Romanos", "1 Coríntios", "2 Coríntios", "Gálatas",
+  "Efésios", "Filipenses", "Colossenses", "1 Tessalonicenses",
+  "2 Tessalonicenses", "1 Timóteo", "2 Timóteo", "Tito",
+  "Filemom", "Hebreus", "Tiago", "1 Pedro", "2 Pedro",
+  "1 João", "2 João", "3 João", "Judas", "Apocalipse"
+];
+
+const CHAPTERS_PER_BOOK: Record<string, number> = {
+  "Gênesis": 50, "Êxodo": 40, "Levítico": 27, "Números": 36, "Deuteronômio": 34,
+  "Josué": 24, "Juízes": 21, "Rute": 4, "1 Samuel": 31, "2 Samuel": 24,
+  "1 Reis": 22, "2 Reis": 25, "1 Crônicas": 29, "2 Crônicas": 36,
+  "Esdras": 10, "Neemias": 13, "Ester": 10, "Jó": 42, "Salmos": 150,
+  "Provérbios": 31, "Eclesiastes": 12, "Cantares": 8, "Isaías": 66,
+  "Jeremias": 52, "Lamentações": 5, "Ezequiel": 48, "Daniel": 12,
+  "Oseias": 14, "Joel": 3, "Amós": 9, "Obadias": 1, "Jonas": 4,
+  "Miqueias": 7, "Naum": 3, "Habacuque": 3, "Sofonias": 3,
+  "Ageu": 2, "Zacarias": 14, "Malaquias": 4,
+  "Mateus": 28, "Marcos": 16, "Lucas": 24, "João": 21, "Atos": 28,
+  "Romanos": 16, "1 Coríntios": 16, "2 Coríntios": 13, "Gálatas": 6,
+  "Efésios": 6, "Filipenses": 4, "Colossenses": 4, "1 Tessalonicenses": 5,
+  "2 Tessalonicenses": 3, "1 Timóteo": 6, "2 Timóteo": 4, "Tito": 3,
+  "Filemom": 1, "Hebreus": 13, "Tiago": 5, "1 Pedro": 5, "2 Pedro": 3,
+  "1 João": 5, "2 João": 1, "3 João": 1, "Judas": 1, "Apocalipse": 22
+};
+
 export default function BibleStudyPage({ deepThinking, setDeepThinking, onNavigate }: BibleStudyPageProps) {
   const { user, notes: firestoreNotes, toggleFavorite } = useAuth();
   const { saveTrack, deleteTrack } = useAudioBox();
@@ -250,6 +307,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isGeneratingMeaning, setIsGeneratingMeaning] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
+  // Apocryphal Books state
+  const [selectedApocrypha, setSelectedApocrypha] = useState<string>('Pesquisar em todos');
+  const [apocryphaSearchQuery, setApocryphaSearchQuery] = useState('');
+  const [apocryphaResult, setApocryphaResult] = useState('');
+  const [apocryphaThought, setApocryphaThought] = useState('');
+  const [isGeneratingApocrypha, setIsGeneratingApocrypha] = useState(false);
+  const [showApocryphaInfo, setShowApocryphaInfo] = useState<string | null>(null);
+
   // Music Box state
   const [musicText, setMusicText] = useState('');
   const [musicStyle, setMusicStyle] = useState('Gospel');
@@ -291,6 +356,99 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       setIsFavorited(false);
     }
   }, [user, verseSearch, searchQuery, activeTab]);
+
+  const handleApocryphaSearch = async () => {
+    if (!apocryphaSearchQuery && selectedApocrypha === 'Pesquisar em todos') {
+      showToast("Digite algo para pesquisar ou selecione um livro.", "info");
+      return;
+    }
+
+    setIsGeneratingApocrypha(true);
+    setApocryphaResult('');
+    setApocryphaThought('');
+
+    try {
+      const target = apocryphaSearchQuery || selectedApocrypha;
+      const prompt = `Forneça informações detalhadas sobre: ${target}. 
+      Se for um livro apócrifo específico, inclua contexto histórico, conteúdo principal e por que é considerado apócrifo.
+      Se for uma palavra ou tema, pesquise como esse tema é abordado nos livros apócrifos (Católicos e do NT).
+      
+      IMPORTANTE: 
+      1. Inclua uma seção sobre divergências no cânon: como outras bíblias de estudo, comentários, dicionários, enciclopédias e autores divergem sobre a canonicidade deste conteúdo.
+      2. Procure e apresente ensinos bíblicos canônicos contrários que combatem ou refutam a abordagem feita nos livros apócrifos sobre este tema ou livro.
+      3. Se nenhum livro específico foi selecionado, gere a pesquisa considerando todos os livros apócrifos conhecidos.`;
+
+      const response = await geminiService.generateTextWithThought(prompt, "Você é um especialista em teologia e história bíblica. Forneça respostas acadêmicas, equilibradas e bem estruturadas em Markdown.", deepThinking);
+
+      setApocryphaResult(response.text);
+      if (response.thought) setApocryphaThought(response.thought);
+      
+      addToHistory({
+        tab: 'apocrypha',
+        query: target,
+        result: response.text,
+        thought: response.thought,
+        type: 'Pesquisa Apócrifo'
+      });
+
+    } catch (error) {
+      console.error("Error searching apocrypha:", error);
+      showToast("Erro ao pesquisar. Tente novamente.", "error");
+    } finally {
+      setIsGeneratingApocrypha(false);
+    }
+  };
+
+  const handleNavigateChapter = (direction: 'prev' | 'next') => {
+    if (!searchQuery) return;
+
+    // Try to parse current book and chapter
+    const match = searchQuery.match(/^(.+?)\s+(\d+)$/);
+    if (!match) {
+      showToast("Para navegar, use o formato 'Livro Capítulo' (ex: Gênesis 1)", "info");
+      return;
+    }
+
+    const currentBook = match[1].trim();
+    const currentChapter = parseInt(match[2]);
+    
+    const bookIndex = BIBLE_BOOKS.indexOf(currentBook);
+    if (bookIndex === -1) {
+      showToast("Livro não encontrado para navegação automática.", "info");
+      return;
+    }
+
+    let nextBook = currentBook;
+    let nextChapter = currentChapter;
+
+    if (direction === 'next') {
+      const maxChapters = CHAPTERS_PER_BOOK[currentBook] || 1;
+      if (currentChapter < maxChapters) {
+        nextChapter = currentChapter + 1;
+      } else if (bookIndex < BIBLE_BOOKS.length - 1) {
+        nextBook = BIBLE_BOOKS[bookIndex + 1];
+        nextChapter = 1;
+      } else {
+        showToast("Você já está no último capítulo da Bíblia.", "info");
+        return;
+      }
+    } else {
+      if (currentChapter > 1) {
+        nextChapter = currentChapter - 1;
+      } else if (bookIndex > 0) {
+        nextBook = BIBLE_BOOKS[bookIndex - 1];
+        nextChapter = CHAPTERS_PER_BOOK[nextBook] || 1;
+      } else {
+        showToast("Você já está no primeiro capítulo da Bíblia.", "info");
+        return;
+      }
+    }
+
+    const nextRef = `${nextBook} ${nextChapter}`;
+    setSearchQuery(nextRef);
+    setSearchParams({ search: nextRef, tab: 'bibles' });
+    handleSearch(selectedBible, nextRef);
+  };
 
   const handleToggleFavorite = async () => {
     if (!user) {
@@ -350,6 +508,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'commentary', label: 'Debate Bíblico', icon: <MessageSquare size={18} /> },
     { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
+    { id: 'apocrypha', label: 'Livros Apócrifos', icon: <BookOpen size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
   ];
 
@@ -3259,6 +3418,25 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ref={resultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
+                      <div className="flex justify-between items-center mb-6 not-prose">
+                        <button
+                          onClick={() => handleNavigateChapter('prev')}
+                          className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl hover:bg-stone-200 transition-all text-xs font-bold"
+                        >
+                          <ChevronLeft size={16} />
+                          Anterior
+                        </button>
+                        <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+                          {searchQuery}
+                        </span>
+                        <button
+                          onClick={() => handleNavigateChapter('next')}
+                          className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl hover:bg-stone-200 transition-all text-xs font-bold"
+                        >
+                          Próximo Capítulo
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
                       <ExpandableMarkdown content={result} onSearch={handleWikiSearch} />
                       <div className="mt-8 pt-8 border-t border-stone-100 dark:border-zinc-800">
                         <FeedbackSection page="Imersão Bíblica" context={activeTab} />
@@ -5696,6 +5874,153 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   </div>
                 )}
               </div>
+            )}
+
+            {activeTab === 'apocrypha' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-8"
+              >
+                <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/50 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400">
+                      <BookOpen size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold font-display text-stone-900 dark:text-white">Livros Apócrifos</h3>
+                      <p className="text-stone-500 dark:text-zinc-400">Explore os livros não canônicos e suas histórias</p>
+                    </div>
+                  </div>
+
+                  <div className="prose prose-stone dark:prose-invert max-w-none mb-8 p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
+                    <h4 className="text-lg font-bold mb-2">O que são Livros Apócrifos?</h4>
+                    <p className="text-sm leading-relaxed">
+                      O termo "apócrifo" significa "oculto" ou "escondido". No contexto bíblico, refere-se a livros que não fazem parte do cânon oficial das Escrituras. 
+                      As Bíblias protestantes seguem o cânon hebraico (39 livros no AT), enquanto algumas Bíblias católicas incluem livros chamados "deuterocanônicos", 
+                      que estavam presentes na Septuaginta (tradução grega do AT). Os protestantes os excluem por não serem considerados divinamente inspirados, 
+                      embora reconheçam seu valor histórico e literário.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                        Apócrifos Católicos
+                      </h4>
+                      <div className="grid gap-2">
+                        {CATHOLIC_APOCRYPHA.map((book) => (
+                          <div key={book.name} className="relative flex items-center justify-between p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl border border-stone-100 dark:border-zinc-800 group hover:border-amber-200 transition-all">
+                            <span className="text-sm font-medium">{book.name}</span>
+                            <button 
+                              onClick={() => setShowApocryphaInfo(showApocryphaInfo === book.name ? null : book.name)}
+                              className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all"
+                            >
+                              <HelpCircle size={16} />
+                            </button>
+                            {showApocryphaInfo === book.name && (
+                              <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="absolute z-20 top-full right-0 mt-2 p-4 bg-white dark:bg-zinc-900 border border-amber-100 dark:border-amber-900/30 rounded-xl shadow-xl text-xs text-stone-600 dark:text-zinc-400 min-w-[200px] max-w-[300px]"
+                              >
+                                {book.description}
+                              </motion.div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <h4 className="font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-2">
+                        <div className="w-2 h-2 bg-rose-500 rounded-full" />
+                        Apócrifos NT
+                      </h4>
+                      <div className="grid gap-2">
+                        {NT_APOCRYPHA.map((book) => (
+                          <div key={book.name} className="relative flex items-center justify-between p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl border border-stone-100 dark:border-zinc-800 group hover:border-rose-200 transition-all">
+                            <span className="text-sm font-medium">{book.name}</span>
+                            <button 
+                              onClick={() => setShowApocryphaInfo(showApocryphaInfo === book.name ? null : book.name)}
+                              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all"
+                            >
+                              <HelpCircle size={16} />
+                            </button>
+                            {showApocryphaInfo === book.name && (
+                              <motion.div 
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="absolute z-20 top-full right-0 mt-2 p-4 bg-white dark:bg-zinc-900 border border-rose-100 dark:border-rose-900/30 rounded-xl shadow-xl text-xs text-stone-600 dark:text-zinc-400 min-w-[200px] max-w-[300px]"
+                              >
+                                {book.description}
+                              </motion.div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-stone-100 dark:bg-zinc-800/50 p-6 rounded-3xl space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="md:col-span-1">
+                        <label className="block text-xs font-bold text-stone-500 mb-2 ml-1 uppercase tracking-wider">Livro</label>
+                        <select
+                          value={selectedApocrypha}
+                          onChange={(e) => setSelectedApocrypha(e.target.value)}
+                          className="w-full p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-2xl outline-none font-bold text-sm"
+                        >
+                          <option value="Pesquisar em todos">Pesquisar em todos</option>
+                          <optgroup label="Católicos">
+                            {CATHOLIC_APOCRYPHA.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+                          </optgroup>
+                          <optgroup label="Novo Testamento">
+                            {NT_APOCRYPHA.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
+                          </optgroup>
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-stone-500 mb-2 ml-1 uppercase tracking-wider">Pesquisa Personalizada</label>
+                        <input
+                          type="text"
+                          placeholder="Digite o nome de um livro ou tema específico..."
+                          value={apocryphaSearchQuery}
+                          onChange={(e) => setApocryphaSearchQuery(e.target.value)}
+                          className="w-full p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-2xl outline-none font-bold text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4">
+                      <button
+                        onClick={handleApocryphaSearch}
+                        disabled={isGeneratingApocrypha}
+                        className="flex-1 py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-amber-600/20"
+                      >
+                        {isGeneratingApocrypha ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
+                        Pesquisar Apócrifo
+                      </button>
+                    </div>
+                  </div>
+
+                  {apocryphaResult && (
+                    <div className="mt-12 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xl font-bold font-display">Resultado da Pesquisa</h4>
+                        <div className="flex gap-2">
+                          <button onClick={() => copyToClipboard(apocryphaResult)} className="p-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 rounded-xl hover:bg-stone-200"><Copy size={18} /></button>
+                          <button onClick={() => handleSaveToNotebook('Pesquisa Apócrifa', apocryphaResult)} className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl hover:bg-emerald-200"><Save size={18} /></button>
+                        </div>
+                      </div>
+                      <div className="bg-stone-50 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800">
+                        <ExpandableMarkdown content={apocryphaResult} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
             )}
 
             {activeTab === 'resources' && (
