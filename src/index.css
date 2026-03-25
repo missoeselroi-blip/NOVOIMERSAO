@@ -117,6 +117,19 @@
     @apply font-sans bg-app-bg text-app-text transition-colors duration-500 relative min-h-screen;
   }
 
+  /* Focus and Interaction Styles */
+  input:focus, textarea:focus, select:focus {
+    @apply ring-2 ring-emerald-500 ring-opacity-50 ring-offset-2 outline-none transition-all duration-200 scale-[1.01];
+  }
+
+  button:active {
+    @apply scale-95 transition-transform duration-100;
+  }
+
+  button:focus-visible {
+    @apply ring-2 ring-emerald-500 ring-offset-2 outline-none;
+  }
+
   .custom-scrollbar::-webkit-scrollbar {
     width: 6px;
   }

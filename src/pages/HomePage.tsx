@@ -61,6 +61,7 @@ import { collection, addDoc } from 'firebase/firestore';
 
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { CreditInfoTip } from '../components/CreditInfoTip';
+import { useCredits } from '../contexts/CreditContext';
 import { useShare } from '../utils/share';
 
 interface HomePageProps {
@@ -75,6 +76,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const { showToast } = useToast();
   const { user, toggleFavorite } = useAuth();
   const { share } = useShare();
+  const { balance, consumeCredits } = useCredits();
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -1116,7 +1118,84 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                             {generatedMessage}
                           </div>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-wrap gap-3">
+                          <button 
+                            onClick={async () => {
+                              if (isGeneratingMessage) return;
+                              setIsGeneratingMessage(true);
+                              try {
+                                const audio = await geminiService.generateSpeech(generatedMessage);
+                                if (audio) {
+                                  await saveTrack(
+                                    `Mensagem: ${selectedSentiment.name}`,
+                                    'Sentimento',
+                                    audio,
+                                    'Voz Padrão',
+                                    selectedSentiment.name,
+                                    generatedMessage,
+                                    '0:00'
+                                  );
+                                  showToast("Áudio gerado com sucesso! 🎧", "success");
+                                }
+                              } catch (error) {
+                                console.error("Error generating speech:", error);
+                                showToast("Erro ao gerar áudio.", "error");
+                              } finally {
+                                setIsGeneratingMessage(false);
+                              }
+                            }}
+                            disabled={isGeneratingMessage}
+                            className="flex-1 py-4 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 font-bold rounded-2xl hover:bg-emerald-200 transition-all flex items-center justify-center gap-2"
+                          >
+                            {isGeneratingMessage ? <Loader2 className="animate-spin" size={24} /> : <Volume2 size={24} />}
+                            Ouvir
+                          </button>
+                          <button 
+                            onClick={async () => {
+                              if (!user) {
+                                showToast("Faça login para salvar no caderno! 🔐", "info");
+                                return;
+                              }
+                              
+                              if (balance < 1) {
+                                showToast("Créditos insuficientes para salvar no caderno. 💎", "error");
+                                return;
+                              }
+
+                              try {
+                                await addDoc(collection(db, 'notes'), {
+                                  userId: user.id,
+                                  title: `Mensagem: ${selectedSentiment.name}`,
+                                  content: generatedMessage,
+                                  category: 'Anotações',
+                                  date: new Date().toLocaleDateString('pt-BR'),
+                                  createdAt: new Date().toISOString()
+                                });
+                                
+                                await consumeCredits(1, 'save_to_notebook');
+                                showToast("Salvo no seu caderno! (-1 crédito) 📓", "success");
+                              } catch (error) {
+                                console.error("Error saving to notebook:", error);
+                                showToast("Erro ao salvar no caderno.", "error");
+                              }
+                            }}
+                            className="flex-1 py-4 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 font-bold rounded-2xl hover:bg-blue-200 transition-all flex items-center justify-center gap-2"
+                          >
+                            <StickyNote size={24} />
+                            Salvar no Caderno
+                          </button>
+                          <button 
+                            onClick={() => {
+                              share({
+                                title: `Mensagem de ${selectedSentiment.name}`,
+                                text: generatedMessage,
+                              });
+                            }}
+                            className="flex-1 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 transition-all flex items-center justify-center gap-2"
+                          >
+                            <Share2 size={24} />
+                            Compartilhar
+                          </button>
                           <button 
                             onClick={() => {
                               const element = document.createElement("a");
@@ -1126,9 +1205,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                               document.body.appendChild(element);
                               element.click();
                             }}
-                            className="flex-1 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 transition-all flex items-center justify-center gap-2"
+                            className="w-full py-4 bg-stone-50 dark:bg-zinc-900 text-stone-400 dark:text-zinc-500 font-bold rounded-2xl hover:bg-stone-100 transition-all flex items-center justify-center gap-2 border border-stone-100 dark:border-zinc-800"
                           >
-                            <Download size={24} />
+                            <Download size={20} />
                             Baixar Texto
                           </button>
                         </div>

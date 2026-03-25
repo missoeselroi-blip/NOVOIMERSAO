@@ -5,6 +5,8 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
+import OpenAI from 'openai';
+import axios from 'axios';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
@@ -62,6 +64,13 @@ async function startServer() {
     console.warn('⚠️ APP_URL is missing. Using request headers as fallback.');
   }
   const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
+
+  // Initialize AI Clients
+  const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
+  const stabilityApiKey = process.env.STABILITY_API_KEY;
+
+  if (!process.env.OPENAI_API_KEY) console.warn('⚠️ OPENAI_API_KEY is missing');
+  if (!process.env.STABILITY_API_KEY) console.warn('⚠️ STABILITY_API_KEY is missing');
 
   // Stripe Webhook - MUST be before express.json()
   app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -242,6 +251,74 @@ async function startServer() {
       res.json({ id: session.id, url: session.url });
     } catch (error: any) {
       console.error('Stripe error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // AI Routes
+  app.post('/api/ai/openai/generate-image', async (req, res) => {
+    if (!openai) return res.status(500).json({ error: 'OpenAI is not configured' });
+    const { prompt } = req.body;
+    try {
+      const response = await openai.images.generate({
+        model: "dall-e-3",
+        prompt,
+        n: 1,
+        size: "1024x1024",
+      });
+      res.json({ url: response.data[0].url });
+    } catch (error: any) {
+      console.error('OpenAI Image Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/openai/sentiment-analysis', async (req, res) => {
+    if (!openai) return res.status(500).json({ error: 'OpenAI is not configured' });
+    const { text } = req.body;
+    try {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: "Analyze the sentiment of the following text and return a JSON with 'sentiment' (positive, negative, neutral) and 'score' (0 to 1)." },
+          { role: "user", content: text }
+        ],
+        response_format: { type: "json_object" }
+      });
+      res.json(JSON.parse(response.choices[0].message.content || '{}'));
+    } catch (error: any) {
+      console.error('Sentiment Analysis Error:', error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post('/api/ai/stability/generate-image', async (req, res) => {
+    if (!stabilityApiKey) return res.status(500).json({ error: 'Stability AI is not configured' });
+    const { prompt } = req.body;
+    try {
+      const response = await axios.post(
+        'https://api.stability.ai/v1/generation/stable-diffusion-v1-6/text-to-image',
+        {
+          text_prompts: [{ text: prompt }],
+          cfg_scale: 7,
+          height: 512,
+          width: 512,
+          samples: 1,
+          steps: 30,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            Authorization: `Bearer ${stabilityApiKey}`,
+          },
+        }
+      );
+      
+      const base64Image = response.data.artifacts[0].base64;
+      res.json({ url: `data:image/png;base64,${base64Image}` });
+    } catch (error: any) {
+      console.error('Stability AI Image Error:', error.response?.data || error.message);
       res.status(500).json({ error: error.message });
     }
   });

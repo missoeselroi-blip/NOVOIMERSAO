@@ -1031,11 +1031,34 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                         </button>
                         <button 
                           onClick={async () => {
-                            await share({
-                              title: 'Áudio Devocional',
-                              text: `Devocional de hoje: ${selectedTheme}`,
-                              url: narrationAudio
-                            });
+                            if (!narrationAudio) return;
+                            
+                            try {
+                              // Try to share as file if supported
+                              if (navigator.share && navigator.canShare) {
+                                const response = await fetch(narrationAudio);
+                                const blob = await response.blob();
+                                const file = new File([blob], `devocional-${selectedTheme}.mp3`, { type: 'audio/mpeg' });
+                                
+                                if (navigator.canShare({ files: [file] })) {
+                                  await navigator.share({
+                                    files: [file],
+                                    title: 'Áudio Devocional',
+                                    text: `Ouça o devocional de hoje: ${selectedTheme}`
+                                  });
+                                  return;
+                                }
+                              }
+                              
+                              // Fallback to text share
+                              await share({
+                                title: 'Áudio Devocional',
+                                text: `Devocional de hoje: ${selectedTheme}. Ouça no Imersão Bíblica IA!`,
+                              });
+                            } catch (error) {
+                              console.error("Error sharing audio:", error);
+                              showToast("Erro ao compartilhar áudio.", "error");
+                            }
                           }}
                           className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
                         >

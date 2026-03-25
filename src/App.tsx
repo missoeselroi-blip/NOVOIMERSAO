@@ -343,7 +343,7 @@ function AppContent() {
                 >
                   <div className="relative">
                     <img 
-                      src={user.photoURL || `https://ui-avatars.com/api/?name=${user.name}&background=random`} 
+                      src={user.avatar || user.photoURL || `https://ui-avatars.com/api/?name=${user.name}&background=random`} 
                       alt="Profile" 
                       className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-emerald-500 shadow-lg"
                       referrerPolicy="no-referrer"
@@ -593,7 +593,7 @@ function AppContent() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <img 
-                        src={user.photoURL} 
+                        src={user.avatar || user.photoURL} 
                         alt={user.name} 
                         className="w-10 h-10 rounded-full border-2 border-emerald-500"
                         referrerPolicy="no-referrer"

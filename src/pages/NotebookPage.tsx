@@ -12,11 +12,15 @@ import {
   Printer, 
   Save, 
   Book,
+  BookOpen,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
   Calendar,
   Loader2,
   Lock,
-  Volume2
+  Volume2,
+  Maximize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { copyToClipboard } from '../utils/clipboard';
@@ -69,6 +73,10 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [pendingSpeechText, setPendingSpeechText] = useState('');
+  const [isPreachingMode, setIsPreachingMode] = useState(false);
+  const [preachingNote, setPreachingNote] = useState<Note | null>(null);
+  const [preachingSections, setPreachingSections] = useState<string[]>([]);
+  const [currentPreachingSection, setCurrentPreachingSection] = useState(0);
 
   const [localNotes, setLocalNotes] = useState<any[]>(() => {
     const saved = localStorage.getItem('preacher_notes');
@@ -231,6 +239,25 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       console.error('Erro ao gerar PDF:', error);
       showToast("Erro ao gerar PDF.", 'error');
     }
+  };
+
+  const enterPreachingMode = (note: Note) => {
+    setPreachingNote(note);
+    
+    // Split content into sections based on common headers or just chunks
+    const sections = note.content.split(/(?=\n#{1,3}\s|\n\*\*Introdução\*\*|\n\*\*Desenvolvimento\*\*|\n\*\*Conclusão\*\*)/i)
+      .filter(s => s.trim().length > 0);
+    
+    if (sections.length === 0) {
+      // Fallback: split by double newlines if no headers found
+      const fallbackSections = note.content.split(/\n\n+/).filter(s => s.trim().length > 0);
+      setPreachingSections(fallbackSections.length > 0 ? fallbackSections : [note.content]);
+    } else {
+      setPreachingSections(sections);
+    }
+    
+    setCurrentPreachingSection(0);
+    setIsPreachingMode(true);
   };
 
   const handlePrint = (note: Note) => {
@@ -434,6 +461,102 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
         </div>
       </div>
 
+      {/* Preaching Mode Modal */}
+      <AnimatePresence>
+        {isPreachingMode && preachingNote && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-white dark:bg-zinc-950 flex flex-col"
+          >
+            {/* Header */}
+            <div className="p-6 border-b border-stone-100 dark:border-zinc-900 flex justify-between items-center bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky top-0 z-10">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setIsPreachingMode(false)}
+                  className="p-3 hover:bg-stone-100 dark:hover:bg-zinc-900 rounded-full transition-colors"
+                >
+                  <ArrowLeft size={24} />
+                </button>
+                <div>
+                  <h2 className="text-xl font-bold line-clamp-1">{preachingNote.title}</h2>
+                  <p className="text-xs text-stone-500 font-mono">MODO DE PREGAÇÃO • SEÇÃO {currentPreachingSection + 1} DE {preachingSections.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => {
+                    const el = document.documentElement;
+                    if (document.fullscreenElement) {
+                      document.exitFullscreen();
+                    } else {
+                      el.requestFullscreen();
+                    }
+                  }}
+                  className="p-3 hover:bg-stone-100 dark:hover:bg-zinc-900 rounded-full transition-colors hidden md:block"
+                  title="Tela Cheia"
+                >
+                  <Maximize2 size={24} />
+                </button>
+              </div>
+            </div>
+
+            {/* Content Area */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-12 lg:p-20 max-w-5xl mx-auto w-full">
+              <motion.div
+                key={currentPreachingSection}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="prose dark:prose-invert max-w-none"
+              >
+                <div className={cn(
+                  "font-serif leading-relaxed text-stone-800 dark:text-zinc-100",
+                  "text-2xl md:text-3xl lg:text-4xl" // Large fonts for preaching
+                )}>
+                  <MarkdownRenderer content={preachingSections[currentPreachingSection]} />
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Navigation Footer */}
+            <div className="p-6 border-t border-stone-100 dark:border-zinc-900 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md sticky bottom-0 z-10">
+              <div className="max-w-5xl mx-auto flex items-center justify-between gap-4">
+                <button
+                  disabled={currentPreachingSection === 0}
+                  onClick={() => setCurrentPreachingSection(prev => Math.max(0, prev - 1))}
+                  className="flex-1 py-6 bg-stone-100 dark:bg-zinc-900 rounded-[2rem] font-bold flex items-center justify-center gap-2 disabled:opacity-30 transition-all hover:bg-stone-200 dark:hover:bg-zinc-800"
+                >
+                  <ChevronLeft size={32} />
+                  <span className="hidden md:inline">Anterior</span>
+                </button>
+                
+                <div className="flex gap-2 px-4">
+                  {preachingSections.map((_, idx) => (
+                    <div 
+                      key={idx}
+                      className={cn(
+                        "w-3 h-3 rounded-full transition-all",
+                        currentPreachingSection === idx ? "bg-emerald-600 scale-125" : "bg-stone-200 dark:bg-zinc-800"
+                      )}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  disabled={currentPreachingSection === preachingSections.length - 1}
+                  onClick={() => setCurrentPreachingSection(prev => Math.min(preachingSections.length - 1, prev + 1))}
+                  className="flex-1 py-6 bg-emerald-600 text-white rounded-[2rem] font-bold flex items-center justify-center gap-2 disabled:opacity-30 transition-all hover:bg-emerald-700 shadow-xl shadow-emerald-600/20"
+                >
+                  <span className="hidden md:inline">Próxima</span>
+                  <ChevronRight size={32} />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {isFormOpen && (
           <motion.div
@@ -597,6 +720,15 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                     >
                       <Download size={20} />
                     </button>
+                    {note.category === 'Esboços' && (
+                      <button 
+                        onClick={() => enterPreachingMode(note)}
+                        className="p-2 text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-xl transition-colors"
+                        title="Modo de Pregação"
+                      >
+                        <BookOpen size={20} />
+                      </button>
+                    )}
                     <button 
                       onClick={() => handlePrint(note)}
                       className="p-2 text-stone-600 hover:bg-stone-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"

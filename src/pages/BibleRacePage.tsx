@@ -253,6 +253,7 @@ const BibleRacePage: React.FC = () => {
   const [isChangingAvatar, setIsChangingAvatar] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [newPublicMessage, setNewPublicMessage] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Initialize progress
   useEffect(() => {
@@ -286,8 +287,8 @@ const BibleRacePage: React.FC = () => {
         // Create initial progress
         const initialProgress: UserProgress = {
           userId: user.id,
-          userName: user.name,
-          userPhoto: user.photoURL || '',
+          userName: user.name || 'Membro',
+          userPhoto: user.avatar || user.photoURL || '',
           currentBook: 'Gênesis',
           currentChapter: 1,
           points: 0,
@@ -307,7 +308,8 @@ const BibleRacePage: React.FC = () => {
   // Fetch Leaderboard based on view
   useEffect(() => {
     const sortField = leaderboardView === 'monthly' ? 'monthlyPoints' : (leaderboardView === 'annual' ? 'annualPoints' : 'points');
-    const q = query(collection(db, 'bibleRaceProgress'), orderBy(sortField, 'desc'), orderBy('userJoinDate', 'desc'), limit(10));
+    // Removed limit(10) to show all registered users as requested
+    const q = query(collection(db, 'bibleRaceProgress'), orderBy(sortField, 'desc'), orderBy('userJoinDate', 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as UserProgress);
       setLeaderboard(data);
@@ -507,6 +509,36 @@ const BibleRacePage: React.FC = () => {
       finishedBooksCount: newFinishedBooksCount,
       lastReadDate: serverTimestamp()
     });
+
+    // Sync Bible Race points to careerProgress
+    const careerDocRef = doc(db, 'careerProgress', user.id);
+    try {
+      const careerDoc = await getDoc(careerDocRef);
+      if (careerDoc.exists()) {
+        const careerData = careerDoc.data();
+        const theologyPoints = careerData.theologyPoints || 0;
+        await updateDoc(careerDocRef, {
+          bibleRacePoints: newPoints,
+          points: newPoints + theologyPoints,
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        await setDoc(careerDocRef, {
+          userId: user.id,
+          name: user.name || 'Membro',
+          avatar: user.avatar || user.photoURL || '',
+          theologyPoints: 0,
+          bibleRacePoints: newPoints,
+          points: newPoints,
+          rankId: 1,
+          stars: 0,
+          authorized: false,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+      }
+    } catch (e) {
+      console.error("Error syncing Bible Race points to career:", e);
+    }
     
     showToast(`Quiz finalizado! Você ganhou ${quizScore} pontos.`, "success");
   };
@@ -535,6 +567,15 @@ const BibleRacePage: React.FC = () => {
         } catch (e) {
           // Career progress might not exist yet, ignore
         }
+
+        // Sync with Bible Race Champions (Quadro de Honra/Galeria de Campeões)
+        const championsRef = collection(db, 'bibleRaceChampions');
+        const q = query(championsRef, where('userId', '==', user.id));
+        const querySnapshot = await getDocs(q);
+        const updatePromises = querySnapshot.docs.map(doc => 
+          updateDoc(doc.ref, { userPhoto: newAvatar })
+        );
+        await Promise.all(updatePromises);
         
         showToast("Avatar atualizado com sucesso!", "success");
       } catch (error) {
@@ -622,7 +663,7 @@ const BibleRacePage: React.FC = () => {
           <div className="flex items-center gap-4">
             <div className="relative group">
               <img 
-                src={user.photoURL || `https://ui-avatars.com/api/?name=${user.name}&background=random`} 
+                src={user.avatar || user.photoURL || `https://ui-avatars.com/api/?name=${user.name}&background=random`} 
                 alt={user.name || ''} 
                 className="w-20 h-20 rounded-full border-4 border-emerald-500 shadow-lg object-cover"
                 referrerPolicy="no-referrer"
@@ -725,6 +766,27 @@ const BibleRacePage: React.FC = () => {
       </div>
     </div>
   );
+
+  if (!user) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-xl border border-stone-100 dark:border-zinc-800">
+        <div className="p-6 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full mb-6">
+          <Trophy size={64} />
+        </div>
+        <h2 className="text-3xl font-black tracking-tighter uppercase mb-4 text-center">Entre na Corrida Bíblica!</h2>
+        <p className="text-stone-500 dark:text-zinc-400 text-center max-w-md mb-8">
+          Para participar da Corrida Bíblica, acompanhar seu progresso, ganhar medalhas e subir no pódio, você precisa estar logado.
+        </p>
+        <button 
+          onClick={() => window.location.href = '/login'}
+          className="px-12 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-xl shadow-emerald-600/20 transition-all active:scale-95 flex items-center gap-3"
+        >
+          <UserPlus size={20} />
+          Entrar no Perfil
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20">
@@ -868,66 +930,107 @@ const BibleRacePage: React.FC = () => {
                     </div>
                   </div>
 
+                  {/* Search and My Location */}
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
+                      <input 
+                        type="text"
+                        placeholder="Buscar participante..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 ring-emerald-500/50 transition-all"
+                      />
+                    </div>
+                    <button 
+                      onClick={() => {
+                        if (user) {
+                          setSearchTerm(user.name || '');
+                        }
+                      }}
+                      className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all active:scale-95"
+                      title="Minha Localização"
+                    >
+                      <User size={14} />
+                      <span className="hidden sm:inline">Minha Posição</span>
+                    </button>
+                  </div>
+
                   <div className="space-y-4">
-                    {leaderboard.map((user, index) => (
-                      <motion.div 
-                        key={user.userId}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        className={cn(
-                          "flex items-center justify-between p-4 rounded-2xl border transition-all",
-                          index === 0 ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" :
-                          index === 1 ? "bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700" :
-                          index === 2 ? "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800" :
-                          "bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800"
-                        )}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="relative">
-                            <img 
-                              src={user.userPhoto || `https://ui-avatars.com/api/?name=${user.userName}&background=random`} 
-                              alt={user.userName}
-                              className="w-10 h-10 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm object-cover"
-                              referrerPolicy="no-referrer"
-                            />
-                            <div className={cn(
-                              "absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg",
-                              index === 0 ? "bg-amber-500" : index === 1 ? "bg-stone-400" : index === 2 ? "bg-orange-500" : "bg-zinc-400"
-                            )}>
-                              {index + 1}
-                            </div>
-                          </div>
-                          <div>
-                            <p className="text-sm font-bold truncate max-w-[120px]">{user.userName}</p>
-                            <div className="flex items-center gap-1">
-                              <p className="text-[10px] text-stone-400 uppercase font-black">{user.currentBook} {user.currentChapter}</p>
-                              {user.finishedBooksCount && user.finishedBooksCount > 0 && (
-                                <MedalIcon type="book" count={user.finishedBooksCount} className="scale-75 origin-left" />
-                              )}
-                              {user.medals.includes('monthly-1st') && <MedalIcon type="monthly" className="scale-50 origin-left" />}
-                              {user.medals.includes('quarterly-1st') && <MedalIcon type="quarterly" className="scale-50 origin-left" />}
-                              {user.medals.includes('semiannual-1st') && <MedalIcon type="semiannual" className="scale-50 origin-left" />}
-                              {user.medals.includes('grand-champion') && <MedalIcon type="grand" className="scale-50 origin-left" />}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm font-black text-emerald-600">
-                            {leaderboardView === 'monthly' ? user.monthlyPoints : (leaderboardView === 'annual' ? user.annualPoints : user.points)} pts
-                          </p>
-                          <button 
-                            onClick={() => {
-                              setSelectedUserForMessage(user);
-                              setIsMessageModalOpen(true);
-                            }}
-                            className="text-[10px] text-stone-400 hover:text-emerald-600 transition-colors uppercase font-black"
+                    {leaderboard
+                      .filter(u => u.userName.toLowerCase().includes(searchTerm.toLowerCase()))
+                      .slice(0, searchTerm ? 50 : 10)
+                      .map((user, index) => {
+                        // Find actual rank in the full leaderboard
+                        const actualRank = leaderboard.findIndex(l => l.userId === user.userId);
+                        
+                        return (
+                          <motion.div 
+                            key={user.userId}
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05 }}
+                            className={cn(
+                              "flex items-center justify-between p-4 rounded-2xl border transition-all",
+                              actualRank === 0 ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800" :
+                              actualRank === 1 ? "bg-stone-50 dark:bg-stone-800 border-stone-200 dark:border-stone-700" :
+                              actualRank === 2 ? "bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800" :
+                              "bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800",
+                              user.userId === auth.currentUser?.uid && "ring-2 ring-emerald-500 ring-offset-2 dark:ring-offset-zinc-900"
+                            )}
                           >
-                            Enviar Mensagem
-                          </button>
-                        </div>
-                      </motion.div>
-                    ))}
+                            <div className="flex items-center gap-4">
+                              <div className="relative">
+                                <img 
+                                  src={user.userPhoto || `https://ui-avatars.com/api/?name=${user.userName}&background=random`} 
+                                  alt={user.userName}
+                                  className="w-10 h-10 rounded-full border-2 border-white dark:border-zinc-800 shadow-sm object-cover"
+                                  referrerPolicy="no-referrer"
+                                />
+                                <div className={cn(
+                                  "absolute -top-2 -left-2 w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white shadow-lg",
+                                  actualRank === 0 ? "bg-amber-500" : actualRank === 1 ? "bg-stone-400" : actualRank === 2 ? "bg-orange-500" : "bg-zinc-400"
+                                )}>
+                                  {actualRank + 1}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-sm font-bold truncate max-w-[120px]">{user.userName}</p>
+                                <div className="flex items-center gap-1">
+                                  <p className="text-[10px] text-stone-400 uppercase font-black">{user.currentBook} {user.currentChapter}</p>
+                                  {user.finishedBooksCount && user.finishedBooksCount > 0 && (
+                                    <MedalIcon type="book" count={user.finishedBooksCount} className="scale-75 origin-left" />
+                                  )}
+                                  {user.medals.includes('monthly-1st') && <MedalIcon type="monthly" className="scale-50 origin-left" />}
+                                  {user.medals.includes('quarterly-1st') && <MedalIcon type="quarterly" className="scale-50 origin-left" />}
+                                  {user.medals.includes('semiannual-1st') && <MedalIcon type="semiannual" className="scale-50 origin-left" />}
+                                  {user.medals.includes('grand-champion') && <MedalIcon type="grand" className="scale-50 origin-left" />}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-black text-emerald-600">
+                                {leaderboardView === 'monthly' ? user.monthlyPoints : (leaderboardView === 'annual' ? user.annualPoints : user.points)} pts
+                              </p>
+                              <button 
+                                onClick={() => {
+                                  setSelectedUserForMessage(user);
+                                  setIsMessageModalOpen(true);
+                                }}
+                                className="text-[10px] text-stone-400 hover:text-emerald-600 transition-colors uppercase font-black"
+                              >
+                                Enviar Mensagem
+                              </button>
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    
+                    {leaderboard.filter(u => u.userName.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
+                      <div className="text-center py-8">
+                        <p className="text-stone-400 text-xs italic">Nenhum participante encontrado.</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 

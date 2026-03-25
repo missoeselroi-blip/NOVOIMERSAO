@@ -3,6 +3,8 @@ import {
   GraduationCap, 
   BookOpen, 
   CheckCircle, 
+  CheckCircle2,
+  Lock,
   ArrowLeft, 
   ArrowRight, 
   Save, 
@@ -60,6 +62,8 @@ import TheologySearchPage from './TheologySearchPage';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { useAuth } from '../contexts/AuthContext';
 import { AudioSearchButton } from '../components/AudioSearchButton';
+import { SearchLoadingOverlay } from '../components/SearchLoadingOverlay';
+import { useCredits } from '../contexts/CreditContext';
 import jsPDF from 'jspdf';
 
 import { auth, db } from '../lib/firebase';
@@ -119,6 +123,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const { user, isInitialLoading } = useAuth();
   const { share } = useShare();
   const { showToast } = useToast();
+  const { balance, consumeCredits } = useCredits();
   
   // Initial state from localStorage with safety
   const [isEnrolled, setIsEnrolled] = useState(() => {
@@ -463,8 +468,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         const careerDoc = await getDoc(careerDocRef);
         
         if (careerDoc.exists()) {
+          const careerData = careerDoc.data();
+          const bibleRacePoints = careerData.bibleRacePoints || 0;
           await updateDoc(careerDocRef, { 
-            points: grandTotal,
+            theologyPoints: grandTotal,
+            points: grandTotal + bibleRacePoints,
             name: user.name,
             avatar: user.photoURL,
             updatedAt: new Date().toISOString()
@@ -474,6 +482,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
             userId: user.id,
             name: user.name,
             avatar: user.photoURL,
+            theologyPoints: grandTotal,
+            bibleRacePoints: 0,
             points: grandTotal,
             rankId: 1,
             stars: 0,
@@ -869,13 +879,22 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const handleGenerateCertificate = async () => {
     if (!user) return;
     
-    showToast("Gerando certificado em PDF e salvando no seu perfil...", 'info');
+    if (balance < 30) {
+      showToast("Créditos insuficientes para o certificado do curso completo (30 créditos). 💎", "error");
+      return;
+    }
+
+    showToast("Gerando certificado em PDF... 📄💎", 'info');
     
     try {
+      // Consume credits
+      await consumeCredits(30, 'theology_full_certificate');
+
       // Save to Firestore first
       const certData = {
         userId: user.id,
-        subject: selectedSubject,
+        subject: 'Curso de Teologia Básica (Completo)',
+        type: 'FULL_COURSE',
         date: new Date().toLocaleDateString('pt-BR'),
         issuedAt: new Date().toISOString()
       };
@@ -952,7 +971,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       docPdf.text("imersaobiblicapp@gmail.com", 236, sigY + 10, { align: 'center' });
 
       docPdf.save("Certificado_Teologia_Basica.pdf");
-      showToast("Certificado baixado e cliente de e-mail aberto!", 'success');
+      showToast("Certificado gerado com sucesso! 🎓✅", "success");
       setShowCertificatePaymentModal(false);
 
       // Open email client
@@ -963,8 +982,89 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       }, 500);
       
     } catch (error) {
-      console.error("Error generating PDF:", error);
-      showToast("Erro ao gerar certificado.", 'error');
+      console.error("Error generating certificate:", error);
+      showToast("Erro ao gerar certificado.", "error");
+    }
+  };
+
+  const handleGenerateSubjectCertificate = async (subject: string) => {
+    if (!user) return;
+    
+    if (balance < 5) {
+      showToast("Créditos insuficientes para o certificado da matéria (5 créditos). 💎", "error");
+      return;
+    }
+
+    showToast("Gerando certificado da matéria... 📄💎", 'info');
+    
+    try {
+      // Consume credits
+      await consumeCredits(5, 'theology_subject_certificate');
+
+      // Save to Firestore
+      const certData = {
+        userId: user.id,
+        subject: subject,
+        type: 'SUBJECT',
+        date: new Date().toLocaleDateString('pt-BR'),
+        issuedAt: new Date().toISOString()
+      };
+      
+      await addDoc(collection(db, 'theologyCertificates'), certData).catch(err => handleFirestoreError(err, OperationType.CREATE, 'theologyCertificates'));
+
+      // Generate PDF
+      const docPdf = new jsPDF('l', 'mm', 'a4');
+      const width = docPdf.internal.pageSize.getWidth();
+      const height = docPdf.internal.pageSize.getHeight();
+
+      // Border
+      docPdf.setLineWidth(2);
+      docPdf.setDrawColor(16, 185, 129); // emerald-500
+      docPdf.rect(10, 10, width - 20, height - 20);
+      docPdf.setLineWidth(0.5);
+      docPdf.rect(12, 12, width - 24, height - 24);
+
+      // Title
+      docPdf.setFont('helvetica', 'bold');
+      docPdf.setFontSize(30);
+      docPdf.setTextColor(16, 185, 129);
+      docPdf.text("CERTIFICADO DE CONCLUSÃO DE MATÉRIA", width / 2, 45, { align: 'center' });
+
+      // Subtitle
+      docPdf.setFontSize(22);
+      docPdf.setTextColor(100, 100, 100);
+      docPdf.text(subject, width / 2, 60, { align: 'center' });
+
+      // Body
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.setFontSize(16);
+      docPdf.setTextColor(50, 50, 50);
+      const studentName = user?.name || 'Aluno';
+      const bodyText = `Certificamos que ${studentName} concluiu com êxito a matéria de ${subject} no Curso de Teologia Básica do App Imersão Bíblia IA.`;
+      docPdf.text(bodyText, width / 2, 85, { align: 'center', maxWidth: width - 60 });
+
+      // Verse
+      docPdf.setFont('helvetica', 'italic');
+      docPdf.setFontSize(12);
+      docPdf.setTextColor(100, 100, 100);
+      const verse = '"Estuda para te apresentares a Deus aprovado..." (2 Timóteo 2:15)';
+      docPdf.text(verse, width / 2, 140, { align: 'center', maxWidth: width - 60 });
+
+      // Signatures
+      docPdf.setFont('helvetica', 'normal');
+      docPdf.setFontSize(10);
+      docPdf.setTextColor(0, 0, 0);
+      const sigY = 175;
+      
+      docPdf.line(width / 2 - 40, sigY, width / 2 + 40, sigY);
+      docPdf.text("Coordenação Pedagógica", width / 2, sigY + 5, { align: 'center' });
+      docPdf.text("Imersão Bíblica IA", width / 2, sigY + 10, { align: 'center' });
+
+      docPdf.save(`Certificado_${subject.replace(/\s+/g, '_')}.pdf`);
+      showToast("Certificado da matéria gerado com sucesso! 🎓✅", "success");
+    } catch (error) {
+      console.error("Error generating subject certificate:", error);
+      showToast("Erro ao gerar certificado.", "error");
     }
   };
 
@@ -1402,6 +1502,17 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                     <span className="flex items-center gap-1">
                       {isLocked ? `REQUISITO: ${subject.prereq}` : 'OPÇÕES DE ESTUDO'} <ChevronRight size={16} />
                     </span>
+                    {isCompleted && (
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleGenerateSubjectCertificate(subject.title);
+                        }}
+                        className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-1"
+                      >
+                        <Award size={14} /> Certificado (5💎)
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -1422,7 +1533,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                   </div>
                   <div className="text-white flex-1">
                     <h4 className="text-2xl font-bold mb-2">Conclusão do Curso</h4>
-                    <p className="text-amber-100">Área de formatura da Teologia Básica. Clique aqui para ver sua mensagem final e emitir seu certificado.</p>
+                    <p className="text-amber-100">Área de formatura da Teologia Básica. Clique aqui para ver sua mensagem final e emitir seu certificado (30 créditos).</p>
                   </div>
                   <div className="mt-4 md:mt-0 px-6 py-3 bg-white text-amber-600 font-bold rounded-xl flex items-center gap-2 group-hover:bg-amber-50 transition-colors">
                     Acessar <ArrowRight size={18} />

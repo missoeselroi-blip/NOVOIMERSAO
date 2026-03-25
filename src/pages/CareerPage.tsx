@@ -35,6 +35,7 @@ const MOCK_USER: UserProfile = {
   shares: 12,
   forumParticipations: 8,
   contributions: 15,
+  points: 2450,
   authorized: false,
   trend: 'up'
 };
@@ -46,7 +47,8 @@ import { compressImage } from '../utils/imageUtils';
 import { useCredits } from '../contexts/CreditContext';
 import { geminiService } from '../services/geminiService';
 import { db } from '../lib/firebase';
-import { doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, where, getDocs } from 'firebase/firestore';
+import html2canvas from 'html2canvas';
 
 export default function CareerPage() {
   const { user, careerProgress, metrics, isInitialLoading, updateUser } = useAuth();
@@ -55,6 +57,7 @@ export default function CareerPage() {
   const [activeTab, setActiveTab] = useState<'profile' | 'ranks' | 'leaderboard'>('profile');
   const [leaderboard, setLeaderboard] = useState<UserProfile[]>([]);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(true);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
 
@@ -80,7 +83,8 @@ export default function CareerPage() {
   useEffect(() => {
     if (activeTab === 'leaderboard') {
       setLoadingLeaderboard(true);
-      const q = query(collection(db, 'careerProgress'), orderBy('points', 'desc'), limit(10));
+      // Removed limit(10) to allow users to find their position
+      const q = query(collection(db, 'careerProgress'), orderBy('points', 'desc'));
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const data = snapshot.docs.map(doc => {
           const progressData = doc.data();
@@ -139,8 +143,53 @@ export default function CareerPage() {
     showToast("Autorização concedida! Bem-vindo à carreira militar celestial. 🙏✨");
   };
 
-  const handleSharePromotion = () => {
-    showToast("Compartilhando sua promoção nas redes sociais! 🕊️✨");
+  const handleSharePromotion = async () => {
+    const element = document.getElementById('share-rank-card');
+    if (!element) {
+      showToast("Erro ao preparar imagem para compartilhamento.", "error");
+      return;
+    }
+
+    try {
+      showToast("Preparando sua patente para compartilhar... 🕊️✨", "info");
+      
+      // Temporarily show the hidden card for capture
+      element.style.display = 'block';
+      const canvas = await html2canvas(element, {
+        useCORS: true,
+        backgroundColor: null,
+        scale: 2
+      });
+      element.style.display = 'none';
+
+      const image = canvas.toDataURL('image/png');
+      
+      // Try to share as file if supported
+      if (navigator.share && navigator.canShare) {
+        const blob = await (await fetch(image)).blob();
+        const file = new File([blob], 'minha-patente-marinha-celestial.png', { type: 'image/png' });
+        
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Minha Patente na Marinha Celestial',
+            text: `Acabei de alcançar a patente de ${currentRank.name} na Marinha Celestial! Venha navegar conosco no Imersão Bíblica IA. ⚓✨`
+          });
+          return;
+        }
+      }
+
+      // Fallback: Download image
+      const link = document.createElement('a');
+      link.href = image;
+      link.download = `patente-${currentRank.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+      link.click();
+      showToast("Patente salva como imagem! Agora você pode compartilhar.", "success");
+    } catch (error) {
+      console.error("Error sharing rank:", error);
+      showToast("Erro ao compartilhar patente.", "error");
+      element.style.display = 'none';
+    }
   };
 
   const handleGenerateAvatar = async () => {
@@ -161,10 +210,51 @@ export default function CareerPage() {
         // Compress image before saving to Firestore to avoid 1MB limit
         const compressedUrl = await compressImage(imageUrl, 512, 512, 0.7);
         
-        await updateUser({ avatar: compressedUrl });
-        // Also update career progress doc for leaderboard
+        await updateUser({ 
+          avatar: compressedUrl,
+          photoURL: compressedUrl 
+        });
+        
+        // Update career progress doc for leaderboard
         const careerDocRef = doc(db, 'careerProgress', user.id);
-        await updateDoc(careerDocRef, { avatar: compressedUrl });
+        try {
+          await updateDoc(careerDocRef, { 
+            avatar: compressedUrl,
+            name: user.name // Ensure name is also synced
+          });
+        } catch (e) {
+          // If doc doesn't exist, create it
+          await setDoc(careerDocRef, {
+            userId: user.id,
+            name: user.name,
+            avatar: compressedUrl,
+            rankId: 1,
+            stars: 0,
+            authorized: false,
+            points: 0,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        }
+
+        // Sync with Bible Race Progress
+        const raceProgressRef = doc(db, 'bibleRaceProgress', user.id);
+        try {
+          await updateDoc(raceProgressRef, {
+            userPhoto: compressedUrl
+          });
+        } catch (e) {
+          // Might not exist, ignore
+        }
+
+        // Sync with Bible Race Champions (Quadro de Honra/Galeria de Campeões)
+        const championsRef = collection(db, 'bibleRaceChampions');
+        const q = query(championsRef, where('userId', '==', user.id));
+        const querySnapshot = await getDocs(q);
+        const updatePromises = querySnapshot.docs.map(doc => 
+          updateDoc(doc.ref, { userPhoto: compressedUrl })
+        );
+        await Promise.all(updatePromises);
+
         showToast("Avatar gerado com sucesso! Ficou incrível! ⚓✨", 'success');
       } else {
         showToast("Erro ao gerar avatar. Tente novamente.", 'error');
@@ -178,7 +268,71 @@ export default function CareerPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
+    <>
+      {/* Hidden Share Card */}
+      <div id="share-rank-card" style={{ display: 'none', position: 'fixed', left: '-9999px', top: '-9999px' }}>
+        <div className="w-[500px] p-10 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-950 text-white rounded-[3rem] border-8 border-emerald-400/30 shadow-2xl relative overflow-hidden font-sans">
+          {/* Decorative background elements */}
+          <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-400/10 rounded-full -mr-32 -mt-32 blur-3xl" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-400/10 rounded-full -ml-32 -mb-32 blur-3xl" />
+          
+          <div className="relative z-10 flex flex-col items-center text-center">
+            <div className="flex items-center gap-3 mb-8">
+              <div className="p-3 bg-emerald-400/20 rounded-2xl">
+                <ShieldCheck className="text-emerald-400" size={32} />
+              </div>
+              <h1 className="text-3xl font-black tracking-tighter uppercase italic">Marinha Celestial</h1>
+            </div>
+
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-emerald-400/20 rounded-full blur-2xl animate-pulse" />
+              <img 
+                src={user?.avatar || user?.photoURL || `https://ui-avatars.com/api/?name=${user?.name || 'Membro'}&background=random`} 
+                alt={user?.name || ''} 
+                className="w-40 h-40 rounded-full border-8 border-emerald-400 shadow-2xl relative z-10 object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 bg-emerald-400 text-emerald-950 px-6 py-2 rounded-full font-black text-sm uppercase tracking-widest shadow-xl z-20">
+                {currentRank.name}
+              </div>
+            </div>
+
+            <h2 className="text-4xl font-black tracking-tighter uppercase mb-2">{user?.name}</h2>
+            <p className="text-emerald-400 font-bold uppercase tracking-[0.3em] text-xs mb-8">Oficial da Marinha Celestial</p>
+
+            <div className="grid grid-cols-3 gap-4 w-full mb-8">
+              <div className="bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/10">
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Pontos</p>
+                <p className="text-xl font-black">{careerProgress?.points || 0}</p>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/10">
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Estrelas</p>
+                <div className="flex items-center justify-center gap-1">
+                  <Star size={14} className="text-amber-400 fill-amber-400" />
+                  <p className="text-xl font-black">{careerProgress?.stars || 0}</p>
+                </div>
+              </div>
+              <div className="bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/10">
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Status</p>
+                <p className="text-xl font-black">{careerProgress?.authorized ? 'Ativo' : 'Recruta'}</p>
+              </div>
+            </div>
+
+            <div className="pt-8 border-t border-white/10 w-full flex items-center justify-between">
+              <div className="text-left">
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">App Oficial</p>
+                <p className="text-sm font-black tracking-tighter uppercase">Imersão Bíblica IA</p>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Data</p>
+                <p className="text-sm font-black tracking-tighter uppercase">{new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-6xl mx-auto space-y-8">
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-6">
           <div>
@@ -416,61 +570,113 @@ export default function CareerPage() {
 
       {activeTab === 'leaderboard' && (
         <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm overflow-hidden">
-          <div className="p-8 border-b border-stone-100 dark:border-zinc-800">
+          <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <h3 className="text-xl font-bold flex items-center gap-2">
               <Users className="text-emerald-600" size={24} />
               Quadro de Honra
             </h3>
+            
+            <div className="flex gap-2">
+              <div className="relative flex-1 sm:w-64">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" size={16} />
+                <input 
+                  type="text"
+                  placeholder="Buscar oficial..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-xl text-xs outline-none focus:ring-2 ring-emerald-500/50 transition-all"
+                />
+              </div>
+              <button 
+                onClick={() => {
+                  if (user) {
+                    setSearchTerm(user.name || '');
+                  }
+                }}
+                className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all active:scale-95"
+                title="Minha Localização"
+              >
+                <UserCheck size={14} />
+                <span className="hidden sm:inline">Minha Posição</span>
+              </button>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
                 <tr className="bg-stone-50 dark:bg-zinc-800/50 text-[10px] font-bold uppercase tracking-widest text-stone-400">
+                  <th className="px-8 py-4">Posição</th>
                   <th className="px-8 py-4">Membro</th>
                   <th className="px-8 py-4">Patente</th>
+                  <th className="px-8 py-4">Pontos</th>
                   <th className="px-8 py-4">Estrelas</th>
                   <th className="px-8 py-4">Tendência</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-100 dark:divide-zinc-800">
-                {leaderboard.map((member) => {
-                  const rank = RANKS.find(r => r.id === member.rankId) || RANKS[0];
-                  return (
-                    <tr key={member.id} className="hover:bg-stone-50 dark:hover:bg-zinc-800/30 transition-colors">
-                      <td className="px-8 py-4">
-                        <div className="flex items-center gap-3">
-                          <img 
-                            src={member.avatar} 
-                            alt={member.name} 
-                            className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-800 object-cover"
-                            referrerPolicy="no-referrer"
-                          />
-                          <div>
-                            <p className="font-bold text-sm">{member.name}</p>
-                            <p className="text-xs text-stone-400">ID: {member.id.substring(0, 8)}</p>
+                {leaderboard
+                  .filter(m => m.name.toLowerCase().includes(searchTerm.toLowerCase()))
+                  .slice(0, searchTerm ? 50 : 10)
+                  .map((member) => {
+                    const rank = RANKS.find(r => r.id === member.rankId) || RANKS[0];
+                    const actualRank = leaderboard.findIndex(l => l.id === member.id);
+                    const isCurrentUser = member.id === user?.id;
+                    
+                    return (
+                      <tr 
+                        key={member.id} 
+                        className={cn(
+                          "hover:bg-stone-50 dark:hover:bg-zinc-800/30 transition-colors",
+                          isCurrentUser && "bg-emerald-50/50 dark:bg-emerald-900/10"
+                        )}
+                      >
+                        <td className="px-8 py-4">
+                          <div className="w-6 h-6 rounded-full bg-stone-100 dark:bg-zinc-800 flex items-center justify-center text-[10px] font-black">
+                            {actualRank + 1}
                           </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-4">
-                        <span className="px-3 py-1 bg-stone-100 dark:bg-zinc-800 rounded-full text-[10px] font-bold uppercase tracking-widest">
-                          {rank.name}
-                        </span>
-                      </td>
-                      <td className="px-8 py-4">
-                        <div className="flex gap-0.5">
-                          {[...Array(member.stars)].map((_, i) => (
-                            <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
-                          ))}
-                        </div>
-                      </td>
-                      <td className="px-8 py-4">
-                        {(member.trend || 'stable') === 'up' && <TrendingUp className="text-emerald-500" size={20} />}
-                        {(member.trend || 'stable') === 'down' && <TrendingDown className="text-red-500" size={20} />}
-                        {(member.trend || 'stable') === 'stable' && <div className="w-5 h-1 bg-stone-300 rounded-full" />}
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                        <td className="px-8 py-4">
+                          <div className="flex items-center gap-3">
+                            <img 
+                              src={member.avatar} 
+                              alt={member.name} 
+                              className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-800 object-cover"
+                              referrerPolicy="no-referrer"
+                            />
+                            <div>
+                              <p className="font-bold text-sm flex items-center gap-2">
+                                {member.name}
+                                {isCurrentUser && (
+                                  <span className="px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded text-[8px] font-black uppercase tracking-tighter">Você</span>
+                                )}
+                              </p>
+                              <p className="text-xs text-stone-400">ID: {member.id.substring(0, 8)}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-8 py-4">
+                          <span className="px-3 py-1 bg-stone-100 dark:bg-zinc-800 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                            {rank.name}
+                          </span>
+                        </td>
+                        <td className="px-8 py-4">
+                          <p className="font-black text-emerald-600 dark:text-emerald-400">{member.points}</p>
+                        </td>
+                        <td className="px-8 py-4">
+                          <div className="flex gap-0.5">
+                            {[...Array(member.stars)].map((_, i) => (
+                              <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-8 py-4">
+                          {(member.trend || 'stable') === 'up' && <TrendingUp className="text-emerald-500" size={20} />}
+                          {(member.trend || 'stable') === 'down' && <TrendingDown className="text-red-500" size={20} />}
+                          {(member.trend || 'stable') === 'stable' && <div className="w-5 h-1 bg-stone-300 rounded-full" />}
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
@@ -519,6 +725,7 @@ export default function CareerPage() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }
 

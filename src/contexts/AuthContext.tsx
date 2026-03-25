@@ -393,6 +393,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userDocRef = doc(db, 'users', user.id);
     try {
       await updateDoc(userDocRef, updates);
+      
+      // Sync avatar if it's being updated
+      const newAvatar = updates.avatar || updates.photoURL;
+      if (newAvatar) {
+        // Sync with careerProgress
+        const careerDocRef = doc(db, 'careerProgress', user.id);
+        await updateDoc(careerDocRef, { 
+          avatar: newAvatar,
+          name: updates.name || user.name 
+        }).catch(() => {});
+        
+        // Sync with bibleRaceProgress
+        const raceProgressRef = doc(db, 'bibleRaceProgress', user.id);
+        await updateDoc(raceProgressRef, { 
+          userPhoto: newAvatar,
+          userName: updates.name || user.name
+        }).catch(() => {});
+        
+        // Sync with bibleRaceChampions
+        const championsRef = collection(db, 'bibleRaceChampions');
+        const q = query(championsRef, where('userId', '==', user.id));
+        const querySnapshot = await getDocs(q);
+        const updatePromises = querySnapshot.docs.map(doc => 
+          updateDoc(doc.ref, { 
+            userPhoto: newAvatar,
+            userName: updates.name || user.name
+          })
+        );
+        await Promise.all(updatePromises);
+      }
     } catch (error) {
       handleFirestoreError(error, OperationType.UPDATE, `users/${user.id}`);
     }

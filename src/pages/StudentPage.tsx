@@ -33,18 +33,12 @@ import RedacaoPage from './RedacaoPage';
 import { cn } from '../types';
 import { multiAiService } from '../services/multiAiService';
 
-const THEOLOGY_SUBJECTS = [
-  'Bibliologia', 'Teontologia', 'Cristologia', 'Pneumatologia', 
-  'Antropologia Bíblica', 'Hamartiologia', 'Soteriologia', 
-  'Eclesiologia', 'Escatologia', 'Angeologia', 
-  'Hermenêutica Bíblica', 'Homilética', 'Exegética', 
-  'Teologia Sistemática (Calvinista e Arminiana)', 'Evangelismo/Missões',
-  'Liderança Cristã', 'Filosofia', 'Sociologia', 'Apologética', 'As Dispensações'
-];
+import { THEOLOGY_SUBJECTS as THEOLOGY_SUBJECTS_DATA } from '../constants/theology';
+const THEOLOGY_SUBJECTS = THEOLOGY_SUBJECTS_DATA.map(s => s.title);
 
 import { useAuth } from '../contexts/AuthContext';
 import { db, auth } from '../lib/firebase';
-import { doc, updateDoc, collection, getDocs, writeBatch, query, where, orderBy, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, collection, getDocs, writeBatch, query, where, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '../components/Toast';
 
 export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
@@ -54,14 +48,27 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
   const [isResetting, setIsResetting] = useState(false);
   const [summaries, setSummaries] = useState<any[]>([]);
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
-  const [recommendations, setRecommendations] = useState<string>("");
+  const [recommendations, setRecommendations] = useState<string[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
-  useEffect(() => {
-    if (activeSubTab === 'profile' && user && !recommendations) {
-      loadRecommendations();
-    }
-  }, [activeSubTab, user]);
+  const calculateTotal = (subject: string) => {
+    const data = (theologyProgress && theologyProgress[subject]) || {};
+    const evalScore = data.evaluation || 0;
+    const redMateria = data.redacaoMateria || 0;
+    const redAprofundamento = data.redacaoAprofundamento || 0;
+    const redSlide = data.redacaoSlide || 0;
+    const redVideo = data.redacaoVideo || 0;
+    const redPodcast = data.redacaoPodcast || 0;
+    const quizPoints = data.quizPoints || 0;
+    const studyPoints = data.studyPoints || 0;
+    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints + studyPoints;
+  };
+
+  const totalPoints = theologyProgress ? THEOLOGY_SUBJECTS.reduce((acc, subject) => {
+    return acc + calculateTotal(subject);
+  }, 0) : 0;
+
+  const completedSubjects = theologyProgress ? Object.keys(theologyProgress).filter(k => theologyProgress[k]?.completed) : [];
 
   const loadRecommendations = async () => {
     if (!user) return;
@@ -71,13 +78,23 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
         { name: user.name, email: user.email },
         { completedSubjects, totalPoints }
       );
-      if (result) setRecommendations(result);
+      if (result && Array.isArray(result)) {
+        setRecommendations(result);
+      } else if (typeof result === 'string') {
+        setRecommendations([result]);
+      }
     } catch (error) {
       console.error("Error loading recommendations:", error);
     } finally {
       setIsLoadingRecommendations(false);
     }
   };
+
+  useEffect(() => {
+    if (activeSubTab === 'profile' && user && recommendations.length === 0) {
+      loadRecommendations();
+    }
+  }, [activeSubTab, user]);
 
   const loadSummaries = async () => {
     if (!user) return;
@@ -169,36 +186,37 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
         }, 0);
 
         const careerDocRef = doc(db, 'careerProgress', user.id);
-        await updateDoc(careerDocRef, { 
-          points: grandTotal,
-          name: user.name,
-          avatar: user.photoURL,
-          updatedAt: new Date().toISOString()
-        });
+        const careerDoc = await getDoc(careerDocRef);
+        
+        if (careerDoc.exists()) {
+          const careerData = careerDoc.data();
+          const bibleRacePoints = careerData.bibleRacePoints || 0;
+          await updateDoc(careerDocRef, { 
+            theologyPoints: grandTotal,
+            points: grandTotal + bibleRacePoints,
+            name: user.name,
+            avatar: user.avatar || user.photoURL,
+            updatedAt: new Date().toISOString()
+          });
+        } else {
+          await setDoc(careerDocRef, {
+            userId: user.id,
+            name: user.name,
+            avatar: user.avatar || user.photoURL,
+            theologyPoints: grandTotal,
+            bibleRacePoints: 0,
+            points: grandTotal,
+            rankId: 1,
+            stars: 0,
+            authorized: false,
+            updatedAt: new Date().toISOString()
+          });
+        }
       }
     } catch (error) {
       console.error("Error updating score:", error);
     }
   };
-
-  const calculateTotal = (subject: string) => {
-    const data = (theologyProgress && theologyProgress[subject]) || {};
-    const evalScore = data.evaluation || 0;
-    const redMateria = data.redacaoMateria || 0;
-    const redAprofundamento = data.redacaoAprofundamento || 0;
-    const redSlide = data.redacaoSlide || 0;
-    const redVideo = data.redacaoVideo || 0;
-    const redPodcast = data.redacaoPodcast || 0;
-    const quizPoints = data.quizPoints || 0;
-    const studyPoints = data.studyPoints || 0;
-    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints + studyPoints;
-  };
-
-  const totalPoints = theologyProgress ? THEOLOGY_SUBJECTS.reduce((acc, subject) => {
-    return acc + calculateTotal(subject);
-  }, 0) : 0;
-
-  const completedSubjects = theologyProgress ? Object.keys(theologyProgress).filter(k => theologyProgress[k]?.completed) : [];
 
   const chartData = THEOLOGY_SUBJECTS.map(subject => {
     const data = (theologyProgress && theologyProgress[subject]) || {};
@@ -261,8 +279,8 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
               
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                     <div className="w-32 h-32 bg-emerald-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl shadow-emerald-600/20 overflow-hidden">
-                      {user?.photoURL ? (
-                        <img src={user.photoURL} alt={user.name} className="w-full h-full object-cover" />
+                      {user?.avatar || user?.photoURL ? (
+                        <img src={user.avatar || user.photoURL} alt={user.name} className="w-full h-full object-cover" />
                       ) : (
                         <User size={64} />
                       )}
@@ -560,10 +578,15 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                       <div className="flex items-center gap-2 text-stone-500 italic">
                         <Loader2 className="animate-spin" size={16} /> Analisando seu perfil...
                       </div>
-                    ) : recommendations ? (
-                      <div className="prose dark:prose-invert text-sm text-stone-600 dark:text-zinc-400">
-                        {recommendations}
-                      </div>
+                    ) : recommendations.length > 0 ? (
+                      <ul className="space-y-3 list-none p-0">
+                        {recommendations.map((rec, index) => (
+                          <li key={index} className="flex gap-3 items-start">
+                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                            <span className="text-sm text-stone-600 dark:text-zinc-400 leading-relaxed">{rec}</span>
+                          </li>
+                        ))}
+                      </ul>
                     ) : (
                       <p className="text-sm text-stone-500 italic">Nenhuma recomendação disponível no momento.</p>
                     )}

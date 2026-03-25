@@ -421,20 +421,28 @@ export default function CreditPage() {
             <Zap className="text-amber-500" size={20} />
             Como funcionam os créditos?
           </h4>
-          <ul className="space-y-3 text-sm text-stone-600 dark:text-zinc-400">
-            <li className="flex gap-2">
-              <span className="text-emerald-600 font-bold">•</span>
-              Cada ação da IA consome uma quantidade específica de créditos baseada na complexidade.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-emerald-600 font-bold">•</span>
-              Ações simples como dicionário consomem 1 crédito.
-            </li>
-            <li className="flex gap-2">
-              <span className="text-emerald-600 font-bold">•</span>
-              Geração de apostilas completas consomem cerca de 50 créditos devido ao alto processamento.
-            </li>
-          </ul>
+          <div className="text-sm text-stone-600 dark:text-zinc-400 leading-relaxed space-y-4">
+            <p>
+              Os créditos são para geração com IA, como um estudo bíblico, uma lição de célula, uma apostila, um POST, um avatar...
+            </p>
+            <p className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800/30 text-emerald-800 dark:text-emerald-300 font-medium">
+              As pesquisas da Bíblia e Autores, devocional, curso de teologia e a corrida bíblica continuam funcionando mesmo com os créditos zerados.
+            </p>
+            <ul className="space-y-2">
+              <li className="flex gap-2">
+                <span className="text-emerald-600 font-bold">•</span>
+                Cada ação da IA consome uma quantidade específica de créditos baseada na complexidade.
+              </li>
+              <li className="flex gap-2">
+                <span className="text-emerald-600 font-bold">•</span>
+                Ações simples como dicionário consomem 1 crédito.
+              </li>
+              <li className="flex gap-2">
+                <span className="text-emerald-600 font-bold">•</span>
+                Geração de apostilas completas consomem cerca de 50 créditos devido ao alto processamento.
+              </li>
+            </ul>
+          </div>
         </div>
         <div className="bg-stone-100 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800">
           <h4 className="text-lg font-bold mb-4 flex items-center gap-2">

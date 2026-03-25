@@ -3631,7 +3631,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <option value="study">Gerar Estudo Bíblico</option>
                         <option value="outline">Gerar Esboço Pregação</option>
                         <option value="devotional">Gerar Devocional</option>
-                        <option value="debate">Gerar Debate</option>
                         <option value="booklet">Gerar Apostila</option>
                         <option value="message">Gerar Mensagem</option>
                       </select>
@@ -4215,7 +4214,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
 
                       <div className="bg-stone-50 dark:bg-zinc-800/50 p-8 rounded-[2rem] border border-stone-200 dark:border-zinc-800 relative group">
-                        <div className="absolute top-6 right-6 flex gap-2 transition-opacity">
+                        <div className="flex flex-wrap gap-3 mb-6 p-4 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-stone-100 dark:border-zinc-800">
                           <button
                             onClick={() => {
                               if (isEditingStoriesTheater) {
@@ -4232,20 +4231,43 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                 setIsEditingStoriesTheater(true);
                               }
                             }}
-                            className="p-3 bg-white dark:bg-zinc-900 text-blue-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl hover:bg-blue-100 transition-all font-bold text-sm"
                             title={isEditingStoriesTheater ? "Salvar Edição" : "Editar Conteúdo"}
                           >
-                            {isEditingStoriesTheater ? <Save size={20} /> : <Pencil size={20} />}
+                            {isEditingStoriesTheater ? <Save size={18} /> : <Pencil size={18} />}
+                            {isEditingStoriesTheater ? "Salvar" : "Editar"}
                           </button>
+                          
+                          <button
+                            onClick={() => {
+                              const content = isEditingStoriesTheater 
+                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
+                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
+                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
+                                   storiesTheaterResult.bibleStory);
+                              if (content) {
+                                copyToClipboard(content);
+                                showToast("Copiado para a área de transferência! 📋");
+                              }
+                            }}
+                            className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 rounded-xl hover:bg-stone-200 transition-all font-bold text-sm"
+                            title="Copiar"
+                          >
+                            <Copy size={18} />
+                            Copiar
+                          </button>
+
                           <button
                             onClick={() => {
                               handleDownloadElement(storiesTheaterRef.current, `Stories_Theater_${storiesTheaterTopic}`);
                             }}
-                            className="p-3 bg-white dark:bg-zinc-900 text-stone-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 rounded-xl hover:bg-stone-200 transition-all font-bold text-sm"
                             title="Baixar PDF"
                           >
-                            <Download size={20} />
+                            <Download size={18} />
+                            PDF
                           </button>
+
                           <button
                             onClick={() => {
                               const content = isEditingStoriesTheater 
@@ -4257,11 +4279,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                 handleShareContent(`Stories & Theater - ${storiesTheaterTopic}`, content);
                               }
                             }}
-                            className="p-3 bg-white dark:bg-zinc-900 text-purple-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-xl hover:bg-purple-100 transition-all font-bold text-sm"
                             title="Compartilhar"
                           >
-                            <Share2 size={20} />
+                            <Share2 size={18} />
+                            Compartilhar
                           </button>
+
                           <button
                             onClick={() => {
                               const content = isEditingStoriesTheater 
@@ -4273,11 +4297,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                 handleListen(content);
                               }
                             }}
-                            className="p-3 bg-white dark:bg-zinc-900 text-amber-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-amber-50 dark:bg-amber-900/20 text-amber-600 rounded-xl hover:bg-amber-100 transition-all font-bold text-sm"
                             title="Ouvir"
                           >
-                            <Volume2 size={20} />
+                            <Volume2 size={18} />
+                            Ouvir
                           </button>
+
                           <button
                             onClick={() => {
                               const content = isEditingStoriesTheater 
@@ -4289,11 +4315,13 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                 handleListen(content, true); // True for emotive narration
                               }
                             }}
-                            className="p-3 bg-white dark:bg-zinc-900 text-rose-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-900/20 text-rose-600 rounded-xl hover:bg-rose-100 transition-all font-bold text-sm"
                             title="Narração Emotiva"
                           >
-                            <Music size={20} />
+                            <Music size={18} />
+                            Narrar
                           </button>
+
                           <button
                             onClick={() => {
                               const content = isEditingStoriesTheater 
@@ -4302,30 +4330,18 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                    storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
                                    storiesTheaterResult.bibleStory);
                               if (content) {
-                                setPendingNote({ title: `Stories & Theater - ${storiesTheaterTopic}`, content });
+                                setPendingNote({ 
+                                  title: `${storiesTheaterActiveTab === 'theater' ? 'Roteiro' : 'História'}: ${storiesTheaterTopic}`, 
+                                  content 
+                                });
                                 setIsNotebookModalOpen(true);
                               }
                             }}
-                            className="p-3 bg-white dark:bg-zinc-900 text-emerald-600 rounded-xl shadow-lg hover:scale-110 transition-all"
+                            className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all font-bold text-sm ml-auto"
                             title="Salvar no Caderno"
                           >
-                            <Save size={20} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              const content = isEditingStoriesTheater 
-                                ? editedStoriesTheaterResult?.[storiesTheaterActiveTab]
-                                : (storiesTheaterActiveTab === 'theater' ? storiesTheaterResult.theater :
-                                   storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
-                                   storiesTheaterResult.bibleStory);
-                              if (content) {
-                                handleSendToNarration(content);
-                              }
-                            }}
-                            className="p-3 bg-white dark:bg-zinc-900 text-blue-600 rounded-xl shadow-lg hover:scale-110 transition-all"
-                            title="Gerar Narração"
-                          >
-                            <Mic2 size={20} />
+                            <StickyNote size={18} />
+                            Caderno
                           </button>
                         </div>
 
@@ -4390,7 +4406,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <option value="Evangelismo">Evangelismo</option>
                         <option value="História Bíblica">História Bíblica</option>
                         <option value="Hora de Dormir">Hora de Dormir</option>
-                        <option value="Estória/Teatro">Estória/Teatro</option>
                       </select>
                       <button
                         onClick={handleGenerateKidsMinistry}
@@ -5929,7 +5944,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         <p><strong className="text-stone-900 dark:text-white">Busca de Verísculo</strong> = Nesta pesquisa além de duas versões do texto pesquisado, você terá um breve relato histórico e teológico que envolve o texto pesquisado.</p>
         <p><strong className="text-stone-900 dark:text-white">Visão do Autor</strong> = Neste recurso você vai conseguir pesquisar cerca de 50 escritores dos mais renomados, influentes da nossa época e de tempos antigos. Você poderá pesquisar palavras, termos, frases e até mesmo fazer uma pergunta como se fosse para o autor. A IA irá pesquisar em todos os seus livros e responder em uma síntese bem direta sobre o assunto específico ou assuntos correlacionados.</p>
         <p><strong className="text-stone-900 dark:text-white">Outras Religiões</strong> = Pesquise também nas principais religiões e seguimentos cristãos que possuem um cânon (livro sagrado ou principal livro doutrinário da religião).</p>
-        <p><strong className="text-stone-900 dark:text-white">Ferramentas de Criação</strong> = Nesta versátil ferramenta você vai conseguir gerar vários materiais para a sua pesquisa, conhecimento ou utilização em seu ministério. São sete tipos de criação: Lição para células (pequenos grupos); Estudos bíblicos, Esboços, Devocional, Debate, Apostilas (chegam a 80 páginas) e Mensagens (dividas em Pregação, Aniversário, Casamento, Fim do ano, Formatura, Devocional e Velório).</p>
+        <p><strong className="text-stone-900 dark:text-white">Ferramentas de Criação</strong> = Nesta versátil ferramenta você vai conseguir gerar vários materiais para a sua pesquisa, conhecimento ou utilização em seu ministério. São seis tipos de criação: Lição para células (pequenos grupos); Estudos bíblicos, Esboços, Devocional, Apostilas (chegam a 80 páginas) e Mensagens (dividas em Pregação, Aniversário, Casamento, Fim do ano, Formatura, Devocional e Velório).</p>
         <p><strong className="text-stone-900 dark:text-white">Compare Versões</strong> = Estão disponíveis neste recurso todas as versões e traduções da bíblia mais conhecidas. Ao pesquisar o usuário terá a acesso as duas versões do texto (a primeira versão sempre NVI e a segunda opção que o leitor deseja comparar). Terá também um apanhado das principais palavras que divergem nas duas versões. Você também conseguirá pesquisar nas línguas originais: Hebraico para o VT e Grego para o NT.</p>
         <p><strong className="text-stone-900 dark:text-white">Significado</strong> = Pesquise palavras e expressões nos três principais dicionários da língua portuguesa. Mais: Português-Hebraico, Hebraico-Português, Português-Grego, Grego-Português. E também estão quatro IAs integradas: Gemini, ChatGPT, Claude e LIama.</p>
         <p><strong className="text-stone-900 dark:text-white">Pesquisa Infinita - Wiki</strong> = É um recurso formidável integrada a IA Gemini que transforme uma pesquisa ou um texto em hiperlink nas palavras principais direcionando a outras pesquisas com novos hiperlinks e assim indefinidamente.</p>

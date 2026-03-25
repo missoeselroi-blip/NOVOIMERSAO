@@ -1,3 +1,6 @@
+import { geminiService } from "./geminiService";
+import { Type } from "@google/genai";
+
 export const multiAiService = {
   async generateOpenAiImage(prompt: string) {
     try {
@@ -31,18 +34,36 @@ export const multiAiService = {
   },
 
   async getPersonalizedRecommendations(userProfile: any, studyHistory: any) {
+    // Gemini is our primary engine for recommendations
     try {
-      const response = await fetch("/api/ai/anthropic/recommendations", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userProfile, studyHistory }),
-      });
-      if (!response.ok) throw new Error("Erro ao obter recomendações do Anthropic");
-      const data = await response.json();
-      return data.recommendations;
-    } catch (error) {
-      console.error("Anthropic Recommendations Error:", error);
-      return null;
+      const prompt = `Based on this user profile: ${JSON.stringify(userProfile)} and study history: ${JSON.stringify(studyHistory)}, provide 3 personalized study recommendations for Biblical studies. Return ONLY a JSON object with a 'recommendations' array of strings.`;
+      
+      const schema = {
+        type: Type.OBJECT,
+        properties: {
+          recommendations: {
+            type: Type.ARRAY,
+            items: { type: Type.STRING },
+            description: "List of 3 personalized recommendations"
+          }
+        },
+        required: ["recommendations"]
+      };
+
+      const result = await geminiService.generateJSON<{ recommendations: string[] }>(
+        prompt,
+        "You are a helpful assistant providing Biblical study recommendations.",
+        schema
+      );
+
+      return result.recommendations || [];
+    } catch (geminiError) {
+      console.error("Gemini recommendations failed:", geminiError);
+      return [
+        "Estude o livro de Gênesis para entender as origens.",
+        "Leia os Salmos para inspiração diária.",
+        "Analise a carta aos Romanos para profundidade teológica."
+      ]; // Hardcoded fallback as last resort
     }
   },
 

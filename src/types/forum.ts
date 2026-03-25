@@ -42,6 +42,7 @@ export interface UserProfile {
   shares: number;
   forumParticipations: number;
   contributions: number; // in Reais
+  points: number;
   authorized: boolean;
   trend: 'up' | 'down' | 'stable';
 }

@@ -30,6 +30,7 @@ interface UserData {
   joinDate: string;
   role: string;
   photoURL?: string;
+  avatar?: string;
   metrics?: any;
   career?: any;
   theology?: any;
@@ -85,6 +86,7 @@ export default function AdminPage() {
           joinDate: data.joinDate || '',
           role: data.role || 'user',
           photoURL: data.photoURL,
+          avatar: data.avatar,
           career: careerMap.get(doc.id),
           theology: theologyMap.get(doc.id),
           metrics: metricsMap.get(doc.id)
@@ -284,7 +286,7 @@ export default function AdminPage() {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <img 
-                          src={user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+                          src={user.avatar || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
                           alt={user.name} 
                           className="w-10 h-10 rounded-full border-2 border-emerald-500/20"
                         />
@@ -366,7 +368,7 @@ export default function AdminPage() {
               <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-stone-50/50 dark:bg-zinc-800/50">
                 <div className="flex items-center gap-4">
                   <img 
-                    src={selectedUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedUser.id}`} 
+                    src={selectedUser.avatar || selectedUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedUser.id}`} 
                     alt={selectedUser.name} 
                     className="w-16 h-16 rounded-2xl border-4 border-white dark:border-zinc-800 shadow-lg"
                   />
