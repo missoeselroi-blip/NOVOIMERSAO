@@ -148,6 +148,48 @@ const ExpandableMarkdown = ({ content, onSearch }: { content: string, onSearch?:
   
   if (!content) return null;
 
+  const handleDownloadPDF = () => {
+    const element = document.createElement('div');
+    element.className = 'p-8 bg-white text-black font-serif';
+    
+    // Basic Markdown to HTML conversion for the PDF
+    const htmlContent = content
+      .replace(/^# (.*$)/gm, '<h1 class="text-3xl font-bold mb-4 text-emerald-800">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 class="text-2xl font-bold mt-6 mb-3 text-emerald-700">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 class="text-xl font-bold mt-4 mb-2 text-emerald-600">$1</h3>')
+      .replace(/^\* (.*$)/gm, '<li class="ml-4">$1</li>')
+      .replace(/^- (.*$)/gm, '<li class="ml-4">$1</li>')
+      .replace(/\n\n/g, '</p><p class="mb-4">')
+      .replace(/\n/g, '<br/>');
+
+    element.innerHTML = `
+      <div style="padding: 40px; font-family: 'Times New Roman', serif; color: #1a1a1a; line-height: 1.6;">
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #065f46; padding-bottom: 10px;">
+          <h1 style="color: #065f46; margin: 0; font-size: 24px;">IMERSÃO BÍBLICA IA</h1>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 5px;">Seu Tutor Espiritual Inteligente</p>
+        </div>
+        <div class="content">
+          ${htmlContent}
+        </div>
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 10px; color: #9ca3af;">
+          Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}<br/>
+          © Imersão Bíblica IA - Todos os direitos reservados
+        </div>
+      </div>
+    `;
+    
+    const opt = {
+      margin: 10,
+      filename: `Estudo_Imersao_${new Date().getTime()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    // @ts-ignore
+    html2pdf().from(element).set(opt).save();
+  };
+
   const getIntroduction = (text: string) => {
     const lines = text.split('\n');
     let intro = '';
@@ -189,18 +231,27 @@ const ExpandableMarkdown = ({ content, onSearch }: { content: string, onSearch?:
           <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white dark:from-zinc-900 via-white/90 dark:via-zinc-900/90 to-transparent pointer-events-none" />
         )}
       </div>
-      {hasMore && (
-        <button 
-          onClick={() => setIsExpanded(!isExpanded)}
-          className="flex items-center gap-2 px-8 py-3 bg-stone-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all text-sm mx-auto shadow-sm"
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4">
+        {hasMore && (
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 px-8 py-3 bg-stone-100 dark:bg-zinc-800 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all text-sm shadow-sm"
+          >
+            {isExpanded ? (
+              <><ChevronUp size={18} /> Ler Menos</>
+            ) : (
+              <><ChevronDown size={18} /> Ler Mais</>
+            )}
+          </button>
+        )}
+        
+        <button
+          onClick={handleDownloadPDF}
+          className="flex items-center gap-2 px-8 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all text-sm shadow-lg shadow-emerald-600/20"
         >
-          {isExpanded ? (
-            <><ChevronUp size={18} /> Ler Menos</>
-          ) : (
-            <><ChevronDown size={18} /> Ler Mais</>
-          )}
+          <FileText size={18} /> Baixar PDF
         </button>
-      )}
+      </div>
     </div>
   );
 };

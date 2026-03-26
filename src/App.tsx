@@ -89,6 +89,7 @@ const MissionaryBulkResults = lazyWithRetry(() => import('./pages/MissionaryBulk
 const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));
 const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
 const BibleRacePage = lazyWithRetry(() => import('./pages/BibleRacePage'));
+const QuizPage = lazyWithRetry(() => import('./pages/QuizPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -178,6 +179,7 @@ function AppContent() {
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
+    { id: 'quiz', label: 'Quiz', icon: <Zap size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];
@@ -195,6 +197,7 @@ function AppContent() {
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
     { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
+    { id: 'quiz', label: 'QUIZ', subtitle: 'Desafio de Conhecimento', icon: <Zap size={20} />, component: <QuizPage /> },
     { id: 'contact', label: 'Contato', subtitle: 'Fale conosco', icon: <Mail size={20} />, component: <ContactPage />, hidden: true },
     { id: 'login-nav', label: 'Entrar', icon: <LogIn size={20} />, component: <div />, hidden: true },
     { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={handleNavigate} />, hidden: true },

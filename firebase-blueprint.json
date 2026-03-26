@@ -281,6 +281,21 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["content", "subject", "chapter"]
+    },
+    "QuizLeaderboard": {
+      "title": "Quiz Leaderboard",
+      "description": "User scores and rankings for the Bible Quiz",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "avatar": { "type": "string" },
+        "score": { "type": "integer" },
+        "lastScore": { "type": "integer" },
+        "trend": { "type": "string", "enum": ["up", "down", "same"] },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "name", "score", "updatedAt"]
     }
   },
   "firestore": {
@@ -359,6 +374,10 @@
     "/shared_evangelism_materials/{materialId}": {
       "schema": "SharedEvangelismMaterial",
       "description": "Shared evangelism course materials"
+    },
+    "/quizLeaderboard/{userId}": {
+      "schema": "QuizLeaderboard",
+      "description": "User Bible Quiz rankings"
     }
   }
 }

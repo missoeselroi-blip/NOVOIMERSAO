@@ -190,6 +190,16 @@ service cloud.firestore {
              data.date is timestamp;
     }
 
+    function isValidQuizLeaderboard(data) {
+      return data.keys().hasAll(['name', 'score', 'updatedAt']) &&
+             data.name is string && data.name.size() < 100 &&
+             data.score is number && data.score >= 0 &&
+             (!('avatar' in data) || (data.avatar is string && isValidUrl(data.avatar))) &&
+             (!('lastScore' in data) || data.lastScore is number) &&
+             (!('trend' in data) || data.trend in ['up', 'down', 'same']) &&
+             data.updatedAt is timestamp;
+    }
+
     // Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -308,6 +318,12 @@ service cloud.firestore {
     match /shared_evangelism_materials/{materialId} {
       allow read: if isAuthenticated();
       allow write: if isAdmin();
+    }
+
+    match /quizLeaderboard/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidQuizLeaderboard(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }
