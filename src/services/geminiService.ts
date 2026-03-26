@@ -81,13 +81,15 @@ const handleApiError = (error: any) => {
   throw new Error(`Erro na IA: ${errorMessage}`);
 };
 
-const withRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promise<T> => {
+const withRetry = async <T>(fn: (retries: number) => Promise<T>, retries = MAX_RETRIES): Promise<T> => {
   try {
-    return await fn();
+    return await fn(retries);
   } catch (error: any) {
     const isRetryable = 
       retries > 0 && (
         error?.message?.includes("Rpc failed") || 
+        error?.message?.includes("high demand") ||
+        error?.message?.includes("UNAVAILABLE") ||
         error?.status === 500 || 
         error?.status === 503 ||
         error?.status === 429 ||
@@ -106,11 +108,12 @@ const withRetry = async <T>(fn: () => Promise<T>, retries = MAX_RETRIES): Promis
 
 export const geminiService = {
   async generateText(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
-    return withRetry(async () => {
+    return withRetry(async (currentRetry) => {
       try {
         const ai = getAI();
+        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: model,
           contents: prompt,
           config: {
             systemInstruction,
@@ -125,11 +128,12 @@ export const geminiService = {
   },
 
   async generateTextWithThought(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
-    return withRetry(async () => {
+    return withRetry(async (currentRetry) => {
       try {
         const ai = getAI();
+        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: model,
           contents: prompt,
           config: {
             systemInstruction,
@@ -158,11 +162,12 @@ export const geminiService = {
   },
 
   async generateJSON<T>(prompt: string, systemInstruction?: string, responseSchema?: any): Promise<T> {
-    return withRetry(async () => {
+    return withRetry(async (currentRetry) => {
       try {
         const ai = getAI();
+        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: model,
           contents: prompt,
           config: {
             systemInstruction,
@@ -232,7 +237,7 @@ export const geminiService = {
   },
 
   async generateImage(prompt: string) {
-    return withRetry(async () => {
+    return withRetry(async (currentRetry) => {
       try {
         const ai = getAI();
         const response = await ai.models.generateContent({
@@ -260,54 +265,54 @@ export const geminiService = {
   },
 
   async generateSpeech(text: string, voiceName: string = 'Kore') {
-    return withRetry(async () => {
-      try {
-        const ai = getAI();
-        // Clean text: remove markdown and limit length for stability
-        const cleanText = text
-          .replace(/#+\s/g, '') 
-          .replace(/\*\*/g, '') 
-          .replace(/\*/g, '')   
-          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') 
-          .replace(/```[\s\S]*?```/g, '') 
-          .replace(/`([^`]+)`/g, '$1') 
-          .replace(/>\s/g, '') 
-          .replace(/-\s/g, '') 
-          .replace(/\n+/g, ' ') 
-          .slice(0, 5000) // Reduced to 5000 for stability
-          .trim();
+    try {
+      const ai = getAI();
+      // Clean text: remove markdown and limit length for stability
+      const cleanText = text
+        .replace(/#+\s/g, '') 
+        .replace(/\*\*/g, '') 
+        .replace(/\*/g, '')   
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') 
+        .replace(/```[\s\S]*?```/g, '') 
+        .replace(/`([^`]+)`/g, '$1') 
+        .replace(/>\s/g, '') 
+        .replace(/-\s/g, '') 
+        .replace(/\n+/g, ' ') 
+        .slice(0, 5000) 
+        .trim();
 
-        if (!cleanText) return null;
+      if (!cleanText) return null;
 
-        console.log("Generating speech for:", { voiceName, textLength: cleanText.length });
+      console.log("Generating speech for:", { voiceName, textLength: cleanText.length });
 
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash-preview-tts",
-          contents: [{ parts: [{ text: cleanText }] }],
-          config: {
-            responseModalities: [Modality.AUDIO],
-            speechConfig: {
-              voiceConfig: {
-                prebuiltVoiceConfig: { voiceName },
-              },
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-preview-tts",
+        contents: [{ parts: [{ text: cleanText }] }],
+        config: {
+          responseModalities: [Modality.AUDIO],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName },
             },
           },
-        });
-        
-        console.log("TTS Response received:", response);
-
-        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-        if (!base64Audio) {
-          console.error("No audio data in response:", response);
-          return null;
-        }
-
-        return this.pcmToWav(base64Audio, 24000);
-      } catch (error) {
-        console.error("Gemini TTS API Error:", error);
+        },
+      });
+      
+      if (!response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
+        console.warn("No audio data in Gemini TTS response:", response);
         return null;
       }
-    });
+
+      const base64Audio = response.candidates[0].content.parts[0].inlineData.data;
+      return this.pcmToWav(base64Audio, 24000);
+    } catch (error: any) {
+      console.error("Gemini TTS API Error:", error);
+      // Handle the specific "disturbed or locked" error by suggesting a retry or providing a cleaner message
+      if (error?.message?.includes("disturbed or locked")) {
+        console.warn("Fetch stream was locked. This can happen in some browser environments.");
+      }
+      return null;
+    }
   },
 
   pcmToWav(pcmBase64: string, sampleRate: number = 24000): string {
@@ -351,11 +356,12 @@ export const geminiService = {
   },
 
   async searchNews(query: string) {
-    return withRetry(async () => {
+    return withRetry(async (currentRetry) => {
       try {
         const ai = getAI();
+        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: model,
           contents: `Pesquise as notícias mais recentes sobre: "${query}". 
           Retorne um resumo estruturado com título, data e um breve resumo de cada notícia.
           Inclua links para as fontes se possível.`,
@@ -371,15 +377,16 @@ export const geminiService = {
   },
 
   async factCheck(content: string, isImage: boolean = false) {
-    return withRetry(async () => {
+    return withRetry(async (currentRetry) => {
       try {
         const ai = getAI();
+        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
         const prompt = isImage 
           ? "Analise esta imagem e verifique se as informações nela contidas são verdadeiras ou fake news. Use o Google Search para validar os fatos."
           : `Analise o seguinte texto e verifique se é verdade ou fake news: "${content}". Use o Google Search para validar os fatos.`;
         
         const response = await ai.models.generateContent({
-          model: "gemini-3-flash-preview",
+          model: model,
           contents: isImage ? { parts: [{ inlineData: { data: content.split(',')[1], mimeType: 'image/png' } }, { text: prompt }] } : prompt,
           config: {
             tools: [{ googleSearch: {} }],
@@ -402,11 +409,12 @@ export const geminiService = {
   },
 
   async chat(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
-    return withRetry(async () => {
+    return withRetry(async (currentRetry) => {
       try {
         const ai = getAI();
+        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
         const chat = ai.chats.create({
-          model: "gemini-3.1-pro-preview",
+          model: model,
           config: {
             systemInstruction,
             thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
@@ -429,6 +437,28 @@ export const geminiService = {
           text: response.text || "",
           thought: thought
         };
+      } catch (error: any) {
+        return handleApiError(error);
+      }
+    });
+  },
+
+  async chatStream(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
+    return withRetry(async (currentRetry) => {
+      try {
+        const ai = getAI();
+        // Use a fallback model if we've already retried a few times
+        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+        
+        const chat = ai.chats.create({
+          model: model,
+          config: {
+            systemInstruction,
+            thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
+          },
+          history: history,
+        });
+        return await chat.sendMessageStream({ message });
       } catch (error: any) {
         return handleApiError(error);
       }
