@@ -139,6 +139,86 @@ const QUESTIONS: Question[] = [
     correctAnswer: 1,
     difficulty: 'challenge',
     testament: 'new'
+  },
+  {
+    id: 11,
+    text: "Qual era o nome da esposa de Abraão?",
+    options: ["Rebeca", "Raquel", "Sara", "Lia"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 12,
+    text: "Quem foi o apóstolo que negou Jesus três vezes?",
+    options: ["João", "Tiago", "Pedro", "André"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 13,
+    text: "Qual foi a primeira praga do Egito?",
+    options: ["Rãs", "Piolhos", "Sangue no rio", "Gafanhotos"],
+    correctAnswer: 2,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 14,
+    text: "Quem subiu ao céu em um redemoinho com um carro de fogo?",
+    options: ["Elias", "Eliseu", "Enoque", "Moisés"],
+    correctAnswer: 0,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 15,
+    text: "Qual é o 'Fruto do Espírito' mencionado em Gálatas?",
+    options: ["Amor, alegria, paz...", "Fé, esperança, caridade...", "Ouro, prata, pedras preciosas...", "Sabedoria, entendimento, conselho..."],
+    correctAnswer: 0,
+    difficulty: 'medium',
+    testament: 'new'
+  },
+  {
+    id: 16,
+    text: "Quem foi o homem mais velho mencionado na Bíblia?",
+    options: ["Enoque", "Matusalém", "Noé", "Sete"],
+    correctAnswer: 1,
+    difficulty: 'hard',
+    testament: 'old'
+  },
+  {
+    id: 17,
+    text: "Em qual ilha João estava quando recebeu a revelação do Apocalipse?",
+    options: ["Creta", "Chipre", "Patmos", "Malta"],
+    correctAnswer: 2,
+    difficulty: 'hard',
+    testament: 'new'
+  },
+  {
+    id: 18,
+    text: "Qual era o nome do gigante que Davi derrotou?",
+    options: ["Golias", "Og", "Sif", "Ibi-Benobe"],
+    correctAnswer: 0,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 19,
+    text: "Quem foi a mulher que ungiu os pés de Jesus com perfume caro?",
+    options: ["Marta", "Maria Madalena", "Maria, irmã de Lázaro", "Joana"],
+    correctAnswer: 2,
+    difficulty: 'medium',
+    testament: 'new'
+  },
+  {
+    id: 20,
+    text: "Qual o nome do monte onde Moisés recebeu os Dez Mandamentos?",
+    options: ["Monte Nebo", "Monte Carmelo", "Monte Sinai", "Monte das Oliveiras"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'old'
   }
 ];
 
@@ -147,6 +227,7 @@ const QuizPage: React.FC = () => {
   const { showToast } = useToast();
   
   const [isQuizStarted, setIsQuizStarted] = useState(false);
+  const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
@@ -201,12 +282,25 @@ const QuizPage: React.FC = () => {
     return () => clearInterval(timer);
   }, [timerActive, timeLeft]);
 
+  const shuffleQuestions = () => {
+    const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, 10);
+  };
+
   const startQuiz = () => {
+    const selectedQuestions = shuffleQuestions();
+    setCurrentQuestions(selectedQuestions);
     setIsQuizStarted(true);
     setCurrentQuestionIndex(0);
     setScore(0);
     setIsQuizFinished(false);
-    nextQuestion();
+    
+    // Reset states for first question
+    setSelectedOption(null);
+    setIsCorrect(null);
+    setTimeLeft(60);
+    setTimerActive(true);
+    setStartTime(Date.now());
   };
 
   const nextQuestion = () => {
@@ -218,12 +312,12 @@ const QuizPage: React.FC = () => {
   };
 
   const handleAnswer = async (optionIndex: number) => {
-    if (selectedOption !== null) return;
+    if (selectedOption !== null || currentQuestions.length === 0) return;
     
     setTimerActive(false);
     setSelectedOption(optionIndex);
     
-    const question = QUESTIONS[currentQuestionIndex];
+    const question = currentQuestions[currentQuestionIndex];
     const isRight = optionIndex === question.correctAnswer;
     setIsCorrect(isRight);
 
@@ -240,7 +334,7 @@ const QuizPage: React.FC = () => {
     }
 
     setTimeout(() => {
-      if (currentQuestionIndex < QUESTIONS.length - 1) {
+      if (currentQuestionIndex < currentQuestions.length - 1) {
         setCurrentQuestionIndex(prev => prev + 1);
         nextQuestion();
       } else {
@@ -375,13 +469,13 @@ const QuizPage: React.FC = () => {
                   <motion.div 
                     className="h-full bg-emerald-500"
                     initial={{ width: 0 }}
-                    animate={{ width: `${((currentQuestionIndex + 1) / QUESTIONS.length) * 100}%` }}
+                    animate={{ width: `${((currentQuestionIndex + 1) / currentQuestions.length) * 100}%` }}
                   />
                 </div>
 
                 <div className="flex justify-between items-center mb-8">
                   <span className="px-4 py-1 bg-stone-100 dark:bg-zinc-800 rounded-full text-xs font-bold text-stone-500">
-                    QUESTÃO {currentQuestionIndex + 1} DE {QUESTIONS.length}
+                    QUESTÃO {currentQuestionIndex + 1} DE {currentQuestions.length}
                   </span>
                   <div className="flex items-center gap-2 text-emerald-600 font-mono font-bold">
                     <Timer size={20} />
@@ -392,11 +486,11 @@ const QuizPage: React.FC = () => {
                 </div>
 
                 <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-8 leading-tight">
-                  {QUESTIONS[currentQuestionIndex].text}
+                  {currentQuestions[currentQuestionIndex].text}
                 </h3>
 
                 <div className="grid grid-cols-1 gap-4">
-                  {QUESTIONS[currentQuestionIndex].options.map((option, idx) => (
+                  {currentQuestions[currentQuestionIndex].options.map((option, idx) => (
                     <button
                       key={idx}
                       disabled={selectedOption !== null}
@@ -405,7 +499,7 @@ const QuizPage: React.FC = () => {
                         "w-full p-5 rounded-2xl text-left font-medium transition-all border-2 flex justify-between items-center group",
                         selectedOption === null 
                           ? "border-stone-100 dark:border-zinc-800 hover:border-emerald-500 bg-stone-50 dark:bg-zinc-800/50" 
-                          : idx === QUESTIONS[currentQuestionIndex].correctAnswer
+                          : idx === currentQuestions[currentQuestionIndex].correctAnswer
                             ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400"
                             : selectedOption === idx
                               ? "border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400"
@@ -413,8 +507,8 @@ const QuizPage: React.FC = () => {
                       )}
                     >
                       <span>{option}</span>
-                      {selectedOption !== null && idx === QUESTIONS[currentQuestionIndex].correctAnswer && <CheckCircle2 size={20} />}
-                      {selectedOption === idx && idx !== QUESTIONS[currentQuestionIndex].correctAnswer && <XCircle size={20} />}
+                      {selectedOption !== null && idx === currentQuestions[currentQuestionIndex].correctAnswer && <CheckCircle2 size={20} />}
+                      {selectedOption === idx && idx !== currentQuestions[currentQuestionIndex].correctAnswer && <XCircle size={20} />}
                     </button>
                   ))}
                 </div>
