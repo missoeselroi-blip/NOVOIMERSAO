@@ -59,105 +59,187 @@ export const SpiritualTutor: React.FC = () => {
   const [isResourcesOpen, setIsResourcesOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { user } = useAuth();
   const { showToast } = useToast();
 
   const appResources = [
+    // Páginas Principais
     "Início",
     "Bíblia Online",
-    "Esboços de Pregação",
     "Devocional Diário",
     "Cursos de Teologia",
+    "Áudios e Narrações",
+    "Imersão Bíblica",
     "Caderno de Anotações",
-    "Notícias Cristãs",
+    "Loja de Livros",
     "Fórum da Comunidade",
     "Quadro de Honra",
-    "Gerar Lição",
-    "Gerar Esboço",
-    "Pesquisar Versículo",
-    "Pensamento Profundo",
-    "Gerar Estórias",
-    "Teatro",
-    "Estudo Bíblico",
-    "Debates",
-    "Narração",
-    "Audio Box",
-    "Missões",
+    "Missões Globais",
     "Corrida Bíblica",
     "Perfil do Aluno",
-    "Loja de Livros"
+    "Sinais (Notícias da Vinda)",
+    "Notícias do Reino",
+    "Gerenciar Créditos",
+    "Carreira Ministerial",
+    "Contato",
+    "Doações",
+    "Evangelismo",
+    "Diário Espiritual",
+    "Redação Bíblica",
+    "Área do Aluno",
+    "Teologia",
+    "Tutoriais",
+    "Quem Somos?",
+
+    // Atalhos da Página Início
+    "Pensamento Profundo IA",
+    "Gerar Estudo Bíblico",
+    "Bíblias de Estudo",
+    "Dicionários e Enciclopédias",
+    "Ranking Ministerial",
+    "Criação de Posts",
+    "Contribua com a Obra",
+
+    // Como se sente (Moods)
+    "Sinto-me Ansioso",
+    "Sinto-me Triste",
+    "Sinto-me Feliz",
+    "Sinto-me Cansado",
+    "Sinto-me Com Medo",
+    "Sinto-me Em Paz",
+    "Sinto-me Grato",
+    "Sinto-me Desanimado",
+    "Sinto-me Sozinho",
+    "Sinto-me Pecador",
+
+    // Abas da Página Imersão
+    "Imersão: Bíblias de Estudo",
+    "Imersão: Busca de Versículo",
+    "Imersão: Visão do Autor",
+    "Imersão: Outras Religiões",
+    "Imersão: Ferramenta de Criação",
+    "Imersão: Ministério Infantil",
+    "Imersão: Estórias & Teatro",
+    "Imersão: Geração Narração",
+    "Imersão: Post (Artes IA)",
+    "Imersão: Compare Versões",
+    "Imersão: Debate Bíblico",
+    "Imersão: Significado",
+    "Imersão: Pesquisa Infinita - Wiki",
+    "Imersão: Livros Apócrifos",
+    "Imersão: Mapas e Notas",
+
+    // Disciplinas de Teologia
+    "Teologia: Bibliologia",
+    "Teologia: Teontologia",
+    "Teologia: Cristologia",
+    "Teologia: Pneumatologia",
+    "Teologia: Antropologia Bíblica",
+    "Teologia: Hamartiologia",
+    "Teologia: Soteriologia",
+    "Teologia: Eclesiologia",
+    "Teologia: Escatologia",
+    "Teologia: Angeologia",
+    "Teologia: Hermenêutica Bíblica",
+    "Teologia: Homilética",
+    "Teologia: Exegética",
+    "Teologia: Visão Calvinista vs Arminiana",
+    "Teologia: Evangelismo/Missões",
+    "Teologia: Liderança Cristã",
+    "Teologia: Filosofia",
+    "Teologia: Sociologia",
+    "Teologia: Apologética",
+    "Teologia: As Sete Dispensações",
+
+    // Disciplinas de Evangelismo
+    "Evangelismo: Introdução ao Evangelismo",
+    "Evangelismo: Base Bíblica do Evangelismo",
+    "Evangelismo: Evangelismo Urbano",
+    "Evangelismo: Evangelismo Integral",
+    "Evangelismo: Missões Transculturais",
+    "Evangelismo: Evangelismo Criativo",
+    "Evangelismo: Apologética e Desafios",
+    "Evangelismo: Evangelismo Relacional",
+    "Evangelismo: Pequenos Grupos",
+    "Evangelismo: Organização na Igreja",
+    "Evangelismo: Agências e ONGs",
+    "Evangelismo: Captação de Recursos",
+    "Evangelismo: Evangelismo Infantil",
+    "Evangelismo: Intercessão",
+    "Evangelismo: Espírito Santo",
+    "Evangelismo: Estilo de Vida"
   ];
 
   const { share } = useShare();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Load chat history
-  useEffect(() => {
-    const savedHistory = localStorage.getItem(`tutor_history_${user?.id || 'guest'}`);
-    if (savedHistory) {
-      try {
-        setMessages(JSON.parse(savedHistory));
-      } catch (e) {
-        console.error("Error loading chat history", e);
-      }
-    }
-  }, [user?.id]);
+  const systemInstruction = `Você é o Tutor de Imersão, um guia espiritual e assistente especializado no aplicativo Imersão Bíblica IA.
+Sua missão é ajudar os usuários a navegar no app, encontrar recursos e crescer espiritualmente.
 
-  // Save chat history
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem(`tutor_history_${user?.id || 'guest'}`, JSON.stringify(messages));
-    }
-  }, [messages, user?.id]);
+DIRETRIZES DE RESPOSTA:
+1. Seja sempre encorajador, bíblico e prático.
+2. Ao explicar um recurso, forneça um passo a passo de como encontrá-lo.
+3. SEMPRE inclua sugestões de navegação no final da sua resposta usando o formato: <suggestions>[{"label": "Nome", "path": "/rota"}]</suggestions>.
+4. Se o usuário perguntar sobre um recurso específico da lista "Recursos do App", explique como usá-lo e forneça o botão de navegação.
 
-  const systemInstruction = `
-# PERSONA
-Você é o "Tutor de Imersão", o guia de inteligência espiritual do aplicativo Imersão Bíblica IA. Seu objetivo não é apenas dar respostas, mas conduzir o usuário em uma jornada de descoberta bíblica profunda, atuando como um mentor teológico e devocional.
+MAPEAMENTO DE RECURSOS E CAMINHOS:
+- Início: /
+- Devocional: /devotional
+- Imersão (Estudo Bíblico): /study
+- Teologia: /theology
+- Evangelismo: /evangelism
+- Áudios/Narrações: /audio-box
+- Livros: /store
+- Caderno: /notebook
+- Diário: /journal
+- Redação: /redacao
+- Fórum: /forum
+- Carreira: /career
+- Corrida Bíblica: /bible-race
+- Perfil: /student-profile
+- Quem Somos: /who-am-i
+- Contato/Doações: /contact
+- Créditos: /credits
 
-# CONHECIMENTO DO APLICATIVO (MAPA DE NAVEGAÇÃO)
-Você conhece todas as áreas do aplicativo e deve sugerir que o usuário as visite quando apropriado:
-- **Início (/)**: Visão geral e acesso rápido.
-- **Devocional (/devotional)**: Alimento diário para a alma e meditações.
-- **Cursos (/courses)**: Cursos de Teologia, Evangelismo e outros.
-- **Áudios (/audio-box)**: Biblioteca de áudios e narrações geradas.
-- **Imersão (/study)**: Pesquisa bíblica profunda, significados de termos e concordância. Sugira esta página para pesquisas detalhadas sobre palavras ou versículos específicos.
-- **Caderno (/notebook)**: Onde o usuário salva suas anotações e estudos.
-- **Livros (/store)**: Recursos literários e materiais de apoio.
-- **Créditos (/credits)**: Onde gerencia os créditos para IA.
-- **Fórum (/forum)**: Espaço de comunhão e debate com outros irmãos.
-- **Carreira (/career)**: Acompanhamento da jornada ministerial e patentes.
-- **Corrida Bíblica (/bible-race)**: Gamificação da leitura bíblica.
-- **Página do Aluno (/student-profile)**: Progresso detalhado nos cursos.
-- **Missões (/missionary)**: Informações sobre impacto global e missões.
+ABAS DE IMERSÃO (/study?tab=ID):
+- Bíblias de Estudo: /study?tab=bibles
+- Busca de Versículo: /study?tab=verse-search
+- Visão do Autor: /study?tab=authors
+- Outras Religiões: /study?tab=religions
+- Ferramenta de Criação: /study?tab=creation-tool
+- Ministério Infantil: /study?tab=kids_ministry
+- Estórias & Teatro: /study?tab=stories_theater
+- Geração Narração: /study?tab=narration
+- Post (Artes IA): /study?tab=posts
+- Compare Versões: /study?tab=compare
+- Debate Bíblico: /study?tab=commentary
+- Significado: /study?tab=meaning
+- Pesquisa Infinita: /study?tab=wiki
+- Livros Apócrifos: /study?tab=apocrypha
+- Mapas e Notas: /study?tab=resources
 
-# DIRETRIZES DE ATUAÇÃO
-1. **Abordagem Pedagógica:** Utilize a "Maiêutica". Em vez de entregar a interpretação pronta, faça perguntas que levem o usuário a observar o texto. Ex: "O que você percebe que se repete neste versículo?".
-2. **Direcionamento no App:** 
-   - Se o usuário quiser salvar algo, sugira o **Caderno**. 
-   - Se quiser estudar de forma estruturada, sugira os **Cursos**. 
-   - Se quiser ouvir a Palavra, sugira o **Audio Box**.
-   - Se o usuário fizer uma pergunta sobre o significado de uma palavra grega/hebraica ou quiser uma pesquisa exegética, sugira a página de **Imersão**.
-   - Se o usuário quiser interagir com a comunidade, sugira o **Fórum**.
-3. **Fidelidade e Contexto:** Sempre considere o contexto histórico, literário e cultural.
-4. **Equilíbrio Teológico:** Mantenha uma postura interdenominacional, focada no "Cristianismo Puro e Simples".
-5. **Aplicação Prática:** Toda explicação deve culminar em uma pergunta ou sugestão de aplicação para a vida cotidiana.
+SENTIMENTOS:
+Se o usuário expressar um sentimento (ex: "Sinto-me Ansioso"), ofereça conforto bíblico, um versículo específico e uma oração curta. Sugira também o **Devocional (/devotional)** para meditação.
 
-# ORIENTAÇÃO DE RECURSOS (PASSO A PASSO)
-Quando o usuário perguntar sobre um recurso específico do App, você DEVE fornecer um guia passo a passo de como encontrá-lo:
-- **Gerar Estórias/Teatro**: Vá para o **Caderno (/notebook)**, clique em "Novo" e selecione a categoria correspondente.
-- **Narração/Audio Box**: Acesse o **Audio Box (/audio-box)** no menu principal ou na barra lateral.
-- **Debates**: Entre no **Fórum (/forum)** e procure pelos tópicos de discussão.
-- **Estudo Bíblico**: Use a página de **Imersão (/study)** para ferramentas exegéticas ou os **Cursos (/courses)** para trilhas estruturadas.
-- **Missões**: Acesse a página de **Missões (/missionary)** para ver o impacto global.
-- **Corrida Bíblica**: Encontre no menu principal como **Corrida Bíblica (/bible-race)**.
-- **Lição/Esboço**: Vá para o **Caderno (/notebook)** e use as ferramentas de geração de conteúdo.
-- **Perfil do Aluno**: Acesse o **Perfil (/profile)** para gerenciar seu progresso e conquistas.
-- **Loja de Livros**: Visite a **Loja (/store)** para adquirir materiais de estudo.
-- **Quadro de Honra**: Veja o ranking no **Quadro de Honra (/leaderboard)**.
-- **Notícias**: Fique por dentro no portal de **Notícias (/news)**.
+EXEMPLO DE RESPOSTA PARA RECURSO:
+"Para acessar a Ferramenta de Criação na página de Imersão, siga estes passos:
+1. Clique no menu 'Imersão' na barra de navegação.
+2. Na parte superior da página, localize as abas e clique em 'Ferramenta de Criação'.
+3. Lá você poderá gerar esboços, sermões e muito mais!
+
+<suggestions>[{"label": "Abrir Ferramenta de Criação", "path": "/study?tab=creation-tool"}]</suggestions>"
+
+Sempre coloque a pesquisa nova na parte superior da tela (isso é controlado pelo código, mas mantenha o contexto).
 
 # TOM DE VOZ
 - Acolhedor, mas intelectualmente estimulante.
@@ -194,17 +276,25 @@ Atualmente o usuário está na página: ${location.pathname}.
 
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      scrollRef.current.scrollTop = 0;
     }
   }, [messages]);
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+  // Limpar histórico ao fechar
+  useEffect(() => {
+    if (!isOpen) {
+      setMessages([]);
+    }
+  }, [isOpen]);
 
-    const userMessage: Message = { role: 'user', text: input };
+  const handleSend = async (overrideInput?: string) => {
+    const textToSend = typeof overrideInput === 'string' ? overrideInput : input;
+    if (!textToSend.trim() || isLoading) return;
+
+    const userMessage: Message = { role: 'user', text: textToSend };
     setMessages(prev => [...prev, userMessage]);
-    const currentInput = input;
-    setInput('');
+    const currentInput = textToSend;
+    if (!overrideInput) setInput('');
     setIsLoading(true);
 
     try {
@@ -456,31 +546,34 @@ Atualmente o usuário está na página: ${location.pathname}.
       <AnimatePresence>
         {isOpen && (
           <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setIsOpen(false)}
-              className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
-            />
+            {!isMinimized && !isMaximized && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setIsOpen(false)}
+                className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
+              />
+            )}
             <motion.div
               initial={{ opacity: 0, y: 100, scale: 0.9 }}
               animate={{ 
                 opacity: 1, 
-                y: isMinimized ? 500 : 0, 
+                y: isMinimized ? (isMaximized ? 'calc(100vh - 80px)' : (isMobile ? 'calc(80vh - 80px)' : '570px')) : 0, 
                 scale: 1,
-                width: isMaximized ? '95vw' : 'auto',
-                height: isMaximized ? '90vh' : (isMinimized ? '80px' : '600px'),
-                bottom: isMaximized ? '5vh' : '2rem',
-                right: isMaximized ? '2.5vw' : '2rem',
-                left: isMaximized ? '2.5vw' : 'auto'
+                width: isMaximized ? '100vw' : (isMobile ? 'calc(100vw - 2rem)' : '450px'),
+                height: isMaximized ? '100vh' : (isMobile ? '80vh' : '650px'),
+                bottom: isMaximized ? 0 : '2rem',
+                right: isMaximized ? 0 : (isMobile ? '1rem' : '2rem'),
+                left: isMaximized ? 0 : (isMobile ? '1rem' : 'auto'),
+                borderRadius: isMaximized ? 0 : '2.5rem'
               }}
               exit={{ opacity: 0, y: 100, scale: 0.9 }}
               className={cn(
-                "fixed z-[80] bg-white dark:bg-zinc-900 rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden border border-stone-200 dark:border-zinc-800 transition-all duration-300",
-                !isMaximized && "md:w-[450px] w-[calc(100vw-2rem)]",
-                isMinimized && "pointer-events-none"
+                "fixed z-[80] bg-white dark:bg-zinc-900 shadow-2xl flex flex-col overflow-hidden border border-stone-200 dark:border-zinc-800 transition-all duration-300 pointer-events-auto",
+                isMinimized && "cursor-pointer"
               )}
+              onClick={() => isMinimized && setIsMinimized(false)}
             >
               {/* Header */}
               <div className="p-6 bg-emerald-600 text-white flex items-center justify-between pointer-events-auto">
@@ -495,21 +588,15 @@ Atualmente o usuário está na página: ${location.pathname}.
                 </div>
                 <div className="flex items-center gap-1">
                   <button 
-                    onClick={() => {
-                      setIsMinimized(!isMinimized);
-                      if (isMaximized) setIsMaximized(false);
-                    }}
+                    onClick={() => setIsMinimized(!isMinimized)}
                     className="p-2 hover:bg-white/20 rounded-full transition-colors"
                     title={isMinimized ? "Restaurar" : "Minimizar"}
                   >
-                    {isMinimized ? <Maximize2 size={16} /> : <Minus size={16} />}
+                    <Minus size={16} />
                   </button>
                   <button 
-                    onClick={() => {
-                      setIsMaximized(!isMaximized);
-                      if (isMinimized) setIsMinimized(false);
-                    }}
-                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
+                    onClick={() => setIsMaximized(!isMaximized)}
+                    className="p-2 hover:bg-white/20 rounded-full transition-colors hidden md:block"
                     title={isMaximized ? "Restaurar" : "Maximizar"}
                   >
                     {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
@@ -519,17 +606,91 @@ Atualmente o usuário está na página: ${location.pathname}.
                     className="p-2 hover:bg-white/20 rounded-full transition-colors"
                     title="Fechar"
                   >
-                    <X size={20} />
+                    <X size={16} />
                   </button>
                 </div>
               </div>
 
               {!isMinimized && (
                 <>
+                  {/* Input at the top */}
+                  <div className="p-6 border-b border-stone-100 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50">
+                    {/* App Resources Dropdown */}
+                    <div className="mb-4 relative">
+                      <button
+                        onClick={() => setIsResourcesOpen(!isResourcesOpen)}
+                        className="w-full flex items-center justify-between px-4 py-2 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-stone-600 dark:text-zinc-400 hover:border-emerald-500 transition-all shadow-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Layout size={14} className="text-emerald-600" />
+                          <span>Recursos do App</span>
+                        </div>
+                        <ChevronDown size={14} className={cn("transition-transform", isResourcesOpen && "rotate-180")} />
+                      </button>
+
+                      <AnimatePresence>
+                        {isResourcesOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl shadow-xl overflow-hidden z-[90] max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-zinc-700"
+                          >
+                            {appResources.map((resource, idx) => (
+                              <button
+                                key={idx}
+                                onClick={() => {
+                                  setInput(resource);
+                                  setIsResourcesOpen(false);
+                                  handleSend(resource);
+                                }}
+                                className="w-full text-left px-4 py-3 text-xs text-stone-600 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-colors border-b border-stone-50 dark:border-zinc-700/50 last:border-0"
+                              >
+                                {resource}
+                              </button>
+                            ))}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <div className="relative flex-1">
+                        <input 
+                          type="text"
+                          value={input}
+                          onChange={(e) => setInput(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+                          placeholder="Pergunte ao Tutor..."
+                          className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl py-4 pl-6 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm"
+                        />
+                        <button 
+                          onClick={() => handleSend()}
+                          disabled={!input.trim() || isLoading}
+                          className="absolute right-2 top-2 bottom-2 w-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50 transition-all"
+                        >
+                          <Search size={18} />
+                        </button>
+                      </div>
+                      <button
+                        onClick={toggleVoiceInput}
+                        className={cn(
+                          "w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border",
+                          isListening 
+                            ? "bg-red-500 text-white border-red-400 animate-pulse" 
+                            : "bg-white dark:bg-zinc-800 text-stone-500 border-stone-200 dark:border-zinc-700 hover:text-emerald-600"
+                        )}
+                        title="Entrada de Voz"
+                      >
+                        {isListening ? <MicOff size={20} /> : <Mic size={20} />}
+                      </button>
+                    </div>
+                  </div>
+
                   {/* Messages */}
                   <div 
                     ref={scrollRef}
-                    className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-zinc-800 flex flex-col-reverse"
+                    className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-zinc-800 flex flex-col"
                   >
                     {isLoading && (
                       <div className="flex gap-3">
@@ -686,93 +847,17 @@ Atualmente o usuário está na página: ${location.pathname}.
                         >
                           <h4 className="text-[10px] font-black uppercase tracking-widest text-emerald-600">Como usar o Tutor</h4>
                           <p className="text-xs text-stone-600 dark:text-zinc-400 leading-relaxed">
-                            Para pesquisar com o tutor, basta digitar sua dúvida ou sentimento no campo abaixo. 
+                            Para pesquisar com o tutor, basta digitar sua dúvida ou sentimento no campo acima. 
                             Você pode perguntar sobre versículos, pedir conselhos bíblicos ou ajuda para entender um tema. 
-                            Use o ícone de microfone para falar sua dúvida!
+                            Use o ícone de microfone para falar sua dúvida ou explore o botão <span className="font-bold">Recursos do App</span> para ver tudo o que o aplicativo oferece!
                           </p>
                         </motion.div>
                       </div>
                     )}
                   </div>
-
-                  {/* Input */}
-                  <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50">
-                {/* App Resources Dropdown */}
-                <div className="mb-4 relative">
-                  <button
-                    onClick={() => setIsResourcesOpen(!isResourcesOpen)}
-                    className="w-full flex items-center justify-between px-4 py-2 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-xl text-xs font-bold text-stone-600 dark:text-zinc-400 hover:border-emerald-500 transition-all shadow-sm"
-                  >
-                    <div className="flex items-center gap-2">
-                      <Layout size={14} className="text-emerald-600" />
-                      <span>Recursos do App</span>
-                    </div>
-                    <ChevronDown size={14} className={cn("transition-transform", isResourcesOpen && "rotate-180")} />
-                  </button>
-
-                  <AnimatePresence>
-                    {isResourcesOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl shadow-xl overflow-hidden z-[90] max-h-48 overflow-y-auto scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-zinc-700"
-                      >
-                        {appResources.map((resource, idx) => (
-                          <button
-                            key={idx}
-                            onClick={() => {
-                              setInput(resource);
-                              setIsResourcesOpen(false);
-                            }}
-                            className="w-full text-left px-4 py-3 text-xs text-stone-600 dark:text-zinc-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 hover:text-emerald-600 transition-colors border-b border-stone-50 dark:border-zinc-700/50 last:border-0"
-                          >
-                            {resource}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
-                    <input 
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                      placeholder="Pergunte ao Tutor..."
-                      className="w-full bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl py-4 pl-6 pr-14 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all shadow-sm"
-                    />
-                    <button 
-                      onClick={handleSend}
-                      disabled={!input.trim() || isLoading}
-                      className="absolute right-2 top-2 bottom-2 w-10 bg-emerald-600 text-white rounded-xl flex items-center justify-center hover:bg-emerald-700 disabled:opacity-50 transition-all"
-                    >
-                      <Search size={18} />
-                    </button>
-                  </div>
-                  <button
-                    onClick={toggleVoiceInput}
-                    className={cn(
-                      "w-12 h-12 rounded-2xl flex items-center justify-center transition-all shadow-sm border",
-                      isListening 
-                        ? "bg-red-500 text-white border-red-400 animate-pulse" 
-                        : "bg-white dark:bg-zinc-800 text-stone-500 border-stone-200 dark:border-zinc-700 hover:text-emerald-600"
-                    )}
-                    title="Entrada de Voz"
-                  >
-                    {isListening ? <MicOff size={20} /> : <Mic size={20} />}
-                  </button>
-                </div>
-                <p className="text-[9px] text-center text-stone-400 dark:text-zinc-500 mt-4 uppercase tracking-widest font-bold">
-                  O Tutor pode cometer erros. Sempre confira na sua Bíblia.
-                </p>
-              </div>
-            </>
-          )}
-        </motion.div>
+                </>
+              )}
+            </motion.div>
           </>
         )}
       </AnimatePresence>
