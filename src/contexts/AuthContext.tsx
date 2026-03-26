@@ -63,6 +63,7 @@ interface AuthContextType {
   user: User | null;
   metrics: Metrics;
   theologyProgress: any;
+  evangelismProgress: any;
   careerProgress: any;
   notes: any[];
   certificates: any[];
@@ -134,6 +135,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [theologyProgress, setTheologyProgress] = useState<any>(null);
+  const [evangelismProgress, setEvangelismProgress] = useState<any>(null);
   const [careerProgress, setCareerProgress] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [certificates, setCertificates] = useState<any[]>([]);
@@ -194,6 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         setUser(null);
         setTheologyProgress(null);
+        setEvangelismProgress(null);
         setCareerProgress(null);
         setNotes([]);
         setCertificates([]);
@@ -258,6 +261,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleFirestoreError(error, OperationType.GET, `theologyProgress/${user.id}`);
     });
 
+    const evangelismUnsub = onSnapshot(doc(db, 'evangelismProgress', user.id), (doc) => {
+      if (doc.exists()) setEvangelismProgress(doc.data());
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, `evangelismProgress/${user.id}`);
+    });
+
     const careerUnsub = onSnapshot(doc(db, 'careerProgress', user.id), (doc) => {
       if (doc.exists()) setCareerProgress(doc.data());
     }, (error) => {
@@ -308,6 +317,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       theologyUnsub();
+      evangelismUnsub();
       careerUnsub();
       notesUnsub();
       certsUnsub();
@@ -489,6 +499,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user, 
     metrics, 
     theologyProgress,
+    evangelismProgress,
     careerProgress,
     notes,
     certificates,
@@ -505,6 +516,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user, 
     metrics, 
     theologyProgress,
+    evangelismProgress,
     careerProgress,
     notes,
     certificates,

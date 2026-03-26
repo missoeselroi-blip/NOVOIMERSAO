@@ -79,6 +79,7 @@ const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazyWithRetry(() => import('./pages/TheologySearchPage'));
 const EvangelismSearchPage = lazyWithRetry(() => import('./pages/EvangelismSearchPage'));
+const CoursesPage = lazyWithRetry(() => import('./pages/CoursesPage'));
 import TheologyPage from './pages/TheologyPage';
 import EvangelismPage from './pages/EvangelismPage';
 import CreditPage from './pages/CreditPage';
@@ -175,16 +176,18 @@ function AppContent() {
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
+    { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];
   const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
+    { id: 'courses', label: 'Cursos', subtitle: 'Jornada de aprendizado', icon: <GraduationCap size={20} />, component: <CoursesPage onNavigate={handleNavigate} /> },
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
-    { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} /> },
-    { id: 'evangelism', label: 'Evangelismo', subtitle: 'Ide por todo o mundo', icon: <Flame size={20} />, component: <EvangelismPage onNavigate={handleNavigate} /> },
+    { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} />, hidden: true },
+    { id: 'evangelism', label: 'Evangelismo', subtitle: 'Ide por todo o mundo', icon: <Flame size={20} />, component: <EvangelismPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },

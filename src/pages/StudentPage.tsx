@@ -36,15 +36,18 @@ import { multiAiService } from '../services/multiAiService';
 import { THEOLOGY_SUBJECTS as THEOLOGY_SUBJECTS_DATA } from '../constants/theology';
 const THEOLOGY_SUBJECTS = THEOLOGY_SUBJECTS_DATA.map(s => s.title);
 
+import { EVANGELISM_SUBJECTS as EVANGELISM_SUBJECTS_DATA } from '../constants/evangelismCourse';
+const EVANGELISM_SUBJECTS = EVANGELISM_SUBJECTS_DATA.map(s => s.title);
+
 import { useAuth } from '../contexts/AuthContext';
 import { db, auth } from '../lib/firebase';
 import { doc, updateDoc, collection, getDocs, writeBatch, query, where, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '../components/Toast';
 
 export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
-  const { user, theologyProgress, certificates } = useAuth();
+  const { user, theologyProgress, evangelismProgress, certificates } = useAuth();
   const { showToast } = useToast();
-  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'summaries'>('profile');
+  const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'evangelism' | 'summaries'>('profile');
   const [isResetting, setIsResetting] = useState(false);
   const [summaries, setSummaries] = useState<any[]>([]);
   const [isLoadingSummaries, setIsLoadingSummaries] = useState(false);
@@ -69,6 +72,24 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
   }, 0) : 0;
 
   const completedSubjects = theologyProgress ? Object.keys(theologyProgress).filter(k => theologyProgress[k]?.completed) : [];
+
+  const calculateEvangelismTotal = (subject: string) => {
+    const data = (evangelismProgress && evangelismProgress[subject]) || {};
+    const evalScore = data.evaluation || 0;
+    const redMateria = data.redacaoMateria || 0;
+    const redAprofundamento = data.redacaoAprofundamento || 0;
+    const redSlide = data.redacaoSlide || 0;
+    const redVideo = data.redacaoVideo || 0;
+    const redPodcast = data.redacaoPodcast || 0;
+    const quizPoints = data.quizPoints || 0;
+    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints;
+  };
+
+  const totalEvangelismPoints = evangelismProgress ? EVANGELISM_SUBJECTS.reduce((acc, subject) => {
+    return acc + calculateEvangelismTotal(subject);
+  }, 0) : 0;
+
+  const completedEvangelismSubjects = evangelismProgress ? Object.keys(evangelismProgress).filter(k => evangelismProgress[k]?.completed) : [];
 
   const loadRecommendations = async () => {
     if (!user) return;
@@ -229,6 +250,17 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
     };
   });
 
+  const evangelismChartData = EVANGELISM_SUBJECTS.map(subject => {
+    const data = (evangelismProgress && evangelismProgress[subject]) || {};
+    return {
+      name: subject.split(' ')[0],
+      fullSubject: subject,
+      Quiz: data.quizPoints || 0,
+      Avaliação: data.evaluation || 0,
+      Total: calculateEvangelismTotal(subject)
+    };
+  });
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Sub-Navigation Tabs */}
@@ -250,6 +282,15 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
           )}
         >
           <GraduationCap size={18} /> Curso de Teologia
+        </button>
+        <button 
+          onClick={() => setActiveSubTab('evangelism')}
+          className={cn(
+            "px-6 py-3 rounded-2xl font-bold text-sm transition-all flex items-center gap-2",
+            activeSubTab === 'evangelism' ? "bg-emerald-600 text-white shadow-lg" : "text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800"
+          )}
+        >
+          <Zap size={18} /> Curso de Evangelismo
         </button>
         <button 
           onClick={() => setActiveSubTab('summaries')}
@@ -616,6 +657,108 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) 
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {activeSubTab === 'evangelism' && (
+          <motion.div 
+            key="evangelism"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-8"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-2xl">
+                    <Trophy size={24} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-stone-500 font-bold uppercase tracking-wider">Pontos Totais</p>
+                    <h4 className="text-3xl font-bold font-display">{totalEvangelismPoints}</h4>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-2xl">
+                    <CheckCircle size={24} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-stone-500 font-bold uppercase tracking-wider">Módulos Concluídos</p>
+                    <h4 className="text-3xl font-bold font-display">{completedEvangelismSubjects.length} de {EVANGELISM_SUBJECTS.length}</h4>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-2xl">
+                    <BarChart3 size={24} />
+                  </div>
+                  <div>
+                    <p className="text-sm text-stone-500 font-bold uppercase tracking-wider">Média Geral</p>
+                    <h4 className="text-3xl font-bold font-display">
+                      {completedEvangelismSubjects.length > 0 
+                        ? (totalEvangelismPoints / completedEvangelismSubjects.length).toFixed(1)
+                        : '0.0'}
+                    </h4>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+              <h3 className="text-2xl font-bold mb-8 flex items-center gap-2">
+                <BarChart3 className="text-orange-600" size={24} />
+                Desempenho por Módulo
+              </h3>
+              <div className="h-[400px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={evangelismChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f1f1" />
+                    <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 600 }} />
+                    <RechartsTooltip 
+                      contentStyle={{ borderRadius: '1rem', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      cursor={{ fill: '#f9fafb' }}
+                    />
+                    <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                    <Bar dataKey="Quiz" fill="#f97316" radius={[4, 4, 0, 0]} barSize={30} />
+                    <Bar dataKey="Avaliação" fill="#fbbf24" radius={[4, 4, 0, 0]} barSize={30} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+              <h3 className="text-2xl font-bold mb-8 flex items-center gap-2">
+                <CheckCircle className="text-orange-600" size={24} />
+                Progresso Detalhado
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {EVANGELISM_SUBJECTS.map((subject) => {
+                  const data = (evangelismProgress && evangelismProgress[subject]) || {};
+                  const isCompleted = data.completed;
+                  return (
+                    <div key={subject} className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl border border-stone-100 dark:border-zinc-800 flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-stone-900 dark:text-zinc-100">{subject}</h4>
+                        <p className="text-xs text-stone-500 font-bold uppercase tracking-wider">
+                          {isCompleted ? 'Concluído ✅' : 'Em andamento ⏳'}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-orange-600">{calculateEvangelismTotal(subject)}</p>
+                        <p className="text-[10px] text-stone-400 font-bold uppercase tracking-widest">Pontos</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </motion.div>

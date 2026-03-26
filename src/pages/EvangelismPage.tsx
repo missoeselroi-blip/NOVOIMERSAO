@@ -148,6 +148,9 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const [showCertificatePaymentModal, setShowCertificatePaymentModal] = useState(false);
   const [conclusionText, setConclusionText] = useState('');
   const [isGeneratingConclusion, setIsGeneratingConclusion] = useState(false);
+  const [isGeneratingModuleCertificate, setIsGeneratingModuleCertificate] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [contentToSave, setContentToSave] = useState('');
 
   // Assessment State
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
@@ -571,13 +574,21 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
 
   const handleGenerateCertificate = async () => {
     if (!user) return;
+    
+    // Check if all subjects are completed
+    const allCompleted = EVANGELISM_SUBJECTS.every(s => evangelismProgress?.[s.title]?.completed);
+    if (!allCompleted) {
+      showToast("Conclua todos os módulos para gerar o certificado final! 🎓", 'info');
+      return;
+    }
+
     if (balance < 10) {
       setShowCertificatePaymentModal(true);
       return;
     }
     setIsLoading(true);
     try {
-      await consumeCredits(10, "Certificado de Evangelismo");
+      await consumeCredits(10, "Certificado Final de Evangelismo");
       const doc = new jsPDF('l', 'mm', 'a4');
       doc.setFillColor(255, 248, 240);
       doc.rect(0, 0, 297, 210, 'F');
@@ -597,12 +608,82 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       doc.text('concluiu com êxito o curso de', 148.5, 115, { align: 'center' });
       doc.setFontSize(30);
       doc.text('EVANGELISMO IMERSÃO', 148.5, 135, { align: 'center' });
-      doc.save(`Certificado_Evangelismo_${user.name}.pdf`);
-      showToast("Certificado gerado com sucesso! 🔥📜", 'success');
+      doc.setFontSize(15);
+      doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 148.5, 155, { align: 'center' });
+      doc.save(`Certificado_Final_Evangelismo_${user.name}.pdf`);
+      showToast("Certificado final gerado com sucesso! 🎓", 'success');
     } catch (error) {
       console.error(error);
+      showToast("Erro ao gerar certificado.", 'error');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleGenerateModuleCertificate = async (subject: string) => {
+    if (!user) return;
+    if (balance < 5) {
+      showToast("Créditos insuficientes (5 créditos necessários).", 'error');
+      return;
+    }
+    setIsGeneratingModuleCertificate(true);
+    try {
+      await consumeCredits(5, `Certificado do Módulo: ${subject}`);
+      const doc = new jsPDF('l', 'mm', 'a4');
+      doc.setFillColor(255, 252, 245);
+      doc.rect(0, 0, 297, 210, 'F');
+      doc.setDrawColor(249, 115, 22);
+      doc.setLineWidth(3);
+      doc.rect(15, 15, 267, 180);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(30);
+      doc.setTextColor(249, 115, 22);
+      doc.text('CERTIFICADO DE MÓDULO', 148.5, 60, { align: 'center' });
+      doc.setFontSize(18);
+      doc.setTextColor(80, 80, 80);
+      doc.text('Este documento certifica que', 148.5, 85, { align: 'center' });
+      doc.setFontSize(28);
+      doc.text(user.name.toUpperCase(), 148.5, 105, { align: 'center' });
+      doc.setFontSize(18);
+      doc.text('concluiu o módulo de', 148.5, 125, { align: 'center' });
+      doc.setFontSize(24);
+      doc.text(subject.toUpperCase(), 148.5, 145, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text(`Curso de Evangelismo Imersão - ${new Date().toLocaleDateString('pt-BR')}`, 148.5, 170, { align: 'center' });
+      doc.save(`Certificado_${subject.replace(/\s+/g, '_')}_${user.name}.pdf`);
+      showToast("Certificado do módulo gerado com sucesso! 📜", 'success');
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao gerar certificado do módulo.", 'error');
+    } finally {
+      setIsGeneratingModuleCertificate(false);
+    }
+  };
+
+  const handleDownloadChapter = (subject: string, chapter: number, content: string) => {
+    const element = document.createElement("a");
+    const file = new Blob([`# ${subject} - Capítulo ${chapter}\n\n${content}`], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `${subject}_Capitulo_${chapter}.txt`;
+    document.body.appendChild(element);
+    element.click();
+    showToast("Capítulo baixado com sucesso! 📥", 'success');
+  };
+
+  const handleSaveToNotebook = async (subject: string, chapter: number, content: string) => {
+    if (!user) return;
+    try {
+      await addDoc(collection(db, 'notes'), {
+        userId: user.id,
+        title: `${subject} - Cap. ${chapter}`,
+        content: content,
+        category: 'Evangelismo',
+        createdAt: new Date().toISOString()
+      });
+      showToast("Salvo no seu caderno! 📓", 'success');
+    } catch (error) {
+      console.error(error);
+      showToast("Erro ao salvar no caderno.", 'error');
     }
   };
 
@@ -703,6 +784,18 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                       style={{ width: `${progress.completed ? 100 : (Object.keys(progress).filter(k => k.endsWith('Completed')).length / 5) * 100}%` }}
                     />
                   </div>
+                  {progress.completed && (
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleGenerateModuleCertificate(subject.title);
+                      }}
+                      disabled={isGeneratingModuleCertificate}
+                      className="mt-4 w-full py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-orange-200 transition-all"
+                    >
+                      <Award size={14} /> GERAR CERTIFICADO (5 CR)
+                    </button>
+                  )}
                 </motion.div>
               );
             })}
@@ -722,6 +815,29 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="space-y-6">
+              <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                <h3 className="font-bold mb-4 flex items-center gap-2"><BookOpen size={20} className="text-orange-600" /> Capítulos</h3>
+                <div className="space-y-2">
+                  {[1, 2, 3, 4, 5].map(cap => (
+                    <button 
+                      key={cap}
+                      disabled={cap > 1 && (!evangelismProgress[selectedSubject!]?.[`chapter${cap-1}Completed`])}
+                      onClick={() => { setCurrentChapter(cap); loadChapter(selectedSubject!, cap); }}
+                      className={cn(
+                        "w-full p-4 rounded-xl text-left flex items-center justify-between transition-all",
+                        currentChapter === cap ? "bg-orange-600 text-white" : "hover:bg-stone-50 dark:hover:bg-zinc-800",
+                        cap > 1 && (!evangelismProgress[selectedSubject!]?.[`chapter${cap-1}Completed`]) && "opacity-30 cursor-not-allowed"
+                      )}
+                    >
+                      <span className="font-bold">Capítulo {cap}</span>
+                      {evangelismProgress[selectedSubject!]?.[`chapter${cap}Completed`] && <CheckCircle size={16} />}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             <div className="lg:col-span-3 space-y-8">
               <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-xl min-h-[600px]">
                 {isLoading ? (
@@ -733,8 +849,50 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                     <p className="text-stone-500 font-medium animate-pulse text-center">Preparando conteúdo exclusivo para você...</p>
                   </div>
                 ) : (
-                  <div className="prose dark:prose-invert max-w-none" style={{ fontFamily, fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight }}>
-                    <MarkdownRenderer content={chapterContent[currentChapter] || ''} />
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap gap-2 mb-6 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
+                      <button 
+                        onClick={() => {
+                          copyToClipboard(chapterContent[currentChapter] || '');
+                          showToast("Conteúdo copiado! 📋", 'success');
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
+                      >
+                        <Copy size={16} /> COPIAR
+                      </button>
+                      <button 
+                        onClick={() => handleDownloadChapter(selectedSubject!, currentChapter, chapterContent[currentChapter] || '')}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
+                      >
+                        <Download size={16} /> BAIXAR
+                      </button>
+                      <button 
+                        onClick={() => {
+                          if (navigator.share) {
+                            navigator.share({
+                              title: `${selectedSubject} - Cap. ${currentChapter}`,
+                              text: chapterContent[currentChapter] || '',
+                              url: window.location.href
+                            });
+                          } else {
+                            copyToClipboard(window.location.href);
+                            showToast("Link copiado para compartilhar! 🔗", 'success');
+                          }
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
+                      >
+                        <Share2 size={16} /> COMPARTILHAR
+                      </button>
+                      <button 
+                        onClick={() => handleSaveToNotebook(selectedSubject!, currentChapter, chapterContent[currentChapter] || '')}
+                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
+                      >
+                        <StickyNote size={16} /> SALVAR NO CADERNO
+                      </button>
+                    </div>
+                    <div className="prose dark:prose-invert max-w-none" style={{ fontFamily, fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight }}>
+                      <MarkdownRenderer content={chapterContent[currentChapter] || ''} />
+                    </div>
                   </div>
                 )}
               </div>
@@ -784,29 +942,6 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                   </button>
                 </div>
               )}
-            </div>
-
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
-                <h3 className="font-bold mb-4 flex items-center gap-2"><BookOpen size={20} className="text-orange-600" /> Capítulos</h3>
-                <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map(cap => (
-                    <button 
-                      key={cap}
-                      disabled={cap > 1 && (!evangelismProgress[selectedSubject!]?.[`chapter${cap-1}Completed`])}
-                      onClick={() => { setCurrentChapter(cap); loadChapter(selectedSubject!, cap); }}
-                      className={cn(
-                        "w-full p-4 rounded-xl text-left flex items-center justify-between transition-all",
-                        currentChapter === cap ? "bg-orange-600 text-white" : "hover:bg-stone-50 dark:hover:bg-zinc-800",
-                        cap > 1 && (!evangelismProgress[selectedSubject!]?.[`chapter${cap-1}Completed`]) && "opacity-30 cursor-not-allowed"
-                      )}
-                    >
-                      <span className="font-bold">Capítulo {cap}</span>
-                      {evangelismProgress[selectedSubject!]?.[`chapter${cap}Completed`] && <CheckCircle size={16} />}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
           </div>
         </div>
