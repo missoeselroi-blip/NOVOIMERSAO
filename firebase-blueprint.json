@@ -248,6 +248,39 @@
         "date": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "type", "amount", "description", "date"]
+    },
+    "EvangelismProgress": {
+      "title": "Evangelism Progress",
+      "description": "Tracks user progress in evangelism courses",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "enrolled": { "type": "boolean" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId"]
+    },
+    "EvangelismTermsAcceptance": {
+      "title": "Evangelism Terms Acceptance",
+      "description": "Records user acceptance of evangelism course terms",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "acceptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "acceptedAt"]
+    },
+    "SharedEvangelismMaterial": {
+      "title": "Shared Evangelism Material",
+      "description": "AI generated evangelism course content",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "subject": { "type": "string" },
+        "chapter": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "subject", "chapter"]
     }
   },
   "firestore": {
@@ -314,6 +347,18 @@
     "/creditTransactions/{transactionId}": {
       "schema": "CreditTransaction",
       "description": "User credit transaction history"
+    },
+    "/evangelismProgress/{userId}": {
+      "schema": "EvangelismProgress",
+      "description": "User evangelism progress"
+    },
+    "/evangelismTermsAcceptance/{userId}": {
+      "schema": "EvangelismTermsAcceptance",
+      "description": "User evangelism terms acceptance"
+    },
+    "/shared_evangelism_materials/{materialId}": {
+      "schema": "SharedEvangelismMaterial",
+      "description": "Shared evangelism course materials"
     }
   }
 }

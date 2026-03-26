@@ -296,5 +296,18 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidCreditTransaction(request.resource.data);
       allow update, delete: if isAdmin();
     }
+
+    match /evangelismTermsAcceptance/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /evangelismProgress/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /shared_evangelism_materials/{materialId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
   }
 }

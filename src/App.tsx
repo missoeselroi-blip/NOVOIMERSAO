@@ -44,7 +44,8 @@ import {
   Volume2,
   ShieldCheck,
   RefreshCw,
-  Medal
+  Medal,
+  Flame
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -77,7 +78,9 @@ const RedacaoPage = lazyWithRetry(() => import('./pages/RedacaoPage'));
 const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazyWithRetry(() => import('./pages/TheologySearchPage'));
+const EvangelismSearchPage = lazyWithRetry(() => import('./pages/EvangelismSearchPage'));
 import TheologyPage from './pages/TheologyPage';
+import EvangelismPage from './pages/EvangelismPage';
 import CreditPage from './pages/CreditPage';
 import MissionaryPage from './pages/MissionaryPage';
 
@@ -181,6 +184,7 @@ function AppContent() {
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} /> },
+    { id: 'evangelism', label: 'Evangelismo', subtitle: 'Ide por todo o mundo', icon: <Flame size={20} />, component: <EvangelismPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
@@ -191,6 +195,7 @@ function AppContent() {
     { id: 'login-nav', label: 'Entrar', icon: <LogIn size={20} />, component: <div />, hidden: true },
     { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'theology-search', label: 'Busca de Teologia', subtitle: 'Pesquisa avançada', icon: <Search size={20} />, component: <TheologySearchPage />, hidden: true },
+    { id: 'evangelism-search', label: 'Busca de Evangelismo', subtitle: 'Pesquisa missionária', icon: <Search size={20} />, component: <EvangelismSearchPage />, hidden: true },
     { id: 'missionary', label: 'Missões', subtitle: 'Impacto Global', icon: <Globe size={20} />, component: <MissionaryPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'missionary-results', label: 'Resultados Missões', subtitle: 'Relatórios de campo', icon: <Calendar size={20} />, component: <MissionaryBulkResults onBack={() => handleNavigate('missionary')} />, hidden: true },
     { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
