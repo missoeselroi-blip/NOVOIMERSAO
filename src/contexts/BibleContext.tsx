@@ -25,12 +25,21 @@ export interface BibleAnnotation {
   updatedAt: string;
 }
 
+interface BibleState {
+  version: string;
+  book: number;
+  chapter: number;
+  searchQuery?: string;
+}
+
 interface BibleContextType {
   annotations: Record<string, BibleAnnotation>;
   setAnnotation: (verseId: string, updates: Partial<BibleAnnotation>) => Promise<void>;
   removeAnnotation: (verseId: string) => Promise<void>;
   toggleFavorite: (verseId: string, verseText: string, reference: string) => Promise<void>;
   isLoading: boolean;
+  lastState: BibleState | null;
+  setLastState: (state: BibleState) => void;
 }
 
 const BibleContext = createContext<BibleContextType | undefined>(undefined);
@@ -39,6 +48,7 @@ export const BibleProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const { user } = useAuth();
   const [annotations, setAnnotations] = useState<Record<string, BibleAnnotation>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [lastState, setLastState] = useState<BibleState | null>(null);
 
   useEffect(() => {
     if (!user || !db) {
@@ -105,7 +115,7 @@ export const BibleProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <BibleContext.Provider value={{ annotations, setAnnotation, removeAnnotation, toggleFavorite, isLoading }}>
+    <BibleContext.Provider value={{ annotations, setAnnotation, removeAnnotation, toggleFavorite, isLoading, lastState, setLastState }}>
       {children}
     </BibleContext.Provider>
   );

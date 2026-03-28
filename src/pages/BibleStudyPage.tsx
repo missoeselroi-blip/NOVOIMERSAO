@@ -84,6 +84,7 @@ import { compressImage } from '../utils/imageUtils';
 import { auth, db } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { copyToClipboard } from '../utils/clipboard';
+import { sermonOutlines } from '../constants/sermonOutlines';
 
 enum OperationType {
   CREATE = 'create',
@@ -348,6 +349,17 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [meaningResult, setMeaningResult] = useState('');
   const [meaningResultThought, setMeaningResultThought] = useState('');
   const [meaningHistory, setMeaningHistory] = useState<any[]>([]);
+  const [outlinesSearchQuery, setOutlinesSearchQuery] = useState('');
+  const [selectedOutlineCategory, setSelectedOutlineCategory] = useState('Todas');
+  const [selectedLibraryOutline, setSelectedLibraryOutline] = useState<any | null>(null);
+
+  const filteredLibraryOutlines = sermonOutlines.filter(outline => {
+    const matchesSearch = outline.theme.toLowerCase().includes(outlinesSearchQuery.toLowerCase()) || 
+                          outline.verse.toLowerCase().includes(outlinesSearchQuery.toLowerCase()) ||
+                          outline.category.toLowerCase().includes(outlinesSearchQuery.toLowerCase());
+    const matchesCategory = selectedOutlineCategory === 'Todas' || outline.category === selectedOutlineCategory;
+    return matchesSearch && matchesCategory;
+  });
   const [followUpQuery, setFollowUpQuery] = useState('');
   const [wikiQuery, setWikiQuery] = useState('');
   const [wikiResult, setWikiResult] = useState('');
@@ -561,6 +573,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
     { id: 'apocrypha', label: 'Livros Apócrifos', icon: <BookOpen size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
+    { id: 'outlines_library', label: 'Esboços Prontos', icon: <FileText size={18} /> },
   ];
 
   const [lessonResult, setLessonResult] = useState('');
@@ -6117,7 +6130,175 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               </div>
             )}
 
+            {activeTab === 'outlines_library' && (
+              <div className="space-y-6">
+                <div className="flex flex-col md:flex-row gap-4 mb-6">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
+                    <input
+                      type="text"
+                      placeholder="⚓ Buscar esboços por tema, versículo ou categoria..."
+                      value={outlinesSearchQuery}
+                      onChange={(e) => setOutlinesSearchQuery(e.target.value)}
+                      className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
+                    />
+                  </div>
+                  <select
+                    value={selectedOutlineCategory}
+                    onChange={(e) => setSelectedOutlineCategory(e.target.value)}
+                    className="px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none"
+                  >
+                    <option value="Todas">Todas as Categorias</option>
+                    {Array.from(new Set(sermonOutlines.map(o => o.category))).map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {filteredLibraryOutlines.map((outline) => (
+                    <div key={outline.id} className="p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl hover:shadow-md transition-shadow flex flex-col h-full">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[10px] font-bold uppercase tracking-wider rounded-lg">
+                          {outline.category}
+                        </span>
+                      </div>
+                      <h4 className="font-bold text-lg mb-2 text-stone-800 dark:text-zinc-100">{outline.theme}</h4>
+                      <p className="text-emerald-600 font-medium text-sm mb-4">{outline.verse}</p>
+                      <p className="text-stone-500 dark:text-zinc-400 text-sm mb-6 line-clamp-3 flex-1">
+                        {outline.introduction}
+                      </p>
+                      <button
+                        onClick={() => setSelectedLibraryOutline(outline)}
+                        className="w-full py-3 bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2"
+                      >
+                        <FileText size={18} />
+                        Ver Esboço Completo
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
           </motion.div>
+        </AnimatePresence>
+
+        {/* Outline Library Modal */}
+        <AnimatePresence>
+          {selectedLibraryOutline && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white dark:bg-zinc-900 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
+              >
+                <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center">
+                  <h3 className="font-bold text-xl text-emerald-900 dark:text-emerald-400 flex items-center gap-2">
+                    <FileText size={20} />
+                    {selectedLibraryOutline.theme}
+                  </h3>
+                  <button
+                    onClick={() => setSelectedLibraryOutline(null)}
+                    className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <CloseIcon size={24} />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
+                  <div className="prose dark:prose-invert max-w-none">
+                    <h1 className="text-emerald-600 mb-2">{selectedLibraryOutline.theme}</h1>
+                    <h3 className="text-stone-500 dark:text-zinc-400 mt-0 mb-8">{selectedLibraryOutline.verse}</h3>
+
+                    <h2 className="text-emerald-600">Introdução</h2>
+                    <p>{selectedLibraryOutline.introduction}</p>
+
+                    <h2 className="text-emerald-600">Desenvolvimento</h2>
+                    <ul>
+                      {selectedLibraryOutline.development.map((point: string, index: number) => (
+                        <li key={index}>{point}</li>
+                      ))}
+                    </ul>
+
+                    <h2 className="text-emerald-600">Conclusão</h2>
+                    <p>{selectedLibraryOutline.conclusion}</p>
+
+                    <h2 className="text-emerald-600">Oração</h2>
+                    <p>{selectedLibraryOutline.prayer}</p>
+
+                    <h2 className="text-emerald-600">Apelo</h2>
+                    <p>{selectedLibraryOutline.appeal}</p>
+                  </div>
+                </div>
+                <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 border-t border-stone-100 dark:border-zinc-800 flex flex-wrap gap-3">
+                  <button
+                    onClick={() => {
+                      const contentToSave = `
+# ${selectedLibraryOutline.theme}
+### ${selectedLibraryOutline.verse}
+
+## Introdução
+${selectedLibraryOutline.introduction}
+
+## Desenvolvimento
+${selectedLibraryOutline.development.map((p: string) => `- ${p}`).join('\n')}
+
+## Conclusão
+${selectedLibraryOutline.conclusion}
+
+## Oração
+${selectedLibraryOutline.prayer}
+
+## Apelo
+${selectedLibraryOutline.appeal}
+                      `.trim();
+                      handleSaveToNotebook('Esboços', contentToSave);
+                    }}
+                    className="flex-1 min-w-[140px] py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all"
+                  >
+                    <Save size={20} />
+                    Salvar no Caderno
+                  </button>
+                  <button
+                    onClick={() => {
+                      const contentToCopy = `
+${selectedLibraryOutline.theme}
+${selectedLibraryOutline.verse}
+
+Introdução:
+${selectedLibraryOutline.introduction}
+
+Desenvolvimento:
+${selectedLibraryOutline.development.join('\n')}
+
+Conclusão:
+${selectedLibraryOutline.conclusion}
+
+Oração:
+${selectedLibraryOutline.prayer}
+
+Apelo:
+${selectedLibraryOutline.appeal}
+                      `.trim();
+                      copyToClipboard(contentToCopy);
+                      showToast("Esboço copiado! 📋✨");
+                    }}
+                    className="flex-1 min-w-[140px] py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-100 flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Copy size={20} />
+                    Copiar Esboço
+                  </button>
+                  <button
+                    onClick={() => setSelectedLibraryOutline(null)}
+                    className="px-6 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-2xl hover:bg-stone-300 transition-all"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
         </AnimatePresence>
 
         {/* Resource Image Modal */}

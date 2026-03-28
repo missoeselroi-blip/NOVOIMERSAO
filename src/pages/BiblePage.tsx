@@ -42,22 +42,27 @@ import { geminiService } from '../services/geminiService';
 import Markdown from 'react-markdown';
 import { useNavigate } from 'react-router-dom';
 
-export default function BiblePage() {
+interface BiblePageProps {
+  isOverlay?: boolean;
+  onClose?: () => void;
+}
+
+export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps) {
   const { user, addStudy } = useAuth();
-  const { annotations, setAnnotation, removeAnnotation, toggleFavorite } = useBible();
+  const { annotations, setAnnotation, removeAnnotation, toggleFavorite, lastState, setLastState } = useBible();
   const { showToast } = useToast();
   const navigate = useNavigate();
   
   // State
   const [versions, setVersions] = useState<BibleVersion[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState<string>('ARA'); // Default to ARA (Portuguese)
+  const [selectedVersion, setSelectedVersion] = useState<string>(lastState?.version || 'ARA'); // Default to ARA (Portuguese)
   const [books, setBooks] = useState<BibleBook[]>([]);
-  const [selectedBook, setSelectedBook] = useState<number>(1); // Default to Genesis
-  const [selectedChapter, setSelectedChapter] = useState<number>(1);
+  const [selectedBook, setSelectedBook] = useState<number>(lastState?.book || 1); // Default to Genesis
+  const [selectedChapter, setSelectedChapter] = useState<number>(lastState?.chapter || 1);
   const [verses, setVerses] = useState<BibleVerse[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState<string>(lastState?.searchQuery || '');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showVersionSelector, setShowVersionSelector] = useState<boolean>(false);
   const [showBookSelector, setShowBookSelector] = useState<boolean>(false);
@@ -74,6 +79,16 @@ export default function BiblePage() {
   const [isFullscreen, setIsFullscreen] = useState(true); // Default to fullscreen
 
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Sync state to Context
+  useEffect(() => {
+    setLastState({
+      version: selectedVersion,
+      book: selectedBook,
+      chapter: selectedChapter,
+      searchQuery: searchQuery
+    });
+  }, [selectedVersion, selectedBook, selectedChapter, searchQuery, setLastState]);
 
   // Initialize
   useEffect(() => {
@@ -92,11 +107,26 @@ export default function BiblePage() {
         const filteredVersions = v.filter(ver => requestedVersions.includes(ver.short_name));
         setVersions(filteredVersions.length > 0 ? filteredVersions : v);
         
-        const defaultVer = 'ARA';
+        const defaultVer = lastState?.version || 'ARA';
+        const defaultBook = lastState?.book || 1;
+        const defaultChapter = lastState?.chapter || 1;
+        
         const b = await bibleService.getBooks(defaultVer);
         setBooks(b);
         
-        loadChapter(defaultVer, 1, 1);
+        loadChapter(defaultVer, defaultBook, defaultChapter);
+        
+        if (lastState?.searchQuery) {
+          setIsSearching(true);
+          try {
+            const results = await bibleService.search(defaultVer, lastState.searchQuery);
+            setSearchResults(results);
+          } catch (error) {
+            console.error("Error searching Bible:", error);
+          } finally {
+            setIsSearching(false);
+          }
+        }
       } catch (error) {
         console.error("Error initializing Bible:", error);
         // Don't show toast for every error during init, just try to load something
@@ -184,6 +214,7 @@ export default function BiblePage() {
   const sendToPost = (v: BibleVerse) => {
     const bookName = books.find(b => b.pk === selectedBook)?.name || '';
     const reference = `${bookName} ${selectedChapter}:${v.verse}`;
+    if (isOverlay && onClose) onClose();
     navigate('/posts', { state: { verse: v.text, reference } });
   };
 
@@ -360,7 +391,11 @@ export default function BiblePage() {
               if (document.fullscreenElement && document.exitFullscreen) {
                 document.exitFullscreen().catch(e => console.error(e));
               }
-              navigate('/');
+              if (isOverlay && onClose) {
+                onClose();
+              } else {
+                navigate('/');
+              }
             }}
             className="flex items-center gap-2 p-2 px-3 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
             title="Sair da Bíblia"
@@ -513,6 +548,7 @@ export default function BiblePage() {
                   if (selectedVerses.length === 0) return;
                   const bookName = books.find(b => b.pk === selectedBook)?.name;
                   const reference = `${bookName} ${selectedChapter}:${selectedVerses[0].verse}${selectedVerses.length > 1 ? `-${selectedVerses[selectedVerses.length - 1].verse}` : ''}`;
+                  if (isOverlay && onClose) onClose();
                   navigate(`/study?tab=compare&search=${encodeURIComponent(reference)}`);
                 }}
                 className="p-2 rounded-lg transition-all hover:scale-110 text-indigo-600 dark:text-indigo-400"

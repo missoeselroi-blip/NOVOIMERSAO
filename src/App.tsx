@@ -104,6 +104,7 @@ import { BibleProvider } from './contexts/BibleContext';
 import { AccessibilityControls } from './components/AccessibilityControls';
 import { VoiceCommandCenter } from './components/VoiceCommandCenter';
 import { SpiritualTutor } from './components/SpiritualTutor';
+import { FloatingBible } from './components/FloatingBible';
 import AuthModal from './components/AuthModal';
 import { MicrophonePermissionModal } from './components/MicrophonePermissionModal';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
@@ -785,6 +786,7 @@ function AppContent() {
       <AccessibilityControls />
       <VoiceCommandCenter />
       <SpiritualTutor />
+      <FloatingBible />
       <MicrophonePermissionModal />
 
       <footer className={cn(
