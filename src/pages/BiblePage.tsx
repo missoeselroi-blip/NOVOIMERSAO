@@ -25,7 +25,12 @@ import {
   Heart,
   Send,
   Trash2,
-  Palette
+  Palette,
+  Maximize2,
+  Minimize2,
+  LogOut,
+  ArrowLeft,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../types';
@@ -59,14 +64,14 @@ export default function BiblePage() {
   const [selectedVerses, setSelectedVerses] = useState<BibleVerse[]>([]);
   const [commentary, setCommentary] = useState<string | null>(null);
   const [isGeneratingCommentary, setIsGeneratingCommentary] = useState<boolean>(false);
-  const [fontSize, setFontSize] = useState<number>(28); // Increased default for "zoom máximo"
+  const [fontSize, setFontSize] = useState<number>(18); // Default to 18px
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [history, setHistory] = useState<{book: string, chapter: number, version: string}[]>([]);
   const [showAnnotationMenu, setShowAnnotationMenu] = useState(false);
   const [annotationNote, setAnnotationNote] = useState('');
   const [annotationColor, setAnnotationColor] = useState('#fbbf24');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(true); // Default to fullscreen
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -352,9 +357,17 @@ export default function BiblePage() {
               className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
               title="Voltar ao Início"
             >
-              <ChevronLeft size={24} />
+              <ArrowLeft size={24} />
             </button>
           )}
+          
+          <button 
+            onClick={toggleFullscreen}
+            className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
+            title={isFullscreen ? "Minimizar" : "Maximizar"}
+          >
+            {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+          </button>
           
           <button 
             onClick={() => setShowVersionSelector(!showVersionSelector)}
@@ -486,6 +499,18 @@ export default function BiblePage() {
                 title="Compartilhar"
               >
                 <Share2 size={20} />
+              </button>
+              <button 
+                onClick={() => {
+                  if (selectedVerses.length === 0) return;
+                  const bookName = books.find(b => b.pk === selectedBook)?.name;
+                  const reference = `${bookName} ${selectedChapter}:${selectedVerses[0].verse}${selectedVerses.length > 1 ? `-${selectedVerses[selectedVerses.length - 1].verse}` : ''}`;
+                  navigate(`/study?tab=compare&search=${encodeURIComponent(reference)}`);
+                }}
+                className="p-2 rounded-lg transition-all hover:scale-110 text-indigo-600 dark:text-indigo-400"
+                title="Comparar Versões"
+              >
+                <Layers size={20} />
               </button>
               <div className="w-px h-6 bg-emerald-200 dark:bg-emerald-800 mx-1" />
               <button 

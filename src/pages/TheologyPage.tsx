@@ -837,6 +837,11 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
     if (!pendingNote || !user) return;
     
+    if (!pendingNote.content) {
+      showToast("Conteúdo não disponível para salvar.", "error");
+      return;
+    }
+
     try {
       const notesCollectionRef = collection(db, 'notes');
       await addDoc(notesCollectionRef, {

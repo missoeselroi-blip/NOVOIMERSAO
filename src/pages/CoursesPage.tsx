@@ -39,7 +39,7 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
       title: 'Curso de Contação de Estórias',
       desc: 'A arte de transmitir verdades bíblicas através de narrativas.',
       icon: <BookOpen size={32} />,
-      status: 'coming_soon',
+      status: 'active',
       color: 'purple'
     },
     {

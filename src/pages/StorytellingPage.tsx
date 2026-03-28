@@ -50,7 +50,11 @@ import {
   Minimize,
   RotateCw,
   ZoomIn,
-  ZoomOut
+  ZoomOut,
+  Palette,
+  Theater,
+  Music,
+  UserPlus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { copyToClipboard } from '../utils/clipboard';
@@ -59,7 +63,6 @@ import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
-import EvangelismSearchPage from './EvangelismSearchPage';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { useAuth } from '../contexts/AuthContext';
 import { AudioSearchButton } from '../components/AudioSearchButton';
@@ -107,14 +110,15 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
   throw new Error(JSON.stringify(errInfo));
 };
 
-import { EVANGELISM_SUBJECTS, getMaxChapters } from '../constants/evangelismCourse';
+import { STORYTELLING_SUBJECTS, STORYTELLING_AUTHORS, getMaxChapters } from '../constants/storytellingCourse';
+import StorytellingSearchPage from './StorytellingSearchPage';
 import { useShare } from '../utils/share';
 
-interface EvangelismPageProps {
+interface StorytellingPageProps {
   onNavigate: (tab: string) => void;
 }
 
-export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
+export default function StorytellingPage({ onNavigate }: StorytellingPageProps) {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const [isReadingMode, setIsReadingMode] = useState(false);
   const [readingFontSize, setReadingFontSize] = useState(18);
@@ -126,7 +130,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   
   const [isEnrolled, setIsEnrolled] = useState(() => {
     try {
-      return localStorage.getItem('evangelism_enrolled') === 'true';
+      return localStorage.getItem('storytelling_enrolled') === 'true';
     } catch (e) {
       return false;
     }
@@ -136,6 +140,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const [showSubjectModal, setShowSubjectModal] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedAuthor, setSelectedAuthor] = useState('Todos os autores');
   const [currentChapter, setCurrentChapter] = useState(1);
   const [chapterContent, setChapterContent] = useState<Record<number, string>>({});
   const [chapterQuiz, setChapterQuiz] = useState<any[] | null>(null);
@@ -143,7 +148,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const [isChapterQuizSubmitted, setIsChapterQuizSubmitted] = useState(false);
   const [isGeneratingChapterQuiz, setIsGeneratingChapterQuiz] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [evangelismProgress, setEvangelismProgress] = useState<Record<string, any>>({});
+  const [storytellingProgress, setStorytellingProgress] = useState<Record<string, any>>({});
   const [showConclusionModal, setShowConclusionModal] = useState(false);
   const [showCertificatePaymentModal, setShowCertificatePaymentModal] = useState(false);
   const [conclusionText, setConclusionText] = useState('');
@@ -192,7 +197,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     if (user) {
       const checkTerms = async () => {
         try {
-          const docRef = doc(db, 'evangelismTermsAcceptance', user.id);
+          const docRef = doc(db, 'storytellingTermsAcceptance', user.id);
           const docSnap = await getDoc(docRef);
           setHasAcceptedTerms(docSnap.exists());
         } catch (error) {
@@ -209,7 +214,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const handleAcceptTerms = async () => {
     if (!user) return;
     try {
-      await setDoc(doc(db, 'evangelismTermsAcceptance', user.id), {
+      await setDoc(doc(db, 'storytellingTermsAcceptance', user.id), {
         userId: user.id,
         acceptedAt: new Date().toISOString()
       });
@@ -240,7 +245,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const saveSectionTime = async (section: string, seconds: number) => {
     if (!user || seconds <= 0) return;
     try {
-      const progressDocRef = doc(db, 'evangelismProgress', user.id);
+      const progressDocRef = doc(db, 'storytellingProgress', user.id);
       const updates: any = {
         [`sectionMetrics.${section}`]: increment(seconds),
         lastActive: new Date().toISOString()
@@ -293,13 +298,13 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
 
   useEffect(() => {
     if (!user) return;
-    const progressDocRef = doc(db, 'evangelismProgress', user.id);
+    const progressDocRef = doc(db, 'storytellingProgress', user.id);
     const unsubscribe = onSnapshot(progressDocRef, (doc) => {
       if (doc.exists()) {
-        setEvangelismProgress(doc.data());
+        setStorytellingProgress(doc.data());
       }
     }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `evangelismProgress/${user.id}`);
+      handleFirestoreError(error, OperationType.GET, `storytellingProgress/${user.id}`);
     });
     return () => unsubscribe();
   }, [user]);
@@ -307,7 +312,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const syncPointsToCareer = async (subject: string, updatedProgress: any) => {
     if (!user) return;
     try {
-      const progressDoc = await getDoc(doc(db, 'evangelismProgress', user.id));
+      const progressDoc = await getDoc(doc(db, 'storytellingProgress', user.id));
       if (progressDoc.exists()) {
         const allProgress = progressDoc.data();
         allProgress[subject] = updatedProgress;
@@ -333,9 +338,10 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
           const careerData = careerDoc.data();
           const currentTheologyPoints = careerData.theologyPoints || 0;
           const bibleRacePoints = careerData.bibleRacePoints || 0;
+          const evangelismPoints = careerData.evangelismPoints || 0;
           await updateDoc(careerDocRef, { 
-            evangelismPoints: grandTotal,
-            points: grandTotal + currentTheologyPoints + bibleRacePoints,
+            storytellingPoints: grandTotal,
+            points: grandTotal + currentTheologyPoints + bibleRacePoints + evangelismPoints,
             updatedAt: new Date().toISOString()
           });
         }
@@ -349,8 +355,8 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     if (chapterContent[chapter]) return;
     setIsLoading(true);
     try {
-      const materialId = `evangelism_${subject.replace(/\s+/g, '_')}_${chapter}`;
-      const materialDocRef = doc(db, 'shared_evangelism_materials', materialId);
+      const materialId = `storytelling_${subject.replace(/\s+/g, '_')}_${chapter}`;
+      const materialDocRef = doc(db, 'shared_storytelling_materials', materialId);
       const materialDoc = await getDoc(materialDocRef);
       
       if (materialDoc.exists()) {
@@ -361,12 +367,12 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
         return;
       }
 
-      const prompt = `Gere o Capítulo ${chapter} de 5 do estudo sobre "${subject}" para o Curso de Evangelismo Imersão. 
-      O conteúdo deve ser prático, bíblico e inspirador.
-      Foque em estratégias reais, exemplos de grandes evangelistas e ferramentas modernas.
+      const prompt = `Gere o Capítulo ${chapter} de 5 do estudo sobre "${subject}" para o Curso de A Arte de Contar Estórias. 
+      O conteúdo deve ser prático, criativo e inspirador.
+      Foque em técnicas de narrativa, expressão, recursos visuais e conexão emocional.
       Ao final, inclua uma seção "--- DESAFIO PRÁTICO ---" com uma ação para o aluno realizar no seu cotidiano.`;
 
-      const response = await geminiService.generateText(prompt, "Você é um mestre em evangelismo e missiologia.");
+      const response = await geminiService.generateText(prompt, "Você é um mestre na arte de contar histórias.");
       
       if (user?.email === 'missoeselroi@gmail.com') {
         await setDoc(materialDocRef, {
@@ -390,9 +396,9 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const generateChapterQuiz = async (content: string) => {
     setIsGeneratingChapterQuiz(true);
     try {
-      const prompt = `Com base no conteúdo deste capítulo de evangelismo, gere um questionário de 4 perguntas de múltipla escolha (3 opções cada).
+      const prompt = `Com base no conteúdo deste capítulo de contação de histórias, gere um questionário de 4 perguntas de múltipla escolha (3 opções cada).
       Retorne APENAS um JSON: {"questions": [{"question": "...", "options": ["...", "...", "..."], "correctIndex": 0}]}`;
-      const response = await geminiService.generateText(prompt, "Você é um professor de evangelismo.");
+      const response = await geminiService.generateText(prompt, "Você é um professor de contação de histórias.");
       const data = JSON.parse(response.replace(/```json|```/g, '').trim());
       setChapterQuiz(data.questions);
       setChapterQuizAnswers([]);
@@ -412,10 +418,10 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       showToast(`Você acertou ${score} de 4. Revise e tente novamente!`, 'error');
       return;
     }
-    showToast("Excelente! Você pode avançar! 🔥", 'success');
+    showToast("Excelente! Você pode avançar! ✨", 'success');
     triggerFeedback();
 
-    const current = evangelismProgress[selectedSubject] || {};
+    const current = storytellingProgress[selectedSubject] || {};
     const chapterKey = `chapter${currentChapter}QuizPoints`;
     const newChapterPoints = Math.max(current[chapterKey] || 0, score);
     
@@ -425,7 +431,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     }
     
     const newProgress = { ...current, [chapterKey]: newChapterPoints, quizPoints: totalQuizPoints, [`chapter${currentChapter}Completed`]: true };
-    await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
+    await updateDoc(doc(db, 'storytellingProgress', user.id), { [selectedSubject]: newProgress });
     await syncPointsToCareer(selectedSubject, newProgress);
   };
 
@@ -439,12 +445,12 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     setIsEnrolling(true);
     try {
       setIsEnrolled(true);
-      localStorage.setItem('evangelism_enrolled', 'true');
-      const progressDocRef = doc(db, 'evangelismProgress', user.id);
+      localStorage.setItem('storytelling_enrolled', 'true');
+      const progressDocRef = doc(db, 'storytellingProgress', user.id);
       const progressDoc = await getDoc(progressDocRef);
       if (!progressDoc.exists()) await setDoc(progressDocRef, { userId: user.id, enrolled: true });
       setShowSummary(false);
-      showToast("Inscrição no Curso de Evangelismo realizada! 🔥", 'success');
+      showToast("Inscrição no Curso de Contação de Estórias realizada! ✨", 'success');
     } catch (error) {
       console.error(error);
       showToast("Erro ao realizar inscrição.", 'error');
@@ -454,8 +460,8 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   };
 
   const handleSubjectClick = (subject: string) => {
-    const subjectData = EVANGELISM_SUBJECTS.find(s => s.title === subject);
-    if (subjectData?.prereq && (!evangelismProgress[subjectData.prereq] || !evangelismProgress[subjectData.prereq].completed)) {
+    const subjectData = STORYTELLING_SUBJECTS.find(s => s.title === subject);
+    if (subjectData?.prereq && (!storytellingProgress[subjectData.prereq] || !storytellingProgress[subjectData.prereq].completed)) {
       showToast(`Conclua ${subjectData.prereq} primeiro! 🔒`, 'info');
       return;
     }
@@ -481,7 +487,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
 
   const handleNextChapter = () => {
     if (!isChapterQuizSubmitted || calculateQuizScore() < 4) {
-      showToast("Conclua o questionário com 100% para avançar! 🔥", 'info');
+      showToast("Conclua o questionário com 100% para avançar! ✨", 'info');
       return;
     }
     if (currentChapter < 5) {
@@ -499,9 +505,9 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     setUserAnswers([]);
     setCurrentQuestionIndex(0);
     try {
-      const prompt = `Gere 10 questões de avaliação final para a matéria "${selectedSubject}" do curso de evangelismo.
+      const prompt = `Gere 10 questões de avaliação final para a matéria "${selectedSubject}" do curso de contação de histórias.
       Retorne APENAS JSON: {"questions": [{"question": "...", "options": ["...", "...", "..."], "correctIndex": 0, "difficulty": "easy|intermediate|hard"}]}`;
-      const response = await geminiService.generateText(prompt, "Você é um avaliador de missiologia.");
+      const response = await geminiService.generateText(prompt, "Você é um avaliador de pedagogia e artes.");
       const data = JSON.parse(response.replace(/```json|```/g, '').trim());
       setAssessmentQuestions(data.questions);
     } catch (error) {
@@ -538,14 +544,14 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     const maxScore = assessmentQuestions.reduce((acc, q) => acc + (q.difficulty === 'hard' ? 6 : q.difficulty === 'intermediate' ? 4 : 2), 0);
     const normalizedScore = Math.round((score / maxScore) * 40);
     
-    const message = normalizedScore >= 28 ? "Parabéns! Você foi aprovado com excelência! 🔥" : "Você não atingiu a nota mínima. Revise o conteúdo e tente novamente.";
+    const message = normalizedScore >= 28 ? "Parabéns! Você foi aprovado com excelência! ✨" : "Você não atingiu a nota mínima. Revise o conteúdo e tente novamente.";
     setAssessmentResult({ score: normalizedScore, message });
 
     if (normalizedScore >= 28) {
       triggerFeedback();
-      const current = evangelismProgress[selectedSubject] || {};
+      const current = storytellingProgress[selectedSubject] || {};
       const newProgress = { ...current, evaluation: normalizedScore, completed: true };
-      await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
+      await updateDoc(doc(db, 'storytellingProgress', user.id), { [selectedSubject]: newProgress });
       await syncPointsToCareer(selectedSubject, newProgress);
     }
   };
@@ -556,14 +562,14 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     try {
       const prompt = `Avalie este resumo sobre "${selectedSubject}" (${type}): "${text}".
       Retorne JSON: {"score": 0-10, "message": "...", "aiFeedback": "...", "criteria": [{"label": "...", "penalty": 0, "met": true}]}`;
-      const response = await geminiService.generateText(prompt, "Você é um tutor de evangelismo.");
+      const response = await geminiService.generateText(prompt, "Você é um tutor de contação de histórias.");
       const evaluation = JSON.parse(response.replace(/```json|```/g, '').trim());
       setSummaryEvaluation(evaluation);
       
       const field = type === 'Matéria básica' ? 'redacaoMateria' : type === 'Debate teológico' ? 'redacaoAprofundamento' : type === 'Slides' ? 'redacaoSlide' : type === 'Vídeo' ? 'redacaoVideo' : 'redacaoPodcast';
-      const current = evangelismProgress[selectedSubject] || {};
+      const current = storytellingProgress[selectedSubject] || {};
       const newProgress = { ...current, [field]: evaluation.score };
-      await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
+      await updateDoc(doc(db, 'storytellingProgress', user.id), { [selectedSubject]: newProgress });
       await syncPointsToCareer(selectedSubject, newProgress);
       triggerFeedback();
     } catch (error) {
@@ -577,7 +583,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     if (!user) return;
     
     // Check if all subjects are completed
-    const allCompleted = EVANGELISM_SUBJECTS.every(s => evangelismProgress?.[s.title]?.completed);
+    const allCompleted = STORYTELLING_SUBJECTS.every(s => storytellingProgress?.[s.title]?.completed);
     if (!allCompleted) {
       showToast("Conclua todos os módulos para gerar o certificado final! 🎓", 'info');
       return;
@@ -589,16 +595,16 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     }
     setIsLoading(true);
     try {
-      await consumeCredits(10, "Certificado Final de Evangelismo");
+      await consumeCredits(10, "Certificado Final de Contação de Estórias");
       const doc = new jsPDF('l', 'mm', 'a4');
       doc.setFillColor(255, 248, 240);
       doc.rect(0, 0, 297, 210, 'F');
-      doc.setDrawColor(234, 88, 12);
+      doc.setDrawColor(147, 51, 234);
       doc.setLineWidth(5);
       doc.rect(10, 10, 277, 190);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(40);
-      doc.setTextColor(234, 88, 12);
+      doc.setTextColor(147, 51, 234);
       doc.text('CERTIFICADO DE CONCLUSÃO', 148.5, 50, { align: 'center' });
       doc.setFontSize(20);
       doc.setTextColor(60, 60, 60);
@@ -608,10 +614,10 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       doc.setFontSize(20);
       doc.text('concluiu com êxito o curso de', 148.5, 115, { align: 'center' });
       doc.setFontSize(30);
-      doc.text('EVANGELISMO IMERSÃO', 148.5, 135, { align: 'center' });
+      doc.text('A ARTE DE CONTAR ESTÓRIAS', 148.5, 135, { align: 'center' });
       doc.setFontSize(15);
       doc.text(`Data: ${new Date().toLocaleDateString('pt-BR')}`, 148.5, 155, { align: 'center' });
-      doc.save(`Certificado_Final_Evangelismo_${user.name}.pdf`);
+      doc.save(`Certificado_Final_Storytelling_${user.name}.pdf`);
       showToast("Certificado final gerado com sucesso! 🎓", 'success');
     } catch (error) {
       console.error(error);
@@ -633,12 +639,12 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       const doc = new jsPDF('l', 'mm', 'a4');
       doc.setFillColor(255, 252, 245);
       doc.rect(0, 0, 297, 210, 'F');
-      doc.setDrawColor(249, 115, 22);
+      doc.setDrawColor(168, 85, 247);
       doc.setLineWidth(3);
       doc.rect(15, 15, 267, 180);
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(30);
-      doc.setTextColor(249, 115, 22);
+      doc.setTextColor(168, 85, 247);
       doc.text('CERTIFICADO DE MÓDULO', 148.5, 60, { align: 'center' });
       doc.setFontSize(18);
       doc.setTextColor(80, 80, 80);
@@ -650,7 +656,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       doc.setFontSize(24);
       doc.text(subject.toUpperCase(), 148.5, 145, { align: 'center' });
       doc.setFontSize(14);
-      doc.text(`Curso de Evangelismo Imersão - ${new Date().toLocaleDateString('pt-BR')}`, 148.5, 170, { align: 'center' });
+      doc.text(`Curso de Contação de Estórias - ${new Date().toLocaleDateString('pt-BR')}`, 148.5, 170, { align: 'center' });
       doc.save(`Certificado_${subject.replace(/\s+/g, '_')}_${user.name}.pdf`);
       showToast("Certificado do módulo gerado com sucesso! 📜", 'success');
     } catch (error) {
@@ -682,7 +688,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
         userId: user.id,
         title: `${subject} - Cap. ${chapter}`,
         content: content,
-        category: 'Evangelismo',
+        category: 'Contação de Estórias',
         createdAt: new Date().toISOString()
       });
       showToast("Salvo no seu caderno! 📓", 'success');
@@ -692,32 +698,53 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     }
   };
 
-  if (showSearch) return <EvangelismSearchPage initialQuery={searchQuery} />;
+  const handleSearchAuthor = () => {
+    if (!searchQuery.trim() && selectedAuthor === 'Todos os autores') {
+      showToast("Digite algo ou selecione um autor para pesquisar.", "info");
+      return;
+    }
+    setShowSearch(true);
+  };
+
+  if (showSearch) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 pb-32">
+        <button 
+          onClick={() => setShowSearch(false)}
+          className="flex items-center gap-2 text-stone-500 hover:text-purple-600 transition-colors mb-8"
+        >
+          <ArrowLeft size={20} />
+          Voltar para o Curso
+        </button>
+        <StorytellingSearchPage initialQuery={searchQuery} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32">
       {!isEnrolled ? (
         <div className="max-w-4xl mx-auto text-center space-y-12 py-12">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-            <div className="inline-flex p-4 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-3xl mb-4">
-              <Flame size={48} />
+            <div className="inline-flex p-4 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-3xl mb-4">
+              <Sparkles size={48} />
             </div>
             <h1 className="text-5xl md:text-6xl font-display font-bold text-stone-900 dark:text-zinc-100 leading-tight">
-              Curso de Evangelismo <span className="text-orange-600">Imersão</span>
+              A Arte de Contar <span className="text-purple-600">Estórias</span>
             </h1>
             <p className="text-xl text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-              Prepare-se para cumprir o IDE com excelência. Aprenda estratégias, base bíblica e ferramentas para alcançar o mundo.
+              Descubra o poder das narrativas para transformar vidas. Aprenda técnicas, recursos e a magia de encantar através das palavras.
             </p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { icon: <Zap />, title: "Prático", desc: "Estratégias reais para o dia a dia." },
-              { icon: <Globe />, title: "Global", desc: "Visão missionária transcultural." },
+              { icon: <Theater />, title: "Expressivo", desc: "Domine voz, corpo e emoção." },
+              { icon: <Palette />, title: "Criativo", desc: "Crie ambientes e recursos mágicos." },
               { icon: <Award />, title: "Certificado", desc: "Reconhecimento de conclusão." }
             ].map((item, i) => (
-              <div key={`evangelism-feature-${item.title}-${i}`} className="p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
-                <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
+              <div key={`storytelling-feature-${item.title}-${i}`} className="p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+                <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
                   {item.icon}
                 </div>
                 <h3 className="font-bold text-lg mb-2">{item.title}</h3>
@@ -729,7 +756,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
           <button 
             onClick={handleEnroll}
             disabled={isEnrolling}
-            className="px-12 py-6 bg-orange-600 text-white font-bold rounded-3xl hover:bg-orange-700 shadow-xl shadow-orange-600/20 transition-all text-xl flex items-center gap-3 mx-auto disabled:opacity-50"
+            className="px-12 py-6 bg-purple-600 text-white font-bold rounded-3xl hover:bg-purple-700 shadow-xl shadow-purple-600/20 transition-all text-xl flex items-center gap-3 mx-auto disabled:opacity-50"
           >
             {isEnrolling ? <Loader2 className="animate-spin" /> : <><Zap /> INICIAR CURSO AGORA</>}
           </button>
@@ -739,44 +766,79 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
               <h2 className="text-4xl font-display font-bold">Meu Progresso</h2>
-              <p className="text-stone-500">Continue sua jornada de aprendizado.</p>
+              <p className="text-stone-500">Continue sua jornada na arte de narrar.</p>
             </div>
             <div className="flex items-center gap-4">
-              <button onClick={() => setShowSearch(true)} className="p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl hover:bg-stone-50 transition-all shadow-sm">
-                <Search size={24} className="text-orange-600" />
-              </button>
-              <button onClick={handleGenerateCertificate} className="px-6 py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all shadow-lg shadow-orange-600/20 flex items-center gap-2">
+              <button onClick={handleGenerateCertificate} className="px-6 py-4 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20 flex items-center gap-2">
                 <Award size={20} /> CERTIFICADO FINAL
               </button>
             </div>
           </div>
 
+          {/* Ask the Author Section */}
+          <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-100 dark:border-zinc-800 shadow-sm space-y-6">
+            <div className="flex items-center gap-3 text-purple-600">
+              <MessageSquare size={24} />
+              <h3 className="text-2xl font-bold">Pergunte ao autor</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2 relative">
+                <input 
+                  type="text"
+                  placeholder="O que você deseja perguntar ou pesquisar?"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-12 pr-4 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none transition-all"
+                />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
+              </div>
+              <div className="relative">
+                <select 
+                  value={selectedAuthor}
+                  onChange={(e) => setSelectedAuthor(e.target.value)}
+                  className="w-full px-4 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-purple-500 outline-none transition-all appearance-none cursor-pointer"
+                >
+                  {STORYTELLING_AUTHORS.map(author => (
+                    <option key={author} value={author}>{author}</option>
+                  ))}
+                </select>
+                <ChevronRight className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 rotate-90" size={20} />
+              </div>
+            </div>
+            <button 
+              onClick={handleSearchAuthor}
+              className="w-full md:w-auto px-8 py-4 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
+            >
+              <Search size={20} /> PESQUISAR
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {EVANGELISM_SUBJECTS.map((subject, i) => {
-              const progress = evangelismProgress[subject.title] || {};
-              const isLocked = subject.prereq && (!evangelismProgress[subject.prereq] || !evangelismProgress[subject.prereq].completed);
+            {STORYTELLING_SUBJECTS.map((subject, i) => {
+              const progress = storytellingProgress[subject.title] || {};
+              const isLocked = subject.prereq && (!storytellingProgress[subject.prereq] || !storytellingProgress[subject.prereq].completed);
               
               return (
                 <motion.div 
-                  key={`evangelism-subject-${subject.title}-${i}`}
+                  key={`storytelling-subject-${subject.title}-${i}`}
                   whileHover={!isLocked ? { y: -5 } : {}}
                   onClick={() => handleSubjectClick(subject.title)}
                   className={cn(
                     "p-8 rounded-[2.5rem] border-2 transition-all cursor-pointer relative overflow-hidden group",
                     isLocked ? "bg-stone-50 dark:bg-zinc-900/50 border-stone-100 dark:border-zinc-800 opacity-60" : 
-                    progress.completed ? "bg-orange-50 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800" :
-                    "bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 hover:border-orange-200"
+                    progress.completed ? "bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800" :
+                    "bg-white dark:bg-zinc-900 border-stone-100 dark:border-zinc-800 hover:border-purple-200"
                   )}
                 >
                   <div className="flex justify-between items-start mb-6">
                     <div className={cn(
                       "p-4 rounded-2xl",
-                      isLocked ? "bg-stone-200 text-stone-400" : "bg-orange-600 text-white shadow-lg shadow-orange-600/20"
+                      isLocked ? "bg-stone-200 text-stone-400" : "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
                     )}>
                       <subject.icon size={28} />
                     </div>
                     {progress.completed ? (
-                      <div className="bg-orange-500 text-white p-2 rounded-full"><CheckCircle2 size={20} /></div>
+                      <div className="bg-purple-500 text-white p-2 rounded-full"><CheckCircle2 size={20} /></div>
                     ) : isLocked && (
                       <Lock size={20} className="text-stone-400" />
                     )}
@@ -785,7 +847,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                   <p className="text-sm text-stone-500 line-clamp-2 mb-4">{subject.desc}</p>
                   <div className="w-full bg-stone-100 dark:bg-zinc-800 h-2 rounded-full overflow-hidden">
                     <div 
-                      className="bg-orange-600 h-full transition-all duration-1000" 
+                      className="bg-purple-600 h-full transition-all duration-1000" 
                       style={{ width: `${progress.completed ? 100 : (Object.keys(progress).filter(k => k.endsWith('Completed')).length / 5) * 100}%` }}
                     />
                   </div>
@@ -796,7 +858,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                         handleGenerateModuleCertificate(subject.title);
                       }}
                       disabled={isGeneratingModuleCertificate}
-                      className="mt-4 w-full py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-orange-200 transition-all"
+                      className="mt-4 w-full py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-xl font-bold text-xs flex items-center justify-center gap-2 hover:bg-purple-200 transition-all"
                     >
                       <Award size={14} /> GERAR CERTIFICADO (5 CR)
                     </button>
@@ -807,218 +869,179 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
           </div>
         </div>
       ) : (
-        <div className="space-y-8 py-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center justify-between bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
-            <button onClick={() => setSelectedSubject(null)} className="flex items-center gap-2 text-stone-500 hover:text-orange-600 font-bold transition-colors">
-              <ArrowLeft size={20} /> VOLTAR
+        <div className="py-8 space-y-8">
+          {/* Study Content Rendering (similar to EvangelismPage) */}
+          <div className="flex items-center justify-between">
+            <button 
+              onClick={() => setSelectedSubject(null)}
+              className="flex items-center gap-2 text-stone-500 hover:text-purple-600 transition-colors font-bold"
+            >
+              <ArrowLeft size={20} /> VOLTAR AOS MÓDULOS
             </button>
-            <div className="text-center">
-              <h2 className="text-xl font-bold">{selectedSubject}</h2>
-              <p className="text-xs text-stone-400 uppercase tracking-widest font-bold">Capítulo {currentChapter} de 5</p>
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-bold text-stone-400">CAPÍTULO {currentChapter} DE 5</span>
+              <div className="flex gap-1">
+                {[1,2,3,4,5].map(i => (
+                  <div key={i} className={cn("w-8 h-1.5 rounded-full", i <= currentChapter ? "bg-purple-600" : "bg-stone-200")} />
+                ))}
+              </div>
             </div>
-            <div className="w-10" />
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            <div className="space-y-6">
-              <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
-                <h3 className="font-bold mb-4 flex items-center gap-2"><BookOpen size={20} className="text-orange-600" /> Capítulos</h3>
-                <div className="space-y-2">
-                  {[1, 2, 3, 4, 5].map(cap => (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div className="lg:col-span-2 space-y-8">
+              <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-100 dark:border-zinc-800 shadow-sm overflow-hidden min-h-[600px] flex flex-col">
+                <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-stone-50/50 dark:bg-zinc-800/50">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-600 text-white rounded-2xl shadow-lg shadow-purple-600/20">
+                      <BookOpen size={24} />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-lg">{selectedSubject}</h3>
+                      <p className="text-xs text-stone-400 uppercase tracking-widest">Estudo Imersivo</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <button 
-                      key={cap}
-                      disabled={cap > 1 && (!evangelismProgress[selectedSubject!]?.[`chapter${cap-1}Completed`])}
-                      onClick={() => { setCurrentChapter(cap); loadChapter(selectedSubject!, cap); }}
-                      className={cn(
-                        "w-full p-4 rounded-xl text-left flex items-center justify-between transition-all",
-                        currentChapter === cap ? "bg-orange-600 text-white" : "hover:bg-stone-50 dark:hover:bg-zinc-800",
-                        cap > 1 && (!evangelismProgress[selectedSubject!]?.[`chapter${cap-1}Completed`]) && "opacity-30 cursor-not-allowed"
-                      )}
+                      onClick={() => handleDownloadChapter(selectedSubject!, currentChapter, chapterContent[currentChapter])}
+                      className="p-3 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors text-stone-500"
+                      title="Baixar Capítulo"
                     >
-                      <span className="font-bold">Capítulo {cap}</span>
-                      {evangelismProgress[selectedSubject!]?.[`chapter${cap}Completed`] && <CheckCircle size={16} />}
+                      <Download size={20} />
                     </button>
-                  ))}
+                    <button 
+                      onClick={() => handleSaveToNotebook(selectedSubject!, currentChapter, chapterContent[currentChapter] || '')}
+                      className="p-3 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors text-stone-500"
+                      title="Salvar no Caderno"
+                    >
+                      <StickyNote size={20} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="p-8 flex-grow">
+                  {isLoading ? (
+                    <div className="h-full flex flex-col items-center justify-center space-y-4">
+                      <Loader2 className="animate-spin text-purple-600" size={48} />
+                      <p className="text-stone-500 font-medium animate-pulse">Preparando seu material de estudo...</p>
+                    </div>
+                  ) : (
+                    <motion.div 
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="prose prose-stone dark:prose-invert max-w-none"
+                    >
+                      <MarkdownRenderer content={chapterContent[currentChapter] || ''} />
+                    </motion.div>
+                  )}
+                </div>
+
+                <div className="p-8 bg-stone-50/50 dark:bg-zinc-800/50 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-between">
+                  <button 
+                    onClick={handlePrevChapter}
+                    disabled={currentChapter === 1}
+                    className="px-6 py-3 flex items-center gap-2 font-bold text-stone-500 hover:text-purple-600 disabled:opacity-30 transition-colors"
+                  >
+                    <ArrowLeft size={20} /> ANTERIOR
+                  </button>
+                  <button 
+                    onClick={handleNextChapter}
+                    className="px-8 py-3 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20 flex items-center gap-2"
+                  >
+                    {currentChapter === 5 ? 'CONCLUIR MÓDULO' : 'PRÓXIMO'} <ArrowRight size={20} />
+                  </button>
                 </div>
               </div>
             </div>
 
-            <div className="lg:col-span-3 space-y-8">
-              <div className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-[3rem] border border-stone-200 dark:border-zinc-800 shadow-xl min-h-[600px]">
-                {isLoading ? (
-                  <div className="flex flex-col items-center justify-center h-[400px] space-y-6">
-                    <div className="relative">
-                      <Loader2 className="animate-spin text-orange-600" size={64} />
-                      <Flame className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-orange-400" size={24} />
-                    </div>
-                    <p className="text-stone-500 font-medium animate-pulse text-center">Preparando conteúdo exclusivo para você...</p>
+            <div className="space-y-6">
+              {/* Quiz Card */}
+              <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-100 dark:border-zinc-800 shadow-sm p-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-2 bg-orange-100 text-orange-600 rounded-lg">
+                    <Zap size={20} />
                   </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="flex flex-wrap gap-2 mb-6 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
-                      <button 
-                        onClick={() => {
-                          copyToClipboard(chapterContent[currentChapter] || '');
-                          showToast("Conteúdo copiado! 📋", 'success');
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
-                      >
-                        <Copy size={16} /> COPIAR
-                      </button>
-                      <button 
-                        onClick={() => handleDownloadChapter(selectedSubject!, currentChapter, chapterContent[currentChapter] || '')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
-                      >
-                        <Download size={16} /> BAIXAR
-                      </button>
-                      <button 
-                        onClick={() => {
-                          if (navigator.share) {
-                            navigator.share({
-                              title: `${selectedSubject} - Cap. ${currentChapter}`,
-                              text: chapterContent[currentChapter] || '',
-                              url: window.location.href
-                            });
-                          } else {
-                            copyToClipboard(window.location.href);
-                            showToast("Link copiado para compartilhar! 🔗", 'success');
-                          }
-                        }}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
-                      >
-                        <Share2 size={16} /> COMPARTILHAR
-                      </button>
-                      <button 
-                        onClick={() => handleSaveToNotebook(selectedSubject!, currentChapter, chapterContent[currentChapter] || '')}
-                        className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-zinc-900 text-stone-600 dark:text-zinc-400 rounded-xl text-sm font-bold hover:text-orange-600 transition-all shadow-sm"
-                      >
-                        <StickyNote size={16} /> SALVAR NO CADERNO
-                      </button>
-                    </div>
-                    <div className="prose dark:prose-invert max-w-none" style={{ fontFamily, fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight }}>
-                      <MarkdownRenderer content={chapterContent[currentChapter] || ''} />
-                    </div>
-                  </div>
-                )}
-              </div>
+                  <h4 className="font-bold">Verificação de Aprendizado</h4>
+                </div>
 
-              {chapterQuiz && !isLoading && (
-                <div className="bg-orange-50 dark:bg-orange-900/10 p-8 md:p-12 rounded-[3rem] border-2 border-orange-200 dark:border-orange-800 space-y-8">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="p-3 bg-orange-600 text-white rounded-2xl shadow-lg shadow-orange-600/20">
-                      <Brain size={24} />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold">Questionário de Fixação</h3>
-                      <p className="text-stone-500">Acerte todas as questões para avançar.</p>
-                    </div>
+                {isGeneratingChapterQuiz ? (
+                  <div className="py-12 flex flex-col items-center justify-center space-y-4">
+                    <Loader2 className="animate-spin text-orange-600" size={32} />
+                    <p className="text-xs text-stone-400 text-center">Gerando questões personalizadas...</p>
                   </div>
+                ) : chapterQuiz ? (
                   <div className="space-y-8">
-                    {chapterQuiz.map((q, i) => (
-                      <div key={`chapter-quiz-q-${i}`} className="space-y-4">
-                        <h4 className="text-lg font-bold flex gap-3"><span className="text-orange-600">{i + 1}.</span> {q.question}</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {q.options.map((opt: string, idx: number) => (
-                            <button 
-                              key={`chapter-quiz-q-${i}-opt-${idx}`} 
-                              onClick={() => {
-                                const newAnswers = [...chapterQuizAnswers];
-                                newAnswers[i] = idx;
-                                setChapterQuizAnswers(newAnswers);
-                              }}
-                              className={cn(
-                                "p-4 text-left rounded-2xl border-2 transition-all font-medium",
-                                chapterQuizAnswers[i] === idx ? "border-orange-500 bg-orange-100 dark:bg-orange-900/30 text-orange-900 dark:text-orange-100" : "bg-white dark:bg-zinc-800 border-stone-100 dark:border-zinc-700 hover:border-orange-200"
-                              )}
-                            >
-                              {opt}
-                            </button>
-                          ))}
+                    {chapterQuiz.map((q, qIdx) => (
+                      <div key={qIdx} className="space-y-4">
+                        <p className="text-sm font-bold leading-relaxed">{qIdx + 1}. {q.question}</p>
+                        <div className="space-y-2">
+                          {q.options.map((opt: string, oIdx: number) => {
+                            const isSelected = chapterQuizAnswers[qIdx] === oIdx;
+                            const isCorrect = q.correctIndex === oIdx;
+                            const showResult = isChapterQuizSubmitted;
+
+                            return (
+                              <button
+                                key={oIdx}
+                                onClick={() => !isChapterQuizSubmitted && setChapterQuizAnswers(prev => {
+                                  const next = [...prev];
+                                  next[qIdx] = oIdx;
+                                  return next;
+                                })}
+                                className={cn(
+                                  "w-full p-4 rounded-xl text-left text-sm transition-all border-2",
+                                  isSelected ? "border-purple-600 bg-purple-50 dark:bg-purple-900/20" : "border-stone-100 dark:border-zinc-800 hover:border-purple-200",
+                                  showResult && isCorrect && "border-green-500 bg-green-50 dark:bg-green-900/20",
+                                  showResult && isSelected && !isCorrect && "border-red-500 bg-red-50 dark:bg-red-900/20"
+                                )}
+                              >
+                                {opt}
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     ))}
-                  </div>
-                  <button 
-                    onClick={submitChapterQuiz}
-                    disabled={chapterQuizAnswers.length < 4}
-                    className="w-full py-6 bg-orange-600 text-white font-bold rounded-3xl hover:bg-orange-700 shadow-xl shadow-orange-600/20 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
-                  >
-                    <CheckCircle size={24} /> FINALIZAR CAPÍTULO
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Footer Navigation Bar */}
-      {selectedSubject && isEnrolled && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 w-full max-w-4xl px-4 z-50">
-          <div className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl p-4 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-2xl flex items-center justify-between gap-4">
-            <div className="flex gap-2">
-              <button onClick={handlePrevChapter} disabled={currentChapter === 1} className="p-4 bg-stone-100 dark:bg-zinc-800 rounded-2xl hover:bg-stone-200 disabled:opacity-30 transition-all"><ArrowLeft size={20} /></button>
-              <button onClick={handleNextChapter} disabled={currentChapter === 5 || !chapterContent[currentChapter]} className="p-4 bg-stone-100 dark:bg-zinc-800 rounded-2xl hover:bg-stone-200 disabled:opacity-30 transition-all"><ArrowRight size={20} /></button>
-            </div>
-            <button 
-              onClick={() => {
-                if (currentChapter === 5 && evangelismProgress[selectedSubject!]?.chapter5Completed) startAssessment();
-                else showToast("Conclua o capítulo 5 primeiro! 🔥", 'info');
-              }}
-              className="flex-1 py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 shadow-lg shadow-orange-600/20 transition-all flex items-center justify-center gap-2"
-            >
-              <Brain size={20} /> AVALIAÇÃO FINAL
-            </button>
-            <button onClick={() => setSelectedSubject(null)} className="p-4 bg-red-50 dark:bg-red-900/20 text-red-600 rounded-2xl hover:bg-red-100 transition-all"><X size={20} /></button>
-          </div>
-        </div>
-      )}
-
-      <AnimatePresence>
-        {showAssessmentModal && (
-          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-white dark:bg-zinc-900 w-full max-w-2xl max-h-[90vh] rounded-[3rem] overflow-hidden shadow-2xl flex flex-col">
-              <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center bg-stone-50 dark:bg-zinc-800/50">
-                <div className="flex items-center gap-3">
-                  <div className="p-3 bg-orange-600 text-white rounded-2xl"><Brain size={24} /></div>
-                  <h3 className="text-xl font-bold">Avaliação: {selectedSubject}</h3>
-                </div>
-                <button onClick={() => setShowAssessmentModal(false)} className="p-2 hover:bg-stone-200 rounded-full"><X size={24} /></button>
-              </div>
-              <div className="p-8 overflow-y-auto flex-1">
-                {isGeneratingAssessment ? (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                    <Loader2 className="animate-spin text-orange-600" size={48} />
-                    <p className="text-stone-500 font-medium">Preparando avaliação...</p>
-                  </div>
-                ) : assessmentResult ? (
-                  <div className="text-center space-y-8 py-6">
-                    <div className={cn("w-32 h-32 rounded-full mx-auto flex items-center justify-center text-4xl font-bold border-8", assessmentResult.score >= 28 ? "border-orange-500 text-orange-600" : "border-amber-500 text-amber-600")}>
-                      {assessmentResult.score}/40
-                    </div>
-                    <h4 className="text-2xl font-bold">{assessmentResult.message}</h4>
-                    <button onClick={() => setShowAssessmentModal(false)} className="px-10 py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all">VOLTAR AO CURSO</button>
-                  </div>
-                ) : assessmentQuestions.length > 0 && (
-                    <div className="space-y-8">
-                      <h4 className="text-xl font-bold">{assessmentQuestions[currentQuestionIndex].question}</h4>
-                      <div className="space-y-3">
-                        {assessmentQuestions[currentQuestionIndex].options.map((opt: string, idx: number) => (
-                          <button key={`assessment-q-${currentQuestionIndex}-opt-${idx}`} onClick={() => handleAnswer(idx)} className={cn("w-full p-5 text-left rounded-2xl border-2 transition-all", userAnswers[currentQuestionIndex] === idx ? "border-orange-500 bg-orange-50 text-orange-900" : "border-stone-100 hover:border-orange-200")}>
-                            {opt}
-                          </button>
-                        ))}
-                      </div>
-                    <button onClick={nextQuestion} disabled={userAnswers[currentQuestionIndex] === undefined} className="w-full py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all">
-                      {currentQuestionIndex === 9 ? 'FINALIZAR' : 'PRÓXIMA'}
+                    <button
+                      onClick={submitChapterQuiz}
+                      disabled={isChapterQuizSubmitted || chapterQuizAnswers.length < 4}
+                      className="w-full py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 disabled:opacity-50 transition-all shadow-lg shadow-orange-600/20"
+                    >
+                      {isChapterQuizSubmitted ? 'QUESTIONÁRIO ENVIADO' : 'ENVIAR RESPOSTAS'}
                     </button>
                   </div>
-                )}
+                ) : null}
               </div>
-            </motion.div>
+
+              {/* Tools Card */}
+              <div className="bg-stone-900 text-white rounded-[2.5rem] p-8 space-y-6">
+                <h4 className="font-bold flex items-center gap-2">
+                  <Sparkles size={20} className="text-purple-400" />
+                  Ferramentas de Estudo
+                </h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <button onClick={() => setShowSummaryModal(true)} className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex flex-col items-center gap-2 text-center">
+                    <FileText size={24} className="text-purple-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Resumo</span>
+                  </button>
+                  <button onClick={() => setShowDebateModal(true)} className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex flex-col items-center gap-2 text-center">
+                    <MessageSquare size={24} className="text-blue-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Debate</span>
+                  </button>
+                  <button onClick={startAssessment} className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex flex-col items-center gap-2 text-center">
+                    <Award size={24} className="text-green-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Avaliação</span>
+                  </button>
+                  <button onClick={() => setShowSearch(true)} className="p-4 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex flex-col items-center gap-2 text-center">
+                    <Search size={24} className="text-orange-400" />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Pesquisa</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
-        )}
-      </AnimatePresence>
+        </div>
+      )}
     </div>
   );
 }

@@ -63,6 +63,22 @@ service cloud.firestore {
     //   - isFavorite: bool
     //   - updatedAt: string
     //
+    // Collection: storytellingProgress
+    // Document ID: {userId}
+    // Fields:
+    //   - userId: string (required)
+    //   - lastActive: string
+    //   - sectionMetrics: map
+    //
+    // Collection: storytellingTermsAcceptance
+    // Document ID: {userId}
+    // Fields:
+    //   - userId: string (required)
+    //   - acceptedAt: string
+    //
+    // Collection: shared_storytelling_materials
+    // Document ID: {materialId}
+    //
     // ===============================================================
 
     // Helper Functions
@@ -350,6 +366,19 @@ service cloud.firestore {
 
     match /evangelismProgress/{userId} {
       allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /storytellingTermsAcceptance/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /storytellingProgress/{userId} {
+      allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /shared_storytelling_materials/{materialId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /shared_evangelism_materials/{materialId} {

@@ -327,6 +327,39 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["id", "userId", "verseId", "type", "color", "isFavorite", "updatedAt"]
+    },
+    "StorytellingProgress": {
+      "title": "Storytelling Progress",
+      "description": "Tracks user progress in storytelling courses",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "lastActive": { "type": "string", "format": "date-time" },
+        "sectionMetrics": { "type": "object", "additionalProperties": { "type": "integer" } }
+      },
+      "required": ["userId"]
+    },
+    "StorytellingTermsAcceptance": {
+      "title": "Storytelling Terms Acceptance",
+      "description": "Records user acceptance of storytelling course terms",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "acceptedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "acceptedAt"]
+    },
+    "SharedStorytellingMaterial": {
+      "title": "Shared Storytelling Material",
+      "description": "AI generated storytelling course content",
+      "type": "object",
+      "properties": {
+        "content": { "type": "string" },
+        "subject": { "type": "string" },
+        "chapter": { "type": "integer" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["content", "subject", "chapter"]
     }
   },
   "firestore": {
@@ -417,6 +450,18 @@
     "/bibleAnnotations/{annotationId}": {
       "schema": "BibleAnnotation",
       "description": "User bible verse annotations"
+    },
+    "/storytellingProgress/{userId}": {
+      "schema": "StorytellingProgress",
+      "description": "User storytelling progress"
+    },
+    "/storytellingTermsAcceptance/{userId}": {
+      "schema": "StorytellingTermsAcceptance",
+      "description": "User storytelling terms acceptance"
+    },
+    "/shared_storytelling_materials/{materialId}": {
+      "schema": "SharedStorytellingMaterial",
+      "description": "Shared storytelling course materials"
     }
   }
 }

@@ -878,6 +878,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => {
     if (!pendingNote) return;
     
+    if (!pendingNote.content) {
+      showToast("Conteúdo não disponível para salvar.", "error");
+      return;
+    }
+
     setIsSavingToNotebook(true);
     try {
       if (user) {
@@ -913,7 +918,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   const saveNote = async () => {
-    if (!currentNote.title || !currentNote.content) return;
+    if (!currentNote.title || !currentNote.content) {
+      showToast("Título e conteúdo são obrigatórios.", "error");
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -2043,11 +2051,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleSearch = async (source?: string, overrideQuery?: string) => {
+  const handleSearch = async (source?: string, overrideQuery?: string, overrideTab?: string) => {
     const query = overrideQuery || searchQuery || topic;
     if (!query && !source) return;
     
     const searchSource = source || loadingSource;
+    const currentTab = overrideTab || activeTab;
 
     if (isOffline) {
       const offlineId = `${searchSource}-${query}`;
@@ -2085,7 +2094,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       let responseText = '';
       let responseThought = '';
 
-      if (activeTab === 'religions') {
+      if (currentTab === 'religions') {
         const religionPrompt = `
         Termo pesquisado: "${query || 'Geral'}"
         Fonte selecionada: "${searchSource}"
@@ -2101,7 +2110,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         const response = await geminiService.generateTextWithThought(religionPrompt, "Você é um especialista em religiões comparadas e teologia.", deepThinking);
         responseText = response.text;
         responseThought = response.thought;
-      } else if (activeTab === 'compare') {
+      } else if (currentTab === 'compare') {
         const response = await geminiService.generateTextWithThought(`Compare o texto bíblico "${query}" na versão NVI com a versão ${compareVersion}. Explique as nuances de tradução.`, undefined, deepThinking);
         responseText = response.text;
         responseThought = response.thought;
@@ -2432,7 +2441,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
     if (search) {
       setSearchQuery(search);
-      handleSearch(undefined, search);
+      handleSearch(undefined, search, tabParam || activeTab);
       // Clear params to avoid re-triggering
       setSearchParams({}, { replace: true });
     } else if (outlineParam) {

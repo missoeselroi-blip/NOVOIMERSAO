@@ -619,18 +619,13 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          onClick={handleInstallApp}
+          onClick={() => onNavigate('bible')}
           className="flex-1 py-5 bg-white dark:bg-zinc-900 text-emerald-600 border-2 border-emerald-600/20 rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-emerald-50 dark:hover:bg-zinc-800 transition-all shadow-lg group"
         >
           <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <img 
-              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
-              alt="App Icon" 
-              className="w-6 h-6 object-contain"
-              referrerPolicy="no-referrer"
-            />
+            <Book size={20} className="text-emerald-600" />
           </div>
-          <span className="text-sm md:text-base">Instalar App</span>
+          <span className="text-sm md:text-base">Bíblia Sagrada</span>
         </motion.button>
       </div>
 
