@@ -467,6 +467,7 @@ export default function StorytellingPage({ onNavigate }: StorytellingPageProps) 
     }
     setSelectedSubject(subject);
     setCurrentChapter(1);
+    setChapterContent({});
     loadChapter(subject, 1);
   };
 
@@ -474,6 +475,7 @@ export default function StorytellingPage({ onNavigate }: StorytellingPageProps) 
     setSelectedSubject(subject);
     setShowSubjectModal(false);
     setCurrentChapter(1);
+    setChapterContent({});
     loadChapter(subject, 1);
   };
 

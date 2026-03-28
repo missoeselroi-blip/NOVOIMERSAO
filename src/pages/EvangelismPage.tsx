@@ -461,6 +461,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     }
     setSelectedSubject(subject);
     setCurrentChapter(1);
+    setChapterContent({});
     loadChapter(subject, 1);
   };
 
@@ -468,6 +469,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     setSelectedSubject(subject);
     setShowSubjectModal(false);
     setCurrentChapter(1);
+    setChapterContent({});
     loadChapter(subject, 1);
   };
 

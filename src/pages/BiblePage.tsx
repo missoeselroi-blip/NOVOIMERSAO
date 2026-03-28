@@ -351,15 +351,14 @@ export default function BiblePage() {
       {/* Header / Toolbar */}
       <div className="p-4 md:p-6 border-b border-stone-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-4 bg-stone-100 dark:bg-zinc-900 sticky top-0 z-[60]">
         <div className="flex items-center gap-2">
-          {!isFullscreen && (
-            <button 
-              onClick={() => navigate('/')}
-              className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
-              title="Voltar ao Início"
-            >
-              <ArrowLeft size={24} />
-            </button>
-          )}
+          <button 
+            onClick={() => navigate('/')}
+            className="flex items-center gap-2 p-2 px-3 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
+            title="Sair da Bíblia"
+          >
+            <X size={20} />
+            <span className="text-sm font-medium hidden sm:inline">Sair</span>
+          </button>
           
           <button 
             onClick={toggleFullscreen}

@@ -624,6 +624,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     setSelectedSubject(subject);
     setShowSubjectModal(false);
     setCurrentChapter(1);
+    setChapterContent({});
     loadChapter(subject, 1);
   };
 
