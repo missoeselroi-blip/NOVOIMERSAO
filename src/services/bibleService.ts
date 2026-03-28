@@ -1,6 +1,31 @@
 import axios from 'axios';
 
-const BASE_URL = '/api/bible';
+const fetchWithFallback = async (path: string) => {
+  // Clean path to avoid double slashes
+  const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+  
+  const endpoints = [
+    `/api/bible/${cleanPath}`,
+    `https://bolls.life/${cleanPath}`,
+    `https://api.allorigins.win/raw?url=${encodeURIComponent(`https://bolls.life/${cleanPath}`)}`
+  ];
+  
+  for (const url of endpoints) {
+    try {
+      const response = await axios.get(url, { timeout: 8000 });
+      // Check if response is valid JSON and not HTML (which happens on static hosting 404s)
+      if (typeof response.data === 'string' && response.data.trim().startsWith('<')) {
+        console.warn(`[BibleService] Endpoint ${url} returned HTML, skipping...`);
+        continue;
+      }
+      return response;
+    } catch (e) {
+      console.warn(`[BibleService] Endpoint ${url} failed`);
+      continue;
+    }
+  }
+  throw new Error("All endpoints failed");
+};
 
 export interface BibleVersion {
   id: number;
@@ -34,17 +59,17 @@ export const bibleService = {
     try {
       // Try multiple possible endpoints for translations
       const endpoints = [
-        `${BASE_URL}/get-translations/`,
-        `${BASE_URL}/get-translations`,
-        `${BASE_URL}/translations/`,
-        `${BASE_URL}/translations`,
-        `${BASE_URL}/api/get-translations/`,
-        `${BASE_URL}/api/v1/get-translations/`
+        `get-translations/`,
+        `get-translations`,
+        `translations/`,
+        `translations`,
+        `api/get-translations/`,
+        `api/v1/get-translations/`
       ];
       
-      for (const url of endpoints) {
+      for (const path of endpoints) {
         try {
-          const response = await axios.get(url, { timeout: 8000 });
+          const response = await fetchWithFallback(path);
           if (Array.isArray(response.data) && response.data.length > 0) {
             return response.data.map((v: any, index: number) => ({
               id: v.id || v.pk || (index + 1),
@@ -65,7 +90,7 @@ export const bibleService = {
             }
           }
         } catch (e) {
-          console.warn(`Failed to fetch translations from ${url}`);
+          console.warn(`Failed to fetch translations from ${path}`);
         }
       }
       
@@ -238,7 +263,7 @@ export const bibleService = {
 
   getBooks: async (version: string): Promise<BibleBook[]> => {
     try {
-      const response = await axios.get(`${BASE_URL}/get-books/${version}/`, { timeout: 5000 });
+      const response = await fetchWithFallback(`get-books/${version}/`);
       if (Array.isArray(response.data)) {
         return response.data.map((b: any, index: number) => ({
           pk: b.pk || b.id || (index + 1),
@@ -246,7 +271,7 @@ export const bibleService = {
           chapters: b.chapters || b.chapter_count || 0
         }));
       }
-      return response.data;
+      throw new Error("Invalid response format");
     } catch (error) {
       console.warn(`Failed to fetch books for ${version}, using fallback`);
       // Fallback books list for common versions
@@ -322,38 +347,57 @@ export const bibleService = {
   },
 
   getChapter: async (version: string, bookId: number, chapter: number): Promise<BibleVerse[]> => {
-    const response = await axios.get(`${BASE_URL}/get-chapter/${version}/${bookId}/${chapter}/`);
-    if (Array.isArray(response.data)) {
-      return response.data.map((v: any, index: number) => ({
-        pk: v.pk || v.id || (index + 1),
-        verse: v.verse || v.number || (index + 1),
-        text: v.text || v.content || ""
-      }));
+    try {
+      const response = await fetchWithFallback(`get-chapter/${version}/${bookId}/${chapter}/`);
+      if (Array.isArray(response.data)) {
+        return response.data.map((v: any, index: number) => ({
+          pk: v.pk || v.id || (index + 1),
+          verse: v.verse || v.number || (index + 1),
+          text: v.text || v.content || ""
+        }));
+      }
+      throw new Error("Invalid response format");
+    } catch (error) {
+      console.warn(`Failed to fetch chapter ${chapter} of book ${bookId} for ${version}`);
+      return [
+        { pk: 1, verse: 1, text: "Não foi possível carregar o texto bíblico. Verifique sua conexão ou tente novamente mais tarde." }
+      ];
     }
-    return response.data;
   },
 
   getVerse: async (version: string, bookId: number, chapter: number, verse: number): Promise<BibleVerse> => {
-    const response = await axios.get(`${BASE_URL}/get-verse/${version}/${bookId}/${chapter}/${verse}/`);
-    const v = response.data;
-    return {
-      pk: v.pk || v.id || 0,
-      verse: v.verse || v.number || verse,
-      text: v.text || v.content || ""
-    };
+    try {
+      const response = await fetchWithFallback(`get-verse/${version}/${bookId}/${chapter}/${verse}/`);
+      const v = response.data;
+      if (v && typeof v === 'object') {
+        return {
+          pk: v.pk || v.id || 0,
+          verse: v.verse || v.number || verse,
+          text: v.text || v.content || ""
+        };
+      }
+      throw new Error("Invalid response format");
+    } catch (error) {
+      return { pk: 0, verse, text: "Versículo indisponível" };
+    }
   },
 
   search: async (version: string, query: string): Promise<SearchResult[]> => {
-    const response = await axios.get(`${BASE_URL}/search/${version}/?search=${encodeURIComponent(query)}`);
-    if (Array.isArray(response.data)) {
-      return response.data.map((res: any, index: number) => ({
-        pk: res.pk || res.id || (index + 1),
-        verse: res.verse || res.number || 0,
-        text: res.text || res.content || "",
-        book: res.book || res.book_name || "",
-        chapter: res.chapter || res.chapter_number || 0
-      }));
+    try {
+      const response = await fetchWithFallback(`search/${version}/?search=${encodeURIComponent(query)}`);
+      if (Array.isArray(response.data)) {
+        return response.data.map((res: any, index: number) => ({
+          pk: res.pk || res.id || (index + 1),
+          verse: res.verse || res.number || 0,
+          text: res.text || res.content || "",
+          book: res.book || res.book_name || "",
+          chapter: res.chapter || res.chapter_number || 0
+        }));
+      }
+      return [];
+    } catch (error) {
+      console.warn(`Search failed for query: ${query}`);
+      return [];
     }
-    return response.data;
   }
 };

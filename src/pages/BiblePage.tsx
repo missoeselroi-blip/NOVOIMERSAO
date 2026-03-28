@@ -331,13 +331,17 @@ export default function BiblePage() {
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(e => {
-        console.error(`Error attempting to enable full-screen mode: ${e.message}`);
-      });
-      setIsFullscreen(true);
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch(e => {
+          console.error(`Error attempting to enable full-screen mode: ${e.message}`);
+        });
+        setIsFullscreen(true);
+      } else {
+        showToast("Modo tela cheia não suportado neste navegador.", "info");
+      }
     } else {
       if (document.exitFullscreen) {
-        document.exitFullscreen();
+        document.exitFullscreen().catch(e => console.error(e));
         setIsFullscreen(false);
       }
     }
@@ -352,7 +356,12 @@ export default function BiblePage() {
       <div className="p-4 md:p-6 border-b border-stone-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-4 bg-stone-100 dark:bg-zinc-900 sticky top-0 z-[60]">
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => {
+              if (document.fullscreenElement && document.exitFullscreen) {
+                document.exitFullscreen().catch(e => console.error(e));
+              }
+              navigate('/');
+            }}
             className="flex items-center gap-2 p-2 px-3 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
             title="Sair da Bíblia"
           >
