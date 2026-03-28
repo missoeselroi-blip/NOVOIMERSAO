@@ -28,7 +28,10 @@ import { useCredits } from '../contexts/CreditContext';
 import html2canvas from 'html2canvas';
 import { multiAiService } from '../services/multiAiService';
 
+import { useLocation } from 'react-router-dom';
+
 export default function PostsPage() {
+  const location = useLocation();
   const { fontFamily: accFontFamily, fontSize: accFontSize, lineHeight: accLineHeight } = useAccessibility();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -37,8 +40,12 @@ export default function PostsPage() {
   const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
-  const [verse, setVerse] = useState("Pois eu bem sei os planos que tenho para vocês...");
-  const [reference, setReference] = useState("Jeremias 29:11");
+  
+  const initialVerse = location.state?.verse || "Pois eu bem sei os planos que tenho para vocês...";
+  const initialReference = location.state?.reference || "Jeremias 29:11";
+  
+  const [verse, setVerse] = useState(initialVerse);
+  const [reference, setReference] = useState(initialReference);
   const [bgImage, setBgImage] = useState("https://picsum.photos/seed/bible/1080/1080");
   const [fontSize, setFontSize] = useState(32);
   const [fontFamily, setFontFamily] = useState('serif');

@@ -273,6 +273,54 @@ async function startServer() {
     }
   });
 
+  // Bible API Proxy
+  app.get('/api/bible/*', async (req, res) => {
+    const path = req.params[0];
+    const query = req.query;
+    // Ensure path doesn't have double slashes and handles the bolls.life structure
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    const url = `https://bolls.life/${cleanPath}`;
+    
+    console.log(`[Bible Proxy] Fetching: ${url} with query:`, query);
+    
+    try {
+      const response = await axios.get(url, { 
+        params: query,
+        timeout: 15000, // 15 seconds timeout
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+          'Accept': 'application/json, text/plain, */*',
+          'Accept-Language': 'en-US,en;q=0.9,pt-BR;q=0.8,pt;q=0.7',
+          'Referer': 'https://bolls.life/',
+          'Origin': 'https://bolls.life'
+        }
+      });
+      console.log(`[Bible Proxy] Success: ${url} - Status: ${response.status}`);
+      res.json(response.data);
+    } catch (error: any) {
+      // If it's a 404 on translation discovery endpoints, return an empty array silently
+      const isDiscovery = cleanPath.includes('translations') || cleanPath.includes('get-translations');
+      if (error.response?.status === 404 && isDiscovery) {
+        console.warn(`[Bible Proxy] 404 on discovery endpoint: ${url}, returning empty array`);
+        return res.json([]);
+      }
+
+      console.error(`[Bible Proxy] Error (${url}):`, error.message);
+      if (error.response) {
+        console.error(`[Bible Proxy] Response Status: ${error.response.status}`);
+        // Only log first 200 chars of data if it's HTML
+        const data = typeof error.response.data === 'string' 
+          ? error.response.data.substring(0, 200) 
+          : JSON.stringify(error.response.data).substring(0, 200);
+        console.error(`[Bible Proxy] Response Data (truncated):`, data);
+      }
+      res.status(error.response?.status || 500).json({ 
+        error: 'Failed to fetch from Bible API',
+        details: error.message 
+      });
+    }
+  });
+
   app.post('/api/ai/openai/sentiment-analysis', async (req, res) => {
     if (!openai) return res.status(500).json({ error: 'OpenAI is not configured' });
     const { text } = req.body;
@@ -481,6 +529,7 @@ async function startServer() {
     // Serve index.html for all non-API routes
     app.get('*', async (req, res, next) => {
       const url = req.originalUrl;
+      console.log(`[Server] Request received for: ${url}`);
 
       // Skip API routes or static files that should be handled by express.static or vite
       if (url.startsWith('/api/') || (url.includes('.') && !url.endsWith('.html'))) {

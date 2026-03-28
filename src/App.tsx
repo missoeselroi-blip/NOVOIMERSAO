@@ -47,7 +47,7 @@ import {
   Medal,
   Flame
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './types';
 import { NavigationMenu } from './components/NavigationMenu';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -90,6 +90,7 @@ const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));
 const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
 const BibleRacePage = lazyWithRetry(() => import('./pages/BibleRacePage'));
 const QuizPage = lazyWithRetry(() => import('./pages/QuizPage'));
+const BiblePage = lazyWithRetry(() => import('./pages/BiblePage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -98,6 +99,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { AudioBoxProvider } from './contexts/AudioBoxContext';
+import { BibleProvider } from './contexts/BibleContext';
 import { AccessibilityControls } from './components/AccessibilityControls';
 import { VoiceCommandCenter } from './components/VoiceCommandCenter';
 import { SpiritualTutor } from './components/SpiritualTutor';
@@ -179,6 +181,7 @@ function AppContent() {
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
+    { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
     { id: 'quiz', label: 'Quiz', icon: <Zap size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
@@ -187,6 +190,7 @@ function AppContent() {
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
     { id: 'courses', label: 'Cursos', subtitle: 'Jornada de aprendizado', icon: <GraduationCap size={20} />, component: <CoursesPage onNavigate={handleNavigate} /> },
+    { id: 'bible', label: 'Bíblia', subtitle: 'A Palavra de Deus', icon: <Book size={20} />, component: <BiblePage /> },
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} />, hidden: true },
@@ -820,7 +824,9 @@ export default function App() {
                 <ToastProvider>
                   <CreditProvider>
                     <AudioBoxProvider>
-                      <AppContent />
+                      <BibleProvider>
+                        <AppContent />
+                      </BibleProvider>
                     </AudioBoxProvider>
                   </CreditProvider>
                 </ToastProvider>

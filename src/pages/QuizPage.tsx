@@ -219,6 +219,86 @@ const QUESTIONS: Question[] = [
     correctAnswer: 2,
     difficulty: 'easy',
     testament: 'old'
+  },
+  {
+    id: 21,
+    text: "Qual foi o primeiro milagre de Jesus?",
+    options: ["Cura de um cego", "Multiplicação dos pães", "Transformação de água em vinho", "Caminhar sobre as águas"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 22,
+    text: "Quem foi o profeta que desafiou os profetas de Baal no Monte Carmelo?",
+    options: ["Eliseu", "Elias", "Isaías", "Jeremias"],
+    correctAnswer: 1,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 23,
+    text: "Qual era o nome do jardim onde Jesus orou antes de ser preso?",
+    options: ["Jardim do Éden", "Jardim de Getsêmani", "Jardim de Jericó", "Jardim de Sião"],
+    correctAnswer: 1,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 24,
+    text: "Quem foi a rainha que visitou Salomão para testar sua sabedoria?",
+    options: ["Rainha de Sabá", "Rainha Ester", "Rainha Jezabel", "Rainha Vasti"],
+    correctAnswer: 0,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 25,
+    text: "Qual o nome do mar que Moisés abriu para o povo de Israel passar?",
+    options: ["Mar Morto", "Mar da Galileia", "Mar Vermelho", "Mar Mediterrâneo"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 26,
+    text: "Quem foi o autor do livro de Atos dos Apóstolos?",
+    options: ["Pedro", "Paulo", "Lucas", "João"],
+    correctAnswer: 2,
+    difficulty: 'medium',
+    testament: 'new'
+  },
+  {
+    id: 27,
+    text: "Qual o nome do filho de Abraão com a serva Agar?",
+    options: ["Isaque", "Ismael", "Jacó", "Esaú"],
+    correctAnswer: 1,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 28,
+    text: "Quem foi o rei que mandou jogar Daniel na cova dos leões?",
+    options: ["Nabucodonosor", "Belsazar", "Dário", "Ciro"],
+    correctAnswer: 2,
+    difficulty: 'hard',
+    testament: 'old'
+  },
+  {
+    id: 29,
+    text: "Qual o nome do anjo que anunciou o nascimento de Jesus a Maria?",
+    options: ["Miguel", "Rafael", "Gabriel", "Uriel"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 30,
+    text: "Quantos discípulos Jesus escolheu inicialmente?",
+    options: ["7", "10", "12", "70"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
   }
 ];
 

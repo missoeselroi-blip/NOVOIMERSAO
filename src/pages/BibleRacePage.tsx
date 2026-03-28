@@ -1055,7 +1055,7 @@ const BibleRacePage: React.FC = () => {
                         </thead>
                         <tbody className="text-sm">
                           {champions.map((champ, idx) => (
-                            <tr key={idx} className="border-b border-stone-50 dark:border-zinc-800/50">
+                            <tr key={`champion-${champ.userId}-${idx}`} className="border-b border-stone-50 dark:border-zinc-800/50">
                               <td className="py-4">
                                 <img src={champ.userPhoto} alt={champ.userName} className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
                               </td>
@@ -1107,7 +1107,7 @@ const BibleRacePage: React.FC = () => {
                     <p className="text-center text-stone-400 text-xs py-8">Nenhuma mensagem {messageView === 'received' ? 'recebida' : 'enviada'}.</p>
                   ) : (
                     messages.map((msg) => (
-                      <div key={msg.id} className="p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl border border-stone-100 dark:border-zinc-800">
+                      <div key={`msg-${msg.id}`} className="p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl border border-stone-100 dark:border-zinc-800">
                         <p className="text-[10px] font-black text-emerald-600 uppercase mb-1">
                           {messageView === 'received' ? `De: ${msg.fromUserName}` : `Para: ${msg.toUserName || 'Usuário'}`}
                         </p>
@@ -1285,7 +1285,7 @@ const BibleRacePage: React.FC = () => {
                     <div className="grid grid-cols-1 gap-3">
                       {quizQuestions[currentQuizIndex]?.options.map((option, idx) => (
                         <button
-                          key={idx}
+                          key={`quiz-opt-${currentQuizIndex}-${idx}`}
                           onClick={() => handleQuizAnswer(idx)}
                           className="w-full text-left p-5 rounded-2xl border-2 border-stone-100 dark:border-zinc-800 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all font-bold text-sm group flex items-center justify-between"
                         >
@@ -1374,7 +1374,7 @@ const BibleRacePage: React.FC = () => {
                     "Vamos terminar essa Bíblia juntos!"
                   ].map((msg, idx) => (
                     <button
-                      key={idx}
+                      key={`incentive-msg-${idx}`}
                       onClick={() => sendMessage(msg)}
                       className="w-full text-left p-4 rounded-xl border border-stone-100 dark:border-zinc-800 hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all text-sm font-medium"
                     >

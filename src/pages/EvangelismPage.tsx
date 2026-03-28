@@ -711,7 +711,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
               { icon: <Globe />, title: "Global", desc: "Visão missionária transcultural." },
               { icon: <Award />, title: "Certificado", desc: "Reconhecimento de conclusão." }
             ].map((item, i) => (
-              <div key={i} className="p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
+              <div key={`evangelism-feature-${item.title}-${i}`} className="p-8 bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
                 <div className="w-12 h-12 bg-orange-50 dark:bg-orange-900/20 text-orange-600 rounded-2xl flex items-center justify-center mb-4 mx-auto">
                   {item.icon}
                 </div>
@@ -753,7 +753,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
               
               return (
                 <motion.div 
-                  key={i}
+                  key={`evangelism-subject-${subject.title}-${i}`}
                   whileHover={!isLocked ? { y: -5 } : {}}
                   onClick={() => handleSubjectClick(subject.title)}
                   className={cn(
@@ -910,12 +910,12 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                   </div>
                   <div className="space-y-8">
                     {chapterQuiz.map((q, i) => (
-                      <div key={i} className="space-y-4">
+                      <div key={`chapter-quiz-q-${i}`} className="space-y-4">
                         <h4 className="text-lg font-bold flex gap-3"><span className="text-orange-600">{i + 1}.</span> {q.question}</h4>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           {q.options.map((opt: string, idx: number) => (
                             <button 
-                              key={idx} 
+                              key={`chapter-quiz-q-${i}-opt-${idx}`} 
                               onClick={() => {
                                 const newAnswers = [...chapterQuizAnswers];
                                 newAnswers[i] = idx;
@@ -995,15 +995,15 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                     <button onClick={() => setShowAssessmentModal(false)} className="px-10 py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all">VOLTAR AO CURSO</button>
                   </div>
                 ) : assessmentQuestions.length > 0 && (
-                  <div className="space-y-8">
-                    <h4 className="text-xl font-bold">{assessmentQuestions[currentQuestionIndex].question}</h4>
-                    <div className="space-y-3">
-                      {assessmentQuestions[currentQuestionIndex].options.map((opt: string, idx: number) => (
-                        <button key={idx} onClick={() => handleAnswer(idx)} className={cn("w-full p-5 text-left rounded-2xl border-2 transition-all", userAnswers[currentQuestionIndex] === idx ? "border-orange-500 bg-orange-50 text-orange-900" : "border-stone-100 hover:border-orange-200")}>
-                          {opt}
-                        </button>
-                      ))}
-                    </div>
+                    <div className="space-y-8">
+                      <h4 className="text-xl font-bold">{assessmentQuestions[currentQuestionIndex].question}</h4>
+                      <div className="space-y-3">
+                        {assessmentQuestions[currentQuestionIndex].options.map((opt: string, idx: number) => (
+                          <button key={`assessment-q-${currentQuestionIndex}-opt-${idx}`} onClick={() => handleAnswer(idx)} className={cn("w-full p-5 text-left rounded-2xl border-2 transition-all", userAnswers[currentQuestionIndex] === idx ? "border-orange-500 bg-orange-50 text-orange-900" : "border-stone-100 hover:border-orange-200")}>
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
                     <button onClick={nextQuestion} disabled={userAnswers[currentQuestionIndex] === undefined} className="w-full py-4 bg-orange-600 text-white font-bold rounded-2xl hover:bg-orange-700 transition-all">
                       {currentQuestionIndex === 9 ? 'FINALIZAR' : 'PRÓXIMA'}
                     </button>

@@ -296,6 +296,37 @@
         "updatedAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "name", "score", "updatedAt"]
+    },
+    "Study": {
+      "title": "Study",
+      "description": "User saved Bible studies and AI commentaries",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "verseReference": { "type": "string" },
+        "bibleVersion": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "content", "createdAt"]
+    },
+    "BibleAnnotation": {
+      "title": "Bible Annotation",
+      "description": "User bible verse annotations including highlights and notes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "verseId": { "type": "string" },
+        "type": { "type": "string", "enum": ["highlight", "underline", "circle", "none"] },
+        "color": { "type": "string" },
+        "note": { "type": "string" },
+        "isFavorite": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "verseId", "type", "color", "isFavorite", "updatedAt"]
     }
   },
   "firestore": {
@@ -378,6 +409,14 @@
     "/quizLeaderboard/{userId}": {
       "schema": "QuizLeaderboard",
       "description": "User Bible Quiz rankings"
+    },
+    "/studies/{studyId}": {
+      "schema": "Study",
+      "description": "User saved Bible studies"
+    },
+    "/bibleAnnotations/{annotationId}": {
+      "schema": "BibleAnnotation",
+      "description": "User bible verse annotations"
     }
   }
 }

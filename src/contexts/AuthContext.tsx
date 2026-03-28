@@ -75,6 +75,7 @@ interface AuthContextType {
   updateSectionTime: (sectionId: string, seconds: number) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
   toggleFavorite: (favorite: Omit<Favorite, 'id'>) => Promise<void>;
+  addStudy: (study: { title: string; content: string; verseReference?: string; bibleVersion?: string }) => Promise<void>;
   isInitialLoading: boolean;
 }
 
@@ -159,56 +160,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubscribeUser: (() => void) | null = null;
 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      // Clean up previous user listener if it exists
-      if (unsubscribeUser) {
-        unsubscribeUser();
-        unsubscribeUser = null;
-      }
-
-      if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        
-        let userData: User;
-        if (userDoc.exists()) {
-          userData = userDoc.data() as User;
-        } else {
-          userData = {
-            id: firebaseUser.uid,
-            name: firebaseUser.displayName || 'Usuário',
-            email: firebaseUser.email || '',
-            photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
-            joinDate: new Date().toISOString(),
-            role: 'user'
-          };
-          await setDoc(userDocRef, userData);
+      try {
+        // Clean up previous user listener if it exists
+        if (unsubscribeUser) {
+          unsubscribeUser();
+          unsubscribeUser = null;
         }
-        
-        unsubscribeUser = onSnapshot(userDocRef, (doc) => {
-          if (doc.exists()) {
-            setUser(doc.data() as User);
+
+        if (firebaseUser) {
+          const userDocRef = doc(db, 'users', firebaseUser.uid);
+          const userDoc = await getDoc(userDocRef);
+          
+          let userData: User;
+          if (userDoc.exists()) {
+            userData = userDoc.data() as User;
+          } else {
+            userData = {
+              id: firebaseUser.uid,
+              name: firebaseUser.displayName || 'Usuário',
+              email: firebaseUser.email || '',
+              photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
+              joinDate: new Date().toISOString(),
+              role: 'user'
+            };
+            await setDoc(userDocRef, userData);
           }
+          
+          unsubscribeUser = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+              setUser(doc.data() as User);
+            }
+            setIsInitialLoading(false);
+          }, (error) => {
+            handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
+            setIsInitialLoading(false);
+          });
+        } else {
+          setUser(null);
+          setTheologyProgress(null);
+          setEvangelismProgress(null);
+          setCareerProgress(null);
+          setNotes([]);
+          setCertificates([]);
+          setMetrics({
+            accesses: 0,
+            totalTime: 0,
+            forumParticipations: 0,
+            shares: 0,
+            hasContributed: false,
+            membershipMonths: 0,
+            sectionTimes: {},
+          });
           setIsInitialLoading(false);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, `users/${firebaseUser.uid}`);
-          setIsInitialLoading(false);
-        });
-      } else {
-        setUser(null);
-        setTheologyProgress(null);
-        setEvangelismProgress(null);
-        setCareerProgress(null);
-        setNotes([]);
-        setCertificates([]);
-        setMetrics({
-          accesses: 0,
-          totalTime: 0,
-          forumParticipations: 0,
-          shares: 0,
-          hasContributed: false,
-          membershipMonths: 0,
-          sectionTimes: {},
-        });
+        }
+      } catch (error) {
+        console.error('Error in onAuthStateChanged:', error);
         setIsInitialLoading(false);
       }
     });
@@ -458,6 +464,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const addStudy = async (study: { title: string; content: string; verseReference?: string; bibleVersion?: string }) => {
+    if (!user || !db) return;
+    const noteDocRef = doc(collection(db, 'notes'));
+    try {
+      await setDoc(noteDocRef, {
+        userId: user.id,
+        title: study.title,
+        content: `### ${study.verseReference} (${study.bibleVersion})\n\n${study.content}`,
+        category: 'Estudos',
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.CREATE, 'notes');
+    }
+  };
+
   const logout = async () => {
     if (!auth) return;
     try {
@@ -511,6 +533,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateSectionTime,
     updateUser,
     toggleFavorite,
+    addStudy,
     isInitialLoading 
   }), [
     user, 
@@ -522,6 +545,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     certificates,
     updateUser,
     toggleFavorite,
+    addStudy,
     isInitialLoading
   ]);
 

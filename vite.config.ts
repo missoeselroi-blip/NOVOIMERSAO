@@ -23,6 +23,10 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       hmr: false,
     },
+    preview: {
+      host: '0.0.0.0',
+      port: 3000,
+    },
     optimizeDeps: {
       esbuildOptions: {
         define: {

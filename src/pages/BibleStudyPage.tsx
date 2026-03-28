@@ -3578,7 +3578,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {relatedResources.map((resource, idx) => (
                             <button
-                              key={idx}
+                              key={`related-resource-${resource.title}-${idx}`}
                               onClick={() => {
                                 const term = resource.url.replace('search:', '');
                                 setSearchQuery(term);
@@ -5289,7 +5289,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             </div>
                             <div className="space-y-2">
                               {selectedCommentators.map((name, index) => (
-                                <div key={index} className="flex gap-2">
+                                <div key={`selected-commentator-${index}`} className="flex gap-2">
                                   <div className="relative flex-1">
                                     <input
                                       type="text"
@@ -5373,7 +5373,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {suggestedDebaters.map((author, idx) => (
-                              <span key={idx} className="px-4 py-2 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold border border-amber-200 dark:border-amber-800 shadow-sm">
+                              <span key={`suggested-debater-${author}-${idx}`} className="px-4 py-2 bg-white dark:bg-zinc-800 text-amber-700 dark:text-amber-300 rounded-xl text-xs font-bold border border-amber-200 dark:border-amber-800 shadow-sm">
                                 {author}
                               </span>
                             ))}
@@ -5588,7 +5588,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           {/* Notebook Holes */}
                           <div className="absolute left-6 top-0 bottom-0 flex flex-col justify-around py-8 pointer-events-none">
                             {[...Array(20)].map((_, i) => (
-                              <div key={i} className="w-4 h-4 rounded-full bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 shadow-inner" />
+                              <div key={`spiral-hole-${i}`} className="w-4 h-4 rounded-full bg-stone-100 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 shadow-inner" />
                             ))}
                           </div>
 

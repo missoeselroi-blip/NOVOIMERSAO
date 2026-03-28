@@ -192,7 +192,7 @@ export default function TutorialsPage() {
           <div className="flex gap-2">
             {tutorialSteps.map((_, idx) => (
               <div 
-                key={idx}
+                key={`tutorial-step-dot-${idx}`}
                 className={cn(
                   "w-2 h-2 rounded-full transition-all",
                   currentStep === idx ? "w-8 bg-emerald-600" : "bg-stone-300 dark:bg-zinc-700"

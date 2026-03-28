@@ -10,7 +10,7 @@
     "dev": "tsx server.ts",
     "build": "npm run clean && vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --packages=external",
     "start": "node dist/server.js",
-    "preview": "vite preview",
+    "preview": "NODE_ENV=production node dist/server.js",
     "clean": "rimraf dist",
     "lint": "tsc --noEmit"
   },
@@ -35,7 +35,7 @@
     "idb": "^8.0.3",
     "jspdf": "^4.2.0",
     "lucide-react": "^0.546.0",
-    "motion": "^12.23.24",
+    "motion": "^12.38.0",
     "openai": "^6.32.0",
     "postcss": "^8.5.3",
     "qrcode.react": "^4.2.0",

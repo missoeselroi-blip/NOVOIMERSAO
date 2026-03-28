@@ -42,7 +42,7 @@ import {
   GraduationCap,
   User
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -800,7 +800,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                     <div className="space-y-1">
                       {searchResults.map((result, idx) => (
                         <button
-                          key={idx}
+                          key={`search-result-${result.tab}-${result.title}-${idx}`}
                           onClick={() => {
                             onNavigate(result.tab);
                             setIsSearchFocused(false);
@@ -832,7 +832,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {quickActions.map((action, index) => (
           <motion.div
-            key={`${action.id}-${index}`}
+            key={`quick-action-${action.id}-${index}`}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.03 }}
@@ -933,7 +933,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             ].map((social, i) => (
               social.href ? (
                 <a 
-                  key={i}
+                  key={`social-link-${social.label}-${i}`}
                   href={social.href} 
                   target="_blank" 
                   rel="noopener noreferrer" 
@@ -946,7 +946,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                 </a>
               ) : (
                 <button 
-                  key={i}
+                  key={`social-btn-${social.label}-${i}`}
                   onClick={social.onClick}
                   className="flex flex-col items-center gap-2 group"
                 >
@@ -1043,7 +1043,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     {sentiments.map((s, idx) => (
                       <button
-                        key={idx}
+                        key={`sentiment-${s.name}-${idx}`}
                         onClick={() => setSelectedSentiment(s)}
                         className="flex flex-col items-center gap-3 p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-transparent hover:border-emerald-200 transition-all group"
                       >
@@ -1259,7 +1259,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                       'Mensagem Velório'
                     ].map((type, idx) => (
                       <button
-                        key={idx}
+                        key={`msg-type-${type}-${idx}`}
                         onClick={() => setSelectedMessageType(type)}
                         className="flex items-center gap-4 p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-transparent hover:border-emerald-200 transition-all group text-left"
                       >
@@ -1430,7 +1430,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                   {predefinedBgs.map((bg, index) => (
                     <button
-                      key={index}
+                      key={`bg-option-${index}`}
                       onClick={() => {
                         setCurrentBg(bg);
                         setIsBgModalOpen(false);

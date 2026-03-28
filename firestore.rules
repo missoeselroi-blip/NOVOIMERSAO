@@ -51,6 +51,18 @@ service cloud.firestore {
     //   - date: string
     //   - createdAt: timestamp
     //
+    // Collection: bibleAnnotations
+    // Document ID: {annotationId}
+    // Fields:
+    //   - id: string (required)
+    //   - userId: string (required)
+    //   - verseId: string (required)
+    //   - type: string (highlight|underline|circle|none)
+    //   - color: string
+    //   - note: string (optional)
+    //   - isFavorite: bool
+    //   - updatedAt: string
+    //
     // ===============================================================
 
     // Helper Functions
@@ -97,7 +109,10 @@ service cloud.firestore {
       return data.keys().hasAll(['userId', 'title', 'content']) &&
              data.userId == request.auth.uid &&
              data.title is string && data.title.size() < 500 &&
-             data.content is string && data.content.size() < 50000;
+             data.content is string && data.content.size() < 50000 &&
+             (!('category' in data) || (data.category is string && data.category.size() < 100)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() < 50)) &&
+             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() < 50));
     }
 
     function isValidAudioTrack(data) {
@@ -198,6 +213,28 @@ service cloud.firestore {
              (!('lastScore' in data) || data.lastScore is number) &&
              (!('trend' in data) || data.trend in ['up', 'down', 'same']) &&
              data.updatedAt is timestamp;
+    }
+
+    function isValidStudy(data) {
+      return data.keys().hasAll(['userId', 'title', 'content', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() < 500 &&
+             data.content is string && data.content.size() < 100000 &&
+             (!('verseReference' in data) || (data.verseReference is string && data.verseReference.size() < 200)) &&
+             (!('bibleVersion' in data) || (data.bibleVersion is string && data.bibleVersion.size() < 100)) &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidBibleAnnotation(data) {
+      return data.keys().hasAll(['id', 'userId', 'verseId', 'type', 'color', 'isFavorite', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.id is string && data.id.size() < 100 &&
+             data.verseId is string && data.verseId.size() < 100 &&
+             data.type in ['highlight', 'underline', 'circle', 'none'] &&
+             data.color is string && data.color.size() < 50 &&
+             data.isFavorite is bool &&
+             data.updatedAt is string && data.updatedAt.size() < 50 &&
+             (!('note' in data) || (data.note is string && data.note.size() < 5000));
     }
 
     // Rules
@@ -324,6 +361,20 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create, update: if isOwner(userId) && isValidQuizLeaderboard(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /studies/{studyId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidStudy(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidStudy(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /bibleAnnotations/{annotationId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && annotationId == request.resource.data.id && isValidBibleAnnotation(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && annotationId == request.resource.data.id && isValidBibleAnnotation(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }
