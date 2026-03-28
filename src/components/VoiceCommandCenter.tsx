@@ -228,15 +228,16 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
   return (
     <motion.div 
       drag
+      dragConstraints={{ left: -window.innerWidth + 80, right: 0, top: -window.innerHeight + 80, bottom: 0 }}
       dragMomentum={false}
-      className="fixed bottom-24 left-6 z-50 flex flex-col items-start gap-4 touch-none"
+      className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-row items-end gap-4 touch-none"
     >
       <AnimatePresence>
         {isListening && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, x: -20 }}
+            initial={{ opacity: 0, scale: 0.9, x: 20 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 0.9, x: -20 }}
+            exit={{ opacity: 0, scale: 0.9, x: 20 }}
             className="bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-3xl shadow-2xl p-4 w-64"
           >
             <div className="flex items-center gap-3 mb-2">
@@ -261,22 +262,17 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
       <button
         onClick={() => setIsListening(!isListening)}
         className={cn(
-          "p-4 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 group relative",
+          "w-14 h-14 flex flex-col items-center justify-center gap-0.5 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 group relative border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing",
           isListening 
             ? "bg-red-500 text-white animate-pulse" 
             : "bg-emerald-600 text-white"
         )}
         title="Comando de Voz"
       >
-        {isListening ? <MicOff size={24} /> : <Mic size={24} />}
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
+        {isListening ? <MicOff size={20} className="relative z-10" /> : <Mic size={20} className="relative z-10" />}
+        <span className="relative z-10 text-[8px] font-black uppercase tracking-widest">Voz</span>
         
-        {/* Tooltip */}
-        {!isListening && (
-          <div className="absolute left-full ml-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[100] shadow-xl border border-white/10 -translate-x-2 group-hover:translate-x-0 uppercase tracking-widest">
-            Comando de Voz
-            <div className="absolute right-full top-1/2 -translate-y-1/2 border-8 border-transparent border-r-zinc-900 dark:border-r-zinc-800" />
-          </div>
-        )}
       </button>
     </motion.div>
   );
