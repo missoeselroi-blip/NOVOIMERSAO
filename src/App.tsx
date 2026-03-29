@@ -481,7 +481,6 @@ function AppContent() {
               )}>
                 {item.icon}
               </div>
-              <span className="text-[10px] font-bold uppercase tracking-tighter">{item.label}</span>
             </button>
           ))}
           <button
@@ -499,7 +498,6 @@ function AppContent() {
             )}>
               {isMenuOpen ? <X size={22} /> : <Menu size={22} />}
             </div>
-            <span className="text-[10px] font-bold uppercase tracking-tighter">Menu</span>
           </button>
         </div>
       </div>

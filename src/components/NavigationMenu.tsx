@@ -23,12 +23,12 @@ export const NavigationMenu = () => {
           key={item.id}
           onClick={() => navigate(item.path)}
           className={cn(
-            "flex flex-col items-center gap-1 p-2 rounded-xl transition-colors",
-            location.pathname === item.path ? "text-emerald-600" : "text-stone-500 dark:text-zinc-400"
+            "flex flex-col items-center justify-center p-3 rounded-xl transition-colors",
+            location.pathname === item.path ? "text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20" : "text-stone-500 dark:text-zinc-400 hover:bg-stone-100 dark:hover:bg-zinc-800"
           )}
+          title={item.label}
         >
           {item.icon}
-          <span className="text-[10px] font-bold uppercase">{item.label}</span>
         </button>
       ))}
     </div>
