@@ -230,7 +230,7 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
       drag
       dragConstraints={{ left: -window.innerWidth + 80, right: 0, top: -window.innerHeight + 80, bottom: 0 }}
       dragMomentum={false}
-      className="fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 flex flex-row items-end gap-4 touch-none"
+      className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex flex-row items-end gap-4 touch-none"
     >
       <AnimatePresence>
         {isListening && (

@@ -398,17 +398,59 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
         </div>
         <div className="flex gap-3">
           {activeView === 'notes' ? (
-            <button
-              onClick={() => {
-                setIsFormOpen(true);
-                setEditingNoteId(null);
-                setCurrentNote({ title: '', content: '', category: 'Anotações' });
-              }}
-              className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
-            >
-              <Plus size={20} />
-              Nova Página
-            </button>
+            <>
+              <button
+                onClick={async () => {
+                  try {
+                    const { sermonOutlines } = await import('../data/sermonOutlines');
+                    if (user) {
+                      showToast("Importando 50 esboços... Aguarde.", "info");
+                      for (const outline of sermonOutlines) {
+                        await addDoc(collection(db, 'notes'), {
+                          userId: user.id,
+                          title: outline.title,
+                          content: outline.content,
+                          category: outline.category,
+                          createdAt: new Date().toISOString()
+                        });
+                      }
+                      showToast("50 Esboços importados com sucesso! 📝✅", "success");
+                    } else {
+                      const newNotes = sermonOutlines.map(outline => ({
+                        id: Date.now().toString() + Math.random().toString(),
+                        title: outline.title,
+                        content: outline.content,
+                        category: outline.category as any,
+                        date: new Date().toLocaleDateString('pt-BR'),
+                        createdAt: new Date().toISOString()
+                      }));
+                      const updatedNotes = [...localNotes, ...newNotes];
+                      setLocalNotes(updatedNotes);
+                      localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
+                      showToast("50 Esboços importados localmente! 📝✅", "success");
+                    }
+                  } catch (error) {
+                    console.error("Error importing outlines:", error);
+                    showToast("Erro ao importar esboços.", "error");
+                  }
+                }}
+                className="px-6 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20"
+              >
+                <Download size={20} />
+                Importar 50 Esboços
+              </button>
+              <button
+                onClick={() => {
+                  setIsFormOpen(true);
+                  setEditingNoteId(null);
+                  setCurrentNote({ title: '', content: '', category: 'Anotações' });
+                }}
+                className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
+              >
+                <Plus size={20} />
+                Nova Página
+              </button>
+            </>
           ) : (
             <button
               onClick={() => {

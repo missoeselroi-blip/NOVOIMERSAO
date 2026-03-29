@@ -190,6 +190,28 @@ export default function AdminPage() {
           >
             <BarChart3 size={20} />
           </button>
+          <button 
+            onClick={async () => {
+              try {
+                const { sermonOutlines } = await import('../data/sermonOutlines');
+                const { addDoc, collection } = await import('firebase/firestore');
+                for (const outline of sermonOutlines) {
+                  await addDoc(collection(db, 'publicOutlines'), {
+                    ...outline,
+                    createdAt: new Date().toISOString()
+                  });
+                }
+                showToast("50 Esboços adicionados com sucesso!", "success");
+              } catch (error) {
+                console.error(error);
+                showToast("Erro ao popular esboços", "error");
+              }
+            }}
+            className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
+          >
+            <Download size={18} />
+            Popular 50 Esboços
+          </button>
           <button className="flex items-center gap-2 px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20">
             <Download size={18} />
             Exportar CSV

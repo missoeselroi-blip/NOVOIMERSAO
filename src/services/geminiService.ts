@@ -48,7 +48,7 @@ const getAI = () => {
 };
 
 const MAX_RETRIES = 5; // Increased from 3
-const RETRY_DELAY = 2000; // Increased from 1000
+const RETRY_DELAY = 5000; // Increased to 5000ms to handle high demand better
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -102,106 +102,94 @@ const withRetry = async <T>(fn: (retries: number) => Promise<T>, retries = MAX_R
       await sleep(delay);
       return withRetry(fn, retries - 1);
     }
-    throw error;
+    return handleApiError(error);
   }
 };
 
 export const geminiService = {
   async generateText(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
-      try {
-        const ai = getAI();
-        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
-        const response = await ai.models.generateContent({
-          model: model,
-          contents: prompt,
-          config: {
-            systemInstruction,
-            thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
-          },
-        });
-        return response.text || "";
-      } catch (error: any) {
-        return handleApiError(error);
-      }
+      const ai = getAI();
+      const model = "gemini-3-flash-preview";
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+          systemInstruction,
+          thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
+        },
+      });
+      return response.text || "";
     });
   },
 
   async generateTextWithThought(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
-      try {
-        const ai = getAI();
-        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
-        const response = await ai.models.generateContent({
-          model: model,
-          contents: prompt,
-          config: {
-            systemInstruction,
-            thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
-          },
-        });
+      const ai = getAI();
+      const model = "gemini-3-flash-preview";
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+          systemInstruction,
+          thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
+        },
+      });
 
-        let thought = "";
-        const parts = response.candidates?.[0]?.content?.parts;
-        if (parts && Array.isArray(parts)) {
-          for (const part of parts) {
-            if ((part as any).thought === true) {
-              thought = (part as any).text || "";
-            }
+      let thought = "";
+      const parts = response.candidates?.[0]?.content?.parts;
+      if (parts && Array.isArray(parts)) {
+        for (const part of parts) {
+          if ((part as any).thought === true) {
+            thought = (part as any).text || "";
           }
         }
-
-        return {
-          text: response.text || "",
-          thought: thought
-        };
-      } catch (error: any) {
-        return handleApiError(error);
       }
+
+      return {
+        text: response.text || "",
+        thought: thought
+      };
     });
   },
 
   async generateJSON<T>(prompt: string, systemInstruction?: string, responseSchema?: any): Promise<T> {
     return withRetry(async (currentRetry) => {
+      const ai = getAI();
+      const model = "gemini-3-flash-preview";
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+          systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema,
+        },
+      });
+      const text = response.text || "{}";
+      let jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
+      
+      // Robust cleanup for common LLM JSON errors
+      // 1. Remove trailing commas before closing braces/brackets
+      jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
+      
+      if (!jsonStr) jsonStr = "{}";
+      
       try {
-        const ai = getAI();
-        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
-        const response = await ai.models.generateContent({
-          model: model,
-          contents: prompt,
-          config: {
-            systemInstruction,
-            responseMimeType: "application/json",
-            responseSchema,
-          },
-        });
-        const text = response.text || "{}";
-        let jsonStr = text.replace(/```json\n?|\n?```/g, "").trim();
-        
-        // Robust cleanup for common LLM JSON errors
-        // 1. Remove trailing commas before closing braces/brackets
-        jsonStr = jsonStr.replace(/,\s*([\]}])/g, '$1');
-        
-        if (!jsonStr) jsonStr = "{}";
-        
+        return JSON.parse(jsonStr) as T;
+      } catch (parseError: any) {
+        console.error("JSON Parse Error. Raw text:", text);
+        // Attempt to fix common issues like unescaped newlines or quotes
+        // This is a last resort
         try {
-          return JSON.parse(jsonStr) as T;
-        } catch (parseError: any) {
-          console.error("JSON Parse Error. Raw text:", text);
-          // Attempt to fix common issues like unescaped newlines or quotes
-          // This is a last resort
-          try {
-             // Try to escape unescaped newlines in strings
-             const fixedJson = jsonStr.replace(/(?<=: \")([\s\S]*?)(?=\",?)/g, (match) => {
-                return match.replace(/\n/g, "\\n").replace(/\r/g, "\\r");
-             });
-             return JSON.parse(fixedJson) as T;
-          } catch (e) {
-             throw parseError;
-          }
+           // Try to escape unescaped newlines in strings
+           const fixedJson = jsonStr.replace(/(?<=: \")([\s\S]*?)(?=\",?)/g, (match) => {
+              return match.replace(/\n/g, "\\n").replace(/\r/g, "\\r");
+           });
+           return JSON.parse(fixedJson) as T;
+        } catch (e) {
+           throw parseError;
         }
-      } catch (error: any) {
-        return handleApiError(error);
       }
     });
   },
@@ -238,34 +226,29 @@ export const geminiService = {
 
   async generateImage(prompt: string) {
     return withRetry(async (currentRetry) => {
-      try {
-        const ai = getAI();
-        const response = await ai.models.generateContent({
-          model: 'gemini-2.5-flash-image',
-          contents: {
-            parts: [
-              {
-                text: prompt,
-              },
-            ],
-          },
-        });
-        
-        for (const part of response.candidates?.[0]?.content?.parts || []) {
-          if (part.inlineData) {
-            return `data:image/png;base64,${part.inlineData.data}`;
-          }
+      const ai = getAI();
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [
+            {
+              text: prompt,
+            },
+          ],
+        },
+      });
+      
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          return `data:image/png;base64,${part.inlineData.data}`;
         }
-        return null;
-      } catch (error) {
-        console.error("Gemini Image API Error:", error);
-        return null;
       }
+      return null;
     });
   },
 
   async generateSpeech(text: string, voiceName: string = 'Kore') {
-    try {
+    return withRetry(async (currentRetry) => {
       const ai = getAI();
       // Clean text: remove markdown and limit length for stability
       const cleanText = text
@@ -305,14 +288,7 @@ export const geminiService = {
 
       const base64Audio = response.candidates[0].content.parts[0].inlineData.data;
       return this.pcmToWav(base64Audio, 24000);
-    } catch (error: any) {
-      console.error("Gemini TTS API Error:", error);
-      // Handle the specific "disturbed or locked" error by suggesting a retry or providing a cleaner message
-      if (error?.message?.includes("disturbed or locked")) {
-        console.warn("Fetch stream was locked. This can happen in some browser environments.");
-      }
-      return null;
-    }
+    });
   },
 
   pcmToWav(pcmBase64: string, sampleRate: number = 24000): string {
@@ -357,45 +333,37 @@ export const geminiService = {
 
   async searchNews(query: string) {
     return withRetry(async (currentRetry) => {
-      try {
-        const ai = getAI();
-        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
-        const response = await ai.models.generateContent({
-          model: model,
-          contents: `Pesquise as notícias mais recentes sobre: "${query}". 
-          Retorne um resumo estruturado com título, data e um breve resumo de cada notícia.
-          Inclua links para as fontes se possível.`,
-          config: {
-            tools: [{ googleSearch: {} }],
-          },
-        });
-        return response.text;
-      } catch (error) {
-        return handleApiError(error);
-      }
+      const ai = getAI();
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: `Pesquise as notícias mais recentes sobre: "${query}". 
+        Retorne um resumo estruturado com título, data e um breve resumo de cada notícia.
+        Inclua links para as fontes se possível.`,
+        config: {
+          tools: [{ googleSearch: {} }],
+        },
+      });
+      return response.text;
     });
   },
 
   async factCheck(content: string, isImage: boolean = false) {
     return withRetry(async (currentRetry) => {
-      try {
-        const ai = getAI();
-        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
-        const prompt = isImage 
-          ? "Analise esta imagem e verifique se as informações nela contidas são verdadeiras ou fake news. Use o Google Search para validar os fatos."
-          : `Analise o seguinte texto e verifique se é verdade ou fake news: "${content}". Use o Google Search para validar os fatos.`;
-        
-        const response = await ai.models.generateContent({
-          model: model,
-          contents: isImage ? { parts: [{ inlineData: { data: content.split(',')[1], mimeType: 'image/png' } }, { text: prompt }] } : prompt,
-          config: {
-            tools: [{ googleSearch: {} }],
-          },
-        });
-        return response.text;
-      } catch (error) {
-        return handleApiError(error);
-      }
+      const ai = getAI();
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      const prompt = isImage 
+        ? "Analise esta imagem e verifique se as informações nela contidas são verdadeiras ou fake news. Use o Google Search para validar os fatos."
+        : `Analise o seguinte texto e verifique se é verdade ou fake news: "${content}". Use o Google Search para validar os fatos.`;
+      
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: isImage ? { parts: [{ inlineData: { data: content.split(',')[1], mimeType: 'image/png' } }, { text: prompt }] } : prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+        },
+      });
+      return response.text;
     });
   },
   
@@ -410,58 +378,50 @@ export const geminiService = {
 
   async chat(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
-      try {
-        const ai = getAI();
-        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
-        const chat = ai.chats.create({
-          model: model,
-          config: {
-            systemInstruction,
-            thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
-          },
-          history: history,
-        });
-        const response = await chat.sendMessage({ message });
-        
-        let thought = "";
-        const parts = response.candidates?.[0]?.content?.parts;
-        if (parts && Array.isArray(parts)) {
-          for (const part of parts) {
-            if ((part as any).thought === true) {
-              thought = (part as any).text || "";
-            }
+      const ai = getAI();
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      const chat = ai.chats.create({
+        model: model,
+        config: {
+          systemInstruction,
+          thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
+        },
+        history: history,
+      });
+      const response = await chat.sendMessage({ message });
+      
+      let thought = "";
+      const parts = response.candidates?.[0]?.content?.parts;
+      if (parts && Array.isArray(parts)) {
+        for (const part of parts) {
+          if ((part as any).thought === true) {
+            thought = (part as any).text || "";
           }
         }
-
-        return {
-          text: response.text || "",
-          thought: thought
-        };
-      } catch (error: any) {
-        return handleApiError(error);
       }
+
+      return {
+        text: response.text || "",
+        thought: thought
+      };
     });
   },
 
   async chatStream(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
-      try {
-        const ai = getAI();
-        // Use a fallback model if we've already retried a few times
-        const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
-        
-        const chat = ai.chats.create({
-          model: model,
-          config: {
-            systemInstruction,
-            thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
-          },
-          history: history,
-        });
-        return await chat.sendMessageStream({ message });
-      } catch (error: any) {
-        return handleApiError(error);
-      }
+      const ai = getAI();
+      // Use a fallback model if we've already retried a few times
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      
+      const chat = ai.chats.create({
+        model: model,
+        config: {
+          systemInstruction,
+          thinkingConfig: deepThinking ? { thinkingLevel: ThinkingLevel.HIGH } : undefined,
+        },
+        history: history,
+      });
+      return await chat.sendMessageStream({ message });
     });
   }
 };

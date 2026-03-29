@@ -536,7 +536,7 @@ Atualmente o usuário está na página: ${location.pathname}.
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9, cursor: 'grabbing' }}
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-44 right-6 md:bottom-48 md:right-8 z-[60] w-14 h-14 bg-emerald-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 group overflow-hidden border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing"
+        className="fixed bottom-64 right-6 md:bottom-48 md:right-8 z-[60] w-14 h-14 bg-emerald-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 group overflow-hidden border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity" />
         <Sparkles size={20} className="relative z-10 animate-pulse" />

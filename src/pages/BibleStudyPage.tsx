@@ -124,6 +124,7 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
 };
 
 import { useShare } from '../utils/share';
+import GeneratedQuizPlayer, { QuizQuestion } from '../components/GeneratedQuizPlayer';
 
 interface BibleStudyPageProps {
   deepThinking: boolean;
@@ -341,10 +342,18 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [selectedWork, setSelectedWork] = useState('');
   const [compareVersion, setCompareVersion] = useState('Almeida');
   const [previousTab, setPreviousTab] = useState<string | null>(null);
-  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry' | 'audio'>('lesson');
+  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry' | 'audio' | 'questions'>('lesson');
   const [messageType, setMessageType] = useState<'outline' | 'birthday' | 'wedding' | 'newyear' | 'graduation' | 'devotional' | 'funeral' | 'children'>('outline');
   const [messageResult, setMessageResult] = useState('');
   const [messageResultThought, setMessageResultThought] = useState('');
+  const [questionsScope, setQuestionsScope] = useState('Toda a Bíblia');
+  const [questionsBook, setQuestionsBook] = useState('');
+  const [questionsAgeGroup, setQuestionsAgeGroup] = useState('Adultos');
+  const [questionsCount, setQuestionsCount] = useState(30);
+  const [questionsResult, setQuestionsResult] = useState('');
+  const [questionsResultThought, setQuestionsResultThought] = useState('');
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
+  const [isQuizOpen, setIsQuizOpen] = useState(false);
   const [meaningSource, setMeaningSource] = useState('Dicionário Aurélio');
   const [meaningResult, setMeaningResult] = useState('');
   const [meaningResultThought, setMeaningResultThought] = useState('');
@@ -1547,11 +1556,88 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           else if (creationType === 'message') handleCreateMessage();
           else if (creationType === 'infographic') handleCreateInfographic();
           else if (creationType === 'slides_notebook') handleCreateSlidesPopup();
+          else if (creationType === 'questions') handleCreateQuestions();
         } else {
           showToast("Saldo de créditos insuficiente! 🪙", 'error');
         }
       }
     });
+  };
+
+  const handleCreateQuestions = async () => {
+    if (!topic) return;
+
+    setIsLoading(true);
+    showToast(getRandomWaitingMessage(), 'info');
+    try {
+      setQuestionsResult('');
+      setQuizQuestions(null);
+      
+      let scopeText = questionsScope;
+      if (questionsScope === 'Livro Específico' && questionsBook) {
+        scopeText = `Livro de ${questionsBook}`;
+      }
+
+      const prompt = `Gere ${questionsCount} perguntas bíblicas de múltipla escolha (com 3 alternativas cada) sobre o tema: "${topic}".
+      Escopo das perguntas: ${scopeText}.
+      Público-alvo (nível de dificuldade e linguagem): ${questionsAgeGroup}.
+      
+      Regras:
+      1. Divida as ${questionsCount} perguntas em 3 níveis de dificuldade: Fácil (cerca de um terço), Médio (cerca de um terço) e Difícil (cerca de um terço).
+      2. Cada pergunta deve ter exatamente 3 alternativas.
+      3. Indique claramente qual é a resposta correta (usando o índice 0, 1 ou 2) e a referência bíblica para cada pergunta.
+      4. A linguagem e a profundidade teológica devem ser adequadas para o público-alvo selecionado (${questionsAgeGroup}).`;
+
+      const responseSchema = {
+        type: Type.OBJECT,
+        properties: {
+          questions: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                question: { type: Type.STRING },
+                options: { 
+                  type: Type.ARRAY,
+                  items: { type: Type.STRING }
+                },
+                correctAnswerIndex: { type: Type.NUMBER },
+                reference: { type: Type.STRING },
+                difficulty: { type: Type.STRING }
+              },
+              required: ["question", "options", "correctAnswerIndex", "reference", "difficulty"]
+            }
+          }
+        },
+        required: ["questions"]
+      };
+
+      const parsed = await geminiService.generateJSON<{questions: QuizQuestion[]}>(prompt, undefined, responseSchema);
+      
+      if (parsed && parsed.questions && Array.isArray(parsed.questions)) {
+        setQuizQuestions(parsed.questions);
+        setIsQuizOpen(true);
+        setQuestionsResult("Quiz gerado com sucesso! Clique no botão abaixo para jogar.");
+      } else {
+        setQuestionsResult("Não foi possível gerar as perguntas no formato correto.");
+      }
+      
+      setQuestionsResultThought(""); // JSON doesn't return thought
+      
+      addToHistory({
+        type: 'Perguntas Bíblicas',
+        query: topic,
+        result: "Quiz gerado com sucesso!",
+        thought: "",
+        tab: 'creation-tool',
+        creationType: 'questions'
+      });
+    } catch (error: any) {
+      console.error('Error generating questions:', error);
+      showToast(error?.message || 'Erro ao gerar perguntas. Tente novamente.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleCreateMessage = async () => {
@@ -3884,6 +3970,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <option value="devotional">Gerar Devocional</option>
                         <option value="booklet">Gerar Apostila</option>
                         <option value="message">Gerar Mensagem</option>
+                        <option value="questions">Gerar Perguntas Bíblicas</option>
                       </select>
                       {creationType === 'message' && (
                         <select 
@@ -3900,6 +3987,53 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <option value="funeral">Mensagem Velório</option>
                           <option value="children">Mensagem Infantil</option>
                         </select>
+                      )}
+                      {creationType === 'questions' && (
+                        <>
+                          <select 
+                            value={questionsScope}
+                            onChange={(e) => setQuestionsScope(e.target.value)}
+                            className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
+                          >
+                            <option value="Toda a Bíblia">Toda a Bíblia</option>
+                            <option value="Velho Testamento">Velho Testamento</option>
+                            <option value="Novo Testamento">Novo Testamento</option>
+                            <option value="Livro Específico">Livro Específico</option>
+                          </select>
+                          {questionsScope === 'Livro Específico' && (
+                            <input
+                              type="text"
+                              placeholder="Qual livro?"
+                              value={questionsBook}
+                              onChange={(e) => setQuestionsBook(e.target.value)}
+                              className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
+                            />
+                          )}
+                          <select 
+                            value={questionsAgeGroup}
+                            onChange={(e) => setQuestionsAgeGroup(e.target.value)}
+                            className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
+                          >
+                            <option value="Crianças">Crianças</option>
+                            <option value="Juniores">Juniores</option>
+                            <option value="Adolescentes">Adolescentes</option>
+                            <option value="Jovens">Jovens</option>
+                            <option value="Adultos">Adultos</option>
+                            <option value="Líderes">Líderes</option>
+                            <option value="Teólogos">Teólogos</option>
+                          </select>
+                          <select 
+                            value={questionsCount}
+                            onChange={(e) => setQuestionsCount(Number(e.target.value))}
+                            className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
+                          >
+                            <option value={10}>10 Perguntas</option>
+                            <option value={20}>20 Perguntas</option>
+                            <option value={30}>30 Perguntas</option>
+                            <option value={40}>40 Perguntas</option>
+                            <option value={50}>50 Perguntas</option>
+                          </select>
+                        </>
                       )}
                       <button
                         onClick={handleUnifiedCreation}
@@ -4305,6 +4439,55 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <button onClick={() => handleSaveToNotebook('Apostila Completa', bookletResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                         </>
                       )}
+                    </div>
+                  </div>
+                )}
+
+                {questionsResult && creationType === 'questions' && (
+                  <div className="space-y-6">
+                    {questionsResultThought && (
+                      <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4">
+                        <details className="group">
+                          <summary className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer list-none">
+                            <Brain size={14} className="group-open:rotate-12 transition-transform" />
+                            PROCESSO DE PENSAMENTO (IA)
+                          </summary>
+                          <div className="mt-3 text-xs text-amber-600/80 dark:text-amber-500/80 leading-relaxed italic">
+                            {questionsResultThought}
+                          </div>
+                        </details>
+                      </div>
+                    )}
+                    <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                      <ExpandableMarkdown content={questionsResult} onSearch={handleWikiSearch} />
+                      {quizQuestions && (
+                        <button
+                          onClick={() => setIsQuizOpen(true)}
+                          className="mt-6 w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
+                        >
+                          <Trophy size={20} />
+                          Jogar Quiz
+                        </button>
+                      )}
+                    </div>
+                    {isQuizOpen && quizQuestions && (
+                      <GeneratedQuizPlayer questions={quizQuestions} onClose={() => setIsQuizOpen(false)} />
+                    )}
+                    <div className="flex flex-wrap gap-3">
+                      <button
+                        onClick={() => handleListen(questionsResult)}
+                        disabled={isGeneratingSpeech}
+                        className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                      >
+                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                        Ouvir
+                      </button>
+                      <button onClick={() => { copyToClipboard(questionsResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                      <button onClick={() => { handleDownloadResult(); showToast("Baixando... 📄💎"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Download size={18} /> Baixar</button>
+                      <button onClick={() => handleWikiSearch(topic)} className="flex-1 py-3 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-bold rounded-xl hover:bg-blue-200 flex items-center justify-center gap-2"><Globe size={18} /> ⚓ Wiki</button>
+                      <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
+                      <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
+                      <button onClick={() => handleSaveToNotebook('Perguntas Bíblicas', questionsResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                     </div>
                   </div>
                 )}
