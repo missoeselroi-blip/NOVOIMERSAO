@@ -445,10 +445,7 @@ export default function ProfilePage() {
                     onChange={(e) => setPreferredBible(e.target.value)}
                     className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                   >
-                    <option value="NVI">NVI - Nova Versão Internacional</option>
-                    <option value="ACF">ACF - Almeida Corrigida Fiel</option>
                     <option value="ARA">ARA - Almeida Revista e Atualizada</option>
-                    <option value="NAA">NAA - Nova Almeida Atualizada</option>
                     <option value="NTLH">NTLH - Nova Tradução na Linguagem de Hoje</option>
                   </select>
                 </div>

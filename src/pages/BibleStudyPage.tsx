@@ -2210,7 +2210,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         responseText = response.text;
         responseThought = response.thought;
       } else if (currentTab === 'compare') {
-        const response = await geminiService.generateTextWithThought(`Compare o texto bíblico "${query}" na versão NVI com a versão ${compareVersion}. Explique as nuances de tradução.`, undefined, deepThinking);
+        const response = await geminiService.generateTextWithThought(`Compare o texto bíblico "${query}" na versão NVI (Nova Versão Internacional em Português) com a versão ${compareVersion}. Apresente o texto de ambas as versões e explique as nuances de tradução. Se a versão comparada for estrangeira (como KJV), apresente o texto original e sua tradução.`, undefined, deepThinking);
         responseText = response.text;
         responseThought = response.thought;
       } else if (searchSource) {
@@ -2220,7 +2220,29 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         Fonte selecionada: "${searchSource}"
         
         `;
-        if (searchSource === 'Todas as Bíblias') {
+        const isTranslation = searchSource.includes('KJV') || 
+                              searchSource.includes('ARC') || 
+                              searchSource.includes('NVI') || 
+                              searchSource.includes('NVT') || 
+                              searchSource.includes('Bíblia Viva') || 
+                              searchSource.includes('Reina Valera') || 
+                              searchSource.includes('RVR1960') ||
+                              searchSource.includes('NIV') || 
+                              searchSource.includes('ESV') || 
+                              searchSource.includes('NKJV') || 
+                              searchSource.includes('NASB') || 
+                              searchSource.includes('NLT') || 
+                              searchSource.includes('NRSV') || 
+                              searchSource.includes('Louis Segond') || 
+                              searchSource.includes('Lutherbibel') ||
+                              searchSource.includes('Tradução do Novo mundo');
+
+        if (isTranslation && !searchSource.includes('Bíblia de Estudo')) {
+          prompt += `Se "${query || 'Geral'}" for uma referência bíblica (ex: João 3:16), forneça o texto bíblico exato da passagem na versão/tradução "${searchSource}". 
+          Se for um tema (ex: Amor, Fé), forneça os principais versículos sobre este tema usando o texto exato da versão/tradução "${searchSource}".
+          Se a versão for em outro idioma (como KJV em inglês ou Reina Valera em espanhol), forneça o texto no idioma original da versão e, em seguida, forneça uma tradução ou explicação em Português do Brasil.
+          Se a versão for em português (como ARC, NVI, NVT, Bíblia Viva), forneça o texto exato em Português do Brasil e um breve comentário explicativo.`;
+        } else if (searchSource === 'Todas as Bíblias') {
           prompt += `Forneça um comentário bíblico consolidado e profundo sobre a passagem ou tema: ${query || 'Geral'}. 
           Sua pesquisa deve se concentrar exclusivamente em Bíblias de Estudo (como Shedd, Thompson, Genebra, Pentecostal, NAA, NVT, etc.). 
           Apresente as diferentes nuances teológicas encontradas nessas fontes de estudo.`;
@@ -2935,6 +2957,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "Bíblia de Estudo de Santidade",
     "Bíblia de Estudo de Oração",
     "Bíblia Tradução do Novo mundo (Versão TJ)",
+    "Bíblia Viva (PT)",
+    "ARC (Almeida Revista e Corrigida - PT)",
+    "NVI (Nova Versão Internacional - PT)",
+    "NVT (Nova Versão Transformadora - PT)",
     "NIV (New International Version - EN)",
     "ESV (English Standard Version - EN)",
     "KJV (King James Version - EN)",
@@ -2943,6 +2969,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "NLT (New Living Translation - EN)",
     "NRSV (New Revised Standard Version - EN)",
     "Reina Valera (Espanhol - ES)",
+    "RVR1960 (Reina Valera 1960 - ES)",
     "Biblia de las Américas (Espanhol - ES)",
     "Louis Segond (Francês - FR)",
     "Lutherbibel (Alemão - DE)",
@@ -5294,6 +5321,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <option value="Bíblia Pastoral">Bíblia Pastoral</option>
                         <option value="Bíblia da CNBB">Bíblia da CNBB</option>
                         <option value="KJV">King James Version (EN)</option>
+                        <option value="RVR1960">Reina Valera 1960 (ES)</option>
                         <option value="Vulgata">Vulgata Latina</option>
                         <option value="VT Hebraico">VT Hebraico</option>
                         <option value="NT Grego">NT Grego</option>

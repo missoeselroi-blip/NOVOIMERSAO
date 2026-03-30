@@ -95,14 +95,9 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     const init = async () => {
       try {
         const v = await bibleService.getVersions();
-        // Filter for Portuguese versions and other requested languages
+        // Filter for requested versions
         const requestedVersions = [
-          'ARA', 'NVT', 'NAA', 'NVI', 'ARC', 'NTLH', // Portuguese
-          'KJV', 'NKJV', 'NIV', // English
-          'WLC', 'BHS', // Hebrew
-          'LXX', 'TR', // Greek
-          'VUL', // Latin
-          'RVR1960' // Spanish
+          'ARA', 'NTLH'
         ];
         const filteredVersions = v.filter(ver => requestedVersions.includes(ver.short_name));
         setVersions(filteredVersions.length > 0 ? filteredVersions : v);
