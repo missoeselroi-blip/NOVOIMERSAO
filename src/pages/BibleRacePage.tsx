@@ -308,8 +308,7 @@ const BibleRacePage: React.FC = () => {
   // Fetch Leaderboard based on view
   useEffect(() => {
     const sortField = leaderboardView === 'monthly' ? 'monthlyPoints' : (leaderboardView === 'annual' ? 'annualPoints' : 'points');
-    // Removed limit(10) to show all registered users as requested
-    const q = query(collection(db, 'bibleRaceProgress'), orderBy(sortField, 'desc'), orderBy('userJoinDate', 'desc'));
+    const q = query(collection(db, 'bibleRaceProgress'), orderBy(sortField, 'desc'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => doc.data() as UserProgress);
       setLeaderboard(data);
@@ -960,9 +959,27 @@ const BibleRacePage: React.FC = () => {
                   </div>
 
                   <div className="space-y-4">
-                    {leaderboard
-                      .filter(u => u.userName.toLowerCase().includes(searchTerm.toLowerCase()))
-                      .map((user, index) => {
+                    {(() => {
+                      const filtered = leaderboard.filter(u => u.userName.toLowerCase().includes(searchTerm.toLowerCase()));
+                      
+                      let displayList = filtered;
+                      if (!searchTerm) {
+                        displayList = leaderboard.slice(0, 5);
+                        const currentUserIndex = leaderboard.findIndex(u => u.userId === auth.currentUser?.uid);
+                        if (currentUserIndex >= 5) {
+                          displayList.push(leaderboard[currentUserIndex]);
+                        }
+                      }
+
+                      if (displayList.length === 0) {
+                        return (
+                          <div className="text-center py-8">
+                            <p className="text-stone-400 text-xs italic">Nenhum participante encontrado.</p>
+                          </div>
+                        );
+                      }
+
+                      return displayList.map((user, index) => {
                         // Find actual rank in the full leaderboard
                         const actualRank = leaderboard.findIndex(l => l.userId === user.userId);
                         
@@ -1026,13 +1043,8 @@ const BibleRacePage: React.FC = () => {
                             </div>
                           </motion.div>
                         );
-                      })}
-                    
-                    {leaderboard.filter(u => u.userName.toLowerCase().includes(searchTerm.toLowerCase())).length === 0 && (
-                      <div className="text-center py-8">
-                        <p className="text-stone-400 text-xs italic">Nenhum participante encontrado.</p>
-                      </div>
-                    )}
+                      });
+                    })()}
                   </div>
                 </div>
 
