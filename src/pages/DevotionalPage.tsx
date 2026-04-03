@@ -34,7 +34,11 @@ import {
   FileText,
   Plus,
   Edit,
-  Trash2
+  Trash2,
+  CheckCircle,
+  MessageSquarePlus,
+  HeartHandshake,
+  Mic
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Type } from "@google/genai";
@@ -344,6 +348,99 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       console.error("Error deleting journal entry:", error);
       handleFirestoreError(error, OperationType.DELETE, 'journalEntries');
       showToast("Erro ao excluir entrada.", "error");
+    }
+  };
+
+  const handleMarkAnswered = async (id: string, currentStatus: boolean) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, 'journalEntries', id), {
+        answered: !currentStatus,
+        updatedAt: serverTimestamp()
+      });
+      fetchJournalEntries();
+      showToast(currentStatus ? "Oração desmarcada." : "Oração marcada como atendida! Glória a Deus! 🙌", "success");
+    } catch (error) {
+      console.error("Error updating journal entry:", error);
+      handleFirestoreError(error, OperationType.UPDATE, 'journalEntries');
+      showToast("Erro ao atualizar oração.", "error");
+    }
+  };
+
+  const [isGeneratingPrayerFollowUp, setIsGeneratingPrayerFollowUp] = useState<string | null>(null);
+
+  const handleAskMore = async (entry: any) => {
+    if (!user) return;
+    setIsGeneratingPrayerFollowUp(entry.id);
+    try {
+      const prompt = `Baseado neste pedido de oração: "${entry.content}", escreva uma breve oração de petição (máximo 3 parágrafos) pedindo a Deus por mais graça, intervenção e ajuda nesta área. Seja profundo e espiritual.`;
+      const generatedPrayer = await geminiService.generateText(prompt, "Você é um intercessor espiritual.");
+      
+      const newContent = entry.content + "\n\n**Pedindo mais:**\n" + generatedPrayer;
+      
+      await updateDoc(doc(db, 'journalEntries', entry.id), {
+        content: newContent,
+        updatedAt: serverTimestamp()
+      });
+      fetchJournalEntries();
+      showToast("Oração adicionada!", "success");
+    } catch (error) {
+      console.error("Error generating prayer:", error);
+      showToast("Erro ao gerar oração.", "error");
+    } finally {
+      setIsGeneratingPrayerFollowUp(null);
+    }
+  };
+
+  const handleThankMore = async (entry: any) => {
+    if (!user) return;
+    setIsGeneratingPrayerFollowUp(entry.id);
+    try {
+      const prompt = `Baseado nesta oração: "${entry.content}", escreva uma breve oração de gratidão (máximo 3 parágrafos) agradecendo a Deus por Seu cuidado, amor e respostas. Seja profundo e espiritual.`;
+      const generatedPrayer = await geminiService.generateText(prompt, "Você é um intercessor espiritual.");
+      
+      const newContent = entry.content + "\n\n**Agradecendo:**\n" + generatedPrayer;
+      
+      await updateDoc(doc(db, 'journalEntries', entry.id), {
+        content: newContent,
+        updatedAt: serverTimestamp()
+      });
+      fetchJournalEntries();
+      showToast("Oração de gratidão adicionada!", "success");
+    } catch (error) {
+      console.error("Error generating prayer:", error);
+      showToast("Erro ao gerar oração.", "error");
+    } finally {
+      setIsGeneratingPrayerFollowUp(null);
+    }
+  };
+
+  const [isReceivingWord, setIsReceivingWord] = useState(false);
+  const [receivedWordAudio, setReceivedWordAudio] = useState<string | null>(null);
+
+  const handleReceiveWord = async () => {
+    if (!user) return;
+    setIsReceivingWord(true);
+    try {
+      const prompt = `Gere uma palavra de fé, motivação, consolo e ânimo, glorificando a Deus e entregando tudo a Ele. Finalize com uma oração. Busque referências no estilo de autores referência em oração, como a Quarta Dimensão de David Yonggi Cho, Bom dia Espírito Santo de Benny Hinn, Porque tarda o Pleno Avivamento de Leonard Ravenhill, entre outros. O texto deve ser direto, como se estivesse falando com o leitor.`;
+      const generatedWord = await geminiService.generateText(prompt, "Você é um pregador e mentor espiritual cheio do Espírito Santo.");
+      
+      await addDoc(collection(db, 'journalEntries'), {
+        userId: user.id,
+        title: 'Palavra Recebida',
+        content: generatedWord,
+        createdAt: serverTimestamp()
+      });
+      fetchJournalEntries();
+      
+      const audioUrl = await geminiService.generateSpeech(generatedWord, 'Zephyr');
+      setReceivedWordAudio(audioUrl);
+      showToast("Palavra recebida! Ouça o áudio.", "success");
+    } catch (error) {
+      console.error("Error receiving word:", error);
+      showToast("Erro ao receber palavra.", "error");
+    } finally {
+      setIsReceivingWord(false);
     }
   };
 
@@ -1371,7 +1468,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       </>
       ) : (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <header className="text-center space-y-4">
+          <header className="text-center space-y-4 relative">
             <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
               <BookOpen size={32} />
             </div>
@@ -1379,6 +1476,36 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
             <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto">
               Registre seus pedidos de oração, agradecimentos e reflexões pessoais.
             </p>
+            
+            <div className="flex justify-center pt-4">
+              <button
+                onClick={handleReceiveWord}
+                disabled={isReceivingWord}
+                className="px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold rounded-xl hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2 disabled:opacity-50"
+              >
+                {isReceivingWord ? (
+                  <Loader2 size={20} className="animate-spin" />
+                ) : (
+                  <Mic size={20} />
+                )}
+                Receber Palavra
+              </button>
+            </div>
+            
+            {receivedWordAudio && (
+              <div className="mt-4 bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl max-w-md mx-auto flex items-center justify-between border border-emerald-100 dark:border-emerald-800/30">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-800/50 rounded-full flex items-center justify-center text-emerald-600">
+                    <Volume2 size={20} />
+                  </div>
+                  <div className="text-left">
+                    <p className="text-sm font-bold text-emerald-900 dark:text-emerald-400">Palavra Recebida</p>
+                    <p className="text-xs text-emerald-600 dark:text-emerald-500">Ouça a mensagem gerada</p>
+                  </div>
+                </div>
+                <audio controls src={receivedWordAudio} className="h-8 w-32" />
+              </div>
+            )}
           </header>
 
           <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800">
@@ -1477,9 +1604,47 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                         className="w-full h-32 p-4 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
                       />
                     ) : (
-                      <p className="text-stone-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">
-                        {entry.content}
-                      </p>
+                      <div className="space-y-4">
+                        <p className={cn(
+                          "text-stone-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed",
+                          entry.answered && "line-through text-stone-400 dark:text-zinc-500"
+                        )}>
+                          {entry.content}
+                        </p>
+                        
+                        <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-100 dark:border-zinc-800/50">
+                          <button
+                            onClick={() => handleMarkAnswered(entry.id, entry.answered)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors",
+                              entry.answered 
+                                ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" 
+                                : "bg-stone-100 text-stone-600 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
+                            )}
+                          >
+                            <CheckCircle size={14} />
+                            {entry.answered ? 'Atendida' : 'Marcar Atendida'}
+                          </button>
+                          
+                          <button
+                            onClick={() => handleAskMore(entry)}
+                            disabled={isGeneratingPrayerFollowUp === entry.id}
+                            className="px-3 py-1.5 bg-stone-100 text-stone-600 hover:bg-blue-50 hover:text-blue-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          >
+                            {isGeneratingPrayerFollowUp === entry.id ? <Loader2 size={14} className="animate-spin" /> : <MessageSquarePlus size={14} />}
+                            Pedir mais
+                          </button>
+                          
+                          <button
+                            onClick={() => handleThankMore(entry)}
+                            disabled={isGeneratingPrayerFollowUp === entry.id}
+                            className="px-3 py-1.5 bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-rose-900/20 dark:hover:text-rose-400 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                          >
+                            {isGeneratingPrayerFollowUp === entry.id ? <Loader2 size={14} className="animate-spin" /> : <HeartHandshake size={14} />}
+                            Agradecer mais
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 ))}

@@ -652,7 +652,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           onClick={() => onNavigate('bible')}
-          className="flex-1 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg shadow-emerald-600/20 group"
+          className="flex-1 py-5 bg-gradient-to-r from-zinc-800 to-zinc-950 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-zinc-700 hover:to-zinc-900 transition-all shadow-lg shadow-zinc-900/20 group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Book size={20} className="text-white" />

@@ -127,7 +127,7 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
     }
 
     const q = query(
-      collection(db, 'journalEntries'),
+      collection(db, 'personalDiaryEntries'),
       where('userId', '==', user.id)
     );
 
@@ -147,7 +147,7 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
       setEntries(fetchedEntries);
       setIsLoading(false);
     }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'journalEntries');
+      handleFirestoreError(error, OperationType.LIST, 'personalDiaryEntries');
       setIsLoading(false);
     });
 
@@ -168,14 +168,14 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
     setIsSaving(true);
     try {
       if (editingEntryId) {
-        const entryRef = doc(db, 'journalEntries', editingEntryId);
+        const entryRef = doc(db, 'personalDiaryEntries', editingEntryId);
         await updateDoc(entryRef, {
           ...formData,
           updatedAt: serverTimestamp()
         });
         showToast("Entrada atualizada com sucesso! ✨");
       } else {
-        await addDoc(collection(db, 'journalEntries'), {
+        await addDoc(collection(db, 'personalDiaryEntries'), {
           userId: user.id,
           ...formData,
           createdAt: serverTimestamp()
@@ -197,7 +197,7 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
     if (!entryToDelete) return;
     setIsDeleting(true);
     try {
-      await deleteDoc(doc(db, 'journalEntries', entryToDelete));
+      await deleteDoc(doc(db, 'personalDiaryEntries', entryToDelete));
       showToast("Entrada removida.");
       setEntryToDelete(null);
     } catch (error) {

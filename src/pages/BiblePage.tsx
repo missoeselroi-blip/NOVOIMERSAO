@@ -30,7 +30,8 @@ import {
   Minimize2,
   LogOut,
   ArrowLeft,
-  Layers
+  Layers,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../types';
@@ -379,7 +380,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
       isFullscreen ? "p-0" : ""
     )}>
       {/* Header / Toolbar */}
-      <div className="p-4 md:p-6 border-b border-stone-200 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-4 bg-stone-100 dark:bg-zinc-900 sticky top-0 z-[60]">
+      <div className="p-4 md:p-6 border-b border-emerald-300 dark:border-emerald-800/50 flex flex-wrap items-center justify-between gap-4 bg-emerald-100 dark:bg-emerald-900/30 sticky top-0 z-[60]">
         <div className="flex items-center gap-2">
           <button 
             onClick={() => {
@@ -392,7 +393,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                 navigate('/');
               }
             }}
-            className="flex items-center gap-2 p-2 px-3 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
+            className="flex items-center gap-2 p-2 px-3 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400 mr-2"
             title="Sair da Bíblia"
           >
             <X size={20} />
@@ -401,7 +402,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
           
           <button 
             onClick={toggleFullscreen}
-            className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500 mr-2"
+            className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400 mr-2"
             title={isFullscreen ? "Minimizar" : "Maximizar"}
           >
             {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
@@ -409,16 +410,17 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
           
           <button 
             onClick={() => setShowVersionSelector(!showVersionSelector)}
-            className="flex items-center px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-stone-200 dark:border-zinc-700 hover:border-emerald-500 transition-all shadow-sm"
+            className="flex items-center px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-emerald-200 dark:border-emerald-800 hover:border-emerald-500 transition-all shadow-sm"
           >
             <span className="text-sm font-bold">{selectedVersion}</span>
           </button>
 
           <button 
             onClick={() => setShowBookSelector(!showBookSelector)}
-            className="flex items-center px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-stone-200 dark:border-zinc-700 hover:border-emerald-500 transition-all shadow-sm"
+            className="flex items-center px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-emerald-200 dark:border-emerald-800 hover:border-emerald-500 transition-all shadow-sm"
           >
-            <span className="text-sm font-bold">
+            <BookOpen size={18} className="md:hidden text-emerald-600" />
+            <span className="text-sm font-bold hidden md:inline">
               {bibleService.getBookAbbreviation(books.find(b => b.pk === selectedBook)?.name || '')}
             </span>
           </button>
@@ -426,24 +428,24 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
           <div className="flex items-center gap-1 ml-2">
             <button 
               onClick={prevChapter}
-              className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-lg transition-colors text-emerald-700 dark:text-emerald-400"
               title="Capítulo Anterior"
             >
               <ChevronLeft size={20} />
             </button>
             <button 
               onClick={nextChapter}
-              className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-lg transition-colors text-emerald-700 dark:text-emerald-400"
               title="Próximo Capítulo"
             >
               <ChevronRight size={20} />
             </button>
             
-            <div className="w-px h-6 bg-stone-200 dark:bg-zinc-700 mx-2 hidden md:block" />
+            <div className="w-px h-6 bg-emerald-200 dark:bg-emerald-800 mx-2 hidden md:block" />
             
             <button 
               onClick={() => setShowSettings(!showSettings)}
-              className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-800 rounded-xl transition-colors text-stone-500"
+              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400"
               title="Configurações"
             >
               <Settings size={20} />
@@ -915,26 +917,26 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
             className="border-t border-stone-200 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900 p-4 sticky bottom-0 z-50 shadow-2xl"
           >
             <div className="max-w-4xl mx-auto flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-[10px] font-black text-stone-400 uppercase tracking-widest">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-[10px] font-black text-stone-400 uppercase tracking-widest shrink-0">
                   <StickyNote size={14} /> 
                   {`Observação: ${books.find(b => b.pk === selectedBook)?.name} ${selectedChapter}:${selectedVerses[0].verse}${selectedVerses.length > 1 ? `-${selectedVerses[selectedVerses.length - 1].verse}` : ''}`}
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-between md:justify-end gap-2 md:gap-4 w-full md:w-auto">
                   <button
                     onClick={() => setSelectedVerses([])}
-                    className="flex items-center gap-1 text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-600 transition-colors"
+                    className="flex items-center gap-1 text-[10px] font-black text-red-500 uppercase tracking-widest hover:text-red-600 transition-colors shrink-0"
                   >
                     <X size={12} />
                     Limpar
                   </button>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 overflow-x-auto pb-1 flex-1 min-w-0 md:flex-none">
                     {colors.map(color => (
                       <button
                         key={color}
                         onClick={() => setAnnotationColor(color)}
                         className={cn(
-                          "w-5 h-5 rounded-full border transition-all",
+                          "w-5 h-5 rounded-full border transition-all shrink-0",
                           annotationColor === color ? "border-zinc-900 dark:border-white scale-110" : "border-transparent"
                         )}
                         style={{ backgroundColor: color }}
@@ -947,7 +949,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                       const currentType = annotations[firstVerseId]?.type || 'highlight';
                       applyAnnotation(currentType);
                     }}
-                    className="px-4 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm"
+                    className="px-3 md:px-4 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 transition-colors shadow-sm shrink-0 whitespace-nowrap"
                   >
                     Salvar Nota
                   </button>

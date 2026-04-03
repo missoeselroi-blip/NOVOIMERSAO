@@ -284,9 +284,9 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
             <div class="meta">
               Data: ${note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : note.date}<br/>
               <div style="display: flex; align-items: center; gap: 5px;">
-                <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="16" height="16" style="object-fit: contain;" />
+                <img src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" width="16" height="16" style="object-fit: contain;" />
                 Fonte: Imersão Bíblica IA
-                <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="16" height="16" style="object-fit: contain;" />
+                <img src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" width="16" height="16" style="object-fit: contain;" />
               </div>
             </div>
             <div class="content">${note.content.replace(/\n/g, '<br/>')}</div>
@@ -399,46 +399,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
         <div className="flex gap-3">
           {activeView === 'notes' ? (
             <>
-              <button
-                onClick={async () => {
-                  try {
-                    const { sermonOutlines } = await import('../data/sermonOutlines');
-                    if (user) {
-                      showToast("Importando 50 esboços... Aguarde.", "info");
-                      for (const outline of sermonOutlines) {
-                        await addDoc(collection(db, 'notes'), {
-                          userId: user.id,
-                          title: outline.title,
-                          content: outline.content,
-                          category: outline.category,
-                          createdAt: new Date().toISOString()
-                        });
-                      }
-                      showToast("50 Esboços importados com sucesso! 📝✅", "success");
-                    } else {
-                      const newNotes = sermonOutlines.map(outline => ({
-                        id: Date.now().toString() + Math.random().toString(),
-                        title: outline.title,
-                        content: outline.content,
-                        category: outline.category as any,
-                        date: new Date().toLocaleDateString('pt-BR'),
-                        createdAt: new Date().toISOString()
-                      }));
-                      const updatedNotes = [...localNotes, ...newNotes];
-                      setLocalNotes(updatedNotes);
-                      localStorage.setItem('preacher_notes', JSON.stringify(updatedNotes));
-                      showToast("50 Esboços importados localmente! 📝✅", "success");
-                    }
-                  } catch (error) {
-                    console.error("Error importing outlines:", error);
-                    showToast("Erro ao importar esboços.", "error");
-                  }
-                }}
-                className="px-6 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 flex items-center gap-2 transition-all shadow-lg shadow-blue-600/20"
-              >
-                <Download size={20} />
-                Importar 50 Esboços
-              </button>
               <button
                 onClick={() => {
                   setIsFormOpen(true);
@@ -824,7 +784,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                 {/* Page Footer */}
                 <div className="px-16 py-6 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-center gap-3">
                   <img 
-                    src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                    src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
                     alt="Logo" 
                     className="w-4 h-4 object-contain"
                     referrerPolicy="no-referrer"
@@ -833,7 +793,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                     Imersão Bíblica IA — {note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : note.date}
                   </p>
                   <img 
-                    src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                    src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
                     alt="Logo" 
                     className="w-4 h-4 object-contain"
                     referrerPolicy="no-referrer"
