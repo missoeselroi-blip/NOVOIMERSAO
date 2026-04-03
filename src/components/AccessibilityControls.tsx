@@ -27,7 +27,7 @@ export const AccessibilityControls: React.FC = () => {
     <motion.div 
       drag
       dragMomentum={false}
-      className="fixed bottom-[15rem] right-6 md:bottom-[11rem] md:right-8 z-50 flex flex-col items-end gap-4 touch-none"
+      className="fixed bottom-[15rem] right-6 md:bottom-[11rem] md:right-8 z-[60] flex flex-col items-end gap-4 touch-none"
     >
       <AnimatePresence>
         {isOpen && (
@@ -121,15 +121,15 @@ export const AccessibilityControls: React.FC = () => {
       <button
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
-          "w-14 h-14 flex flex-col items-center justify-center gap-0.5 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing group overflow-hidden",
+          "w-14 h-14 flex flex-col items-center justify-center gap-0.5 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing group overflow-hidden z-[60]",
           isOpen 
             ? "bg-stone-900 text-white dark:bg-white dark:text-zinc-900" 
             : "bg-emerald-600 text-white"
         )}
       >
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity" />
-        {isOpen ? <X size={20} className="relative z-10" /> : <Type size={20} className="relative z-10" />}
-        <span className="relative z-10 text-[8px] font-black uppercase tracking-widest">Texto</span>
+        {isOpen ? <X size={20} className="relative z-10" /> : <Type size={20} className="relative z-10 animate-pulse" />}
+        <span className="relative z-10 text-[8px] font-black uppercase tracking-widest leading-none">Texto</span>
       </button>
     </motion.div>
   );

@@ -65,19 +65,7 @@ export default function DonatePage() {
           <Heart size={40} fill="currentColor" />
         </div>
         <div className="flex items-center justify-center gap-4">
-          <img 
-            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-            alt="Logo" 
-            className="w-10 h-10 object-contain"
-            referrerPolicy="no-referrer"
-          />
           <h2 className="text-4xl font-display font-bold">Contribua com a Obra</h2>
-          <img 
-            src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
-            alt="Logo" 
-            className="w-10 h-10 object-contain"
-            referrerPolicy="no-referrer"
-          />
         </div>
         <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
           Olá meu querido(a), meu nome é Wesley Francisco Reis, sou pastor auxiliar e missionário da Igreja Evangélica Betânia de Ipatinga-MG e o idealizador desse App. Saiba que a sua contribuição nos ajudará a manter as ferramentas gratuitas e a levar a Palavras de Deus a mais pessoas através da presença digital. Deus retribua cem vezes mais. Obrigado! ❤️

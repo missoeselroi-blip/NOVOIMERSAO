@@ -85,6 +85,7 @@ import EvangelismPage from './pages/EvangelismPage';
 import StorytellingPage from './pages/StorytellingPage';
 import CreditPage from './pages/CreditPage';
 import MissionaryPage from './pages/MissionaryPage';
+import DonatePage from './pages/DonatePage';
 
 const MissionaryBulkResults = lazyWithRetry(() => import('./pages/MissionaryBulkResults'));
 const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));
@@ -204,6 +205,7 @@ function AppContent() {
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'who-am-i', label: 'Quem Somos?', subtitle: 'Nossa história', icon: <User size={20} />, component: <WhoAmIPage onNavigate={handleNavigate} /> },
+    { id: 'donate', label: 'Doe', subtitle: 'Apoie a obra', icon: <Heart size={20} />, component: <DonatePage /> },
     { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'evangelism', label: 'Evangelismo', subtitle: 'Ide por todo o mundo', icon: <Flame size={20} />, component: <EvangelismPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'storytelling', label: 'Contação de Estórias', subtitle: 'A arte de narrar', icon: <BookOpen size={20} />, component: <StorytellingPage onNavigate={handleNavigate} />, hidden: true },

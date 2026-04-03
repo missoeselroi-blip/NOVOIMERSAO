@@ -342,10 +342,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [selectedWork, setSelectedWork] = useState('');
   const [compareVersion, setCompareVersion] = useState('Almeida');
   const [previousTab, setPreviousTab] = useState<string | null>(null);
-  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry' | 'audio' | 'questions'>('lesson');
+  const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry' | 'audio' | 'questions' | 'ebook'>('lesson');
   const [messageType, setMessageType] = useState<'outline' | 'birthday' | 'wedding' | 'newyear' | 'graduation' | 'devotional' | 'funeral' | 'children'>('outline');
   const [messageResult, setMessageResult] = useState('');
   const [messageResultThought, setMessageResultThought] = useState('');
+  const [ebookResult, setEbookResult] = useState('');
+  const [ebookResultThought, setEbookResultThought] = useState('');
   const [questionsScope, setQuestionsScope] = useState('Toda a Bíblia');
   const [questionsBook, setQuestionsBook] = useState('');
   const [questionsAgeGroup, setQuestionsAgeGroup] = useState('Adultos');
@@ -858,6 +860,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       else if (item.creationType === 'devotional') setDevotionalResult(item.result);
       else if (item.creationType === 'debate') setDebateResult(item.result);
       else if (item.creationType === 'booklet') setBookletResult(item.result);
+      else if (item.creationType === 'ebook') setEbookResult(item.result);
       else if (item.creationType === 'message') setMessageResult(item.result);
       
       if (item.thought) {
@@ -867,6 +870,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         else if (item.creationType === 'devotional') setDevotionalResultThought(item.thought);
         else if (item.creationType === 'debate') setDebateResultThought(item.thought);
         else if (item.creationType === 'booklet') setBookletResultThought(item.thought);
+        else if (item.creationType === 'ebook') setEbookResultThought(item.thought);
         else if (item.creationType === 'message') setMessageResultThought(item.thought);
       }
     } else {
@@ -1553,6 +1557,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           else if (creationType === 'devotional') handleCreateDevotional();
           else if (creationType === 'debate') handleCreateDebate();
           else if (creationType === 'booklet') handleCreateBooklet();
+          else if (creationType === 'ebook') handleCreateEbook();
           else if (creationType === 'message') handleCreateMessage();
           else if (creationType === 'infographic') handleCreateInfographic();
           else if (creationType === 'slides_notebook') handleCreateSlidesPopup();
@@ -1635,6 +1640,48 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     } catch (error: any) {
       console.error('Error generating questions:', error);
       showToast(error?.message || 'Erro ao gerar perguntas. Tente novamente.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateEbook = async () => {
+    if (!topic) return;
+    setIsLoading(true);
+    setEbookResult('');
+    setEbookResultThought('');
+    showToast(getRandomWaitingMessage(), 'info');
+
+    try {
+      const prompt = `Crie um E-book completo, estruturado e bem escrito sobre o tema: "${topic}".
+      O E-book deve conter:
+      1. Título atraente
+      2. Sumário (com os capítulos)
+      3. Introdução
+      4. Capítulos (mínimo de 3 capítulos, desenvolvendo bem o tema)
+      5. Conclusão
+      
+      Formate o texto usando Markdown (## para capítulos, ### para subtítulos, etc).
+      Certifique-se de que o conteúdo seja teologicamente rico e edificante.`;
+
+      const response = await geminiService.generateTextWithThought(prompt, "Você é um autor cristão e teólogo experiente, especialista em escrever e-books edificantes.");
+      
+      if (response) {
+        setEbookResult(response.text);
+        setEbookResultThought(response.thought || '');
+        addToHistory({
+          type: 'E-book',
+          query: topic,
+          result: response.text,
+          thought: response.thought,
+          tab: 'creation-tool',
+          creationType: 'ebook'
+        });
+        showToast("E-book gerado com sucesso! 🙌✨");
+      }
+    } catch (error: any) {
+      console.error('Erro ao gerar e-book:', error);
+      showToast(error?.message || 'Erro ao gerar e-book. Tente novamente.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -2372,6 +2419,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       else if (creationType === 'devotional') title = 'Devocional';
       else if (creationType === 'debate') title = 'Debate';
       else if (creationType === 'booklet') title = 'Apostila';
+      else if (creationType === 'ebook') title = 'Ebook';
       else if (creationType === 'message') title = 'Mensagem';
       else if (creationType === 'infographic') title = 'Infografico';
       else if (creationType === 'slides_notebook') title = 'Slides';
@@ -2405,6 +2453,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       else if (creationType === 'devotional') { contentToShare = devotionalResult; titleToShare = 'Devocional'; }
       else if (creationType === 'debate') { contentToShare = debateResult; titleToShare = 'Debate'; }
       else if (creationType === 'booklet') { contentToShare = bookletResult; titleToShare = 'Apostila'; }
+      else if (creationType === 'ebook') { contentToShare = ebookResult; titleToShare = 'Ebook'; }
       else if (creationType === 'message') { contentToShare = messageResult; titleToShare = 'Mensagem'; }
       else if (creationType === 'infographic') { contentToShare = ''; titleToShare = 'Infográfico'; }
       else if (creationType === 'slides_notebook') { contentToShare = slidesResult; titleToShare = 'Slides'; }
@@ -2828,6 +2877,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const handleSaveEdit = () => {
     if (creationType === 'booklet') {
       setBookletResult(editedOutline);
+    } else if (creationType === 'ebook') {
+      setEbookResult(editedOutline);
     } else {
       setOutline(editedOutline);
     }
@@ -2835,7 +2886,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   const handleCancelEdit = () => {
-    setEditedOutline(creationType === 'booklet' ? bookletResult : outline);
+    setEditedOutline(creationType === 'booklet' ? bookletResult : creationType === 'ebook' ? ebookResult : outline);
     setIsEditingOutline(false);
   };
 
@@ -3996,6 +4047,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <option value="outline">Gerar Esboço Pregação</option>
                         <option value="devotional">Gerar Devocional</option>
                         <option value="booklet">Gerar Apostila</option>
+                        <option value="ebook">Gerar E-book</option>
                         <option value="message">Gerar Mensagem</option>
                         <option value="questions">Gerar Perguntas Bíblicas</option>
                       </select>
@@ -4464,6 +4516,79 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                           <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
                           <button onClick={() => handleSaveToNotebook('Apostila Completa', bookletResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {ebookResult && creationType === 'ebook' && (
+                  <div className="space-y-6">
+                    {ebookResultThought && (
+                      <div className="bg-amber-50/50 dark:bg-amber-900/10 border border-amber-200/50 dark:border-amber-800/30 rounded-2xl p-4">
+                        <details className="group">
+                          <summary className="flex items-center gap-2 text-xs font-bold text-amber-700 dark:text-amber-400 cursor-pointer list-none">
+                            <Brain size={14} className="group-open:rotate-12 transition-transform" />
+                            PROCESSO DE PENSAMENTO (IA)
+                          </summary>
+                          <div className="mt-3 text-xs text-amber-600/80 dark:text-amber-500/80 leading-relaxed italic">
+                            {ebookResultThought}
+                          </div>
+                        </details>
+                      </div>
+                    )}
+                    <div id="ebook-content" className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                      {isEditingOutline ? (
+                        <textarea 
+                          value={editedOutline} 
+                          onChange={(e) => setEditedOutline(e.target.value)} 
+                          className={cn(
+                            "w-full h-[600px] p-8 bg-stone-50 dark:bg-zinc-800 border border-emerald-500 rounded-3xl outline-none leading-relaxed",
+                            fontFamily === 'dyslexic' ? 'font-dyslexic' : 
+                            fontFamily === 'serif' ? 'font-serif' : 
+                            fontFamily === 'mono' ? 'font-mono' : 'font-sans',
+                            fontSize === 'xs' ? 'text-xs' :
+                            fontSize === 'sm' ? 'text-sm' :
+                            fontSize === 'base' ? 'text-base' :
+                            fontSize === 'lg' ? 'text-lg' :
+                            fontSize === 'xl' ? 'text-xl' :
+                            fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
+                          )}
+                          style={{ 
+                            lineHeight: lineHeight
+                          }}
+                        />
+                      ) : (
+                        <ExpandableMarkdown content={ebookResult} onSearch={handleWikiSearch} />
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {isEditingOutline ? (
+                        <>
+                          <button onClick={handleSaveEdit} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Check size={18} /> Salvar</button>
+                          <button onClick={handleCancelEdit} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><CloseIcon size={18} /> Cancelar</button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleListen(ebookResult)}
+                            disabled={isGeneratingSpeech}
+                            className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
+                          >
+                            {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
+                            Ouvir
+                          </button>
+                          <button onClick={() => { setIsEditingOutline(true); setEditedOutline(ebookResult); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Edit size={18} /> Editar</button>
+                          <button onClick={() => { copyToClipboard(ebookResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
+                          <button 
+                            onClick={() => handleSaveToPdf('ebook-content')} 
+                            className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
+                          >
+                            <Download size={18} /> Baixar PDF
+                          </button>
+                          <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
+                          <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
+                          <button onClick={() => handleSaveToNotebook('E-book', ebookResult)} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"><Save size={18} /> Salvar no Caderno</button>
                         </>
                       )}
                     </div>

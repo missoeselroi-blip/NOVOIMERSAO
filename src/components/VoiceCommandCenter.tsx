@@ -230,7 +230,7 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
       drag
       dragConstraints={{ left: -window.innerWidth + 80, right: 0, top: -window.innerHeight + 80, bottom: 0 }}
       dragMomentum={false}
-      className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-50 flex flex-row items-end gap-4 touch-none"
+      className="fixed bottom-24 right-6 md:bottom-8 md:right-8 z-[60] flex flex-row items-end gap-4 touch-none"
     >
       <AnimatePresence>
         {isListening && (
@@ -262,16 +262,16 @@ export const VoiceCommandCenter: React.FC<VoiceCommandCenterProps> = () => {
       <button
         onClick={() => setIsListening(!isListening)}
         className={cn(
-          "w-14 h-14 flex flex-col items-center justify-center gap-0.5 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 group relative border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing",
+          "w-14 h-14 flex flex-col items-center justify-center gap-0.5 rounded-full shadow-2xl transition-all hover:scale-110 active:scale-95 group relative border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing z-[60] overflow-hidden",
           isListening 
             ? "bg-red-500 text-white animate-pulse" 
             : "bg-emerald-600 text-white"
         )}
         title="Comando de Voz"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity rounded-full" />
-        {isListening ? <MicOff size={20} className="relative z-10" /> : <Mic size={20} className="relative z-10" />}
-        <span className="relative z-10 text-[8px] font-black uppercase tracking-widest">Voz</span>
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+        {isListening ? <MicOff size={20} className="relative z-10" /> : <Mic size={20} className="relative z-10 animate-pulse" />}
+        <span className="relative z-10 text-[8px] font-black uppercase tracking-widest leading-none">Voz</span>
         
       </button>
     </motion.div>

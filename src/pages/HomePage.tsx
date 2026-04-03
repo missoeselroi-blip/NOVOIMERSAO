@@ -140,16 +140,21 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
   const quickActions = [
     { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'bible', label: 'Bíblia Online', desc: 'Acesso imediato à Palavra.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', onClick: () => window.open('https://www.bibliaonline.com.br/nvi', '_blank') },
     { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'theology', label: 'Teologia', desc: 'Formação teológica.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'quiz', label: 'Quiz', desc: 'Desafio de Conhecimento.', icon: <Zap size={20} className="text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20 shadow-yellow-100/50', image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'bible-race', label: 'Corrida Bíblica', desc: 'A Jornada da Palavra.', icon: <Trophy size={20} className="text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20 shadow-orange-100/50', image: 'https://images.unsplash.com/photo-1552674605-171ff3ea36f0?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'notebook', label: 'Meu Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-amber-600" />, color: 'bg-amber-50 dark:bg-amber-900/20 shadow-amber-100/50', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-pink-600" />, color: 'bg-pink-50 dark:bg-pink-900/20 shadow-pink-100/50', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-indigo-600" />, color: 'bg-indigo-50 dark:bg-indigo-900/20 shadow-indigo-100/50', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20 shadow-red-100/50', image: 'https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png' },
-    { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-indigo-600" />, color: 'bg-indigo-50 dark:bg-indigo-900/20 shadow-indigo-100/50', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20 shadow-orange-100/50', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
+    { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-indigo-600" />, color: 'bg-indigo-50 dark:bg-indigo-900/20 shadow-indigo-100/50', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-pink-600" />, color: 'bg-pink-50 dark:bg-pink-900/20 shadow-pink-100/50', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-sky-600" />, color: 'bg-sky-50 dark:bg-sky-900/20 shadow-sky-100/50', onClick: () => setIsNewsModalOpen(true) },
+    { id: 'credits', label: 'Créditos', desc: 'Gerencie seus créditos.', icon: <Sparkles size={20} className="text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20 shadow-yellow-100/50', image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20 shadow-red-100/50', image: 'https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png' },
+    { id: 'donate', label: 'Doe', desc: 'Apoie a obra.', icon: <HeartHandshake size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'bible-online', label: 'Bíblia Online', desc: 'Acesso imediato à Palavra.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', onClick: () => window.open('https://www.bibliaonline.com.br/nvi', '_blank') },
   ];
 
   const handleGenerateMessage = async () => {
@@ -625,7 +630,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Book size={20} className="text-emerald-600" />
           </div>
-          <span className="text-sm md:text-base">Bíblia Sagrada</span>
+          <span className="text-sm md:text-base">Bíblia Pessoal</span>
         </motion.button>
       </div>
 
