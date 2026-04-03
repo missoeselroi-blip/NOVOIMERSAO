@@ -105,7 +105,9 @@ export const bibleService = {
         { id: 7, name: "Almeida Contemporânea", short_name: "AC", language: "Português" },
         { id: 8, name: "King James Version (Inglês)", short_name: "KJV", language: "Inglês" },
         { id: 9, name: "Reina Valera 1960 (Espanhol)", short_name: "RVR1960", language: "Espanhol" },
-        { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" }
+        { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" },
+        { id: 11, name: "Almeida Corrigida Fiel", short_name: "ACF", language: "Português" },
+        { id: 12, name: "Nova Vida", short_name: "NV", language: "Português" }
       ];
     } catch (error) {
       console.error('Error fetching Bible versions:', error);

@@ -714,7 +714,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   ];
 
   const commentaryVersions = [
-    'NVI', 'ARA', 'ARC', 'KJV', 'Almeida Século 21', 'NTLH'
+    'NVI', 'ARA', 'ACF', 'Nova Vida', 'ARC', 'KJV', 'Almeida Século 21', 'NTLH'
   ];
 
   const handleSuggestCommentators = async () => {
@@ -2302,6 +2302,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               searchSource.includes('ARC') || 
                               searchSource.includes('NVI') || 
                               searchSource.includes('NVT') || 
+                              searchSource.includes('ARA') || 
+                              searchSource.includes('ACF') || 
+                              searchSource.includes('Nova Vida') || 
                               searchSource.includes('Bíblia Viva') || 
                               searchSource.includes('Reina Valera') || 
                               searchSource.includes('RVR1960') ||
@@ -2319,7 +2322,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           prompt += `Se "${query || 'Geral'}" for uma referência bíblica (ex: João 3:16), forneça o texto bíblico exato da passagem na versão/tradução "${searchSource}". 
           Se for um tema (ex: Amor, Fé), forneça os principais versículos sobre este tema usando o texto exato da versão/tradução "${searchSource}".
           Se a versão for em outro idioma (como KJV em inglês ou Reina Valera em espanhol), forneça o texto no idioma original da versão e, em seguida, forneça uma tradução ou explicação em Português do Brasil.
-          Se a versão for em português (como ARC, NVI, NVT, Bíblia Viva), forneça o texto exato em Português do Brasil e um breve comentário explicativo.`;
+          Se a versão for em português (como ARC, NVI, NVT, ARA, ACF, Nova Vida, Bíblia Viva), forneça o texto exato em Português do Brasil e um breve comentário explicativo.`;
         } else if (searchSource === 'Todas as Bíblias') {
           prompt += `Forneça um comentário bíblico consolidado e profundo sobre a passagem ou tema: ${query || 'Geral'}. 
           Sua pesquisa deve se concentrar exclusivamente em Bíblias de Estudo (como Shedd, Thompson, Genebra, Pentecostal, NAA, NVT, etc.). 
@@ -3043,6 +3046,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "ARC (Almeida Revista e Corrigida - PT)",
     "NVI (Nova Versão Internacional - PT)",
     "NVT (Nova Versão Transformadora - PT)",
+    "ARA (Almeida Revista e Atualizada - PT)",
+    "ACF (Almeida Corrigida Fiel - PT)",
+    "Nova Vida (PT)",
     "NIV (New International Version - EN)",
     "ESV (English Standard Version - EN)",
     "KJV (King James Version - EN)",
@@ -5473,6 +5479,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <option value="NAA">Nova Almeida Atualizada</option>
                         <option value="Nova Versão Transformadora">Nova Versão Transformadora</option>
                         <option value="Nova Versão Internacional">Nova Versão Internacional</option>
+                        <option value="Nova Vida">Nova Vida</option>
                         <option value="Tradução Brasileira">Tradução Brasileira</option>
                         <option value="Bíblia Viva">Bíblia Viva</option>
                         <option value="Bíblia de Jerusalém">Bíblia de Jerusalém</option>

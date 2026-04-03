@@ -841,7 +841,6 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
             >
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-emerald-600 text-white text-[10px] font-bold rounded-full uppercase tracking-widest shadow-lg pointer-events-none flex items-center gap-2">
                 <Sparkles size={12} />
-                Oração em Áudio (Arraste para mover)
               </div>
               
               <button 
