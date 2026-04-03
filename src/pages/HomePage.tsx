@@ -49,6 +49,7 @@ import { useAccessibility } from '../contexts/AccessibilityContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
 import { geminiService } from '../services/geminiService';
 import { Type } from "@google/genai";
+import { copyToClipboard } from '../utils/clipboard';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import NewsPage from './NewsPage';
 import { useToast } from '../components/Toast';
@@ -395,6 +396,10 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [showQuickTips, setShowQuickTips] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
+  const [isExplanationModalOpen, setIsExplanationModalOpen] = useState(false);
+  const [explanationText, setExplanationText] = useState('');
+  const [explanationThought, setExplanationThought] = useState('');
+  const [isExplaining, setIsExplaining] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -423,6 +428,28 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const handleSaveToNotebook = (title: string, content: string) => {
     setPendingNote({ title, content });
     setIsNotebookModalOpen(true);
+  };
+
+  const handleExplainVerse = async () => {
+    if (!dailyVerse) return;
+    setIsExplaining(true);
+    showToast(getRandomWaitingMessage(), 'info');
+    try {
+      const prompt = `Explique o seguinte versículo: "${dailyVerse.text}" (${dailyVerse.reference}). Gere uma explicação rápida, mas profunda, com linguagem de fácil entendimento, sem termos teológicos difíceis. Faça uma reflexão identificando algo do passado ou da cultura da época e aplique à vida diária hoje.`;
+      const response = await geminiService.generateOutlineWithThought(prompt, deepThinking);
+      setExplanationText(response.text);
+      setExplanationThought(response.thought);
+      setIsExplanationModalOpen(true);
+    } catch (error: any) {
+      console.error("Error explaining verse:", error);
+      if (error.message?.includes('créditos')) {
+        showToast("Você não tem créditos suficientes.", "error");
+      } else {
+        showToast("Erro ao explicar versículo. Tente novamente.", "error");
+      }
+    } finally {
+      setIsExplaining(false);
+    }
   };
 
   const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
@@ -625,12 +652,12 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           onClick={() => onNavigate('bible')}
-          className="flex-1 py-5 bg-white dark:bg-zinc-900 text-emerald-600 border-2 border-emerald-600/20 rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-emerald-50 dark:hover:bg-zinc-800 transition-all shadow-lg group"
+          className="flex-1 py-5 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-emerald-600 hover:to-teal-700 transition-all shadow-lg shadow-emerald-600/20 group"
         >
-          <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Book size={20} className="text-emerald-600" />
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Book size={20} className="text-white" />
           </div>
-          <span className="text-sm md:text-base">Bíblia Pessoal</span>
+          <span className="text-sm md:text-base text-white">Bíblia Pessoal</span>
         </motion.button>
       </div>
 
@@ -711,6 +738,14 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             >
               <StickyNote size={14} />
               Salvar no Caderno
+            </button>
+            <button 
+              onClick={handleExplainVerse}
+              disabled={isExplaining}
+              className="px-6 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+            >
+              {isExplaining ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+              Explique o Versículo
             </button>
           </div>
         </div>
@@ -1472,6 +1507,92 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         onClose={() => setIsNotebookModalOpen(false)}
         onConfirm={confirmSaveToNotebook}
       />
+
+      <AnimatePresence>
+        {isExplanationModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsExplanationModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
+                    <Sparkles size={20} />
+                  </div>
+                  <h3 className="text-xl font-bold">Explicação do Versículo</h3>
+                </div>
+                <button 
+                  onClick={() => setIsExplanationModalOpen(false)}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
+                <div className="prose dark:prose-invert max-w-none">
+                  {explanationThought && (
+                    <div className="mb-6 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-200 dark:border-zinc-700/50">
+                      <div className="flex items-center gap-2 mb-2 text-stone-500 dark:text-zinc-400">
+                        <Brain size={16} />
+                        <span className="text-xs font-bold uppercase tracking-wider">Processo de Reflexão</span>
+                      </div>
+                      <div className="text-sm text-stone-600 dark:text-zinc-300 italic">
+                        <MarkdownRenderer content={explanationThought} />
+                      </div>
+                    </div>
+                  )}
+                  <div className="text-stone-800 dark:text-zinc-200 leading-relaxed text-lg">
+                    <MarkdownRenderer content={explanationText} />
+                  </div>
+                </div>
+              </div>
+              
+              <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900/50 flex flex-wrap gap-3">
+                <button 
+                  onClick={() => handleSaveToNotebook('Explicação: ' + dailyVerse?.reference, explanationText)}
+                  className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                >
+                  <Save size={18} />
+                  Salvar no Caderno
+                </button>
+                <button 
+                  onClick={() => {
+                    copyToClipboard(explanationText);
+                    showToast("Explicação copiada!");
+                  }}
+                  className="flex-1 py-3 bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-300 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Copy size={18} />
+                  Copiar
+                </button>
+                <button 
+                  onClick={() => {
+                    share({
+                      title: `Explicação: ${dailyVerse?.reference}`,
+                      text: explanationText,
+                    });
+                  }}
+                  className="flex-1 py-3 bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-300 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                >
+                  <Share2 size={18} />
+                  Compartilhar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <AudioConfirmationModal
         isOpen={isAudioConfirmModalOpen}

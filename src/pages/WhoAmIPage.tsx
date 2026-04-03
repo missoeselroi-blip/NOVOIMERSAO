@@ -35,7 +35,7 @@ export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string) 
           <div className="absolute -inset-4 bg-emerald-600/10 rounded-[3rem] blur-3xl" />
           <img 
             src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
-            alt="Wesley Francisco Reis" 
+            alt="Wesley Reis" 
             className="relative w-full h-auto rounded-[3rem] shadow-2xl border-8 border-white dark:border-zinc-800"
             referrerPolicy="no-referrer"
           />
@@ -48,7 +48,7 @@ export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string) 
         >
           <div className="prose dark:prose-invert max-w-none">
             <p className="text-xl leading-relaxed text-stone-700 dark:text-zinc-300 font-medium">
-              Olá! Meu nome é <strong>Wesley Francisco Reis</strong>. Sou pastor auxiliar e missionário da Igreja Evangélica Betânia de Ipatinga-MG.
+              Olá! Meu nome é <strong>Wesley Reis</strong>. Sou pastor auxiliar e missionário da Igreja Evangélica Betânia de Ipatinga-MG.
             </p>
             <p className="text-lg leading-relaxed text-stone-600 dark:text-zinc-400">
               Sou o idealizador e desenvolvedor do <strong>Imersão Bíblica IA</strong>. Este projeto nasceu de um desejo profundo de democratizar o acesso ao conhecimento teológico de qualidade, utilizando as ferramentas mais modernas de Inteligência Artificial para auxiliar no estudo das Escrituras.

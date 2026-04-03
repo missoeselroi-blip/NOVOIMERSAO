@@ -30,7 +30,11 @@ import {
   RotateCw,
   Play,
   Pause,
-  Zap as ChallengeIcon
+  Zap as ChallengeIcon,
+  FileText,
+  Plus,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Type } from "@google/genai";
@@ -42,7 +46,7 @@ import { useOffline } from '../contexts/OfflineContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
 import { useAuth } from '../contexts/AuthContext';
 import { auth, db } from '../lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, deleteDoc, doc, updateDoc, orderBy, serverTimestamp } from 'firebase/firestore';
 import { copyToClipboard } from '../utils/clipboard';
 
 enum OperationType {
@@ -194,6 +198,12 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     const saved = localStorage.getItem('devotional_favorites');
     return saved ? JSON.parse(saved) : [];
   });
+  const [activeTab, setActiveTab] = useState<'devotional' | 'journal'>('devotional');
+  const [journalEntries, setJournalEntries] = useState<any[]>([]);
+  const [isJournalLoading, setIsJournalLoading] = useState(false);
+  const [newJournalEntry, setNewJournalEntry] = useState('');
+  const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
+  const [editJournalContent, setEditJournalContent] = useState('');
   const [verseOfDay, setVerseOfDay] = useState<{ text: string, ref: string, bg: string } | null>(null);
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false);
   const [seriesResult, setSeriesResult] = useState<string | null>(null);
@@ -259,6 +269,83 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       }
     }
   }, [location.state]);
+
+  const fetchJournalEntries = async () => {
+    if (!user) return;
+    setIsJournalLoading(true);
+    try {
+      const q = query(
+        collection(db, 'journalEntries'),
+        where('userId', '==', user.id),
+        orderBy('createdAt', 'desc')
+      );
+      const snapshot = await getDocs(q);
+      const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setJournalEntries(entries);
+    } catch (error) {
+      console.error("Error fetching journal entries:", error);
+      handleFirestoreError(error, OperationType.GET, 'journalEntries');
+    } finally {
+      setIsJournalLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'journal') {
+      fetchJournalEntries();
+    }
+  }, [activeTab, user]);
+
+  const handleAddJournalEntry = async () => {
+    if (!user || !newJournalEntry.trim()) return;
+    try {
+      await addDoc(collection(db, 'journalEntries'), {
+        userId: user.id,
+        title: 'Oração Diária',
+        content: newJournalEntry,
+        createdAt: serverTimestamp()
+      });
+      setNewJournalEntry('');
+      fetchJournalEntries();
+      showToast("Entrada adicionada com sucesso!", "success");
+    } catch (error) {
+      console.error("Error adding journal entry:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'journalEntries');
+      showToast("Erro ao adicionar entrada.", "error");
+    }
+  };
+
+  const handleUpdateJournalEntry = async (id: string) => {
+    if (!user || !editJournalContent.trim()) return;
+    try {
+      await updateDoc(doc(db, 'journalEntries', id), {
+        content: editJournalContent,
+        updatedAt: serverTimestamp()
+      });
+      setEditingJournalId(null);
+      setEditJournalContent('');
+      fetchJournalEntries();
+      showToast("Entrada atualizada com sucesso!", "success");
+    } catch (error) {
+      console.error("Error updating journal entry:", error);
+      handleFirestoreError(error, OperationType.UPDATE, 'journalEntries');
+      showToast("Erro ao atualizar entrada.", "error");
+    }
+  };
+
+  const handleDeleteJournalEntry = async (id: string) => {
+    if (!user) return;
+    if (!window.confirm("Tem certeza que deseja excluir esta entrada?")) return;
+    try {
+      await deleteDoc(doc(db, 'journalEntries', id));
+      fetchJournalEntries();
+      showToast("Entrada excluída com sucesso!", "success");
+    } catch (error) {
+      console.error("Error deleting journal entry:", error);
+      handleFirestoreError(error, OperationType.DELETE, 'journalEntries');
+      showToast("Erro ao excluir entrada.", "error");
+    }
+  };
 
   // Narration state
   const [selectedVoice, setSelectedVoice] = useState<'Zephyr' | 'Puck' | 'Charon' | 'Kore' | 'Fenrir'>('Zephyr');
@@ -568,7 +655,36 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         </div>
       ) : (
         <>
-          <header className="text-center space-y-4">
+          <div className="flex justify-center mb-8">
+            <div className="bg-stone-100 dark:bg-zinc-800 p-1 rounded-full flex items-center gap-1">
+              <button
+                onClick={() => setActiveTab('devotional')}
+                className={cn(
+                  "px-6 py-2.5 rounded-full text-sm font-bold transition-all",
+                  activeTab === 'devotional' 
+                    ? "bg-white dark:bg-zinc-900 text-emerald-600 shadow-sm" 
+                    : "text-stone-500 hover:text-stone-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                )}
+              >
+                Devocional
+              </button>
+              <button
+                onClick={() => setActiveTab('journal')}
+                className={cn(
+                  "px-6 py-2.5 rounded-full text-sm font-bold transition-all",
+                  activeTab === 'journal' 
+                    ? "bg-white dark:bg-zinc-900 text-emerald-600 shadow-sm" 
+                    : "text-stone-500 hover:text-stone-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                )}
+              >
+                Diário de Oração
+              </button>
+            </div>
+          </div>
+
+          {activeTab === 'devotional' ? (
+            <>
+              <header className="text-center space-y-4">
             <div className="flex justify-center gap-4">
               <button
                 onClick={() => setIsPrayerConfirmOpen(true)}
@@ -1098,9 +1214,6 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         </div>
       </div>
 
-        </>
-      )}
-
       {/* Series Modal */}
       <AnimatePresence>
         {isSeriesModalOpen && (
@@ -1254,6 +1367,128 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
             ))}
           </div>
         </section>
+      )}
+      </>
+      ) : (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <header className="text-center space-y-4">
+            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+              <BookOpen size={32} />
+            </div>
+            <h2 className="text-3xl font-display font-bold">Diário de Oração</h2>
+            <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto">
+              Registre seus pedidos de oração, agradecimentos e reflexões pessoais.
+            </p>
+          </header>
+
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800">
+            <div className="space-y-4">
+              <textarea
+                value={newJournalEntry}
+                onChange={(e) => setNewJournalEntry(e.target.value)}
+                placeholder="Escreva seu pedido de oração, agradecimento ou reflexão..."
+                className="w-full h-32 p-4 rounded-2xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={handleAddJournalEntry}
+                  disabled={!newJournalEntry.trim()}
+                  className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all disabled:opacity-50 flex items-center gap-2"
+                >
+                  <Plus size={20} />
+                  Adicionar Entrada
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+              <FileText className="text-emerald-600" />
+              Suas Entradas
+            </h3>
+            
+            {isJournalLoading ? (
+              <div className="flex justify-center py-12">
+                <Loader2 className="animate-spin text-emerald-600" size={32} />
+              </div>
+            ) : journalEntries.length === 0 ? (
+              <div className="text-center py-12 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl border border-stone-200 dark:border-zinc-800">
+                <BookOpen size={48} className="mx-auto text-stone-300 dark:text-zinc-600 mb-4" />
+                <p className="text-stone-500 dark:text-zinc-400">Nenhuma entrada ainda. Comece seu diário de oração!</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {journalEntries.map((entry) => (
+                  <div key={entry.id} className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-stone-200 dark:border-zinc-800 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-stone-500 dark:text-zinc-400 font-medium">
+                        {entry.createdAt?.toDate ? entry.createdAt.toDate().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' }) : new Date().toLocaleString('pt-BR', { dateStyle: 'long', timeStyle: 'short' })}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {editingJournalId === entry.id ? (
+                          <>
+                            <button
+                              onClick={() => handleUpdateJournalEntry(entry.id)}
+                              className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                              title="Salvar"
+                            >
+                              <Save size={18} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                setEditingJournalId(null);
+                                setEditJournalContent('');
+                              }}
+                              className="p-2 text-stone-400 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                              title="Cancelar"
+                            >
+                              <X size={18} />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingJournalId(entry.id);
+                                setEditJournalContent(entry.content);
+                              }}
+                              className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                              title="Editar"
+                            >
+                              <Edit size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteJournalEntry(entry.id)}
+                              className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                              title="Excluir"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {editingJournalId === entry.id ? (
+                      <textarea
+                        value={editJournalContent}
+                        onChange={(e) => setEditJournalContent(e.target.value)}
+                        className="w-full h-32 p-4 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 resize-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                      />
+                    ) : (
+                      <p className="text-stone-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed">
+                        {entry.content}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      </>
       )}
 
       <footer className="mt-12 pt-8 border-t border-stone-200 dark:border-zinc-800 text-center space-y-4">

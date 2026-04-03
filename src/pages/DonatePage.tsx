@@ -68,7 +68,7 @@ export default function DonatePage() {
           <h2 className="text-4xl font-display font-bold">Contribua com a Obra</h2>
         </div>
         <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto leading-relaxed">
-          Olá meu querido(a), meu nome é Wesley Francisco Reis, sou pastor auxiliar e missionário da Igreja Evangélica Betânia de Ipatinga-MG e o idealizador desse App. Saiba que a sua contribuição nos ajudará a manter as ferramentas gratuitas e a levar a Palavras de Deus a mais pessoas através da presença digital. Deus retribua cem vezes mais. Obrigado! ❤️
+          Olá meu querido(a), meu nome é Wesley Reis, sou pastor auxiliar e missionário da Igreja Evangélica Betânia de Ipatinga-MG e o idealizador desse App. Saiba que a sua contribuição nos ajudará a manter as ferramentas gratuitas e a levar a Palavras de Deus a mais pessoas através da presença digital. Deus retribua cem vezes mais. Obrigado! ❤️
         </p>
       </header>
 

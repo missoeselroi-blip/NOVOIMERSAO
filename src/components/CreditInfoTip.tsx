@@ -11,7 +11,7 @@ export const CreditInfoTip: React.FC = () => {
         <div className="space-y-4">
           <div>
             <p className="font-bold text-lg mb-1">Dica: Sistema de Créditos</p>
-            <p className="leading-relaxed">Novos usuários recebem <strong>100 créditos gratuitos</strong>. Estes créditos são debitados conforme o uso de IA:</p>
+            <p className="leading-relaxed">Novos usuários recebem <strong>100 créditos gratuitos</strong>. Estes créditos são debitados conforme o uso de IA. <strong>Lembre-se: 70% do Aplicativo funciona sem créditos.</strong></p>
           </div>
           
           <ul className="space-y-2 text-sm">

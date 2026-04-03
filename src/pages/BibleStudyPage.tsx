@@ -1937,6 +1937,37 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
+  const handleDownloadEbookPDF = async () => {
+    const element = document.getElementById('ebook-content');
+    if (!element) return;
+
+    setIsGeneratingPDF(true);
+    showToast("Gerando seu E-book PDF... Isso pode levar um momento. 📄💎", 'info');
+    try {
+      const opt = {
+        margin:       15,
+        filename:     `ebook-${topic.replace(/\s+/g, '_')}.pdf`,
+        image:        { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas:  { 
+          scale: 2, 
+          useCORS: true,
+          logging: false
+        },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' as const },
+        pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      // @ts-ignore
+      await html2pdf().set(opt).from(element).save();
+      showToast("E-book PDF gerado com sucesso! 📄🎉", 'success');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      showToast("Erro ao gerar PDF.", 'error');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const handleDownloadBookletPDF = async () => {
     const element = document.getElementById('booklet-content');
     if (!element) return;
@@ -4581,10 +4612,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           <button onClick={() => { setIsEditingOutline(true); setEditedOutline(ebookResult); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Edit size={18} /> Editar</button>
                           <button onClick={() => { copyToClipboard(ebookResult); showToast("Copiado! 📋✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Copy size={18} /> Copiar</button>
                           <button 
-                            onClick={() => handleSaveToPdf('ebook-content')} 
-                            className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"
+                            onClick={handleDownloadEbookPDF} 
+                            disabled={isGeneratingPDF}
+                            className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 disabled:opacity-50"
                           >
-                            <Download size={18} /> Baixar PDF
+                            {isGeneratingPDF ? <Loader2 className="animate-spin" size={18} /> : <Download size={18} />}
+                            Baixar PDF
                           </button>
                           <button onClick={() => { handleShareResult(); showToast("Compartilhando... 🕊️✨"); }} className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2"><Share2 size={18} /> Compartilhar</button>
                           <button onClick={handleSaveDraft} className="flex-1 py-3 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-100 flex items-center justify-center gap-2"><Pencil size={18} /> Salvar Rascunho</button>
