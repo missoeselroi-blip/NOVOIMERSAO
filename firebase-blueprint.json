@@ -209,6 +209,19 @@
       },
       "required": ["userId", "userName", "points", "type", "wonAt"]
     },
+    "PersonalDiaryEntry": {
+      "title": "Personal Diary Entry",
+      "description": "User personal diary entries",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "content", "createdAt"]
+    },
     "JournalEntry": {
       "title": "Journal Entry",
       "description": "User personal journal entries with Bible verses and reflections",
@@ -414,6 +427,10 @@
     "/bibleRaceChampions/{championId}": {
       "schema": "BibleRaceChampion",
       "description": "Historical Bible Race champions"
+    },
+    "/personalDiaryEntries/{entryId}": {
+      "schema": "PersonalDiaryEntry",
+      "description": "User personal diary entries"
     },
     "/journalEntries/{entryId}": {
       "schema": "JournalEntry",

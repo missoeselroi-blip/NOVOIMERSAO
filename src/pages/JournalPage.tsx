@@ -97,11 +97,7 @@ interface JournalEntry {
   updatedAt?: any;
 }
 
-interface JournalPageProps {
-  isSubView?: boolean;
-}
-
-export default function JournalPage({ isSubView = false }: JournalPageProps) {
+export default function JournalPage() {
   const { user } = useAuth();
   const { showToast } = useToast();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
@@ -114,7 +110,8 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    title: '',
+    title: 'Relato',
+    customTitle: '',
     content: '',
     verseReference: '',
     topic: ''
@@ -160,31 +157,40 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
       return;
     }
 
-    if (!formData.title || !formData.content) {
+    const finalTitle = formData.title === 'Outro' ? formData.customTitle : formData.title;
+
+    if (!finalTitle || !formData.content) {
       showToast("Título e conteúdo são obrigatórios.", "info");
       return;
     }
 
     setIsSaving(true);
     try {
+      const dataToSave = {
+        title: finalTitle,
+        content: formData.content,
+        verseReference: formData.verseReference,
+        topic: formData.topic
+      };
+
       if (editingEntryId) {
         const entryRef = doc(db, 'personalDiaryEntries', editingEntryId);
         await updateDoc(entryRef, {
-          ...formData,
+          ...dataToSave,
           updatedAt: serverTimestamp()
         });
         showToast("Entrada atualizada com sucesso! ✨");
       } else {
         await addDoc(collection(db, 'personalDiaryEntries'), {
           userId: user.id,
-          ...formData,
+          ...dataToSave,
           createdAt: serverTimestamp()
         });
         showToast("Nova reflexão guardada! 📖✨");
       }
       setIsFormOpen(false);
       setEditingEntryId(null);
-      setFormData({ title: '', content: '', verseReference: '', topic: '' });
+      setFormData({ title: 'Relato', customTitle: '', content: '', verseReference: '', topic: '' });
     } catch (error) {
       console.error("Error saving journal entry:", error);
       showToast("Erro ao salvar no diário.", "error");
@@ -224,8 +230,7 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
   }
 
   return (
-    <div className={cn("space-y-8 pb-20", isSubView && "pb-0")}>
-      {!isSubView && (
+    <div className="space-y-8 pb-20">
         <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
             <h1 className="text-4xl font-black tracking-tighter uppercase text-emerald-900 dark:text-emerald-400">Meu Diário Espiritual</h1>
@@ -233,17 +238,16 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
           </div>
           <button
             onClick={() => {
-              setFormData({ title: '', content: '', verseReference: '', topic: '' });
+              setFormData({ title: 'Relato', customTitle: '', content: '', verseReference: '', topic: '' });
               setEditingEntryId(null);
               setIsFormOpen(true);
             }}
             className="px-8 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 flex items-center gap-3 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
           >
             <Plus size={24} />
-            Nova Reflexão
+            Novo Registro
           </button>
         </header>
-      )}
 
       {/* Search and Filters */}
       <div className="relative max-w-2xl">
@@ -268,7 +272,7 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-black uppercase tracking-tighter flex items-center gap-3">
                 <BookOpen className="text-emerald-600" />
-                {editingEntryId ? 'Editar Reflexão' : 'Nova Reflexão'}
+                {editingEntryId ? 'Editar Registro' : 'Novo Registro'}
               </h2>
               <button onClick={() => setIsFormOpen(false)} className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors">
                 <ArrowLeft size={24} className="text-stone-400" />
@@ -277,15 +281,34 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Título da Reflexão</label>
-                <input
-                  type="text"
-                  placeholder="Ex: O que aprendi hoje sobre fé"
+                <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Título / Categoria</label>
+                <select
                   value={formData.title}
                   onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
                   className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold relative z-50"
-                />
+                >
+                  <option value="Relato">Relato</option>
+                  <option value="Sentimento">Sentimento</option>
+                  <option value="Reflexão">Reflexão</option>
+                  <option value="Planejamento">Planejamento</option>
+                  <option value="Sonho">Sonho</option>
+                  <option value="Outro">Outro (especificar)</option>
+                </select>
               </div>
+              
+              {formData.title === 'Outro' && (
+                <div className="space-y-2 animate-in fade-in">
+                  <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Especificar Título</label>
+                  <input
+                    type="text"
+                    placeholder="Digite o título..."
+                    value={formData.customTitle}
+                    onChange={(e) => setFormData(prev => ({ ...prev, customTitle: e.target.value }))}
+                    className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none font-bold relative z-50"
+                  />
+                </div>
+              )}
+
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-2">Tema / Tópico</label>
                 <div className="relative">
@@ -331,7 +354,7 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
                 className="flex-1 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-3 transition-all shadow-lg shadow-emerald-600/20 active:scale-95"
               >
                 {isSaving ? <Loader2 className="animate-spin" size={24} /> : <Save size={24} />}
-                {editingEntryId ? 'Atualizar Reflexão' : 'Salvar no Diário'}
+                {editingEntryId ? 'Atualizar Registro' : 'Salvar Registro'}
               </button>
               <button
                 onClick={() => setIsFormOpen(false)}
@@ -390,8 +413,11 @@ export default function JournalPage({ isSubView = false }: JournalPageProps) {
                 <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <button
                     onClick={() => {
+                      const predefinedTitles = ['Relato', 'Sentimento', 'Reflexão', 'Planejamento', 'Sonho'];
+                      const isPredefined = predefinedTitles.includes(entry.title);
                       setFormData({
-                        title: entry.title,
+                        title: isPredefined ? entry.title : 'Outro',
+                        customTitle: isPredefined ? '' : entry.title,
                         content: entry.content,
                         verseReference: entry.verseReference || '',
                         topic: entry.topic || ''

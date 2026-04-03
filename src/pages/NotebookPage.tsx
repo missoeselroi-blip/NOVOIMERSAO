@@ -65,11 +65,18 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [currentNote, setCurrentNote] = useState<{ title: string, content: string, category: 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros' }>({ title: '', content: '', category: 'Anotações' });
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<'Todos' | 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros'>('Todos');
+  const [activeCategory, setActiveCategory] = useState<'Todos' | 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Teologia' | 'Diário' | 'Outros'>('Todos');
   const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [activeView, setActiveView] = useState<'notes' | 'journal'>('notes');
+  
+  // Diary Password States
+  const [isDiaryUnlocked, setIsDiaryUnlocked] = useState(false);
+  const [diaryPasswordInput, setDiaryPasswordInput] = useState('');
+  const [isSettingPassword, setIsSettingPassword] = useState(false);
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
+  const { updateUser } = useAuth();
+
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [pendingSpeechText, setPendingSpeechText] = useState('');
@@ -89,6 +96,47 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
     const dateB = b.createdAt ? new Date(b.createdAt).getTime() : (b.date ? new Date(b.date.split('/').reverse().join('-')).getTime() : 0);
     return dateB - dateA;
   });
+
+  const handleDiaryUnlock = () => {
+    if (!user) {
+      showToast("Faça login para acessar o diário.", "error");
+      return;
+    }
+    
+    if (user.diaryPassword) {
+      if (diaryPasswordInput === user.diaryPassword) {
+        setIsDiaryUnlocked(true);
+        setDiaryPasswordInput('');
+      } else {
+        showToast("Senha incorreta.", "error");
+      }
+    } else {
+      setIsSettingPassword(true);
+    }
+  };
+
+  const handleSetDiaryPassword = async () => {
+    if (!diaryPasswordInput || diaryPasswordInput.length < 4) {
+      showToast("A senha deve ter pelo menos 4 caracteres.", "error");
+      return;
+    }
+    if (diaryPasswordInput !== confirmPasswordInput) {
+      showToast("As senhas não coincidem.", "error");
+      return;
+    }
+    
+    try {
+      await updateUser({ diaryPassword: diaryPasswordInput });
+      setIsSettingPassword(false);
+      setIsDiaryUnlocked(true);
+      setDiaryPasswordInput('');
+      setConfirmPasswordInput('');
+      showToast("Senha configurada com sucesso!", "success");
+    } catch (error) {
+      console.error("Error setting diary password:", error);
+      showToast("Erro ao configurar senha.", "error");
+    }
+  };
 
   const saveNote = async () => {
     if (!currentNote.title || !currentNote.content) {
@@ -369,71 +417,30 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
         <div className="flex items-center gap-4">
           <h2 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400">
-            {activeView === 'notes' ? 'Meu Caderno' : 'Meu Diário'}
+            Meu Caderno
           </h2>
-          <div className="flex bg-stone-100 dark:bg-zinc-800 p-1 rounded-xl">
-            <button
-              onClick={() => setActiveView('notes')}
-              className={cn(
-                "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
-                activeView === 'notes' 
-                  ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" 
-                  : "text-stone-400 hover:text-stone-600"
-              )}
-            >
-              Notas
-            </button>
-            <button
-              onClick={() => setActiveView('journal')}
-              className={cn(
-                "px-4 py-1.5 rounded-lg text-xs font-black uppercase tracking-widest transition-all",
-                activeView === 'journal' 
-                  ? "bg-white dark:bg-zinc-700 text-emerald-600 shadow-sm" 
-                  : "text-stone-400 hover:text-stone-600"
-              )}
-            >
-              Diário
-            </button>
-          </div>
         </div>
         <div className="flex gap-3">
-          {activeView === 'notes' ? (
-            <>
-              <button
-                onClick={() => {
-                  setIsFormOpen(true);
-                  setEditingNoteId(null);
-                  setCurrentNote({ title: '', content: '', category: 'Anotações' });
-                }}
-                className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
-              >
-                <Plus size={20} />
-                Nova Página
-              </button>
-            </>
-          ) : (
+          {activeCategory !== 'Diário' && (
             <button
               onClick={() => {
-                // This will be handled by the JournalPage component internally if we want, 
-                // but we can also trigger its "New Entry" if we refactor it.
-                // For now, let's just let JournalPage handle its own "New Entry" button.
+                setIsFormOpen(true);
+                setEditingNoteId(null);
+                setCurrentNote({ title: '', content: '', category: 'Anotações' });
               }}
-              className="hidden"
+              className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
             >
-              Nova Reflexão
+              <Plus size={20} />
+              Nova Página
             </button>
           )}
         </div>
       </header>
 
-      {activeView === 'journal' ? (
-        <JournalPage isSubView={true} />
-      ) : (
-        <>
-          {/* Categories and Customization */}
+      {/* Categories and Customization */}
       <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
         <div className="flex bg-stone-100 dark:bg-zinc-800 p-1 rounded-2xl overflow-x-auto max-w-full">
-          {['Todos', 'Anotações', 'Esboços', 'Estudos', 'Histórias', 'Teatro', 'Teologia', 'Outros'].map((cat) => (
+          {['Todos', 'Anotações', 'Esboços', 'Estudos', 'Histórias', 'Teatro', 'Teologia', 'Diário', 'Outros'].map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat as any)}
@@ -447,6 +454,54 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           ))}
         </div>
       </div>
+
+      {activeCategory === 'Diário' ? (
+        !isDiaryUnlocked ? (
+          <div className="flex flex-col items-center justify-center py-20 animate-in fade-in zoom-in duration-300">
+            <div className="w-20 h-20 bg-stone-100 dark:bg-zinc-800 rounded-full flex items-center justify-center mb-6">
+              <Lock className="text-stone-400" size={32} />
+            </div>
+            <h3 className="text-2xl font-bold text-stone-800 dark:text-zinc-100 mb-2">
+              {isSettingPassword ? 'Criar Senha do Diário' : 'Diário Protegido'}
+            </h3>
+            <p className="text-stone-500 dark:text-zinc-400 mb-8 text-center max-w-md">
+              {isSettingPassword 
+                ? 'Crie uma senha de pelo menos 4 caracteres para proteger suas reflexões pessoais. Guarde a sua senha, ela não poderá ser recuperada.' 
+                : 'Digite sua senha para acessar suas reflexões pessoais. Guarde a sua senha, ela não poderá ser recuperada.'}
+            </p>
+            
+            <div className="w-full max-w-xs space-y-4">
+              <input
+                type="password"
+                placeholder="Senha"
+                value={diaryPasswordInput}
+                onChange={(e) => setDiaryPasswordInput(e.target.value)}
+                className="w-full p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-center font-bold tracking-widest"
+              />
+              
+              {isSettingPassword && (
+                <input
+                  type="password"
+                  placeholder="Confirmar Senha"
+                  value={confirmPasswordInput}
+                  onChange={(e) => setConfirmPasswordInput(e.target.value)}
+                  className="w-full p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-center font-bold tracking-widest"
+                />
+              )}
+              
+              <button
+                onClick={isSettingPassword ? handleSetDiaryPassword : handleDiaryUnlock}
+                className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+              >
+                {isSettingPassword ? 'Salvar Senha' : 'Desbloquear'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <JournalPage />
+        )
+      ) : (
+        <>
 
       {/* Search Bar */}
       <div className="relative max-w-2xl">

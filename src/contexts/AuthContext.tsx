@@ -46,6 +46,7 @@ interface User {
   favorites?: Favorite[];
   settings?: UserSettings;
   metrics?: Metrics;
+  diaryPassword?: string;
 }
 
 interface Metrics {

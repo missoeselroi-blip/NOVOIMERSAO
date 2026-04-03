@@ -205,10 +205,12 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const [activeTab, setActiveTab] = useState<'devotional' | 'journal'>('devotional');
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
   const [isJournalLoading, setIsJournalLoading] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
   const [newJournalEntry, setNewJournalEntry] = useState('');
   const [editingJournalId, setEditingJournalId] = useState<string | null>(null);
   const [editJournalContent, setEditJournalContent] = useState('');
   const [verseOfDay, setVerseOfDay] = useState<{ text: string, ref: string, bg: string } | null>(null);
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
   const [isSeriesModalOpen, setIsSeriesModalOpen] = useState(false);
   const [seriesResult, setSeriesResult] = useState<string | null>(null);
   const [isGeneratingSeries, setIsGeneratingSeries] = useState(false);
@@ -337,13 +339,13 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     }
   };
 
-  const handleDeleteJournalEntry = async (id: string) => {
-    if (!user) return;
-    if (!window.confirm("Tem certeza que deseja excluir esta entrada?")) return;
+  const handleDeleteJournalEntry = async () => {
+    if (!user || !entryToDelete) return;
     try {
-      await deleteDoc(doc(db, 'journalEntries', id));
+      await deleteDoc(doc(db, 'journalEntries', entryToDelete));
       fetchJournalEntries();
       showToast("Entrada excluída com sucesso!", "success");
+      setEntryToDelete(null);
     } catch (error) {
       console.error("Error deleting journal entry:", error);
       handleFirestoreError(error, OperationType.DELETE, 'journalEntries');
@@ -351,67 +353,22 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     }
   };
 
-  const handleMarkAnswered = async (id: string, currentStatus: boolean) => {
+  const handleToggleTag = async (id: string, tag: string, currentTags: string[] = []) => {
     if (!user) return;
     try {
+      const newTags = currentTags.includes(tag) 
+        ? currentTags.filter(t => t !== tag)
+        : [...currentTags, tag];
+        
       await updateDoc(doc(db, 'journalEntries', id), {
-        answered: !currentStatus,
+        tags: newTags,
         updatedAt: serverTimestamp()
       });
       fetchJournalEntries();
-      showToast(currentStatus ? "Oração desmarcada." : "Oração marcada como atendida! Glória a Deus! 🙌", "success");
     } catch (error) {
-      console.error("Error updating journal entry:", error);
+      console.error("Error updating tags:", error);
       handleFirestoreError(error, OperationType.UPDATE, 'journalEntries');
-      showToast("Erro ao atualizar oração.", "error");
-    }
-  };
-
-  const [isGeneratingPrayerFollowUp, setIsGeneratingPrayerFollowUp] = useState<string | null>(null);
-
-  const handleAskMore = async (entry: any) => {
-    if (!user) return;
-    setIsGeneratingPrayerFollowUp(entry.id);
-    try {
-      const prompt = `Baseado neste pedido de oração: "${entry.content}", escreva uma breve oração de petição (máximo 3 parágrafos) pedindo a Deus por mais graça, intervenção e ajuda nesta área. Seja profundo e espiritual.`;
-      const generatedPrayer = await geminiService.generateText(prompt, "Você é um intercessor espiritual.");
-      
-      const newContent = entry.content + "\n\n**Pedindo mais:**\n" + generatedPrayer;
-      
-      await updateDoc(doc(db, 'journalEntries', entry.id), {
-        content: newContent,
-        updatedAt: serverTimestamp()
-      });
-      fetchJournalEntries();
-      showToast("Oração adicionada!", "success");
-    } catch (error) {
-      console.error("Error generating prayer:", error);
-      showToast("Erro ao gerar oração.", "error");
-    } finally {
-      setIsGeneratingPrayerFollowUp(null);
-    }
-  };
-
-  const handleThankMore = async (entry: any) => {
-    if (!user) return;
-    setIsGeneratingPrayerFollowUp(entry.id);
-    try {
-      const prompt = `Baseado nesta oração: "${entry.content}", escreva uma breve oração de gratidão (máximo 3 parágrafos) agradecendo a Deus por Seu cuidado, amor e respostas. Seja profundo e espiritual.`;
-      const generatedPrayer = await geminiService.generateText(prompt, "Você é um intercessor espiritual.");
-      
-      const newContent = entry.content + "\n\n**Agradecendo:**\n" + generatedPrayer;
-      
-      await updateDoc(doc(db, 'journalEntries', entry.id), {
-        content: newContent,
-        updatedAt: serverTimestamp()
-      });
-      fetchJournalEntries();
-      showToast("Oração de gratidão adicionada!", "success");
-    } catch (error) {
-      console.error("Error generating prayer:", error);
-      showToast("Erro ao gerar oração.", "error");
-    } finally {
-      setIsGeneratingPrayerFollowUp(null);
+      showToast("Erro ao atualizar tag.", "error");
     }
   };
 
@@ -774,7 +731,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                     : "text-stone-500 hover:text-stone-700 dark:text-zinc-400 dark:hover:text-zinc-200"
                 )}
               >
-                Diário de Oração
+                Caderno de Oração
               </button>
             </div>
           </div>
@@ -1471,7 +1428,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
             <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
               <BookOpen size={32} />
             </div>
-            <h2 className="text-3xl font-display font-bold">Diário de Oração</h2>
+            <h2 className="text-3xl font-display font-bold">Caderno de Oração</h2>
             <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto">
               Registre seus pedidos de oração, agradecimentos e reflexões pessoais.
             </p>
@@ -1529,10 +1486,29 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-xl font-bold flex items-center gap-2">
-              <FileText className="text-emerald-600" />
-              Suas Entradas
-            </h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-xl font-bold flex items-center gap-2">
+                <FileText className="text-emerald-600" />
+                Suas Entradas
+              </h3>
+              
+              <div className="flex gap-2">
+                {['Atendida', 'Pedir mais', 'Agradecer'].map(tag => (
+                  <button
+                    key={tag}
+                    onClick={() => setSelectedTagFilter(selectedTagFilter === tag ? null : tag)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-bold transition-all",
+                      selectedTagFilter === tag 
+                        ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20" 
+                        : "bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700"
+                    )}
+                  >
+                    {tag}
+                  </button>
+                ))}
+              </div>
+            </div>
             
             {isJournalLoading ? (
               <div className="flex justify-center py-12">
@@ -1545,7 +1521,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
               </div>
             ) : (
               <div className="grid gap-4">
-                {journalEntries.map((entry) => (
+                {journalEntries.filter(entry => !selectedTagFilter || (entry.tags && entry.tags.includes(selectedTagFilter))).map((entry) => (
                   <div key={entry.id} className="bg-white dark:bg-zinc-900 p-6 rounded-2xl shadow-sm border border-stone-200 dark:border-zinc-800 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-stone-500 dark:text-zinc-400 font-medium">
@@ -1585,7 +1561,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                               <Edit size={18} />
                             </button>
                             <button
-                              onClick={() => handleDeleteJournalEntry(entry.id)}
+                              onClick={() => setEntryToDelete(entry.id)}
                               className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                               title="Excluir"
                             >
@@ -1606,41 +1582,49 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                       <div className="space-y-4">
                         <p className={cn(
                           "text-stone-700 dark:text-zinc-300 whitespace-pre-wrap leading-relaxed",
-                          entry.answered && "line-through text-stone-400 dark:text-zinc-500"
+                          entry.tags?.includes('Atendida') && "line-through text-stone-400 dark:text-zinc-500"
                         )}>
                           {entry.content}
                         </p>
                         
                         <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-100 dark:border-zinc-800/50">
                           <button
-                            onClick={() => handleMarkAnswered(entry.id, entry.answered)}
+                            onClick={() => handleToggleTag(entry.id, 'Atendida', entry.tags)}
                             className={cn(
                               "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors",
-                              entry.answered 
+                              entry.tags?.includes('Atendida')
                                 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400" 
                                 : "bg-stone-100 text-stone-600 hover:bg-emerald-50 hover:text-emerald-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
                             )}
                           >
                             <CheckCircle size={14} />
-                            {entry.answered ? 'Atendida' : 'Marcar Atendida'}
+                            {entry.tags?.includes('Atendida') ? 'Atendida' : 'Marcar Atendida'}
                           </button>
                           
                           <button
-                            onClick={() => handleAskMore(entry)}
-                            disabled={isGeneratingPrayerFollowUp === entry.id}
-                            className="px-3 py-1.5 bg-stone-100 text-stone-600 hover:bg-blue-50 hover:text-blue-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-400 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            onClick={() => handleToggleTag(entry.id, 'Pedir mais', entry.tags)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors",
+                              entry.tags?.includes('Pedir mais')
+                                ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                                : "bg-stone-100 text-stone-600 hover:bg-blue-50 hover:text-blue-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
+                            )}
                           >
-                            {isGeneratingPrayerFollowUp === entry.id ? <Loader2 size={14} className="animate-spin" /> : <MessageSquarePlus size={14} />}
+                            <MessageSquarePlus size={14} />
                             Pedir mais
                           </button>
                           
                           <button
-                            onClick={() => handleThankMore(entry)}
-                            disabled={isGeneratingPrayerFollowUp === entry.id}
-                            className="px-3 py-1.5 bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-rose-900/20 dark:hover:text-rose-400 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                            onClick={() => handleToggleTag(entry.id, 'Agradecer', entry.tags)}
+                            className={cn(
+                              "px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors",
+                              entry.tags?.includes('Agradecer')
+                                ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+                                : "bg-stone-100 text-stone-600 hover:bg-rose-50 hover:text-rose-600 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-rose-900/20 dark:hover:text-rose-400"
+                            )}
                           >
-                            {isGeneratingPrayerFollowUp === entry.id ? <Loader2 size={14} className="animate-spin" /> : <HeartHandshake size={14} />}
-                            Agradecer mais
+                            <HeartHandshake size={14} />
+                            Agradecer
                           </button>
                         </div>
                       </div>
@@ -1688,6 +1672,39 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         onConfirm={confirmPlayAudio}
         isLoading={isAudioLoading}
       />
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {entryToDelete && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-sm rounded-3xl shadow-2xl p-6"
+            >
+              <h3 className="text-xl font-bold mb-4 text-stone-800 dark:text-zinc-100">Excluir Entrada</h3>
+              <p className="text-stone-600 dark:text-zinc-400 mb-6">
+                Tem certeza que deseja excluir esta entrada do seu caderno de oração? Esta ação não pode ser desfeita.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setEntryToDelete(null)}
+                  className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteJournalEntry}
+                  className="flex-1 py-3 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition-colors"
+                >
+                  Excluir
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

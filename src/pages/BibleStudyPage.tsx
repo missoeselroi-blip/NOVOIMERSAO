@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   useNavigate,
   useSearchParams
@@ -82,7 +82,7 @@ import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { compressImage } from '../utils/imageUtils';
 import { auth, db } from '../lib/firebase';
-import { collection, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { copyToClipboard } from '../utils/clipboard';
 import { sermonOutlines } from '../constants/sermonOutlines';
 
@@ -363,12 +363,41 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [outlinesSearchQuery, setOutlinesSearchQuery] = useState('');
   const [selectedOutlineCategory, setSelectedOutlineCategory] = useState('Todas');
   const [selectedLibraryOutline, setSelectedLibraryOutline] = useState<any | null>(null);
+  const [customOutlines, setCustomOutlines] = useState<any[]>([]);
+  const [isEditingLibraryOutline, setIsEditingLibraryOutline] = useState(false);
+  const [editedLibraryOutline, setEditedLibraryOutline] = useState<any | null>(null);
+  const [isSavingCustomOutline, setIsSavingCustomOutline] = useState(false);
 
-  const filteredLibraryOutlines = sermonOutlines.filter(outline => {
+  useEffect(() => {
+    if (!user) {
+      setCustomOutlines([]);
+      return;
+    }
+    const q = query(collection(db, 'customOutlines'), where('userId', '==', user.id));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const outlines = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setCustomOutlines(outlines);
+    });
+    return () => unsubscribe();
+  }, [user]);
+
+  const allLibraryOutlines = useMemo(() => {
+    const customIds = new Set(customOutlines.map(o => o.originalId || o.id));
+    const baseOutlines = sermonOutlines.filter(o => !customIds.has(o.id));
+    return [...baseOutlines, ...customOutlines.map(o => ({ ...o, isEdited: true }))];
+  }, [customOutlines]);
+
+  const filteredLibraryOutlines = allLibraryOutlines.filter(outline => {
     const matchesSearch = outline.theme.toLowerCase().includes(outlinesSearchQuery.toLowerCase()) || 
                           outline.verse.toLowerCase().includes(outlinesSearchQuery.toLowerCase()) ||
                           outline.category.toLowerCase().includes(outlinesSearchQuery.toLowerCase());
     const matchesCategory = selectedOutlineCategory === 'Todas' || outline.category === selectedOutlineCategory;
+    const matchesEdited = selectedOutlineCategory === 'Editados' ? outline.isEdited : true;
+    
+    if (selectedOutlineCategory === 'Editados') {
+      return matchesSearch && outline.isEdited;
+    }
+    
     return matchesSearch && matchesCategory;
   });
   const [followUpQuery, setFollowUpQuery] = useState('');
@@ -6525,6 +6554,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     className="px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none"
                   >
                     <option value="Todas">Todas as Categorias</option>
+                    <option value="Editados">Editados</option>
                     {Array.from(new Set(sermonOutlines.map(o => o.category))).map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -6538,6 +6568,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[10px] font-bold uppercase tracking-wider rounded-lg">
                           {outline.category}
                         </span>
+                        {outline.isEdited && (
+                          <span className="px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-600 text-[10px] font-bold uppercase tracking-wider rounded-lg flex items-center gap-1">
+                            <Edit size={10} />
+                            Editado
+                          </span>
+                        )}
                       </div>
                       <h4 className="font-bold text-lg mb-2 text-stone-800 dark:text-zinc-100">{outline.theme}</h4>
                       <p className="text-emerald-600 font-medium text-sm mb-4">{outline.verse}</p>
@@ -6576,41 +6612,172 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     {selectedLibraryOutline.theme}
                   </h3>
                   <button
-                    onClick={() => setSelectedLibraryOutline(null)}
+                    onClick={() => {
+                      setSelectedLibraryOutline(null);
+                      setIsEditingLibraryOutline(false);
+                      setEditedLibraryOutline(null);
+                    }}
                     className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
                   >
                     <CloseIcon size={24} />
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-8 custom-scrollbar space-y-8">
-                  <div className="prose dark:prose-invert max-w-none">
-                    <h1 className="text-emerald-600 mb-2">{selectedLibraryOutline.theme}</h1>
-                    <h3 className="text-stone-500 dark:text-zinc-400 mt-0 mb-8">{selectedLibraryOutline.verse}</h3>
+                  {isEditingLibraryOutline && editedLibraryOutline ? (
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-1">Tema</label>
+                        <input
+                          type="text"
+                          value={editedLibraryOutline.theme}
+                          onChange={(e) => setEditedLibraryOutline({ ...editedLibraryOutline, theme: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-1">Versículo</label>
+                        <input
+                          type="text"
+                          value={editedLibraryOutline.verse}
+                          onChange={(e) => setEditedLibraryOutline({ ...editedLibraryOutline, verse: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 focus:ring-2 focus:ring-emerald-500 outline-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-1">Introdução</label>
+                        <textarea
+                          value={editedLibraryOutline.introduction}
+                          onChange={(e) => setEditedLibraryOutline({ ...editedLibraryOutline, introduction: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-1">Desenvolvimento (um ponto por linha)</label>
+                        <textarea
+                          value={editedLibraryOutline.development.join('\n')}
+                          onChange={(e) => setEditedLibraryOutline({ ...editedLibraryOutline, development: e.target.value.split('\n') })}
+                          className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 focus:ring-2 focus:ring-emerald-500 outline-none h-48 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-1">Conclusão</label>
+                        <textarea
+                          value={editedLibraryOutline.conclusion}
+                          onChange={(e) => setEditedLibraryOutline({ ...editedLibraryOutline, conclusion: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-1">Oração</label>
+                        <textarea
+                          value={editedLibraryOutline.prayer}
+                          onChange={(e) => setEditedLibraryOutline({ ...editedLibraryOutline, prayer: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-1">Apelo</label>
+                        <textarea
+                          value={editedLibraryOutline.appeal}
+                          onChange={(e) => setEditedLibraryOutline({ ...editedLibraryOutline, appeal: e.target.value })}
+                          className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 focus:ring-2 focus:ring-emerald-500 outline-none h-24 resize-none"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="prose dark:prose-invert max-w-none">
+                      <h1 className="text-emerald-600 mb-2">{selectedLibraryOutline.theme}</h1>
+                      <h3 className="text-stone-500 dark:text-zinc-400 mt-0 mb-8">{selectedLibraryOutline.verse}</h3>
 
-                    <h2 className="text-emerald-600">Introdução</h2>
-                    <p>{selectedLibraryOutline.introduction}</p>
+                      <h2 className="text-emerald-600">Introdução</h2>
+                      <p>{selectedLibraryOutline.introduction}</p>
 
-                    <h2 className="text-emerald-600">Desenvolvimento</h2>
-                    <ul>
-                      {selectedLibraryOutline.development.map((point: string, index: number) => (
-                        <li key={index}>{point}</li>
-                      ))}
-                    </ul>
+                      <h2 className="text-emerald-600">Desenvolvimento</h2>
+                      <ul>
+                        {selectedLibraryOutline.development.map((point: string, index: number) => (
+                          <li key={index}>{point}</li>
+                        ))}
+                      </ul>
 
-                    <h2 className="text-emerald-600">Conclusão</h2>
-                    <p>{selectedLibraryOutline.conclusion}</p>
+                      <h2 className="text-emerald-600">Conclusão</h2>
+                      <p>{selectedLibraryOutline.conclusion}</p>
 
-                    <h2 className="text-emerald-600">Oração</h2>
-                    <p>{selectedLibraryOutline.prayer}</p>
+                      <h2 className="text-emerald-600">Oração</h2>
+                      <p>{selectedLibraryOutline.prayer}</p>
 
-                    <h2 className="text-emerald-600">Apelo</h2>
-                    <p>{selectedLibraryOutline.appeal}</p>
-                  </div>
+                      <h2 className="text-emerald-600">Apelo</h2>
+                      <p>{selectedLibraryOutline.appeal}</p>
+                    </div>
+                  )}
                 </div>
                 <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 border-t border-stone-100 dark:border-zinc-800 flex flex-wrap gap-3">
-                  <button
-                    onClick={() => {
-                      const contentToSave = `
+                  {isEditingLibraryOutline ? (
+                    <>
+                      <button
+                        onClick={() => {
+                          setIsEditingLibraryOutline(false);
+                          setEditedLibraryOutline(null);
+                        }}
+                        className="flex-1 min-w-[140px] py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-300 dark:hover:bg-zinc-600 transition-all"
+                      >
+                        Cancelar
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (!user) {
+                            showToast("Faça login para salvar esboços personalizados.", "info");
+                            return;
+                          }
+                          setIsSavingCustomOutline(true);
+                          try {
+                            const dataToSave = {
+                              ...editedLibraryOutline,
+                              userId: user.id,
+                              originalId: editedLibraryOutline.originalId || editedLibraryOutline.id,
+                              updatedAt: serverTimestamp()
+                            };
+                            
+                            if (editedLibraryOutline.isEdited && editedLibraryOutline.id) {
+                              // Update existing custom outline
+                              await updateDoc(doc(db, 'customOutlines', editedLibraryOutline.id), dataToSave);
+                            } else {
+                              // Create new custom outline
+                              delete dataToSave.id; // Let Firestore generate a new ID
+                              await addDoc(collection(db, 'customOutlines'), dataToSave);
+                            }
+                            
+                            showToast("Esboço salvo com sucesso!", "success");
+                            setIsEditingLibraryOutline(false);
+                            setSelectedLibraryOutline({ ...editedLibraryOutline, isEdited: true });
+                          } catch (error) {
+                            console.error("Error saving custom outline:", error);
+                            showToast("Erro ao salvar esboço.", "error");
+                          } finally {
+                            setIsSavingCustomOutline(false);
+                          }
+                        }}
+                        disabled={isSavingCustomOutline}
+                        className="flex-1 min-w-[140px] py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition-all disabled:opacity-50"
+                      >
+                        {isSavingCustomOutline ? <Loader2 size={20} className="animate-spin" /> : <Save size={20} />}
+                        Salvar Alterações
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => {
+                          setEditedLibraryOutline({ ...selectedLibraryOutline });
+                          setIsEditingLibraryOutline(true);
+                        }}
+                        className="flex-1 min-w-[140px] py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 transition-all"
+                      >
+                        <Edit size={20} />
+                        Editar Esboço
+                      </button>
+                      <button
+                        onClick={() => {
+                          const contentToSave = `
 # ${selectedLibraryOutline.theme}
 ### ${selectedLibraryOutline.verse}
 
@@ -6666,11 +6833,17 @@ ${selectedLibraryOutline.appeal}
                     Copiar Esboço
                   </button>
                   <button
-                    onClick={() => setSelectedLibraryOutline(null)}
+                    onClick={() => {
+                      setSelectedLibraryOutline(null);
+                      setIsEditingLibraryOutline(false);
+                      setEditedLibraryOutline(null);
+                    }}
                     className="px-6 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-2xl hover:bg-stone-300 transition-all"
                   >
                     Fechar
                   </button>
+                  </>
+                )}
                 </div>
               </motion.div>
             </div>
