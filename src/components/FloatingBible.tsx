@@ -27,7 +27,7 @@ export const FloatingBible: React.FC = () => {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9, cursor: 'grabbing' }}
           onClick={() => setIsOpen(true)}
-          className="fixed bottom-[21rem] right-6 md:bottom-[17rem] md:right-8 z-[60] w-14 h-14 bg-emerald-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 group overflow-hidden border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing"
+          className="fixed bottom-[19rem] right-6 md:bottom-[15.5rem] md:right-8 z-[60] w-14 h-14 bg-emerald-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 group overflow-hidden border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing"
         >
           <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity" />
           <Book size={20} className="relative z-10 animate-pulse" />

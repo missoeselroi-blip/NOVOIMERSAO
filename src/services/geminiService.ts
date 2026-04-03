@@ -107,6 +107,7 @@ const withRetry = async <T>(fn: (retries: number) => Promise<T>, retries = MAX_R
 };
 
 export const geminiService = {
+  getAI,
   async generateText(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
@@ -374,6 +375,20 @@ export const geminiService = {
     Forneça etimologia, contexto bíblico, contexto histórico e aplicações práticas.`;
     
     return this.generateTextWithThought(`Explique o significado de: "${query}"`, systemInstruction, deepThinking);
+  },
+
+  async transcribeAudio(base64Audio: string, mimeType: string = 'audio/webm') {
+    return withRetry(async () => {
+      const ai = getAI();
+      const response = await ai.models.generateContent({
+        model: "gemini-3.1-flash-lite-preview",
+        contents: [
+          { inlineData: { data: base64Audio, mimeType } },
+          { text: "Transcreva este áudio exatamente como foi dito. Retorne apenas a transcrição, sem comentários adicionais." }
+        ]
+      });
+      return response.text;
+    });
   },
 
   async chat(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
