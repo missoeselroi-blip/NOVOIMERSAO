@@ -27,7 +27,7 @@ export const AccessibilityControls: React.FC = () => {
     <motion.div 
       drag
       dragMomentum={false}
-      className="fixed bottom-44 right-6 md:bottom-28 md:right-8 z-50 flex flex-col items-end gap-4 touch-none"
+      className="fixed bottom-[15rem] right-6 md:bottom-[11rem] md:right-8 z-50 flex flex-col items-end gap-4 touch-none"
     >
       <AnimatePresence>
         {isOpen && (

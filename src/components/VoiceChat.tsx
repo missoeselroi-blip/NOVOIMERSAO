@@ -209,9 +209,9 @@ O nome do usuário é ${user?.name || 'amigo'}.`;
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9, cursor: 'grabbing' }}
         onClick={startChat}
-        className="fixed bottom-[10rem] right-6 md:bottom-[6.5rem] md:right-8 z-[60] w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 group overflow-hidden border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing"
+        className="fixed bottom-[10.5rem] right-6 md:bottom-[6.5rem] md:right-8 z-[60] w-14 h-14 bg-emerald-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 group overflow-hidden border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing"
       >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500 to-indigo-700 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity" />
         <Volume2 size={20} className="relative z-10 animate-pulse" />
         <span className="relative z-10 text-[8px] font-black uppercase tracking-widest text-center leading-none">Bate<br/>Papo</span>
       </motion.button>
