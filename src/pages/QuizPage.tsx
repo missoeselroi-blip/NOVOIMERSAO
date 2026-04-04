@@ -313,7 +313,7 @@ const QuizPage: React.FC = () => {
   const { showToast } = useToast();
   
   const handleBattleMode = () => {
-    console.log("Batalha Bíblica button clicked");
+    console.log("Quiz Mano a Mano button clicked");
     setIsBattleMode(true);
   };
   const [isQuizStarted, setIsQuizStarted] = useState(false);
@@ -368,9 +368,11 @@ const QuizPage: React.FC = () => {
         const userEntry = entries.find(e => e.userId === user.id);
         if (userEntry) {
           setUserRank({ ...userEntry, rank: entries.indexOf(userEntry) + 1 });
-          if ((userEntry as any).totalScore === undefined) {
+          if ((userEntry as any).totalScore === undefined || userEntry.score > 100) {
+            const cappedScore = Math.min(userEntry.score || 0, 100);
             updateDoc(doc(db, 'quizLeaderboard', user.id), {
-              totalScore: (userEntry.score || 0) + (userEntry.battlesWon || 0)
+              score: cappedScore,
+              totalScore: cappedScore + (userEntry.battlesWon || 0)
             });
           }
         } else {
@@ -379,9 +381,11 @@ const QuizPage: React.FC = () => {
             if (docSnap.exists()) {
               const data = docSnap.data() as any;
               setUserRank(data as LeaderboardEntry);
-              if (data.totalScore === undefined) {
+              if (data.totalScore === undefined || data.score > 100) {
+                const cappedScore = Math.min(data.score || 0, 100);
                 updateDoc(doc(db, 'quizLeaderboard', user.id), {
-                  totalScore: (data.score || 0) + (data.battlesWon || 0)
+                  score: cappedScore,
+                  totalScore: cappedScore + (data.battlesWon || 0)
                 });
               }
             }
@@ -475,8 +479,9 @@ const QuizPage: React.FC = () => {
               if (userSnap.exists()) {
                 const data = userSnap.data() as any;
                 const battlesWon = data.battlesWon || 0;
-                const currentScore = data.score || 0;
+                const currentScore = Math.min(data.score || 0, 100);
                 updateDoc(userRef, { 
+                  score: currentScore,
                   battlesWon: battlesWon + 1,
                   totalScore: currentScore + battlesWon + 1
                 });
@@ -647,25 +652,27 @@ const QuizPage: React.FC = () => {
       const userSnap = await getDoc(userRef);
       
       let trend: 'up' | 'down' | 'same' = 'same';
-      let previousScore = 0;
+      let previousHighestScore = 0;
       let battlesWon = 0;
 
       if (userSnap.exists()) {
         const data = userSnap.data() as LeaderboardEntry;
-        previousScore = data.score || 0;
+        previousHighestScore = data.score || 0;
+        if (previousHighestScore > 100) previousHighestScore = 100;
         battlesWon = data.battlesWon || 0;
-        if (score > 0) trend = 'up';
+        if (score > previousHighestScore) trend = 'up';
+        else if (score < previousHighestScore) trend = 'down';
       } else {
         if (score > 0) trend = 'up';
       }
 
-      const newScore = previousScore + score;
-      const newTotalScore = newScore + battlesWon;
+      const highestScore = Math.max(previousHighestScore, score);
+      const newTotalScore = highestScore + battlesWon;
 
       await setDoc(userRef, {
         name: user.name || 'Usuário',
         avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-        score: newScore,
+        score: highestScore,
         totalScore: newTotalScore,
         lastScore: score,
         trend: trend,
@@ -1015,7 +1022,7 @@ const QuizPage: React.FC = () => {
                       
                       <button
                         onClick={() => {
-                          const text = `Desafio você para uma Batalha Bíblica! Entre na sala com o ID: ${roomId}`;
+                          const text = `Desafio você para um Quiz Mano a Mano! Entre na sala com o ID: ${roomId}`;
                           window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
                         }}
                         className="w-full py-4 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 text-stone-700 dark:text-stone-300 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
@@ -1026,7 +1033,7 @@ const QuizPage: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Batalha Bíblica</h2>
+                    <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Quiz Mano a Mano</h2>
                     <p className="text-stone-600 dark:text-stone-400 mb-8">Crie ou entre em uma sala de batalha.</p>
                     <div className="space-y-4">
                       <button
@@ -1092,14 +1099,14 @@ const QuizPage: React.FC = () => {
                   onClick={startQuiz}
                   className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
                 >
-                  <Play size={24} /> Começar Agora
+                  <Play size={24} /> Quiz Individual
                 </button>
                 <div className="mt-4">
                   <button
                     onClick={handleBattleMode}
                     className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
                   >
-                    <UserPlus size={24} /> Batalha Bíblica
+                    <UserPlus size={24} /> Quiz Mano a Mano
                   </button>
                 </div>
               </motion.div>
