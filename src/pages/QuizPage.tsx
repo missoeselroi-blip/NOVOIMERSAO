@@ -22,6 +22,7 @@ import {
   Gift
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { db } from '../lib/firebase';
@@ -55,6 +56,7 @@ interface LeaderboardEntry {
   name: string;
   avatar: string;
   score: number;
+  totalScore?: number;
   battlesWon: number;
   lastScore: number;
   month: number;
@@ -334,9 +336,25 @@ const QuizPage: React.FC = () => {
   const [timerActive, setTimerActive] = useState(false);
   const [startTime, setStartTime] = useState(0);
 
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joinRoomIdInput, setJoinRoomIdInput] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const processedRooms = React.useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    const urlRoomId = searchParams.get('roomId');
+    if (urlRoomId) {
+      setJoinRoomIdInput(urlRoomId);
+      setIsBattleMode(true);
+      if (user) {
+        setShowJoinModal(true);
+      }
+    }
+  }, [searchParams, user]);
+
   // Fetch Leaderboard
   useEffect(() => {
-    const q = query(collection(db, 'quizLeaderboard'), orderBy('score', 'desc'), limit(10));
+    const q = query(collection(db, 'quizLeaderboard'), orderBy('totalScore', 'desc'), limit(10));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const entries = snapshot.docs.map(doc => ({
         ...doc.data(),
@@ -350,11 +368,22 @@ const QuizPage: React.FC = () => {
         const userEntry = entries.find(e => e.userId === user.id);
         if (userEntry) {
           setUserRank({ ...userEntry, rank: entries.indexOf(userEntry) + 1 });
+          if ((userEntry as any).totalScore === undefined) {
+            updateDoc(doc(db, 'quizLeaderboard', user.id), {
+              totalScore: (userEntry.score || 0) + (userEntry.battlesWon || 0)
+            });
+          }
         } else {
           // Fetch user rank if not in top 10
           getDoc(doc(db, 'quizLeaderboard', user.id)).then(docSnap => {
             if (docSnap.exists()) {
-              setUserRank(docSnap.data() as LeaderboardEntry);
+              const data = docSnap.data() as any;
+              setUserRank(data as LeaderboardEntry);
+              if (data.totalScore === undefined) {
+                updateDoc(doc(db, 'quizLeaderboard', user.id), {
+                  totalScore: (data.score || 0) + (data.battlesWon || 0)
+                });
+              }
             }
           });
         }
@@ -405,18 +434,65 @@ const QuizPage: React.FC = () => {
   useEffect(() => {
     if (!roomId) return;
     const roomRef = doc(db, 'quizRooms', roomId);
-    const unsubscribe = onSnapshot(roomRef, (docSnap) => {
+    const unsubscribe = onSnapshot(roomRef, async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setRoomData(data);
-        if (data.status === 'started' && !isQuizStarted) {
-          setCurrentQuestions(data.questions);
+        
+        if (data.status === 'started' && !isQuizStarted && !isQuizFinished) {
+          setCurrentQuestions(data.questions || shuffleQuestions());
           setIsQuizStarted(true);
+        }
+
+        // Check if all players finished
+        if (data.status === 'started' && data.players.length > 0 && data.players.every((p: any) => p.finished)) {
+          // Only the creator updates the room to finished to avoid race conditions
+          if (user && data.players[0].userId === user.id) {
+            let maxScore = -1;
+            let winners: string[] = [];
+            data.players.forEach((p: any) => {
+              if (p.score > maxScore) {
+                maxScore = p.score;
+                winners = [p.userId];
+              } else if (p.score === maxScore) {
+                winners.push(p.userId);
+              }
+            });
+
+            await updateDoc(roomRef, { 
+              status: 'finished',
+              winners: winners
+            });
+          }
+        }
+
+        // If room is finished, update local battlesWon if current user is a winner
+        if (data.status === 'finished' && user && data.winners?.includes(user.id)) {
+          if (!processedRooms.current.has(roomId)) {
+            processedRooms.current.add(roomId);
+            const userRef = doc(db, 'quizLeaderboard', user.id);
+            getDoc(userRef).then((userSnap) => {
+              if (userSnap.exists()) {
+                const data = userSnap.data() as any;
+                const battlesWon = data.battlesWon || 0;
+                const currentScore = data.score || 0;
+                updateDoc(userRef, { 
+                  battlesWon: battlesWon + 1,
+                  totalScore: currentScore + battlesWon + 1
+                });
+              }
+            });
+          }
+        }
+        
+        // Handle next room transition
+        if (data.nextRoomId && data.status === 'finished' && roomId !== data.nextRoomId) {
+          // We will show a button to join the next room instead of auto-joining
         }
       }
     });
     return () => unsubscribe();
-  }, [roomId]);
+  }, [roomId, isQuizStarted, isQuizFinished, user]);
 
   const shuffleQuestions = () => {
     const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
@@ -442,10 +518,12 @@ const QuizPage: React.FC = () => {
   const createRoom = async () => {
     if (!user) return;
     const roomRef = doc(collection(db, 'quizRooms'));
+    const selectedQuestions = shuffleQuestions();
     await setDoc(roomRef, {
-      players: [{ userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0 }],
+      players: [{ userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0, finished: false }],
       currentQuestionIndex: 0,
       status: 'waiting',
+      questions: selectedQuestions,
       createdAt: serverTimestamp()
     });
     setRoomId(roomRef.id);
@@ -453,14 +531,16 @@ const QuizPage: React.FC = () => {
     showToast("Sala criada! Compartilhe o ID: " + roomRef.id, "success");
   };
 
-  const joinRoom = async () => {
-    console.log("joinRoom called, user:", user);
+  const handleJoinRoomSubmit = async () => {
     if (!user) {
       showToast("Você precisa estar logado para entrar em uma sala.", "error");
       return;
     }
-    const id = prompt("Digite o ID da sala:");
-    if (!id) return;
+    const id = joinRoomIdInput.trim();
+    if (!id) {
+      showToast("Por favor, digite o ID da sala.", "error");
+      return;
+    }
     console.log("Joining room:", id);
     const roomRef = doc(db, 'quizRooms', id);
     try {
@@ -468,10 +548,15 @@ const QuizPage: React.FC = () => {
       if (roomSnap.exists()) {
         console.log("Room exists:", roomSnap.data());
         const data = roomSnap.data();
-        const players = [...data.players, { userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0 }];
-        await updateDoc(roomRef, { players });
+        const isAlreadyInRoom = data.players.some((p: any) => p.userId === user.id);
+        if (!isAlreadyInRoom) {
+          const players = [...data.players, { userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0, finished: false }];
+          await updateDoc(roomRef, { players });
+        }
         setRoomId(id);
         setIsBattleMode(true);
+        setShowJoinModal(false);
+        setJoinRoomIdInput('');
       } else {
         console.log("Room not found:", id);
         showToast("Sala não encontrada.", "error");
@@ -480,6 +565,20 @@ const QuizPage: React.FC = () => {
       console.error("Error joining room:", error);
       showToast("Erro ao entrar na sala. Verifique as permissões.", "error");
     }
+  };
+
+  const joinRoom = () => {
+    if (!user) {
+      showToast("Você precisa estar logado para entrar em uma sala.", "error");
+      return;
+    }
+    setShowJoinModal(true);
+  };
+
+  const startBattle = async () => {
+    if (!roomId) return;
+    const roomRef = doc(db, 'quizRooms', roomId);
+    await updateDoc(roomRef, { status: 'started' });
   };
 
   const nextQuestion = () => {
@@ -535,39 +634,40 @@ const QuizPage: React.FC = () => {
     setIsQuizStarted(false);
     setTimerActive(false);
 
+    if (isBattleMode && roomId && user && roomData) {
+      const roomRef = doc(db, 'quizRooms', roomId);
+      const players = roomData.players.map((p: any) => 
+        p.userId === user.id ? { ...p, finished: true } : p
+      );
+      await updateDoc(roomRef, { players });
+    }
+
     if (user) {
       const userRef = doc(db, 'quizLeaderboard', user.id);
       const userSnap = await getDoc(userRef);
       
       let trend: 'up' | 'down' | 'same' = 'same';
-      let lastScore = 0;
+      let previousScore = 0;
+      let battlesWon = 0;
 
       if (userSnap.exists()) {
         const data = userSnap.data() as LeaderboardEntry;
-        lastScore = data.score;
-        if (score > lastScore) trend = 'up';
-        else if (score < lastScore) trend = 'down';
+        previousScore = data.score || 0;
+        battlesWon = data.battlesWon || 0;
+        if (score > 0) trend = 'up';
+      } else {
+        if (score > 0) trend = 'up';
       }
 
-      let battlesWon = 0;
-      if (userSnap.exists()) {
-        battlesWon = (userSnap.data() as any).battlesWon || 0;
-      }
-
-      if (roomId && roomData) {
-        const myPlayer = roomData.players.find((p: any) => p.userId === user.id);
-        const otherPlayers = roomData.players.filter((p: any) => p.userId !== user.id);
-        if (myPlayer && otherPlayers.every((p: any) => myPlayer.score > p.score)) {
-          battlesWon += 1;
-        }
-      }
+      const newScore = previousScore + score;
+      const newTotalScore = newScore + battlesWon;
 
       await setDoc(userRef, {
         name: user.name || 'Usuário',
         avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-        score: score,
-        battlesWon: battlesWon,
-        lastScore: lastScore,
+        score: newScore,
+        totalScore: newTotalScore,
+        lastScore: score,
         trend: trend,
         updatedAt: serverTimestamp()
       }, { merge: true });
@@ -592,13 +692,52 @@ const QuizPage: React.FC = () => {
   };
 
   const challengeFriends = () => {
-    const text = `Desafio você no Quiz da Imersão Bíblica! Minha pontuação foi ${score}. Consegue bater?`;
-    const url = window.location.href;
-    window.open(`https://wa.me/?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+    let text = `Desafio você no Quiz da Imersão Bíblica! Minha pontuação foi ${score}. Consegue bater?`;
+    let url = window.location.origin + window.location.pathname;
+    
+    if (isBattleMode && roomId) {
+      text = `⚔️ Desafio você para uma Batalha no Quiz da Imersão Bíblica! ⚔️\n\nID da Sala: ${roomId}\n\nClique no link abaixo para entrar direto na sala e aceitar o desafio! 👇`;
+      url = `${window.location.origin}${window.location.pathname}?roomId=${roomId}`;
+    }
+    
+    window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`, '_blank');
   };
 
   return (
     <div className="min-h-screen pt-20 pb-12 px-4 bg-stone-50 dark:bg-zinc-950">
+      {showJoinModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-zinc-900 rounded-3xl p-6 w-full max-w-sm shadow-2xl border border-stone-200 dark:border-zinc-800"
+          >
+            <h3 className="text-xl font-bold mb-4 text-stone-800 dark:text-stone-200">Entrar na Sala</h3>
+            <input 
+              type="text" 
+              value={joinRoomIdInput}
+              onChange={(e) => setJoinRoomIdInput(e.target.value)}
+              placeholder="Digite o ID da sala"
+              className="w-full p-3 rounded-xl border border-stone-300 dark:border-zinc-700 bg-stone-50 dark:bg-zinc-800 mb-4 text-stone-800 dark:text-stone-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowJoinModal(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-stone-600 dark:text-stone-400 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleJoinRoomSubmit}
+                className="flex-1 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+              >
+                Entrar
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       <div className="max-w-4xl mx-auto">
         
         {/* Header */}
@@ -636,8 +775,8 @@ const QuizPage: React.FC = () => {
                   </span>
                   {isBattleMode && roomData && (
                     <div className="flex gap-4">
-                      {roomData.players.map((p: any) => (
-                        <div key={p.userId} className="flex items-center gap-2 text-sm font-bold">
+                      {roomData.players.map((p: any, index: number) => (
+                        <div key={`${p.userId}-${index}`} className="flex items-center gap-2 text-sm font-bold">
                           <img src={p.avatar} className="w-6 h-6 rounded-full" />
                           <span className={p.userId === user?.id ? "text-emerald-600" : "text-blue-600"}>
                             {p.score}
@@ -689,81 +828,228 @@ const QuizPage: React.FC = () => {
                 className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center"
                 id="quiz-result-card"
               >
-                <div className="mb-6">
-                  <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Medal className="text-emerald-600 dark:text-emerald-400" size={48} />
-                  </div>
-                  <h2 className="text-3xl font-display font-bold text-emerald-900 dark:text-emerald-400">Parabéns!</h2>
-                  <p className="text-stone-600 dark:text-stone-400 mt-2">Você concluiu o Quiz com excelência.</p>
-                </div>
+                {isBattleMode && roomData ? (
+                  <>
+                    {roomData.status !== 'finished' ? (
+                      <div className="py-12">
+                        <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto mb-4" />
+                        <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-2">Aguardando Oponentes</h2>
+                        <p className="text-stone-600 dark:text-stone-400">Sua pontuação: {score}</p>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-6">
+                          <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <Crown className="text-emerald-600 dark:text-emerald-400" size={48} />
+                          </div>
+                          <h2 className="text-3xl font-display font-bold text-emerald-900 dark:text-emerald-400 mb-2">Batalha Encerrada!</h2>
+                          {roomData.winners?.includes(user?.id) ? (
+                            <p className="text-xl font-bold text-emerald-600">Você Venceu! 🎉</p>
+                          ) : (
+                            <p className="text-xl font-bold text-stone-600 dark:text-stone-400">
+                              Vencedor: {roomData.players.find((p: any) => roomData.winners?.includes(p.userId))?.name}
+                            </p>
+                          )}
+                        </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-8">
-                  <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
-                    <p className="text-xs text-stone-500 uppercase tracking-widest mb-1">Pontuação Final</p>
-                    <p className="text-4xl font-display font-bold text-emerald-600">{score}</p>
-                  </div>
-                  <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
-                    <p className="text-xs text-stone-500 uppercase tracking-widest mb-1">Sua Posição</p>
-                    <p className="text-4xl font-display font-bold text-blue-600">#{userRank?.rank || '?'}</p>
-                  </div>
-                </div>
+                        <div className="space-y-3 mb-8 text-left">
+                          <h3 className="font-bold text-stone-700 dark:text-stone-300 mb-4">Placar Final:</h3>
+                          {[...roomData.players].sort((a: any, b: any) => b.score - a.score).map((p: any, index: number) => (
+                            <div key={`${p.userId}-${index}`} className={cn(
+                              "flex items-center gap-3 p-4 rounded-xl border-2",
+                              roomData.winners?.includes(p.userId) 
+                                ? "bg-emerald-50 border-emerald-200 dark:bg-emerald-900/20 dark:border-emerald-800" 
+                                : "bg-stone-50 border-transparent dark:bg-zinc-800/50"
+                            )}>
+                              <div className="font-bold text-lg w-6 text-stone-400">#{index + 1}</div>
+                              <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" />
+                              <span className="font-medium text-stone-800 dark:text-stone-200 flex-1">{p.name}</span>
+                              <span className="font-bold text-xl text-emerald-600">{p.score} pts</span>
+                            </div>
+                          ))}
+                        </div>
 
-                <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <button
-                      onClick={handleShare}
-                      className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
-                    >
-                      <Share2 size={20} /> Criar Post
-                    </button>
-                    <button
-                      onClick={challengeFriends}
-                      className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
-                    >
-                      <UserPlus size={20} /> Desafiar Amigos
-                    </button>
-                  </div>
-                  <button
-                    onClick={startQuiz}
-                    className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
-                  >
-                    <RotateCcw size={20} /> Tentar Novamente
-                  </button>
-                </div>
+                        <div className="space-y-4">
+                          {roomData.nextRoomId ? (
+                            <button
+                              onClick={async () => {
+                                if (!user) return;
+                                const newRoomId = roomData.nextRoomId;
+                                const newRoomRef = doc(db, 'quizRooms', newRoomId);
+                                const roomSnap = await getDoc(newRoomRef);
+                                if (roomSnap.exists()) {
+                                  const data = roomSnap.data();
+                                  const isAlreadyInRoom = data.players.some((p: any) => p.userId === user.id);
+                                  if (!isAlreadyInRoom) {
+                                    const players = [...data.players, { userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0, finished: false }];
+                                    await updateDoc(newRoomRef, { players });
+                                  }
+                                }
+                                setRoomId(newRoomId);
+                                setIsQuizFinished(false);
+                                setIsQuizStarted(false);
+                              }}
+                              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
+                            >
+                              <Zap size={20} /> Aceitar Novo Desafio
+                            </button>
+                          ) : (
+                            <button
+                              onClick={async () => {
+                                if (!user) return;
+                                const newRoomRef = doc(collection(db, 'quizRooms'));
+                                const selectedQuestions = shuffleQuestions();
+                                await setDoc(newRoomRef, {
+                                  players: [{ userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0, finished: false }],
+                                  currentQuestionIndex: 0,
+                                  status: 'waiting',
+                                  questions: selectedQuestions,
+                                  createdAt: serverTimestamp()
+                                });
+                                await updateDoc(doc(db, 'quizRooms', roomId!), { nextRoomId: newRoomRef.id });
+                                setRoomId(newRoomRef.id);
+                                setIsQuizFinished(false);
+                                setIsQuizStarted(false);
+                              }}
+                              className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
+                            >
+                              <RotateCcw size={20} /> Desafiar Novamente
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setIsBattleMode(false);
+                              setRoomId(null);
+                              setIsQuizFinished(false);
+                            }}
+                            className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+                          >
+                            Sair da Batalha
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-6">
+                      <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <Medal className="text-emerald-600 dark:text-emerald-400" size={48} />
+                      </div>
+                      <h2 className="text-3xl font-display font-bold text-emerald-900 dark:text-emerald-400">Parabéns!</h2>
+                      <p className="text-stone-600 dark:text-stone-400 mt-2">Você concluiu o Quiz com excelência.</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                        <p className="text-xs text-stone-500 uppercase tracking-widest mb-1">Pontuação Final</p>
+                        <p className="text-4xl font-display font-bold text-emerald-600">{score}</p>
+                      </div>
+                      <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                        <p className="text-xs text-stone-500 uppercase tracking-widest mb-1">Sua Posição</p>
+                        <p className="text-4xl font-display font-bold text-blue-600">#{userRank?.rank || '?'}</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <button
+                          onClick={handleShare}
+                          className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
+                        >
+                          <Share2 size={20} /> Criar Post
+                        </button>
+                        <button
+                          onClick={challengeFriends}
+                          className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
+                        >
+                          <UserPlus size={20} /> Desafiar Amigos
+                        </button>
+                      </div>
+                      <button
+                        onClick={startQuiz}
+                        className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+                      >
+                        <RotateCcw size={20} /> Tentar Novamente
+                      </button>
+                    </div>
+                  </>
+                )}
               </motion.div>
             ) : isBattleMode ? (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
-                <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Batalha Bíblica</h2>
-                <p className="text-stone-600 dark:text-stone-400 mb-8">Crie ou entre em uma sala de batalha.</p>
-                <div className="space-y-4">
-                  <button
-                    onClick={createRoom}
-                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
-                  >
-                    Criar Sala
-                  </button>
-                  <button
-                    onClick={joinRoom}
-                    className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
-                  >
-                    Entrar em Sala
-                  </button>
-                  <button
-                    onClick={() => {
-                      const text = `Desafio você para uma Batalha Bíblica! Entre na sala com o ID: ${roomId || '...'}`;
-                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-                    }}
-                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
-                  >
-                    <UserPlus size={24} /> Desafie alguém
-                  </button>
-                  <button
-                    onClick={() => setIsBattleMode(false)}
-                    className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-                  >
-                    Voltar
-                  </button>
-                </div>
+                {roomId ? (
+                  <>
+                    <h2 className="text-2xl font-bold mb-2 text-stone-800 dark:text-stone-200">Sala de Batalha</h2>
+                    <p className="text-stone-500 mb-6 font-mono bg-stone-100 dark:bg-zinc-800 py-2 px-4 rounded-lg inline-block">ID: {roomId}</p>
+                    
+                    <div className="mb-8 text-left">
+                      <h3 className="font-bold text-stone-700 dark:text-stone-300 mb-4">Jogadores na sala:</h3>
+                      <div className="space-y-3">
+                        {roomData?.players?.map((p: any, index: number) => (
+                          <div key={`${p.userId}-${index}`} className="flex items-center gap-3 p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl">
+                            <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" />
+                            <span className="font-medium text-stone-800 dark:text-stone-200">{p.name}</span>
+                            {p.userId === roomData.players[0].userId && (
+                              <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold">Criador</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {roomData?.players?.[0]?.userId === user?.id ? (
+                        <button
+                          onClick={startBattle}
+                          disabled={roomData?.players?.length < 2}
+                          className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-stone-300 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
+                        >
+                          <Zap size={24} /> {roomData?.players?.length < 2 ? 'Aguardando oponentes...' : 'Iniciar Batalha!'}
+                        </button>
+                      ) : (
+                        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-xl font-medium flex items-center justify-center gap-2">
+                          <Timer className="animate-spin" size={20} /> Aguardando o criador iniciar...
+                        </div>
+                      )}
+                      
+                      <button
+                        onClick={() => {
+                          const text = `Desafio você para uma Batalha Bíblica! Entre na sala com o ID: ${roomId}`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                        className="w-full py-4 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 text-stone-700 dark:text-stone-300 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
+                      >
+                        <UserPlus size={20} /> Convidar via WhatsApp
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Batalha Bíblica</h2>
+                    <p className="text-stone-600 dark:text-stone-400 mb-8">Crie ou entre em uma sala de batalha.</p>
+                    <div className="space-y-4">
+                      <button
+                        onClick={createRoom}
+                        className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
+                      >
+                        Criar Sala
+                      </button>
+                      <button
+                        onClick={joinRoom}
+                        className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
+                      >
+                        Entrar em Sala
+                      </button>
+                      <button
+                        onClick={() => setIsBattleMode(false)}
+                        className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                      >
+                        Voltar
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             ) : (
               <motion.div 
@@ -879,7 +1165,7 @@ const QuizPage: React.FC = () => {
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-emerald-600">{userRank?.score || 0}</p>
+                        <p className="text-sm font-bold text-emerald-600">{userRank?.totalScore ?? (userRank?.score || 0)}</p>
                       </div>
                     </div>
                   </div>
@@ -912,7 +1198,7 @@ const QuizPage: React.FC = () => {
                           </td>
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.score}</td>
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.battlesWon || 0}</td>
-                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.score + (entry.battlesWon || 0)}</td>
+                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.totalScore ?? (entry.score + (entry.battlesWon || 0))}</td>
                         </tr>
                       ))}
                     </tbody>

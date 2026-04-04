@@ -249,6 +249,7 @@ service cloud.firestore {
              data.name is string && data.name.size() < 100 &&
              data.score is number && data.score >= 0 &&
              (!('battlesWon' in data) || data.battlesWon is number) &&
+             (!('totalScore' in data) || data.totalScore is number) &&
              (!('avatar' in data) || (data.avatar is string && isValidUrl(data.avatar))) &&
              (!('lastScore' in data) || data.lastScore is number) &&
              (!('trend' in data) || data.trend in ['up', 'down', 'same']) &&
