@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, X, Loader2, User, RefreshCw, Volume2, Square } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { geminiService } from '../services/geminiService';
+import { geminiService, ThinkingLevel } from '../services/geminiService';
 import { useToast } from './Toast';
 import { cn } from '../types';
 
@@ -11,7 +11,6 @@ export const VoiceChat: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
   const { user } = useAuth();
   const { showToast } = useToast();
   
@@ -21,17 +20,10 @@ export const VoiceChat: React.FC = () => {
   const [chatHistory, setChatHistory] = useState<any[]>([]);
 
   const getEmoji = () => {
-    if (voiceGender === 'female') {
-      if (isProcessing) return "🤔";
-      if (isPlaying) return "👩‍🏫";
-      if (isListening) return "🙋‍♀️";
-      return "👩";
-    } else {
-      if (isProcessing) return "🤔";
-      if (isPlaying) return "👨‍🏫";
-      if (isListening) return "🙋‍♂️";
-      return "👨";
-    }
+    if (isProcessing) return "🤔";
+    if (isPlaying) return "👩‍🏫";
+    if (isListening) return "🙋‍♀️";
+    return "👩";
   };
 
   const getGreeting = () => {
@@ -43,21 +35,20 @@ export const VoiceChat: React.FC = () => {
 
   const getSystemInstruction = () => {
     return `Você é um conselheiro cristão e terapeuta acolhedor.
-Sua resposta DEVE ser curta e conversacional, ideal para ser ouvida em áudio.
-NÃO use formatação markdown, asteriscos, emojis ou listas.
-Responda seguindo os princípios cristãos bíblicos, sempre relembrando os ensinamentos de Jesus e do Apóstolo Paulo, dos outros livros do novo testamento, Salmos e Provérbios.
-Dê sempre bons conselhos que remetem o usuário a atitudes de maturidade, humildade, gratidão e respeito.
-Não incentive pecados, orgulho, egoísmo, mas leve o usuário a corrigir a sua postura e sentimento.
-Utilize técnicas de terapia e psicanálise.
-Utilize a técnica do "sanduíche": elogie primeiro, critique/corrija depois e finalize com outro elogio.
-Após um comentário, faça uma pergunta para dar continuidade no assunto.
+Sua resposta DEVE ser curta e conversacional.
+NÃO use markdown, emojis ou listas.
+Responda seguindo princípios bíblicos.
+Dê conselhos de maturidade, humildade e respeito.
+Se o usuário denotar pecados ou falta de ética, faça crítica construtiva.
+Caso contrário, sugira novas perspectivas.
+Faça uma pergunta para continuar.
 O nome do usuário é ${user?.name || 'amigo'}.`;
   };
 
   const playAudio = async (text: string) => {
     setIsProcessing(true);
     try {
-      const voiceName = voiceGender === 'female' ? 'Kore' : 'Zephyr';
+      const voiceName = 'Kore';
       const audioUrl = await geminiService.generateSpeech(text, voiceName);
       
       if (audioUrl) {
@@ -155,6 +146,7 @@ O nome do usuário é ${user?.name || 'amigo'}.`;
             config: {
               systemInstruction: getSystemInstruction(),
               responseMimeType: "application/json",
+              thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
             }
           });
 
@@ -246,24 +238,12 @@ O nome do usuário é ${user?.name || 'amigo'}.`;
             <div className="p-8 flex flex-col items-center justify-center gap-8">
               {/* Avatar */}
               <div className="relative">
-                <motion.div
-                  animate={isPlaying ? { scale: [1, 1.05, 1] } : {}}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                  className={cn(
-                    "w-32 h-32 rounded-full border-4 shadow-xl overflow-hidden flex items-center justify-center text-6xl bg-stone-100 dark:bg-zinc-800",
-                    isPlaying ? "border-blue-500" : "border-stone-200 dark:border-zinc-700"
-                  )}
-                >
+                <div className={cn(
+                  "w-32 h-32 rounded-full border-4 shadow-xl overflow-hidden flex items-center justify-center text-6xl bg-stone-100 dark:bg-zinc-800",
+                  isPlaying ? "border-blue-500" : "border-stone-200 dark:border-zinc-700"
+                )}>
                   {getEmoji()}
-                </motion.div>
-                
-                <button
-                  onClick={toggleVoice}
-                  className="absolute bottom-0 right-0 p-2 bg-white dark:bg-zinc-800 rounded-full shadow-lg border border-stone-200 dark:border-zinc-700 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-colors"
-                  title="Trocar Voz"
-                >
-                  <RefreshCw size={16} className="text-stone-600 dark:text-stone-300" />
-                </button>
+                </div>
               </div>
 
               {/* Status Text */}

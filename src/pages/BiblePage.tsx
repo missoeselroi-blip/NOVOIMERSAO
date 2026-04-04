@@ -37,6 +37,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../types';
 import { bibleService, BibleVersion, BibleBook, BibleVerse, SearchResult } from '../services/bibleService';
 import { useAuth } from '../contexts/AuthContext';
+import ConfirmationModal from '../components/ConfirmationModal';
 import { useBible, AnnotationType } from '../contexts/BibleContext';
 import { useToast } from '../components/Toast';
 import { geminiService } from '../services/geminiService';
@@ -68,6 +69,8 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   const [showVersionSelector, setShowVersionSelector] = useState<boolean>(false);
   const [showBookSelector, setShowBookSelector] = useState<boolean>(false);
   const [selectedVerses, setSelectedVerses] = useState<BibleVerse[]>([]);
+  const [isCompareModalOpen, setIsCompareModalOpen] = useState(false);
+  const [comparePath, setComparePath] = useState('');
   const [commentary, setCommentary] = useState<string | null>(null);
   const [isGeneratingCommentary, setIsGeneratingCommentary] = useState<boolean>(false);
   const [fontSize, setFontSize] = useState<number>(18); // Default to 18px
@@ -546,7 +549,8 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                   const bookName = books.find(b => b.pk === selectedBook)?.name;
                   const reference = `${bookName} ${selectedChapter}:${selectedVerses[0].verse}${selectedVerses.length > 1 ? `-${selectedVerses[selectedVerses.length - 1].verse}` : ''}`;
                   if (isOverlay && onClose) onClose();
-                  navigate(`/study?tab=compare&search=${encodeURIComponent(reference)}`);
+                  setComparePath(`/study?tab=compare&search=${encodeURIComponent(reference)}`);
+                  setIsCompareModalOpen(true);
                 }}
                 className="p-2 rounded-lg transition-all hover:scale-110 text-indigo-600 dark:text-indigo-400"
                 title="Comparar Versões"
@@ -989,7 +993,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
               <div className="space-y-6">
                 <div>
                   <label className="text-xs font-black text-stone-400 uppercase tracking-widest mb-3 block">Busca nas Escrituras</label>
-                  <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); setShowSettings(false); }} className="relative">
+                  <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); setShowSettings(false); }} className="relative flex gap-2">
                     <input 
                       type="text" 
                       placeholder="Buscar por palavra ou frase..." 
@@ -998,6 +1002,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                       className="w-full pl-10 pr-4 py-3 bg-stone-100 dark:bg-zinc-800 rounded-2xl border border-transparent focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm"
                     />
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <button type="submit" className="px-4 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm">Buscar</button>
                   </form>
                 </div>
 
@@ -1060,6 +1065,13 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         )}
         {/* Annotation Menu removed as it is now in header/footer */}
       </AnimatePresence>
+      <ConfirmationModal
+        isOpen={isCompareModalOpen}
+        onClose={() => setIsCompareModalOpen(false)}
+        onConfirm={() => navigate(comparePath)}
+        title="Comparar Versículo"
+        message="Deseja comparar este versículo em outra página?"
+      />
     </div>
   );
 }

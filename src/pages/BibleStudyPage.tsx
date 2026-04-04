@@ -3640,14 +3640,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <Share2 size={18} />
                         Compartilhar
                       </button>
-                      <button
-                        onClick={() => handleCopy(verseContent)}
-                        className="flex-1 min-w-[150px] py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 transition-all"
-                      >
-                        <Copy size={18} />
-                        Copiar
-                      </button>
-                    </div>
+                      </div>
                   </motion.div>
                 )}
               </div>

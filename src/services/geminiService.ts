@@ -1,4 +1,5 @@
 import { GoogleGenAI, Modality, ThinkingLevel, Type } from "@google/genai";
+export { GoogleGenAI, Modality, ThinkingLevel, Type };
 
 const getAI = () => {
   // Priority:

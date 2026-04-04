@@ -45,7 +45,8 @@ import {
   ShieldCheck,
   RefreshCw,
   Medal,
-  Flame
+  Flame,
+  PlayCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from './types';
@@ -93,6 +94,7 @@ const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
 const BibleRacePage = lazyWithRetry(() => import('./pages/BibleRacePage'));
 const QuizPage = lazyWithRetry(() => import('./pages/QuizPage'));
 const BiblePage = lazyWithRetry(() => import('./pages/BiblePage'));
+const SermonsPage = lazyWithRetry(() => import('./pages/SermonsPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -197,6 +199,7 @@ function AppContent() {
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'courses', label: 'Cursos', subtitle: 'Jornada de aprendizado', icon: <GraduationCap size={20} />, component: <CoursesPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
+    { id: 'sermons', label: 'Sermões', subtitle: 'Sermões em áudio e vídeo', icon: <PlayCircle size={20} />, component: <SermonsPage /> },
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
