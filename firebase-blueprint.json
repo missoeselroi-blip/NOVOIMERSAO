@@ -304,6 +304,7 @@
         "name": { "type": "string" },
         "avatar": { "type": "string" },
         "score": { "type": "integer" },
+        "battlesWon": { "type": "integer" },
         "lastScore": { "type": "integer" },
         "trend": { "type": "string", "enum": ["up", "down", "same"] },
         "updatedAt": { "type": "string", "format": "date-time" }

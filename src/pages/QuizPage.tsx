@@ -35,7 +35,8 @@ import {
   doc,
   getDoc,
   serverTimestamp,
-  updateDoc
+  updateDoc,
+  where
 } from 'firebase/firestore';
 import { cn } from '../types';
 import html2canvas from 'html2canvas';
@@ -54,7 +55,9 @@ interface LeaderboardEntry {
   name: string;
   avatar: string;
   score: number;
+  battlesWon: number;
   lastScore: number;
+  month: number;
   trend: 'up' | 'down' | 'same';
   rank?: number;
 }
@@ -302,19 +305,30 @@ const QUESTIONS: Question[] = [
   }
 ];
 
+// Force rebuild
 const QuizPage: React.FC = () => {
   const { user } = useAuth();
   const { showToast } = useToast();
   
+  const handleBattleMode = () => {
+    console.log("Batalha Bíblica button clicked");
+    setIsBattleMode(true);
+  };
   const [isQuizStarted, setIsQuizStarted] = useState(false);
+  const [isBattleMode, setIsBattleMode] = useState(false);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [roomData, setRoomData] = useState<any>(null);
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [score, setScore] = useState(0);
   const [timeLeft, setTimeLeft] = useState(60);
   const [isQuizFinished, setIsQuizFinished] = useState(false);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [battleLeaderboard, setBattleLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
+  const [isLoadingBattleLeaderboard, setIsLoadingBattleLeaderboard] = useState(true);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [timerActive, setTimerActive] = useState(false);
@@ -326,7 +340,8 @@ const QuizPage: React.FC = () => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const entries = snapshot.docs.map(doc => ({
         ...doc.data(),
-        userId: doc.id
+        userId: doc.id,
+        battlesWon: (doc.data() as any).battlesWon || 0
       })) as LeaderboardEntry[];
       setLeaderboard(entries);
       setIsLoadingLeaderboard(false);
@@ -349,6 +364,30 @@ const QuizPage: React.FC = () => {
     return () => unsubscribe();
   }, [user]);
 
+  // Fetch Total Users
+  useEffect(() => {
+    const q = query(collection(db, 'users'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setTotalUsers(snapshot.size);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Battle Leaderboard
+  useEffect(() => {
+    const q = query(collection(db, 'quizLeaderboard'), orderBy('battlesWon', 'desc'), limit(10));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const entries = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        userId: doc.id,
+        battlesWon: (doc.data() as any).battlesWon || 0
+      })) as LeaderboardEntry[];
+      setBattleLeaderboard(entries);
+      setIsLoadingBattleLeaderboard(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Timer Logic
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -361,6 +400,23 @@ const QuizPage: React.FC = () => {
     }
     return () => clearInterval(timer);
   }, [timerActive, timeLeft]);
+
+  // Listen to room updates
+  useEffect(() => {
+    if (!roomId) return;
+    const roomRef = doc(db, 'quizRooms', roomId);
+    const unsubscribe = onSnapshot(roomRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setRoomData(data);
+        if (data.status === 'started' && !isQuizStarted) {
+          setCurrentQuestions(data.questions);
+          setIsQuizStarted(true);
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [roomId]);
 
   const shuffleQuestions = () => {
     const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
@@ -381,6 +437,49 @@ const QuizPage: React.FC = () => {
     setTimeLeft(60);
     setTimerActive(true);
     setStartTime(Date.now());
+  };
+
+  const createRoom = async () => {
+    if (!user) return;
+    const roomRef = doc(collection(db, 'quizRooms'));
+    await setDoc(roomRef, {
+      players: [{ userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0 }],
+      currentQuestionIndex: 0,
+      status: 'waiting',
+      createdAt: serverTimestamp()
+    });
+    setRoomId(roomRef.id);
+    setIsBattleMode(true);
+    showToast("Sala criada! Compartilhe o ID: " + roomRef.id, "success");
+  };
+
+  const joinRoom = async () => {
+    console.log("joinRoom called, user:", user);
+    if (!user) {
+      showToast("Você precisa estar logado para entrar em uma sala.", "error");
+      return;
+    }
+    const id = prompt("Digite o ID da sala:");
+    if (!id) return;
+    console.log("Joining room:", id);
+    const roomRef = doc(db, 'quizRooms', id);
+    try {
+      const roomSnap = await getDoc(roomRef);
+      if (roomSnap.exists()) {
+        console.log("Room exists:", roomSnap.data());
+        const data = roomSnap.data();
+        const players = [...data.players, { userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0 }];
+        await updateDoc(roomRef, { players });
+        setRoomId(id);
+        setIsBattleMode(true);
+      } else {
+        console.log("Room not found:", id);
+        showToast("Sala não encontrada.", "error");
+      }
+    } catch (error) {
+      console.error("Error joining room:", error);
+      showToast("Erro ao entrar na sala. Verifique as permissões.", "error");
+    }
   };
 
   const nextQuestion = () => {
@@ -404,13 +503,21 @@ const QuizPage: React.FC = () => {
     let pointsEarned = 0;
     if (isRight) {
       const timeTaken = (Date.now() - startTime) / 1000;
-      // 1-5s = 10, 6-10s = 9, ..., >60s = 1
       pointsEarned = Math.max(1, 11 - Math.ceil(timeTaken / 5));
       setScore(prev => prev + pointsEarned);
       showToast(`Correto! +${pointsEarned} pontos`, "success");
     } else {
       setScore(prev => Math.max(0, prev - 10));
       showToast("Incorreto! -10 pontos", "error");
+    }
+
+    // Sync score if in battle mode
+    if (isBattleMode && roomId && user) {
+      const roomRef = doc(db, 'quizRooms', roomId);
+      const players = roomData.players.map((p: any) => 
+        p.userId === user.id ? { ...p, score: (p.score || 0) + pointsEarned } : p
+      );
+      await updateDoc(roomRef, { players });
     }
 
     setTimeout(() => {
@@ -442,10 +549,24 @@ const QuizPage: React.FC = () => {
         else if (score < lastScore) trend = 'down';
       }
 
+      let battlesWon = 0;
+      if (userSnap.exists()) {
+        battlesWon = (userSnap.data() as any).battlesWon || 0;
+      }
+
+      if (roomId && roomData) {
+        const myPlayer = roomData.players.find((p: any) => p.userId === user.id);
+        const otherPlayers = roomData.players.filter((p: any) => p.userId !== user.id);
+        if (myPlayer && otherPlayers.every((p: any) => myPlayer.score > p.score)) {
+          battlesWon += 1;
+        }
+      }
+
       await setDoc(userRef, {
         name: user.name || 'Usuário',
         avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
         score: score,
+        battlesWon: battlesWon,
         lastScore: lastScore,
         trend: trend,
         updatedAt: serverTimestamp()
@@ -498,51 +619,7 @@ const QuizPage: React.FC = () => {
           {/* Main Content Area */}
           <div className="lg:col-span-2 space-y-6">
             
-            {!isQuizStarted && !isQuizFinished ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center"
-              >
-                <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Regras do Quiz</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 text-left">
-                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
-                    <Star className="text-amber-500 mt-1" size={20} />
-                    <div>
-                      <p className="font-bold text-sm">10 Perguntas</p>
-                      <p className="text-xs text-stone-500">Níveis: Fácil a Desafio</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
-                    <Timer className="text-blue-500 mt-1" size={20} />
-                    <div>
-                      <p className="font-bold text-sm">Velocidade</p>
-                      <p className="text-xs text-stone-500">Mais rápido = Mais pontos</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
-                    <Zap className="text-emerald-500 mt-1" size={20} />
-                    <div>
-                      <p className="font-bold text-sm">Pontuação</p>
-                      <p className="text-xs text-stone-500">Max 10 pts por questão</p>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
-                    <Award className="text-purple-500 mt-1" size={20} />
-                    <div>
-                      <p className="font-bold text-sm">Prêmio Mensal</p>
-                      <p className="text-xs text-stone-500">1º lugar ganha prêmio surpresa</p>
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={startQuiz}
-                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
-                >
-                  <Play size={24} /> Começar Agora
-                </button>
-              </motion.div>
-            ) : isQuizStarted ? (
+            {isQuizStarted ? (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 relative overflow-hidden">
                 {/* Progress Bar */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-stone-100 dark:bg-zinc-800">
@@ -557,6 +634,18 @@ const QuizPage: React.FC = () => {
                   <span className="px-4 py-1 bg-stone-100 dark:bg-zinc-800 rounded-full text-xs font-bold text-stone-500">
                     QUESTÃO {currentQuestionIndex + 1} DE {currentQuestions.length}
                   </span>
+                  {isBattleMode && roomData && (
+                    <div className="flex gap-4">
+                      {roomData.players.map((p: any) => (
+                        <div key={p.userId} className="flex items-center gap-2 text-sm font-bold">
+                          <img src={p.avatar} className="w-6 h-6 rounded-full" />
+                          <span className={p.userId === user?.id ? "text-emerald-600" : "text-blue-600"}>
+                            {p.score}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex items-center gap-2 text-emerald-600 font-mono font-bold">
                     <Timer size={20} />
                     <span className={cn(timeLeft <= 10 ? "text-red-500 animate-pulse" : "")}>
@@ -593,7 +682,7 @@ const QuizPage: React.FC = () => {
                   ))}
                 </div>
               </div>
-            ) : (
+            ) : isQuizFinished ? (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -642,6 +731,92 @@ const QuizPage: React.FC = () => {
                   </button>
                 </div>
               </motion.div>
+            ) : isBattleMode ? (
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
+                <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Batalha Bíblica</h2>
+                <p className="text-stone-600 dark:text-stone-400 mb-8">Crie ou entre em uma sala de batalha.</p>
+                <div className="space-y-4">
+                  <button
+                    onClick={createRoom}
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
+                  >
+                    Criar Sala
+                  </button>
+                  <button
+                    onClick={joinRoom}
+                    className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
+                  >
+                    Entrar em Sala
+                  </button>
+                  <button
+                    onClick={() => {
+                      const text = `Desafio você para uma Batalha Bíblica! Entre na sala com o ID: ${roomId || '...'}`;
+                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                    }}
+                    className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
+                  >
+                    <UserPlus size={24} /> Desafie alguém
+                  </button>
+                  <button
+                    onClick={() => setIsBattleMode(false)}
+                    className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                  >
+                    Voltar
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center"
+              >
+                <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Regras do Quiz</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8 text-left">
+                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                    <Star className="text-amber-500 mt-1" size={20} />
+                    <div>
+                      <p className="font-bold text-sm">10 Perguntas</p>
+                      <p className="text-xs text-stone-500">Níveis: Fácil a Desafio</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                    <Timer className="text-blue-500 mt-1" size={20} />
+                    <div>
+                      <p className="font-bold text-sm">Velocidade</p>
+                      <p className="text-xs text-stone-500">Mais rápido = Mais pontos</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                    <Zap className="text-emerald-500 mt-1" size={20} />
+                    <div>
+                      <p className="font-bold text-sm">Pontuação</p>
+                      <p className="text-xs text-stone-500">Max 10 pts por questão</p>
+                    </div>
+                  </div>
+                  <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                    <Award className="text-purple-500 mt-1" size={20} />
+                    <div>
+                      <p className="font-bold text-sm">Prêmio Mensal</p>
+                      <p className="text-xs text-stone-500">1º lugar ganha prêmio surpresa</p>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={startQuiz}
+                  className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
+                >
+                  <Play size={24} /> Começar Agora
+                </button>
+                <div className="mt-4">
+                  <button
+                    onClick={handleBattleMode}
+                    className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
+                  >
+                    <UserPlus size={24} /> Batalha Bíblica
+                  </button>
+                </div>
+              </motion.div>
             )}
 
             {/* Encouragement Message */}
@@ -664,105 +839,88 @@ const QuizPage: React.FC = () => {
           {/* Sidebar - Leaderboard */}
           <div className="space-y-6">
             <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800">
-              <div className="flex items-center gap-3 mb-6">
-                <Crown className="text-amber-500" size={24} />
-                <h2 className="text-xl font-bold text-stone-800 dark:text-stone-200">Top 10 Mensal</h2>
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4 mb-8">
+                <div className="bg-stone-100 dark:bg-zinc-800 p-4 rounded-2xl text-center">
+                  <p className="text-2xl font-bold text-stone-800 dark:text-stone-200">{totalUsers}</p>
+                  <p className="text-xs text-stone-500">Inscritos</p>
+                </div>
+                <div className="bg-stone-100 dark:bg-zinc-800 p-4 rounded-2xl text-center">
+                  <p className="text-2xl font-bold text-stone-800 dark:text-stone-200">0</p>
+                  <p className="text-xs text-stone-500">Online</p>
+                </div>
               </div>
 
-              {/* Current User Rank */}
-              {user && (
-                <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800">
-                  <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Sua Classificação</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
-                        alt="Avatar" 
-                        className="w-10 h-10 rounded-full border-2 border-emerald-500"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div>
-                        <p className="text-sm font-bold text-stone-800 dark:text-stone-200 truncate max-w-[100px]">
-                          {user.name || 'Você'}
-                        </p>
-                        <p className="text-xs text-stone-500">#{userRank?.rank || '?'}</p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-emerald-600">{userRank?.score || 0}</p>
-                      <div className="flex items-center justify-end gap-1">
-                        {userRank?.trend === 'up' && <TrendingUp size={12} className="text-emerald-500" />}
-                        {userRank?.trend === 'down' && <TrendingDown size={12} className="text-red-500" />}
-                        {userRank?.trend === 'same' && <Minus size={12} className="text-stone-400" />}
-                      </div>
-                    </div>
+              {/* General Leaderboard */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <Crown className="text-amber-500" size={24} />
+                    <h2 className="text-xl font-bold text-stone-800 dark:text-stone-200">Ranking Quiz Geral</h2>
                   </div>
                 </div>
-              )}
-
-              <div className="space-y-4">
-                {isLoadingLeaderboard ? (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                    <Loader2 className="animate-spin text-emerald-600" size={32} />
-                    <p className="text-xs text-stone-500 uppercase tracking-widest">Carregando Ranking...</p>
-                  </div>
-                ) : leaderboard.length > 0 ? (
-                  leaderboard.map((entry, index) => (
-                    <div 
-                      key={entry.userId}
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-2xl transition-all",
-                        entry.userId === user?.id ? "bg-emerald-50 dark:bg-emerald-900/20 ring-1 ring-emerald-500/30" : "hover:bg-stone-50 dark:hover:bg-zinc-800"
-                      )}
-                    >
+                {/* Current User Rank */}
+                {user && (
+                  <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800">
+                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest mb-2">Sua Classificação</p>
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <span className={cn(
-                          "w-6 h-6 flex items-center justify-center rounded-full text-[10px] font-bold",
-                          index === 0 ? "bg-amber-100 text-amber-600" :
-                          index === 1 ? "bg-stone-200 text-stone-600" :
-                          index === 2 ? "bg-orange-100 text-orange-600" : "bg-stone-100 text-stone-500"
-                        )}>
-                          {index + 1}
-                        </span>
                         <img 
-                          src={entry.avatar} 
-                          alt={entry.name} 
-                          className="w-8 h-8 rounded-full"
+                          src={user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+                          alt="Avatar" 
+                          className="w-10 h-10 rounded-full border-2 border-emerald-500"
                           referrerPolicy="no-referrer"
                         />
-                        <span className="text-sm font-medium text-stone-700 dark:text-stone-300 truncate max-w-[80px]">
-                          {entry.name}
-                        </span>
+                        <div>
+                          <p className="text-sm font-bold text-stone-800 dark:text-stone-200 truncate max-w-[100px]">
+                            {user.name || 'Você'}
+                          </p>
+                          <p className="text-xs text-stone-500">#{userRank?.rank || '?'}</p>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-stone-900 dark:text-stone-100">{entry.score}</span>
-                        {entry.trend === 'up' && <TrendingUp size={14} className="text-emerald-500" />}
-                        {entry.trend === 'down' && <TrendingDown size={14} className="text-red-500" />}
-                        {entry.trend === 'same' && <Minus size={14} className="text-stone-400" />}
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-emerald-600">{userRank?.score || 0}</p>
                       </div>
                     </div>
-                  ))
-                ) : (
-                  <div className="text-center py-12">
-                    <p className="text-sm text-stone-500">Nenhum registro ainda.</p>
-                    <p className="text-xs text-stone-400 mt-1">Seja o primeiro a pontuar!</p>
                   </div>
                 )}
-              </div>
-            </div>
 
-            {/* Prize Card */}
-            <div className="bg-gradient-to-br from-amber-500 to-orange-600 rounded-3xl p-6 text-white shadow-xl shadow-amber-500/20">
-              <div className="flex items-center gap-3 mb-4">
-                <Gift size={24} />
-                <h3 className="font-bold">Prêmio do Mês</h3>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-stone-500 uppercase bg-stone-50 dark:bg-zinc-800">
+                      <tr>
+                        <th className="px-3 py-2">#</th>
+                        <th className="px-3 py-2">Nome</th>
+                        <th className="px-3 py-2">Quiz</th>
+                        <th className="px-3 py-2">Vitórias</th>
+                        <th className="px-3 py-2">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {leaderboard.map((entry, index) => (
+                        <tr 
+                          key={entry.userId}
+                          className={cn(
+                            "border-b border-stone-100 dark:border-zinc-800",
+                            entry.userId === user?.id ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
+                          )}
+                        >
+                          <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
+                          <td className="px-3 py-3 flex items-center gap-2">
+                            <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                            <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[80px]">{entry.name}</span>
+                          </td>
+                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.score}</td>
+                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.battlesWon || 0}</td>
+                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.score + (entry.battlesWon || 0)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
-              <p className="text-sm opacity-90 mb-4">
-                O primeiro lugar no ranking mensal receberá um prêmio surpresa exclusivo!
-              </p>
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3 text-center">
-                <p className="text-xs font-bold uppercase tracking-widest">Faltam 12 dias</p>
-              </div>
+
+              {/* Battle Leaderboard */}
             </div>
           </div>
 

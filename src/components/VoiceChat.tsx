@@ -80,10 +80,6 @@ O nome do usuário é ${user?.name || 'amigo'}.`;
     await playAudio(greeting);
   };
 
-  const toggleVoice = () => {
-    setVoiceGender(prev => prev === 'female' ? 'male' : 'female');
-  };
-
   const startListening = async () => {
     if (isPlaying && audioRef.current) {
       audioRef.current.pause();
