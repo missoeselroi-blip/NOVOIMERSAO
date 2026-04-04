@@ -19,7 +19,10 @@ import {
   Zap,
   Medal,
   Crown,
-  Gift
+  Gift,
+  LogIn,
+  Plus,
+  Swords
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -304,12 +307,172 @@ const QUESTIONS: Question[] = [
     correctAnswer: 2,
     difficulty: 'easy',
     testament: 'new'
+  },
+  {
+    id: 31,
+    text: "Quem foi lançado na cova dos leões?",
+    options: ["Davi", "Daniel", "José", "Elias"],
+    correctAnswer: 1,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 32,
+    text: "Qual era a profissão de Pedro antes de seguir Jesus?",
+    options: ["Carpinteiro", "Cobrador de impostos", "Pescador", "Pastor de ovelhas"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 33,
+    text: "Quem derrotou o gigante Golias?",
+    options: ["Saul", "Salomão", "Davi", "Sansão"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 34,
+    text: "Qual livro da Bíblia tem mais capítulos?",
+    options: ["Gênesis", "Isaías", "Salmos", "Apocalipse"],
+    correctAnswer: 2,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 35,
+    text: "Quem foi engolido por um grande peixe?",
+    options: ["Jonas", "Moisés", "Pedro", "Paulo"],
+    correctAnswer: 0,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 36,
+    text: "Quem traiu Jesus por 30 moedas de prata?",
+    options: ["Pedro", "Tomé", "Judas Iscariotes", "João"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 37,
+    text: "Qual foi o primeiro milagre de Jesus?",
+    options: ["Multiplicação dos pães", "Andar sobre as águas", "Curar um cego", "Transformar água em vinho"],
+    correctAnswer: 3,
+    difficulty: 'medium',
+    testament: 'new'
+  },
+  {
+    id: 38,
+    text: "Quem recebeu os Dez Mandamentos no Monte Sinai?",
+    options: ["Abraão", "Moisés", "Josué", "Elias"],
+    correctAnswer: 1,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 39,
+    text: "Qual era o nome do jardim onde Adão e Eva viveram?",
+    options: ["Getsêmani", "Éden", "Babilônia", "Sinai"],
+    correctAnswer: 1,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 40,
+    text: "Quem construiu a arca?",
+    options: ["Moisés", "Abraão", "Noé", "Ló"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 41,
+    text: "Qual apóstolo escreveu a maior parte do Novo Testamento?",
+    options: ["Pedro", "João", "Tiago", "Paulo"],
+    correctAnswer: 3,
+    difficulty: 'medium',
+    testament: 'new'
+  },
+  {
+    id: 42,
+    text: "Quem foi o homem mais sábio do mundo segundo a Bíblia?",
+    options: ["Davi", "Salomão", "Moisés", "Jesus"],
+    correctAnswer: 1,
+    difficulty: 'easy',
+    testament: 'old'
+  },
+  {
+    id: 43,
+    text: "Qual o nome da mãe de Jesus?",
+    options: ["Isabel", "Marta", "Maria", "Madalena"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 44,
+    text: "Quem batizou Jesus no rio Jordão?",
+    options: ["Pedro", "João Batista", "Tiago", "André"],
+    correctAnswer: 1,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 45,
+    text: "Quantas pragas foram enviadas ao Egito?",
+    options: ["7", "10", "12", "40"],
+    correctAnswer: 1,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 46,
+    text: "Quem interpretou os sonhos do Faraó?",
+    options: ["Daniel", "José", "Moisés", "Jacó"],
+    correctAnswer: 1,
+    difficulty: 'medium',
+    testament: 'old'
+  },
+  {
+    id: 47,
+    text: "Qual o último livro da Bíblia?",
+    options: ["Malaquias", "Judas", "Apocalipse", "Hebreus"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 48,
+    text: "Quem negou Jesus três vezes antes do galo cantar?",
+    options: ["Judas", "Tomé", "Pedro", "João"],
+    correctAnswer: 2,
+    difficulty: 'easy',
+    testament: 'new'
+  },
+  {
+    id: 49,
+    text: "Qual o nome do anjo que anunciou o nascimento de Jesus a Maria?",
+    options: ["Miguel", "Rafael", "Gabriel", "Uriel"],
+    correctAnswer: 2,
+    difficulty: 'medium',
+    testament: 'new'
+  },
+  {
+    id: 50,
+    text: "Quem sobreviveu à fornalha de fogo ardente?",
+    options: ["Daniel", "Sadraque, Mesaque e Abede-Nego", "Elias e Eliseu", "Josué e Calebe"],
+    correctAnswer: 1,
+    difficulty: 'hard',
+    testament: 'old'
   }
 ];
 
 // Force rebuild
 const QuizPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loginWithGoogle } = useAuth();
   const { showToast } = useToast();
   
   const handleBattleMode = () => {
@@ -722,6 +885,9 @@ const QuizPage: React.FC = () => {
   const challengeFriends = () => {
     let text = `Desafio você no Quiz da Imersão Bíblica! Minha pontuação foi ${score}. Consegue bater?`;
     let baseUrl = window.location.href.split('/#/')[0];
+    if (baseUrl.endsWith('/')) {
+      baseUrl = baseUrl.slice(0, -1);
+    }
     // Se estiver no ambiente de desenvolvimento (ais-dev), troca para o link público (ais-pre)
     baseUrl = baseUrl.replace('ais-dev', 'ais-pre');
     let url = baseUrl + '/#/';
@@ -1047,6 +1213,9 @@ const QuizPage: React.FC = () => {
                       <button
                         onClick={() => {
                           let baseUrl = window.location.href.split('/#/')[0];
+                          if (baseUrl.endsWith('/')) {
+                            baseUrl = baseUrl.slice(0, -1);
+                          }
                           baseUrl = baseUrl.replace('ais-dev', 'ais-pre');
                           const url = `${baseUrl}/#/quiz?roomId=${roomId}`;
                           const text = `Paz... Desafio você para um Quiz Mano a Mano!\n\nLink do App: ${baseUrl}/#/quiz\nID da Sala: ${roomId}\n\nOu clique no link direto abaixo para entrar na sala:`;
@@ -1061,27 +1230,47 @@ const QuizPage: React.FC = () => {
                 ) : (
                   <>
                     <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Quiz Mano a Mano</h2>
-                    <p className="text-stone-600 dark:text-stone-400 mb-8">Crie ou entre em uma sala de batalha.</p>
-                    <div className="space-y-4">
-                      <button
-                        onClick={createRoom}
-                        className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
-                      >
-                        Criar Sala
-                      </button>
-                      <button
-                        onClick={joinRoom}
-                        className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
-                      >
-                        Entrar em Sala
-                      </button>
-                      <button
-                        onClick={() => setIsBattleMode(false)}
-                        className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
-                      >
-                        Voltar
-                      </button>
-                    </div>
+                    {(!user && joinRoomIdInput) ? (
+                      <div className="space-y-4">
+                        <p className="text-stone-600 dark:text-stone-400 mb-8">Você foi convidado para uma batalha! Faça login para participar.</p>
+                        <button
+                          onClick={loginWithGoogle}
+                          className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
+                        >
+                          <LogIn size={24} /> Fazer Login com Google
+                        </button>
+                        <button
+                          onClick={() => setIsBattleMode(false)}
+                          className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                        >
+                          Voltar
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-stone-600 dark:text-stone-400 mb-8">Crie ou entre em uma sala de batalha.</p>
+                        <div className="space-y-4">
+                          <button
+                            onClick={createRoom}
+                            className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
+                          >
+                            Criar Sala
+                          </button>
+                          <button
+                            onClick={joinRoom}
+                            className="w-full py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
+                          >
+                            Entrar em Sala
+                          </button>
+                          <button
+                            onClick={() => setIsBattleMode(false)}
+                            className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                          >
+                            Voltar
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
               </div>
