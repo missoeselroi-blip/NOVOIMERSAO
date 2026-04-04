@@ -29,6 +29,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { db } from '../lib/firebase';
+import { Question, QUESTIONS } from '../data/questions';
 import { 
   collection, 
   query, 
@@ -45,14 +46,6 @@ import {
 import { cn } from '../types';
 import html2canvas from 'html2canvas';
 
-interface Question {
-  id: number;
-  text: string;
-  options: string[];
-  correctAnswer: number;
-  difficulty: 'easy' | 'medium' | 'hard' | 'challenge';
-  testament: 'old' | 'new';
-}
 
 interface LeaderboardEntry {
   userId: string;
@@ -67,408 +60,6 @@ interface LeaderboardEntry {
   rank?: number;
 }
 
-const QUESTIONS: Question[] = [
-  {
-    id: 1,
-    text: "Quem foi o primeiro homem criado por Deus?",
-    options: ["Noé", "Abraão", "Adão", "Moisés"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 2,
-    text: "Em qual cidade Jesus nasceu?",
-    options: ["Nazaré", "Jerusalém", "Belém", "Jericó"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 3,
-    text: "Quantos dias e noites choveu durante o Dilúvio?",
-    options: ["7 dias", "40 dias", "100 dias", "12 dias"],
-    correctAnswer: 1,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 4,
-    text: "Quem traiu Jesus por 30 moedas de prata?",
-    options: ["Pedro", "João", "Judas Iscariotes", "Tomé"],
-    correctAnswer: 2,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 5,
-    text: "Qual era a profissão de Davi antes de ser rei?",
-    options: ["Pescador", "Pastor de ovelhas", "Carpinteiro", "Soldado"],
-    correctAnswer: 1,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 6,
-    text: "Qual apóstolo escreveu a maioria das epístolas no Novo Testamento?",
-    options: ["Pedro", "João", "Paulo", "Tiago"],
-    correctAnswer: 2,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 7,
-    text: "Quem foi o sucessor de Moisés na liderança de Israel?",
-    options: ["Arão", "Calebe", "Josué", "Gideão"],
-    correctAnswer: 2,
-    difficulty: 'hard',
-    testament: 'old'
-  },
-  {
-    id: 8,
-    text: "Qual é o livro mais curto do Novo Testamento?",
-    options: ["Judas", "2 João", "3 João", "Filemom"],
-    correctAnswer: 2,
-    difficulty: 'hard',
-    testament: 'new'
-  },
-  {
-    id: 9,
-    text: "Qual profeta foi engolido por um grande peixe?",
-    options: ["Elias", "Eliseu", "Jonas", "Isaías"],
-    correctAnswer: 2,
-    difficulty: 'hard',
-    testament: 'old'
-  },
-  {
-    id: 10,
-    text: "No Apocalipse, qual é o número das tribos de Israel seladas?",
-    options: ["12.000", "144.000", "7.000", "10.000"],
-    correctAnswer: 1,
-    difficulty: 'challenge',
-    testament: 'new'
-  },
-  {
-    id: 11,
-    text: "Qual era o nome da esposa de Abraão?",
-    options: ["Rebeca", "Raquel", "Sara", "Lia"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 12,
-    text: "Quem foi o apóstolo que negou Jesus três vezes?",
-    options: ["João", "Tiago", "Pedro", "André"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 13,
-    text: "Qual foi a primeira praga do Egito?",
-    options: ["Rãs", "Piolhos", "Sangue no rio", "Gafanhotos"],
-    correctAnswer: 2,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 14,
-    text: "Quem subiu ao céu em um redemoinho com um carro de fogo?",
-    options: ["Elias", "Eliseu", "Enoque", "Moisés"],
-    correctAnswer: 0,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 15,
-    text: "Qual é o 'Fruto do Espírito' mencionado em Gálatas?",
-    options: ["Amor, alegria, paz...", "Fé, esperança, caridade...", "Ouro, prata, pedras preciosas...", "Sabedoria, entendimento, conselho..."],
-    correctAnswer: 0,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 16,
-    text: "Quem foi o homem mais velho mencionado na Bíblia?",
-    options: ["Enoque", "Matusalém", "Noé", "Sete"],
-    correctAnswer: 1,
-    difficulty: 'hard',
-    testament: 'old'
-  },
-  {
-    id: 17,
-    text: "Em qual ilha João estava quando recebeu a revelação do Apocalipse?",
-    options: ["Creta", "Chipre", "Patmos", "Malta"],
-    correctAnswer: 2,
-    difficulty: 'hard',
-    testament: 'new'
-  },
-  {
-    id: 18,
-    text: "Qual era o nome do gigante que Davi derrotou?",
-    options: ["Golias", "Og", "Sif", "Ibi-Benobe"],
-    correctAnswer: 0,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 19,
-    text: "Quem foi a mulher que ungiu os pés de Jesus com perfume caro?",
-    options: ["Marta", "Maria Madalena", "Maria, irmã de Lázaro", "Joana"],
-    correctAnswer: 2,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 20,
-    text: "Qual o nome do monte onde Moisés recebeu os Dez Mandamentos?",
-    options: ["Monte Nebo", "Monte Carmelo", "Monte Sinai", "Monte das Oliveiras"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 21,
-    text: "Qual foi o primeiro milagre de Jesus?",
-    options: ["Cura de um cego", "Multiplicação dos pães", "Transformação de água em vinho", "Caminhar sobre as águas"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 22,
-    text: "Quem foi o profeta que desafiou os profetas de Baal no Monte Carmelo?",
-    options: ["Eliseu", "Elias", "Isaías", "Jeremias"],
-    correctAnswer: 1,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 23,
-    text: "Qual era o nome do jardim onde Jesus orou antes de ser preso?",
-    options: ["Jardim do Éden", "Jardim de Getsêmani", "Jardim de Jericó", "Jardim de Sião"],
-    correctAnswer: 1,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 24,
-    text: "Quem foi a rainha que visitou Salomão para testar sua sabedoria?",
-    options: ["Rainha de Sabá", "Rainha Ester", "Rainha Jezabel", "Rainha Vasti"],
-    correctAnswer: 0,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 25,
-    text: "Qual o nome do mar que Moisés abriu para o povo de Israel passar?",
-    options: ["Mar Morto", "Mar da Galileia", "Mar Vermelho", "Mar Mediterrâneo"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 26,
-    text: "Quem foi o autor do livro de Atos dos Apóstolos?",
-    options: ["Pedro", "Paulo", "Lucas", "João"],
-    correctAnswer: 2,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 27,
-    text: "Qual o nome do filho de Abraão com a serva Agar?",
-    options: ["Isaque", "Ismael", "Jacó", "Esaú"],
-    correctAnswer: 1,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 28,
-    text: "Quem foi o rei que mandou jogar Daniel na cova dos leões?",
-    options: ["Nabucodonosor", "Belsazar", "Dário", "Ciro"],
-    correctAnswer: 2,
-    difficulty: 'hard',
-    testament: 'old'
-  },
-  {
-    id: 29,
-    text: "Qual o nome do anjo que anunciou o nascimento de Jesus a Maria?",
-    options: ["Miguel", "Rafael", "Gabriel", "Uriel"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 30,
-    text: "Quantos discípulos Jesus escolheu inicialmente?",
-    options: ["7", "10", "12", "70"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 31,
-    text: "Quem foi lançado na cova dos leões?",
-    options: ["Davi", "Daniel", "José", "Elias"],
-    correctAnswer: 1,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 32,
-    text: "Qual era a profissão de Pedro antes de seguir Jesus?",
-    options: ["Carpinteiro", "Cobrador de impostos", "Pescador", "Pastor de ovelhas"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 33,
-    text: "Quem derrotou o gigante Golias?",
-    options: ["Saul", "Salomão", "Davi", "Sansão"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 34,
-    text: "Qual livro da Bíblia tem mais capítulos?",
-    options: ["Gênesis", "Isaías", "Salmos", "Apocalipse"],
-    correctAnswer: 2,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 35,
-    text: "Quem foi engolido por um grande peixe?",
-    options: ["Jonas", "Moisés", "Pedro", "Paulo"],
-    correctAnswer: 0,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 36,
-    text: "Quem traiu Jesus por 30 moedas de prata?",
-    options: ["Pedro", "Tomé", "Judas Iscariotes", "João"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 37,
-    text: "Qual foi o primeiro milagre de Jesus?",
-    options: ["Multiplicação dos pães", "Andar sobre as águas", "Curar um cego", "Transformar água em vinho"],
-    correctAnswer: 3,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 38,
-    text: "Quem recebeu os Dez Mandamentos no Monte Sinai?",
-    options: ["Abraão", "Moisés", "Josué", "Elias"],
-    correctAnswer: 1,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 39,
-    text: "Qual era o nome do jardim onde Adão e Eva viveram?",
-    options: ["Getsêmani", "Éden", "Babilônia", "Sinai"],
-    correctAnswer: 1,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 40,
-    text: "Quem construiu a arca?",
-    options: ["Moisés", "Abraão", "Noé", "Ló"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 41,
-    text: "Qual apóstolo escreveu a maior parte do Novo Testamento?",
-    options: ["Pedro", "João", "Tiago", "Paulo"],
-    correctAnswer: 3,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 42,
-    text: "Quem foi o homem mais sábio do mundo segundo a Bíblia?",
-    options: ["Davi", "Salomão", "Moisés", "Jesus"],
-    correctAnswer: 1,
-    difficulty: 'easy',
-    testament: 'old'
-  },
-  {
-    id: 43,
-    text: "Qual o nome da mãe de Jesus?",
-    options: ["Isabel", "Marta", "Maria", "Madalena"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 44,
-    text: "Quem batizou Jesus no rio Jordão?",
-    options: ["Pedro", "João Batista", "Tiago", "André"],
-    correctAnswer: 1,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 45,
-    text: "Quantas pragas foram enviadas ao Egito?",
-    options: ["7", "10", "12", "40"],
-    correctAnswer: 1,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 46,
-    text: "Quem interpretou os sonhos do Faraó?",
-    options: ["Daniel", "José", "Moisés", "Jacó"],
-    correctAnswer: 1,
-    difficulty: 'medium',
-    testament: 'old'
-  },
-  {
-    id: 47,
-    text: "Qual o último livro da Bíblia?",
-    options: ["Malaquias", "Judas", "Apocalipse", "Hebreus"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 48,
-    text: "Quem negou Jesus três vezes antes do galo cantar?",
-    options: ["Judas", "Tomé", "Pedro", "João"],
-    correctAnswer: 2,
-    difficulty: 'easy',
-    testament: 'new'
-  },
-  {
-    id: 49,
-    text: "Qual o nome do anjo que anunciou o nascimento de Jesus a Maria?",
-    options: ["Miguel", "Rafael", "Gabriel", "Uriel"],
-    correctAnswer: 2,
-    difficulty: 'medium',
-    testament: 'new'
-  },
-  {
-    id: 50,
-    text: "Quem sobreviveu à fornalha de fogo ardente?",
-    options: ["Daniel", "Sadraque, Mesaque e Abede-Nego", "Elias e Eliseu", "Josué e Calebe"],
-    correctAnswer: 1,
-    difficulty: 'hard',
-    testament: 'old'
-  }
-];
 
 // Force rebuild
 const QuizPage: React.FC = () => {
@@ -663,8 +254,28 @@ const QuizPage: React.FC = () => {
   }, [roomId, isQuizStarted, isQuizFinished, user]);
 
   const shuffleQuestions = () => {
-    const shuffled = [...QUESTIONS].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, 10);
+    // Obter IDs das questões já respondidas
+    const seenQuestionsStr = localStorage.getItem('seenQuizQuestions');
+    let seenQuestions: number[] = seenQuestionsStr ? JSON.parse(seenQuestionsStr) : [];
+    
+    // Filtrar questões que ainda não foram vistas
+    let unseenQuestions = QUESTIONS.filter(q => !seenQuestions.includes(q.id));
+    
+    // Se não houver questões não vistas suficientes (menos de 10), resetar o histórico
+    if (unseenQuestions.length < 10) {
+      seenQuestions = [];
+      unseenQuestions = [...QUESTIONS];
+    }
+    
+    // Embaralhar as questões não vistas
+    const shuffled = unseenQuestions.sort(() => Math.random() - 0.5);
+    const selected = shuffled.slice(0, 10);
+    
+    // Atualizar o histórico com as novas questões selecionadas
+    const newSeenQuestions = [...seenQuestions, ...selected.map(q => q.id)];
+    localStorage.setItem('seenQuizQuestions', JSON.stringify(newSeenQuestions));
+    
+    return selected;
   };
 
   const startQuiz = () => {
