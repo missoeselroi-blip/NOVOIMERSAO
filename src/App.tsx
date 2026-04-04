@@ -48,7 +48,7 @@ import {
   Flame,
   PlayCircle
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
 import { NavigationMenu } from './components/NavigationMenu';
 import ErrorBoundary from './components/ErrorBoundary';

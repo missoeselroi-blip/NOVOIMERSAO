@@ -2,7 +2,6 @@ import React from 'react';
 import { 
   GraduationCap, 
   Flame, 
-  MessageSquare, 
   Users, 
   Coins, 
   Clock,

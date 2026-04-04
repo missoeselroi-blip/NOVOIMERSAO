@@ -686,13 +686,33 @@ const QuizPage: React.FC = () => {
     if (!element) return;
 
     try {
-      const canvas = await html2canvas(element);
-      const image = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = 'meu-resultado-quiz-imersao.png';
-      link.click();
-      showToast("Resultado pronto para compartilhar!", "success");
+      const canvas = await html2canvas(element, {
+        width: 1080,
+        height: 1920,
+        scale: 1,
+        backgroundColor: null, // Transparent if needed
+      });
+      
+      canvas.toBlob(async (blob) => {
+        if (!blob) return;
+        const file = new File([blob], 'meu-resultado-quiz-imersao.png', { type: 'image/png' });
+        
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Meu resultado no Quiz da Imersão Bíblica',
+            text: 'Confira meu resultado!',
+          });
+          showToast("Resultado compartilhado!", "success");
+        } else {
+          // Fallback to download
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = 'meu-resultado-quiz-imersao.png';
+          link.click();
+          showToast("Resultado baixado!", "success");
+        }
+      }, 'image/png');
     } catch (error) {
       showToast("Erro ao gerar imagem", "error");
     }
@@ -700,11 +720,14 @@ const QuizPage: React.FC = () => {
 
   const challengeFriends = () => {
     let text = `Desafio você no Quiz da Imersão Bíblica! Minha pontuação foi ${score}. Consegue bater?`;
-    let url = window.location.origin + window.location.pathname;
+    let baseUrl = window.location.href.split('/#/')[0];
+    // Se estiver no ambiente de desenvolvimento (ais-dev), troca para o link público (ais-pre)
+    baseUrl = baseUrl.replace('ais-dev', 'ais-pre');
+    let url = baseUrl + '/#/';
     
     if (isBattleMode && roomId) {
       text = `⚔️ Desafio você para uma Batalha no Quiz da Imersão Bíblica! ⚔️\n\nID da Sala: ${roomId}\n\nClique no link abaixo para entrar direto na sala e aceitar o desafio! 👇`;
-      url = `${window.location.origin}${window.location.pathname}?roomId=${roomId}`;
+      url = `${baseUrl}/#/quiz?roomId=${roomId}`;
     }
     
     window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`, '_blank');
@@ -1022,8 +1045,11 @@ const QuizPage: React.FC = () => {
                       
                       <button
                         onClick={() => {
-                          const text = `Desafio você para um Quiz Mano a Mano! Entre na sala com o ID: ${roomId}`;
-                          window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+                          const text = `Paz... Desafio você para um Quiz Mano a Mano! Entre na sala com o ID: ${roomId}`;
+                          let baseUrl = window.location.href.split('/#/')[0];
+                          baseUrl = baseUrl.replace('ais-dev', 'ais-pre');
+                          const url = `${baseUrl}/#/quiz?roomId=${roomId}`;
+                          window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`, '_blank');
                         }}
                         className="w-full py-4 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 text-stone-700 dark:text-stone-300 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
                       >
