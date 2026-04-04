@@ -267,8 +267,12 @@ const QuizPage: React.FC = () => {
       unseenQuestions = [...QUESTIONS];
     }
     
-    // Embaralhar as questões não vistas
-    const shuffled = unseenQuestions.sort(() => Math.random() - 0.5);
+    // Embaralhar as questões não vistas usando Fisher-Yates
+    const shuffled = [...unseenQuestions];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     const selected = shuffled.slice(0, 10);
     
     // Atualizar o histórico com as novas questões selecionadas
