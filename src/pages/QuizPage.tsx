@@ -605,13 +605,16 @@ const QuizPage: React.FC = () => {
     setIsCorrect(isRight);
 
     let pointsEarned = 0;
+    let newScore = score;
     if (isRight) {
       const timeTaken = (Date.now() - startTime) / 1000;
       pointsEarned = Math.max(1, 11 - Math.ceil(timeTaken / 5));
-      setScore(prev => prev + pointsEarned);
+      newScore = score + pointsEarned;
+      setScore(newScore);
       showToast(`Correto! +${pointsEarned} pontos`, "success");
     } else {
-      setScore(prev => Math.max(0, prev - 10));
+      newScore = Math.max(0, score - 10);
+      setScore(newScore);
       showToast("Incorreto! -10 pontos", "error");
     }
 
@@ -629,12 +632,12 @@ const QuizPage: React.FC = () => {
         setCurrentQuestionIndex(prev => prev + 1);
         nextQuestion();
       } else {
-        finishQuiz();
+        finishQuiz(newScore);
       }
     }, 1500);
   };
 
-  const finishQuiz = async () => {
+  const finishQuiz = async (finalScore: number) => {
     setIsQuizFinished(true);
     setIsQuizStarted(false);
     setTimerActive(false);
@@ -652,29 +655,27 @@ const QuizPage: React.FC = () => {
       const userSnap = await getDoc(userRef);
       
       let trend: 'up' | 'down' | 'same' = 'same';
-      let previousHighestScore = 0;
+      let previousScore = 0;
       let battlesWon = 0;
 
       if (userSnap.exists()) {
         const data = userSnap.data() as LeaderboardEntry;
-        previousHighestScore = data.score || 0;
-        if (previousHighestScore > 100) previousHighestScore = 100;
+        previousScore = data.score || 0;
         battlesWon = data.battlesWon || 0;
-        if (score > previousHighestScore) trend = 'up';
-        else if (score < previousHighestScore) trend = 'down';
+        if (finalScore > previousScore) trend = 'up';
+        else if (finalScore < previousScore) trend = 'down';
       } else {
-        if (score > 0) trend = 'up';
+        if (finalScore > 0) trend = 'up';
       }
 
-      const highestScore = Math.max(previousHighestScore, score);
-      const newTotalScore = highestScore + battlesWon;
+      const newTotalScore = finalScore + battlesWon;
 
       await setDoc(userRef, {
         name: user.name || 'Usuário',
         avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-        score: highestScore,
+        score: finalScore,
         totalScore: newTotalScore,
-        lastScore: score,
+        lastScore: finalScore,
         trend: trend,
         updatedAt: serverTimestamp()
       }, { merge: true });
@@ -726,8 +727,8 @@ const QuizPage: React.FC = () => {
     let url = baseUrl + '/#/';
     
     if (isBattleMode && roomId) {
-      text = `⚔️ Desafio você para uma Batalha no Quiz da Imersão Bíblica! ⚔️\n\nID da Sala: ${roomId}\n\nClique no link abaixo para entrar direto na sala e aceitar o desafio! 👇`;
       url = `${baseUrl}/#/quiz?roomId=${roomId}`;
+      text = `⚔️ Desafio você para uma Batalha no Quiz da Imersão Bíblica! ⚔️\n\nLink do App: ${baseUrl}/#/quiz\nID da Sala: ${roomId}\n\nOu clique no link direto abaixo para entrar na sala:`;
     }
     
     window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`, '_blank');
@@ -1045,10 +1046,10 @@ const QuizPage: React.FC = () => {
                       
                       <button
                         onClick={() => {
-                          const text = `Paz... Desafio você para um Quiz Mano a Mano! Entre na sala com o ID: ${roomId}`;
                           let baseUrl = window.location.href.split('/#/')[0];
                           baseUrl = baseUrl.replace('ais-dev', 'ais-pre');
                           const url = `${baseUrl}/#/quiz?roomId=${roomId}`;
+                          const text = `Paz... Desafio você para um Quiz Mano a Mano!\n\nLink do App: ${baseUrl}/#/quiz\nID da Sala: ${roomId}\n\nOu clique no link direto abaixo para entrar na sala:`;
                           window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`, '_blank');
                         }}
                         className="w-full py-4 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 text-stone-700 dark:text-stone-300 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
