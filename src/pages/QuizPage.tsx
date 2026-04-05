@@ -96,7 +96,7 @@ const QuizPage: React.FC = () => {
   const processedRooms = React.useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    const urlRoomId = searchParams.get('roomId');
+    const urlRoomId = searchParams.get('roomId') || new URLSearchParams(window.location.search).get('roomId');
     if (urlRoomId) {
       setJoinRoomIdInput(urlRoomId);
       setIsBattleMode(true);
@@ -508,7 +508,8 @@ const QuizPage: React.FC = () => {
     let url = baseUrl + '/#/';
     
     if (isBattleMode && roomId) {
-      url = `${baseUrl}/#/quiz?roomId=${roomId}`;
+      const cacheBuster = Date.now();
+      url = `${baseUrl}/?roomId=${roomId}&v=${cacheBuster}#/quiz`;
       text = `⚔️ Desafio você para uma Batalha no Quiz da Imersão Bíblica! ⚔️\n\nLink do App: ${baseUrl}/#/quiz\nID da Sala: ${roomId}\n\nOu clique no link direto abaixo para entrar na sala:`;
     }
     
@@ -832,7 +833,8 @@ const QuizPage: React.FC = () => {
                             baseUrl = baseUrl.slice(0, -1);
                           }
                           baseUrl = baseUrl.replace('ais-dev', 'ais-pre');
-                          const url = `${baseUrl}/#/quiz?roomId=${roomId}`;
+                          const cacheBuster = Date.now();
+                          const url = `${baseUrl}/?roomId=${roomId}&v=${cacheBuster}#/quiz`;
                           const text = `Paz... Desafio você para um Quiz Mano a Mano!\n\nLink do App: ${baseUrl}/#/quiz\nID da Sala: ${roomId}\n\nOu clique no link direto abaixo para entrar na sala:`;
                           window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`, '_blank');
                         }}

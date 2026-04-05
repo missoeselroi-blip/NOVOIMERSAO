@@ -42,6 +42,7 @@ interface User {
   photoURL?: string;
   avatar?: string;
   joinDate: string;
+  lastActive?: string;
   role: 'admin' | 'user';
   favorites?: Favorite[];
   settings?: UserSettings;
@@ -175,6 +176,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           let userData: User;
           if (userDoc.exists()) {
             userData = userDoc.data() as User;
+            // Update lastActive
+            await updateDoc(userDocRef, {
+              lastActive: new Date().toISOString()
+            });
           } else {
             userData = {
               id: firebaseUser.uid,
@@ -182,6 +187,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: firebaseUser.email || '',
               photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
               joinDate: new Date().toISOString(),
+              lastActive: new Date().toISOString(),
               role: 'user'
             };
             await setDoc(userDocRef, userData);

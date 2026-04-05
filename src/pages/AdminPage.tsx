@@ -28,6 +28,7 @@ interface UserData {
   name: string;
   email: string;
   joinDate: string;
+  lastActive?: string;
   role: string;
   photoURL?: string;
   avatar?: string;
@@ -84,6 +85,7 @@ export default function AdminPage() {
           name: data.name || 'Sem nome',
           email: data.email || 'Sem email',
           joinDate: data.joinDate || '',
+          lastActive: data.lastActive,
           role: data.role || 'user',
           photoURL: data.photoURL,
           avatar: data.avatar,
@@ -220,13 +222,25 @@ export default function AdminPage() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm">
           <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl flex items-center justify-center mb-4">
             <Users size={20} />
           </div>
           <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">Total de Usuários</p>
           <h3 className="text-2xl font-bold mt-1">{users.length}</h3>
+        </div>
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4">
+            <div className="w-3 h-3 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.5)]"></div>
+          </div>
+          <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
+            <Users size={20} />
+          </div>
+          <p className="text-stone-500 text-xs font-bold uppercase tracking-widest">Online Agora</p>
+          <h3 className="text-2xl font-bold mt-1">
+            {users.filter(u => u.lastActive && new Date().getTime() - new Date(u.lastActive).getTime() < 15 * 60 * 1000).length}
+          </h3>
         </div>
         <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm">
           <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl flex items-center justify-center mb-4">
@@ -307,11 +321,16 @@ export default function AdminPage() {
                   <tr key={user.id} className="hover:bg-stone-50/50 dark:hover:bg-zinc-800/30 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={user.avatar || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
-                          alt={user.name} 
-                          className="w-10 h-10 rounded-full border-2 border-emerald-500/20"
-                        />
+                        <div className="relative">
+                          <img 
+                            src={user.avatar || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+                            alt={user.name} 
+                            className="w-10 h-10 rounded-full border-2 border-emerald-500/20"
+                          />
+                          {user.lastActive && new Date().getTime() - new Date(user.lastActive).getTime() < 15 * 60 * 1000 && (
+                            <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-zinc-900 rounded-full"></div>
+                          )}
+                        </div>
                         <div>
                           <p className="text-sm font-bold text-stone-900 dark:text-zinc-100">{user.name}</p>
                           <p className="text-[10px] text-stone-400 uppercase tracking-widest">Desde {new Date(user.joinDate).toLocaleDateString()}</p>

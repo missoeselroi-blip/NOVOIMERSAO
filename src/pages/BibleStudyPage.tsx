@@ -323,7 +323,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const { balance, consumeCredits, estimateCredits } = useCredits();
   const { share } = useShare();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [activeTab, setActiveTab] = useState<string>('bibles');
+  const [activeTab, setActiveTab] = useState<string>('menu');
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const processedParams = useRef({ search: null, outline: null, tab: null });
   const [searchQuery, setSearchQuery] = useState('');
   const [result, setResult] = useState('');
@@ -336,11 +337,17 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [pendingSpeechText, setPendingSpeechText] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [loadingSource, setLoadingSource] = useState<string | null>(null);
-  const [selectedBible, setSelectedBible] = useState('');
+  const [selectedStudyBible, setSelectedStudyBible] = useState('');
+  const [selectedCommentary, setSelectedCommentary] = useState('');
+  const [selectedDictionary, setSelectedDictionary] = useState('');
+  const [selectedEncyclopedia, setSelectedEncyclopedia] = useState('');
+  const [selectedBible, setSelectedBible] = useState(''); // Keep for other tabs
+  const [selectedReligions, setSelectedReligions] = useState<string[]>([]);
+  const [selectedCompareVersions, setSelectedCompareVersions] = useState<string[]>(['Almeida']);
+  const [selectedMeaningSources, setSelectedMeaningSources] = useState<string[]>(['Dicionário Aurélio']);
   const [selectedAuthor, setSelectedAuthor] = useState('');
   const [authorSearchQuery, setAuthorSearchQuery] = useState('');
   const [selectedWork, setSelectedWork] = useState('');
-  const [compareVersion, setCompareVersion] = useState('Almeida');
   const [previousTab, setPreviousTab] = useState<string | null>(null);
   const [creationType, setCreationType] = useState<'lesson' | 'study' | 'outline' | 'devotional' | 'debate' | 'booklet' | 'message' | 'infographic' | 'slides_notebook' | 'kids_ministry' | 'audio' | 'questions' | 'ebook'>('lesson');
   const [messageType, setMessageType] = useState<'outline' | 'birthday' | 'wedding' | 'newyear' | 'graduation' | 'devotional' | 'funeral' | 'children'>('outline');
@@ -356,7 +363,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [questionsResultThought, setQuestionsResultThought] = useState('');
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[] | null>(null);
   const [isQuizOpen, setIsQuizOpen] = useState(false);
-  const [meaningSource, setMeaningSource] = useState('Dicionário Aurélio');
   const [meaningResult, setMeaningResult] = useState('');
   const [meaningResultThought, setMeaningResultThought] = useState('');
   const [meaningHistory, setMeaningHistory] = useState<any[]>([]);
@@ -411,7 +417,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
   // Apocryphal Books state
-  const [selectedApocrypha, setSelectedApocrypha] = useState<string>('Pesquisar em todos');
+  const [selectedApocryphaBooks, setSelectedApocryphaBooks] = useState<string[]>([]);
   const [apocryphaSearchQuery, setApocryphaSearchQuery] = useState('');
   const [apocryphaResult, setApocryphaResult] = useState('');
   const [apocryphaThought, setApocryphaThought] = useState('');
@@ -461,8 +467,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   }, [user, verseSearch, searchQuery, activeTab]);
 
   const handleApocryphaSearch = async () => {
-    if (!apocryphaSearchQuery && selectedApocrypha === 'Pesquisar em todos') {
-      showToast("Digite algo para pesquisar ou selecione um livro.", "info");
+    if (!apocryphaSearchQuery && selectedApocryphaBooks.length === 0) {
+      showToast("Digite algo para pesquisar ou selecione pelo menos um livro.", "info");
       return;
     }
 
@@ -471,10 +477,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     setApocryphaThought('');
 
     try {
-      const target = apocryphaSearchQuery || selectedApocrypha;
+      const booksStr = selectedApocryphaBooks.length > 0 ? selectedApocryphaBooks.join(', ') : 'Todos os livros apócrifos';
+      const target = apocryphaSearchQuery ? `Tema/Pesquisa: ${apocryphaSearchQuery} nos livros: ${booksStr}` : `Livros: ${booksStr}`;
       const prompt = `Forneça informações detalhadas sobre: ${target}. 
       Se for um livro apócrifo específico, inclua contexto histórico, conteúdo principal e por que é considerado apócrifo.
-      Se for uma palavra ou tema, pesquise como esse tema é abordado nos livros apócrifos (Católicos e do NT).
+      Se for uma palavra ou tema, pesquise como esse tema é abordado nos livros apócrifos (Católicos e do NT) selecionados.
       
       IMPORTANTE: 
       1. Inclua uma seção sobre divergências no cânon: como outras bíblias de estudo, comentários, dicionários, enciclopédias e autores divergem sobre a canonicidade deste conteúdo.
@@ -500,6 +507,18 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     } finally {
       setIsGeneratingApocrypha(false);
     }
+  };
+
+  const getSelectedSources = () => {
+    const sources = [];
+    if (selectedStudyBible) sources.push(selectedStudyBible);
+    if (selectedCommentary) sources.push(selectedCommentary);
+    if (selectedDictionary) sources.push(selectedDictionary);
+    if (selectedEncyclopedia) sources.push(selectedEncyclopedia);
+    
+    if (sources.length === 0) return 'Todos os Recursos';
+    if (sources.length === 1) return sources[0];
+    return sources.join(', ');
   };
 
   const handleNavigateChapter = (direction: 'prev' | 'next') => {
@@ -550,7 +569,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     const nextRef = `${nextBook} ${nextChapter}`;
     setSearchQuery(nextRef);
     setSearchParams({ search: nextRef, tab: 'bibles' });
-    handleSearch(selectedBible, nextRef);
+    handleSearch(getSelectedSources(), nextRef);
   };
 
   const handleToggleFavorite = async () => {
@@ -561,7 +580,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
     const reference = activeTab === 'verse-search' ? verseSearch : searchQuery;
     const content = activeTab === 'verse-search' ? verseContent : result;
-    const version = activeTab === 'verse-search' ? 'ACF/NVI' : (selectedBible || 'Imersão');
+    const version = activeTab === 'verse-search' ? 'ACF/NVI' : (activeTab === 'bibles' ? getSelectedSources() : (selectedBible || 'Imersão'));
 
     if (!reference || !content) return;
 
@@ -2219,7 +2238,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       let systemInstruction = "Você é um especialista em teologia, linguística e história bíblica.";
       let prompt = "";
 
-      if (meaningSource.includes('Gemini') || meaningSource.includes('ChatGPT') || meaningSource.includes('IA')) {
+      const sourcesStr = selectedMeaningSources.length > 0 ? selectedMeaningSources.join(', ') : 'Dicionário Aurélio';
+      const isAI = selectedMeaningSources.some(s => s.includes('Gemini') || s.includes('ChatGPT') || s.includes('IA'));
+
+      if (isAI) {
         systemInstruction = `Você é uma IA avançada especializada em estudos bíblicos e teologia. 
         Sua tarefa é fornecer respostas detalhadas, contextuais e profundamente fundamentadas.
         
@@ -2232,9 +2254,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
         prompt = isFollowUp 
           ? `Pergunta de acompanhamento: "${query}"`
-          : `Explique detalhadamente o significado, contexto e implicações de: "${query}"`;
+          : `Explique detalhadamente o significado, contexto e implicações de: "${query}" utilizando as seguintes fontes: ${sourcesStr}`;
       } else {
-        prompt = `Forneça a definição e o significado de "${query}" de acordo com o padrão do ${meaningSource}. Inclua etimologia e exemplos se possível.`;
+        prompt = `Forneça a definição e o significado de "${query}" de acordo com o padrão das seguintes fontes: ${sourcesStr}. Inclua etimologia e exemplos se possível.`;
       }
 
       const response = await geminiService.chat(prompt, meaningHistory, systemInstruction, deepThinking);
@@ -2317,7 +2339,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         responseText = response.text;
         responseThought = response.thought;
       } else if (currentTab === 'compare') {
-        const response = await geminiService.generateTextWithThought(`Compare o texto bíblico "${query}" na versão NVI (Nova Versão Internacional em Português) com a versão ${compareVersion}. Apresente o texto de ambas as versões e explique as nuances de tradução. Se a versão comparada for estrangeira (como KJV), apresente o texto original e sua tradução.`, undefined, deepThinking);
+        const versionsStr = selectedCompareVersions.length > 0 ? selectedCompareVersions.join(', ') : 'Almeida';
+        const response = await geminiService.generateTextWithThought(`Compare o texto bíblico "${query}" na versão NVI (Nova Versão Internacional em Português) com as seguintes versões: ${versionsStr}. Apresente o texto de todas as versões e explique as nuances de tradução. Se alguma versão comparada for estrangeira (como KJV), apresente o texto original e sua tradução.`, undefined, deepThinking);
         responseText = response.text;
         responseThought = response.thought;
       } else if (searchSource) {
@@ -2369,6 +2392,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           prompt += `Forneça um estudo bíblico exaustivo e completo sobre a passagem ou tema: ${query || 'Geral'}. 
           Sua pesquisa deve integrar informações de todas as fontes disponíveis: Bíblias de Estudo, Comentários, Dicionários e Enciclopédias. 
           Seja o mais detalhado possível.`;
+        } else if (searchSource.includes(',')) {
+          prompt += `Forneça um estudo bíblico detalhado sobre a passagem ou tema: ${query || 'Geral'}. 
+          Sua pesquisa deve integrar informações das seguintes fontes selecionadas: ${searchSource}.
+          Apresente as diferentes nuances teológicas encontradas nessas fontes.`;
         } else if (searchSource.includes('A Mensagem')) {
           prompt += `Forneça o comentário e a perspectiva da "Bíblia de Estudo A Mensagem" (Eugene H. Peterson) para a passagem ou tema: ${query || 'Geral'}. Se não houver uma passagem específica, explique a visão de Peterson sobre o tema.`;
         } else if (searchSource.includes('Shedd')) {
@@ -3123,6 +3150,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "Enciclopédia Torá Interpretada - Rabino Samson Raphael Hirsch"
   ];
 
+  const biblesList = studyBibles.filter(b => !b.startsWith("Comentário") && !b.startsWith("Dicionário") && !b.startsWith("Enciclopédia") && !b.startsWith("Concordância"));
+  const commentariesList = studyBibles.filter(b => b.startsWith("Comentário"));
+  const dictionariesList = studyBibles.filter(b => b.startsWith("Dicionário") || b.startsWith("Concordância"));
+  const encyclopediasList = studyBibles.filter(b => b.startsWith("Enciclopédia"));
+
   const otherReligionsBooks = [
     "Alcorão (Islamismo)",
     "Livro de Mórmon (Mórmons)",
@@ -3206,7 +3238,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   };
 
   return (
-    <div className="space-y-8">
+    <div className={cn(
+      "space-y-8 transition-all duration-300",
+      isFullscreen ? "fixed inset-0 z-50 bg-stone-50 dark:bg-zinc-950 overflow-y-auto p-4 md:p-8" : ""
+    )}>
       <SearchLoadingOverlay 
         isVisible={isLoading || isSearchingVerse || isGeneratingMeaning || isGeneratingKids || isGeneratingStoriesTheater || isGeneratingMusic || isGeneratingLyrics || isGeneratingNarration || isGeneratingCommentary || isGeneratingCommentaryDebate} 
         message={isLoading ? "Pesquisando..." : "Processando..."} 
@@ -3491,54 +3526,76 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         </div>
       )}
 
-      {!isReadingMode && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-6 border-b border-stone-100 dark:border-zinc-800">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => {
-                setActiveTab(tab.id);
-                scrollToSearch();
-                setResult('');
-                setSlidesResult('');
-                setDebateResult('');
-                setSelectedBible('');
-                setSearchQuery('');
-                setNotebookSearchQuery('');
-              }}
-              className={cn(
-                "flex flex-col items-center justify-center gap-3 p-4 rounded-2xl text-xs font-bold transition-all border",
-                activeTab === tab.id 
-                  ? "bg-emerald-600 border-emerald-500 text-white shadow-lg shadow-emerald-600/20 scale-105" 
-                  : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-500 hover:bg-stone-50 dark:hover:bg-zinc-800 hover:border-emerald-200 dark:hover:border-emerald-900/50"
-              )}
-            >
-              <div className={cn(
-                "p-2 rounded-xl",
-                activeTab === tab.id ? "bg-white/20" : "bg-stone-100 dark:bg-zinc-800 text-emerald-600"
-              )}>
-                {tab.icon}
-              </div>
-              <span className="text-center">{tab.label}</span>
-            </button>
-          ))}
+      {activeTab === 'menu' && !isReadingMode && (
+        <div className="bg-stone-200/50 dark:bg-zinc-900/80 p-6 md:p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-inner">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 pb-6">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  scrollToSearch();
+                  setResult('');
+                  setSlidesResult('');
+                  setDebateResult('');
+                  setSelectedBible('');
+                  setSearchQuery('');
+                  setNotebookSearchQuery('');
+                }}
+                className="flex flex-col items-center justify-center gap-3 p-6 rounded-2xl text-sm font-bold transition-all border bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-300 hover:bg-stone-50 dark:hover:bg-zinc-800 hover:border-emerald-200 dark:hover:border-emerald-900/50 hover:scale-105 shadow-sm"
+              >
+                <div className="p-3 rounded-xl bg-stone-100 dark:bg-zinc-800 text-emerald-600">
+                  {tab.icon}
+                </div>
+                <span className="text-center">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab !== 'menu' && !isReadingMode && (
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-stone-100 dark:border-zinc-800">
+          <button
+            onClick={() => {
+              setActiveTab('menu');
+              setIsFullscreen(false);
+            }}
+            className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+          >
+            <ArrowLeft size={18} />
+            Voltar ao Menu
+          </button>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-stone-800 dark:text-stone-200 hidden sm:block">
+              {tabs.find(t => t.id === activeTab)?.label}
+            </h2>
+          </div>
+          <button
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+          >
+            <Layout size={18} />
+            <span className="hidden sm:inline">{isFullscreen ? 'Minimizar' : 'Maximizar'}</span>
+          </button>
         </div>
       )}
 
       {/* Content Area */}
-      <div 
-        ref={searchInputRef} 
-        className={cn("min-h-[400px]", isReadingMode && "max-w-3xl mx-auto")}
-        style={isReadingMode ? { fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight } : {}}
-      >
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={activeTab}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="space-y-6"
-          >
+      {activeTab !== 'menu' && (
+        <div 
+          ref={searchInputRef} 
+          className={cn("min-h-[400px]", isReadingMode && "max-w-3xl mx-auto")}
+          style={isReadingMode ? { fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight } : {}}
+        >
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="space-y-6"
+            >
             {activeTab === 'verse-search' && (
               <div className="space-y-6">
                 <div className="flex flex-col md:flex-row gap-4">
@@ -3648,51 +3705,85 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
             {activeTab === 'bibles' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-[2]">
-                    <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+                <div className="flex flex-col gap-4">
+                  <div className="relative w-full">
+                    <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400" size={24} />
                     <input
                       type="text"
-                      placeholder="⚓ Escreva um tema ou passagem neste campo e clique nos botões. O texto vai aparecer abaixo na página"
+                      placeholder="⚓ Escreva um tema ou passagem neste campo e clique em Pesquisar..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-sm"
+                      className="w-full pl-14 pr-4 py-5 bg-emerald-50/50 dark:bg-emerald-900/10 border-2 border-emerald-400 dark:border-emerald-600 rounded-2xl focus:ring-4 focus:ring-emerald-500/20 outline-none text-base md:text-lg font-medium text-stone-800 dark:text-zinc-100 placeholder-emerald-700/50 dark:placeholder-emerald-300/50 shadow-lg shadow-emerald-500/10 transition-all"
                     />
                   </div>
-                  <div className="flex-1 flex flex-col sm:flex-row gap-2">
-                      <select 
-                        value={selectedBible}
-                        onChange={(e) => setSelectedBible(e.target.value)}
-                        className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                      >
-                        <option value="">Selecione a Bíblia...</option>
-                        <option value="Todos os Recursos">TODOS OS RECURSOS</option>
-                        <option value="Todas as Bíblias">Todas as Bíblias</option>
-                        <option value="Todos os Comentários">Todos os Comentários</option>
-                        <option value="Todos os Dicionários">Todos os Dicionários</option>
-                        <option value="Todas as Enciclopédias">Todas as Enciclopédias</option>
-                        {studyBibles.map(bible => (
-                          <option key={bible} value={bible}>{bible}</option>
-                        ))}
-                      </select>
-                    <button
-                      onClick={() => handleSearch(selectedBible)}
-                      disabled={isLoading || !selectedBible}
-                      className="px-6 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+                    <select 
+                      value={selectedStudyBible}
+                      onChange={(e) => setSelectedStudyBible(e.target.value)}
+                      className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
                     >
-                      {isLoading && loadingSource === selectedBible ? (
-                        <>
-                          <BookOpen className="animate-pulse" size={18} />
-                          Aguarde...
-                        </>
-                      ) : (
-                        <>
-                          <Search size={18} />
-                          ⚓ Pesquisar
-                        </>
-                      )}
-                    </button>
+                      <option value="">Selecione a Bíblia de Estudo</option>
+                      <option value="Todas as Bíblias">Todos(as)...</option>
+                      {biblesList.map(bible => (
+                        <option key={bible} value={bible}>{bible}</option>
+                      ))}
+                    </select>
+
+                    <select 
+                      value={selectedCommentary}
+                      onChange={(e) => setSelectedCommentary(e.target.value)}
+                      className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
+                    >
+                      <option value="">Selecione o Comentário Bíblico</option>
+                      <option value="Todos os Comentários">Todos(as)...</option>
+                      {commentariesList.map(commentary => (
+                        <option key={commentary} value={commentary}>{commentary}</option>
+                      ))}
+                    </select>
+
+                    <select 
+                      value={selectedDictionary}
+                      onChange={(e) => setSelectedDictionary(e.target.value)}
+                      className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
+                    >
+                      <option value="">Selecione o Dicionário Bíblico</option>
+                      <option value="Todos os Dicionários">Todos(as)...</option>
+                      {dictionariesList.map(dictionary => (
+                        <option key={dictionary} value={dictionary}>{dictionary}</option>
+                      ))}
+                    </select>
+
+                    <select 
+                      value={selectedEncyclopedia}
+                      onChange={(e) => setSelectedEncyclopedia(e.target.value)}
+                      className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
+                    >
+                      <option value="">Selecione a Enciclopédia Bíblica</option>
+                      <option value="Todas as Enciclopédias">Todos(as)...</option>
+                      {encyclopediasList.map(encyclopedia => (
+                        <option key={encyclopedia} value={encyclopedia}>{encyclopedia}</option>
+                      ))}
+                    </select>
                   </div>
+
+                  <button
+                    onClick={() => handleSearch(getSelectedSources())}
+                    disabled={isLoading}
+                    className="w-full py-4 bg-emerald-600 text-white font-bold text-lg rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all shadow-lg shadow-emerald-600/20"
+                  >
+                    {isLoading ? (
+                      <>
+                        <BookOpen className="animate-pulse" size={24} />
+                        Aguarde...
+                      </>
+                    ) : (
+                      <>
+                        <Search size={24} />
+                        ⚓ Pesquisar
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 {result && (
@@ -3795,7 +3886,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         Compartilhar
                       </button>
                       <button
-                        onClick={() => handleSaveToNotebook(selectedBible || 'Imersão', result)}
+                        onClick={() => handleSaveToNotebook(getSelectedSources(), result)}
                         className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2"
                       >
                         <Save size={18} />
@@ -3827,7 +3918,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                               onClick={() => {
                                 const term = resource.url.replace('search:', '');
                                 setSearchQuery(term);
-                                handleSearch(selectedBible, term);
+                                handleSearch(getSelectedSources(), term);
                               }}
                               className="flex items-start gap-3 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-stone-200 dark:border-zinc-800 hover:border-emerald-500 transition-all text-left group"
                             >
@@ -3988,8 +4079,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
             {activeTab === 'religions' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-[2]">
+                <div className="flex flex-col gap-4">
+                  <div className="relative">
                     <Pencil className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
                     <input
                       type="text"
@@ -3999,35 +4090,47 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs md:text-sm"
                     />
                   </div>
-                  <div className="flex-1 flex flex-col sm:flex-row gap-2">
-                    <select 
-                      value={selectedBible}
-                      onChange={(e) => setSelectedBible(e.target.value)}
-                      className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                    >
-                      <option value="">Selecione o Livro...</option>
+                  
+                  <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                    <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Selecione as Religiões/Livros</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                       {otherReligionsBooks.map(book => (
-                        <option key={book} value={book}>{book}</option>
+                        <label key={book} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={selectedReligions.includes(book)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedReligions([...selectedReligions, book]);
+                              } else {
+                                setSelectedReligions(selectedReligions.filter(r => r !== book));
+                              }
+                            }}
+                            className="w-4 h-4 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500"
+                          />
+                          <span className="text-sm text-stone-700 dark:text-stone-300">{book}</span>
+                        </label>
                       ))}
-                    </select>
-                    <button
-                      onClick={() => handleSearch(selectedBible)}
-                      disabled={isLoading || !selectedBible}
-                      className="px-6 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-                    >
-                      {isLoading && loadingSource === selectedBible ? (
-                        <>
-                          <BookOpen className="animate-pulse" size={18} />
-                          Aguarde...
-                        </>
-                      ) : (
-                        <>
-                          <Search size={18} />
-                          ⚓ Pesquisar
-                        </>
-                      )}
-                    </button>
+                    </div>
                   </div>
+
+                  <button
+                    onClick={() => handleSearch(selectedReligions.join(', '))}
+                    disabled={isLoading || selectedReligions.length === 0}
+                    className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                  >
+                    {isLoading ? (
+                      <>
+                        <BookOpen className="animate-pulse" size={18} />
+                        Aguarde...
+                      </>
+                    ) : (
+                      <>
+                        <Search size={18} />
+                        ⚓ Pesquisar
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 {result && (
@@ -4085,8 +4188,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             {activeTab === 'creation-tool' && (
               <div className="space-y-8">
                 <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-[2]">
+                  <div className="flex flex-col gap-4">
+                    <div className="relative">
                       <input
                         type="text"
                         placeholder="⚓ Digite o tema (ex: A Graça de Deus)"
@@ -4095,93 +4198,144 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         className="w-full pl-6 pr-6 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
                       />
                     </div>
-                    <div className="flex-1 flex flex-col sm:flex-row gap-2">
-                      <select 
-                        value={creationType}
-                        onChange={(e) => setCreationType(e.target.value as any)}
-                        className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                      >
-                        <option value="lesson">Gerar Lição Célula</option>
-                        <option value="study">Gerar Estudo Bíblico</option>
-                        <option value="outline">Gerar Esboço Pregação</option>
-                        <option value="devotional">Gerar Devocional</option>
-                        <option value="booklet">Gerar Apostila</option>
-                        <option value="ebook">Gerar E-book</option>
-                        <option value="message">Gerar Mensagem</option>
-                        <option value="questions">Gerar Perguntas Bíblicas</option>
-                      </select>
+                    
+                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Selecione o Tipo de Criação</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {[
+                          { value: 'lesson', label: 'Lição Célula' },
+                          { value: 'study', label: 'Estudo Bíblico' },
+                          { value: 'outline', label: 'Esboço Pregação' },
+                          { value: 'devotional', label: 'Devocional' },
+                          { value: 'booklet', label: 'Apostila' },
+                          { value: 'ebook', label: 'E-book' },
+                          { value: 'message', label: 'Mensagem' },
+                          { value: 'questions', label: 'Perguntas Bíblicas' }
+                        ].map(type => (
+                          <label key={type.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                            <input
+                              type="radio"
+                              name="creationType"
+                              value={type.value}
+                              checked={creationType === type.value}
+                              onChange={(e) => setCreationType(e.target.value as any)}
+                              className="w-4 h-4 text-emerald-600 border-stone-300 focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-stone-700 dark:text-stone-300">{type.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-4">
                       {creationType === 'message' && (
-                        <select 
-                          value={messageType}
-                          onChange={(e) => setMessageType(e.target.value as any)}
-                          className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                        >
-                          <option value="outline">Pregação</option>
-                          <option value="birthday">Mensagem de Aniversário</option>
-                          <option value="wedding">Mensagem de Casamento</option>
-                          <option value="newyear">Mensagem Fim do ano</option>
-                          <option value="graduation">Mensagem Formatura</option>
-                          <option value="devotional">Mensagem Devocional</option>
-                          <option value="funeral">Mensagem Velório</option>
-                          <option value="children">Mensagem Infantil</option>
-                        </select>
+                        <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                          <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Tipo de Mensagem</h4>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                            {[
+                              { value: 'outline', label: 'Pregação' },
+                              { value: 'birthday', label: 'Mensagem de Aniversário' },
+                              { value: 'wedding', label: 'Mensagem de Casamento' },
+                              { value: 'newyear', label: 'Mensagem Fim do ano' },
+                              { value: 'graduation', label: 'Mensagem Formatura' },
+                              { value: 'devotional', label: 'Mensagem Devocional' },
+                              { value: 'funeral', label: 'Mensagem Velório' },
+                              { value: 'children', label: 'Mensagem Infantil' }
+                            ].map(type => (
+                              <label key={type.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                                <input
+                                  type="radio"
+                                  name="messageType"
+                                  value={type.value}
+                                  checked={messageType === type.value}
+                                  onChange={(e) => setMessageType(e.target.value as any)}
+                                  className="w-4 h-4 text-emerald-600 border-stone-300 focus:ring-emerald-500"
+                                />
+                                <span className="text-sm text-stone-700 dark:text-stone-300">{type.label}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
                       )}
                       {creationType === 'questions' && (
-                        <>
-                          <select 
-                            value={questionsScope}
-                            onChange={(e) => setQuestionsScope(e.target.value)}
-                            className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                          >
-                            <option value="Toda a Bíblia">Toda a Bíblia</option>
-                            <option value="Velho Testamento">Velho Testamento</option>
-                            <option value="Novo Testamento">Novo Testamento</option>
-                            <option value="Livro Específico">Livro Específico</option>
-                          </select>
+                        <div className="flex flex-col gap-4">
+                          <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                            <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Escopo</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                              {['Toda a Bíblia', 'Velho Testamento', 'Novo Testamento', 'Livro Específico'].map(scope => (
+                                <label key={scope} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                                  <input
+                                    type="radio"
+                                    name="questionsScope"
+                                    value={scope}
+                                    checked={questionsScope === scope}
+                                    onChange={(e) => setQuestionsScope(e.target.value)}
+                                    className="w-4 h-4 text-emerald-600 border-stone-300 focus:ring-emerald-500"
+                                  />
+                                  <span className="text-sm text-stone-700 dark:text-stone-300">{scope}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
                           {questionsScope === 'Livro Específico' && (
                             <input
                               type="text"
                               placeholder="Qual livro?"
                               value={questionsBook}
                               onChange={(e) => setQuestionsBook(e.target.value)}
-                              className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
+                              className="w-full px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
                             />
                           )}
-                          <select 
-                            value={questionsAgeGroup}
-                            onChange={(e) => setQuestionsAgeGroup(e.target.value)}
-                            className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                          >
-                            <option value="Crianças">Crianças</option>
-                            <option value="Juniores">Juniores</option>
-                            <option value="Adolescentes">Adolescentes</option>
-                            <option value="Jovens">Jovens</option>
-                            <option value="Adultos">Adultos</option>
-                            <option value="Líderes">Líderes</option>
-                            <option value="Teólogos">Teólogos</option>
-                          </select>
-                          <select 
-                            value={questionsCount}
-                            onChange={(e) => setQuestionsCount(Number(e.target.value))}
-                            className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                          >
-                            <option value={10}>10 Perguntas</option>
-                            <option value={20}>20 Perguntas</option>
-                            <option value={30}>30 Perguntas</option>
-                            <option value={40}>40 Perguntas</option>
-                            <option value={50}>50 Perguntas</option>
-                          </select>
-                        </>
+                          <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                            <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Faixa Etária</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                              {['Crianças', 'Juniores', 'Adolescentes', 'Jovens', 'Adultos', 'Líderes', 'Teólogos'].map(age => (
+                                <label key={age} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                                  <input
+                                    type="radio"
+                                    name="questionsAgeGroup"
+                                    value={age}
+                                    checked={questionsAgeGroup === age}
+                                    onChange={(e) => setQuestionsAgeGroup(e.target.value)}
+                                    className="w-4 h-4 text-emerald-600 border-stone-300 focus:ring-emerald-500"
+                                  />
+                                  <span className="text-sm text-stone-700 dark:text-stone-300">{age}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                          <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                            <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Quantidade</h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                              {[10, 20, 30, 40, 50].map(count => (
+                                <label key={count} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                                  <input
+                                    type="radio"
+                                    name="questionsCount"
+                                    value={count}
+                                    checked={questionsCount === count}
+                                    onChange={(e) => setQuestionsCount(Number(e.target.value))}
+                                    className="w-4 h-4 text-emerald-600 border-stone-300 focus:ring-emerald-500"
+                                  />
+                                  <span className="text-sm text-stone-700 dark:text-stone-300">{count}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
                       )}
-                      <button
-                        onClick={handleUnifiedCreation}
-                        disabled={isLoading || !topic}
-                        className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
-                      >
-                        {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
-                        ⚓ Gerar
-                        <CreditCostBadge cost={estimateCredits(creationType)} />
-                      </button>
+                      
+                      <div className="flex justify-end mt-4">
+                        <button
+                          onClick={handleUnifiedCreation}
+                          disabled={isLoading || !topic}
+                          className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-all"
+                        >
+                          {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Sparkles size={20} />}
+                          ⚓ Gerar
+                          <CreditCostBadge cost={estimateCredits(creationType)} />
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4 flex items-center justify-between bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
@@ -4752,8 +4906,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                    <div className="md:col-span-3">
+                  <div className="grid grid-cols-1 gap-6 mb-8">
+                    <div>
                       <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-2 ml-1">
                         Tema para Estórias & Teatro
                       </label>
@@ -4766,42 +4920,58 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       />
                     </div>
 
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-2 ml-1">
-                        Faixa Etária
-                      </label>
-                      <select
-                        value={storiesTheaterAgeGroup}
-                        onChange={(e) => setStoriesTheaterAgeGroup(e.target.value)}
-                        className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none font-bold"
-                      >
-                        <option value="Maternal até 3 anos">Maternal (até 3 anos)</option>
-                        <option value="Primário 4 a 5 anos">Primário (4 a 5 anos)</option>
-                        <option value="Juniores 6 a 9 anos">Juniores (6 a 9 anos)</option>
-                        <option value="Pré-adolescentes 10 a 12 anos">Pré-adolescentes (10 a 12 anos)</option>
-                        <option value="Adolescentes 13 a 17 anos">Adolescentes (13-17 anos)</option>
-                        <option value="Jovens 18 a 28 anos">Jovens (18-28 anos)</option>
-                        <option value="Adultos 29 a 59 anos">Adultos (29-59 anos)</option>
-                        <option value="Idosos 60 a 120 anos">Idosos (60-120 anos)</option>
-                      </select>
+                    <div className="bg-stone-50 dark:bg-zinc-800 p-4 rounded-2xl border border-stone-200 dark:border-zinc-700">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Faixa Etária</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {[
+                          { value: 'Maternal até 3 anos', label: 'Maternal (até 3 anos)' },
+                          { value: 'Primário 4 a 5 anos', label: 'Primário (4 a 5 anos)' },
+                          { value: 'Juniores 6 a 9 anos', label: 'Juniores (6 a 9 anos)' },
+                          { value: 'Pré-adolescentes 10 a 12 anos', label: 'Pré-adolescentes (10 a 12 anos)' },
+                          { value: 'Adolescentes 13 a 17 anos', label: 'Adolescentes (13-17 anos)' },
+                          { value: 'Jovens 18 a 28 anos', label: 'Jovens (18-28 anos)' },
+                          { value: 'Adultos 29 a 59 anos', label: 'Adultos (29-59 anos)' },
+                          { value: 'Idosos 60 a 120 anos', label: 'Idosos (60-120 anos)' }
+                        ].map(age => (
+                          <label key={age.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white dark:hover:bg-zinc-900 cursor-pointer transition-colors">
+                            <input
+                              type="radio"
+                              name="storiesTheaterAgeGroup"
+                              value={age.value}
+                              checked={storiesTheaterAgeGroup === age.value}
+                              onChange={(e) => setStoriesTheaterAgeGroup(e.target.value)}
+                              className="w-4 h-4 text-rose-600 border-stone-300 focus:ring-rose-500"
+                            />
+                            <span className="text-sm text-stone-700 dark:text-stone-300">{age.label}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="md:col-span-1">
-                      <label className="block text-sm font-bold text-stone-700 dark:text-zinc-300 mb-2 ml-1">
-                        O que deseja gerar?
-                      </label>
-                      <select
-                        value={storiesTheaterType}
-                        onChange={(e) => setStoriesTheaterType(e.target.value)}
-                        className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-rose-500 outline-none font-bold"
-                      >
-                        <option value="theater">Gerar Teatro</option>
-                        <option value="stories">Gerar Estórias</option>
-                        <option value="bibleStory">Gerar História Bíblica</option>
-                      </select>
+                    <div className="bg-stone-50 dark:bg-zinc-800 p-4 rounded-2xl border border-stone-200 dark:border-zinc-700">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">O que deseja gerar?</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {[
+                          { value: 'theater', label: 'Gerar Teatro' },
+                          { value: 'stories', label: 'Gerar Estórias' },
+                          { value: 'bibleStory', label: 'Gerar História Bíblica' }
+                        ].map(type => (
+                          <label key={type.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-white dark:hover:bg-zinc-900 cursor-pointer transition-colors">
+                            <input
+                              type="radio"
+                              name="storiesTheaterType"
+                              value={type.value}
+                              checked={storiesTheaterType === type.value}
+                              onChange={(e) => setStoriesTheaterType(e.target.value)}
+                              className="w-4 h-4 text-rose-600 border-stone-300 focus:ring-rose-500"
+                            />
+                            <span className="text-sm text-stone-700 dark:text-stone-300">{type.label}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="md:col-span-1 flex items-end">
+                    <div className="flex justify-end">
                       <button
                         onClick={handleGenerateStoriesTheater}
                         disabled={isGeneratingStoriesTheater || !storiesTheaterTopic}
@@ -5020,8 +5190,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             {activeTab === 'kids_ministry' && (
               <div className="space-y-8">
                 <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm">
-                  <div className="flex flex-col md:flex-row gap-4">
-                    <div className="relative flex-[2]">
+                  <div className="flex flex-col gap-4">
+                    <div className="relative">
                       <input
                         type="text"
                         placeholder="⚓ Digite o tema para o Ministério Infantil (ex: A Arca de Noé)"
@@ -5030,30 +5200,53 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         className="w-full pl-6 pr-6 py-4 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none"
                       />
                     </div>
-                    <div className="flex-1 flex flex-col sm:flex-row gap-2">
-                      <select 
-                        value={kidsAgeGroup}
-                        onChange={(e) => setKidsAgeGroup(e.target.value)}
-                        className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                      >
-                        <option value="Maternal até 3 anos">Maternal (até 3 anos)</option>
-                        <option value="Primário 4 a 5 anos">Primário (4 a 5 anos)</option>
-                        <option value="Juniores 6 a 9 anos">Juniores (6 a 9 anos)</option>
-                        <option value="Pré-adolescentes 10 a 12 anos">Pré-adolescentes (10 a 12 anos)</option>
-                      </select>
-                      <select 
-                        value={kidsContentType}
-                        onChange={(e) => setKidsContentType(e.target.value)}
-                        className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                      >
-                        <option value="Lição EBD">Lição EBD</option>
-                        <option value="Célula Infantil">Célula Infantil</option>
-                        <option value="Culto Infantil">Culto Infantil</option>
-                        <option value="Culto Doméstico">Culto Doméstico</option>
-                        <option value="Evangelismo">Evangelismo</option>
-                        <option value="História Bíblica">História Bíblica</option>
-                        <option value="Hora de Dormir">Hora de Dormir</option>
-                      </select>
+                    
+                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Faixa Etária</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {[
+                          { value: 'Maternal até 3 anos', label: 'Maternal (até 3 anos)' },
+                          { value: 'Primário 4 a 5 anos', label: 'Primário (4 a 5 anos)' },
+                          { value: 'Juniores 6 a 9 anos', label: 'Juniores (6 a 9 anos)' },
+                          { value: 'Pré-adolescentes 10 a 12 anos', label: 'Pré-adolescentes (10 a 12 anos)' }
+                        ].map(age => (
+                          <label key={age.value} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                            <input
+                              type="radio"
+                              name="kidsAgeGroup"
+                              value={age.value}
+                              checked={kidsAgeGroup === age.value}
+                              onChange={(e) => setKidsAgeGroup(e.target.value)}
+                              className="w-4 h-4 text-emerald-600 border-stone-300 focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-stone-700 dark:text-stone-300">{age.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                      <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Tipo de Conteúdo</h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+                        {[
+                          'Lição EBD', 'Célula Infantil', 'Culto Infantil', 'Culto Doméstico', 'Evangelismo', 'História Bíblica', 'Hora de Dormir'
+                        ].map(type => (
+                          <label key={type} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                            <input
+                              type="radio"
+                              name="kidsContentType"
+                              value={type}
+                              checked={kidsContentType === type}
+                              onChange={(e) => setKidsContentType(e.target.value)}
+                              className="w-4 h-4 text-emerald-600 border-stone-300 focus:ring-emerald-500"
+                            />
+                            <span className="text-sm text-stone-700 dark:text-stone-300">{type}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="flex justify-end mt-2">
                       <button
                         onClick={handleGenerateKidsMinistry}
                         disabled={isGeneratingKids || !topic}
@@ -5489,30 +5682,33 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </div>
                     </div>
                     {activeTab === 'compare' && (
-                      <select 
-                        value={compareVersion}
-                        onChange={(e) => setCompareVersion(e.target.value)}
-                        className="px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none"
-                      >
-                        <option value="Almeida Revista e Corrigida">Almeida Revista e Corrigida</option>
-                        <option value="Almeida Revista Atualizada">Almeida Revista Atualizada</option>
-                        <option value="Almeida Corrigida Fiel">Almeida Corrigida Fiel</option>
-                        <option value="Almeida século 21">Almeida século 21</option>
-                        <option value="NAA">Nova Almeida Atualizada</option>
-                        <option value="Nova Versão Transformadora">Nova Versão Transformadora</option>
-                        <option value="Nova Versão Internacional">Nova Versão Internacional</option>
-                        <option value="Nova Vida">Nova Vida</option>
-                        <option value="Tradução Brasileira">Tradução Brasileira</option>
-                        <option value="Bíblia Viva">Bíblia Viva</option>
-                        <option value="Bíblia de Jerusalém">Bíblia de Jerusalém</option>
-                        <option value="Bíblia Pastoral">Bíblia Pastoral</option>
-                        <option value="Bíblia da CNBB">Bíblia da CNBB</option>
-                        <option value="KJV">King James Version (EN)</option>
-                        <option value="RVR1960">Reina Valera 1960 (ES)</option>
-                        <option value="Vulgata">Vulgata Latina</option>
-                        <option value="VT Hebraico">VT Hebraico</option>
-                        <option value="NT Grego">NT Grego</option>
-                      </select>
+                      <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                        <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Selecione as Versões para Comparar</h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                          {[
+                            'Almeida Revista e Corrigida', 'Almeida Revista Atualizada', 'Almeida Corrigida Fiel', 'Almeida século 21',
+                            'Nova Almeida Atualizada', 'Nova Versão Transformadora', 'Nova Versão Internacional', 'Nova Vida',
+                            'Tradução Brasileira', 'Bíblia Viva', 'Bíblia de Jerusalém', 'Bíblia Pastoral', 'Bíblia da CNBB',
+                            'King James Version (EN)', 'Reina Valera 1960 (ES)', 'Vulgata Latina', 'VT Hebraico', 'NT Grego'
+                          ].map(version => (
+                            <label key={version} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selectedCompareVersions.includes(version)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedCompareVersions([...selectedCompareVersions, version]);
+                                  } else {
+                                    setSelectedCompareVersions(selectedCompareVersions.filter(v => v !== version));
+                                  }
+                                }}
+                                className="w-4 h-4 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500"
+                              />
+                              <span className="text-sm text-stone-700 dark:text-stone-300 truncate" title={version}>{version}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
                   <button
@@ -6164,8 +6360,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
             {activeTab === 'meaning' && (
               <div className="space-y-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="relative flex-[2]">
+                <div className="flex flex-col gap-4">
+                  <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
                     <input
                       type="text"
@@ -6179,33 +6375,42 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <AudioSearchButton onResult={(text) => { setSearchQuery(text); handleMeaningSearch(false); }} />
                     </div>
                   </div>
-                  <div className="flex-1 flex flex-col sm:flex-row gap-2">
-                    <select 
-                      value={meaningSource}
-                      onChange={(e) => setMeaningSource(e.target.value)}
-                      className="flex-1 px-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none text-sm"
-                    >
-                      <option value="Dicionário Aurélio">Dicionário Aurélio</option>
-                      <option value="Dicionário Houaiss">Dicionário Houaiss</option>
-                      <option value="Dicionário Michaelis">Dicionário Michaelis</option>
-                      <option value="Português-Hebraico">Português-Hebraico</option>
-                      <option value="Hebraico-Português">Hebraico-Português</option>
-                      <option value="Português-Grego">Português-Grego</option>
-                      <option value="Grego-Português">Grego-Português</option>
-                      <option value="Pergunte ao Gemini">Pergunte ao Gemini</option>
-                      <option value="Pergunte ao ChatGPT">Pergunte ao ChatGPT</option>
-                      <option value="Pergunte ao Claude IA">Pergunte ao Claude IA</option>
-                      <option value="Pergunte ao Llama IA">Pergunte ao Llama IA</option>
-                    </select>
-                    <button
-                      onClick={() => handleMeaningSearch(false)}
-                      disabled={isLoading || !searchQuery}
-                      className="px-8 py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
-                      ⚓ Pesquisar
-                    </button>
+
+                  <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                    <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Selecione as Fontes de Significado</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
+                      {[
+                        'Dicionário Aurélio', 'Dicionário Houaiss', 'Dicionário Michaelis',
+                        'Português-Hebraico', 'Hebraico-Português', 'Português-Grego', 'Grego-Português',
+                        'Pergunte ao Gemini', 'Pergunte ao ChatGPT', 'Pergunte ao Claude IA', 'Pergunte ao Llama IA'
+                      ].map(source => (
+                        <label key={source} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={selectedMeaningSources.includes(source)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedMeaningSources([...selectedMeaningSources, source]);
+                              } else {
+                                setSelectedMeaningSources(selectedMeaningSources.filter(s => s !== source));
+                              }
+                            }}
+                            className="w-4 h-4 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500"
+                          />
+                          <span className="text-sm text-stone-700 dark:text-stone-300 truncate" title={source}>{source}</span>
+                        </label>
+                      ))}
+                    </div>
                   </div>
+
+                  <button
+                    onClick={() => handleMeaningSearch(false)}
+                    disabled={isLoading || !searchQuery}
+                    className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
+                    ⚓ Pesquisar
+                  </button>
                 </div>
 
                 {meaningResult && (
@@ -6227,7 +6432,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       <ExpandableMarkdown content={meaningResult} onSearch={handleWikiSearch} />
                     </div>
 
-                    {(meaningSource.includes('Gemini') || meaningSource.includes('ChatGPT') || meaningSource.includes('IA')) && (
+                    {selectedMeaningSources.some(s => s.includes('Gemini') || s.includes('ChatGPT') || s.includes('IA')) && (
                       <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-6 rounded-3xl border border-emerald-100 dark:border-emerald-800/30 space-y-4">
                         <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-400 font-bold text-sm">
                           <MessageCircle size={18} />
@@ -6364,103 +6569,80 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                     </div>
                   </div>
 
-                  <div className="prose prose-stone dark:prose-invert max-w-none mb-8 p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
-                    <h4 className="text-lg font-bold mb-2">O que são Livros Apócrifos?</h4>
-                    <p className="text-sm leading-relaxed">
-                      O termo "apócrifo" significa "oculto" ou "escondido". No contexto bíblico, refere-se a livros que não fazem parte do cânon oficial das Escrituras. 
-                      As Bíblias protestantes seguem o cânon hebraico (39 livros no AT), enquanto algumas Bíblias católicas incluem livros chamados "deuterocanônicos", 
-                      que estavam presentes na Septuaginta (tradução grega do AT). Os protestantes os excluem por não serem considerados divinamente inspirados, 
-                      embora reconheçam seu valor histórico e literário.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-amber-500 rounded-full" />
-                        Apócrifos Católicos
-                      </h4>
-                      <div className="grid gap-2">
-                        {CATHOLIC_APOCRYPHA.map((book) => (
-                          <div key={book.name} className="relative flex items-center justify-between p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl border border-stone-100 dark:border-zinc-800 group hover:border-amber-200 transition-all">
-                            <span className="text-sm font-medium">{book.name}</span>
-                            <button 
-                              onClick={() => setShowApocryphaInfo(showApocryphaInfo === book.name ? null : book.name)}
-                              className="p-1.5 text-stone-400 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition-all"
-                            >
-                              <HelpCircle size={16} />
-                            </button>
-                            {showApocryphaInfo === book.name && (
-                              <motion.div 
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="absolute z-20 top-full right-0 mt-2 p-4 bg-white dark:bg-zinc-900 border border-amber-100 dark:border-amber-900/30 rounded-xl shadow-xl text-xs text-stone-600 dark:text-zinc-400 min-w-[200px] max-w-[300px]"
-                              >
-                                {book.description}
-                              </motion.div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <h4 className="font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-2">
-                        <div className="w-2 h-2 bg-rose-500 rounded-full" />
-                        Apócrifos NT
-                      </h4>
-                      <div className="grid gap-2">
-                        {NT_APOCRYPHA.map((book) => (
-                          <div key={book.name} className="relative flex items-center justify-between p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl border border-stone-100 dark:border-zinc-800 group hover:border-rose-200 transition-all">
-                            <span className="text-sm font-medium">{book.name}</span>
-                            <button 
-                              onClick={() => setShowApocryphaInfo(showApocryphaInfo === book.name ? null : book.name)}
-                              className="p-1.5 text-stone-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded-lg transition-all"
-                            >
-                              <HelpCircle size={16} />
-                            </button>
-                            {showApocryphaInfo === book.name && (
-                              <motion.div 
-                                initial={{ opacity: 0, scale: 0.95 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                className="absolute z-20 top-full right-0 mt-2 p-4 bg-white dark:bg-zinc-900 border border-rose-100 dark:border-rose-900/30 rounded-xl shadow-xl text-xs text-stone-600 dark:text-zinc-400 min-w-[200px] max-w-[300px]"
-                              >
-                                {book.description}
-                              </motion.div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-stone-100 dark:bg-zinc-800/50 p-6 rounded-3xl space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="md:col-span-1">
-                        <label className="block text-xs font-bold text-stone-500 mb-2 ml-1 uppercase tracking-wider">Livro</label>
-                        <select
-                          value={selectedApocrypha}
-                          onChange={(e) => setSelectedApocrypha(e.target.value)}
-                          className="w-full p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-2xl outline-none font-bold text-sm"
-                        >
-                          <option value="Pesquisar em todos">Pesquisar em todos</option>
-                          <optgroup label="Católicos">
-                            {CATHOLIC_APOCRYPHA.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-                          </optgroup>
-                          <optgroup label="Novo Testamento">
-                            {NT_APOCRYPHA.map(b => <option key={b.name} value={b.name}>{b.name}</option>)}
-                          </optgroup>
-                        </select>
-                      </div>
-                      <div className="md:col-span-2">
+                  <div className="bg-stone-100 dark:bg-zinc-800/50 p-6 rounded-3xl space-y-6 mb-8">
+                    <div className="flex flex-col gap-4">
+                      <div>
                         <label className="block text-xs font-bold text-stone-500 mb-2 ml-1 uppercase tracking-wider">Pesquisa Personalizada</label>
                         <input
                           type="text"
-                          placeholder="Digite o nome de um livro ou tema específico..."
+                          placeholder="Pesquisar palavra ou termo"
                           value={apocryphaSearchQuery}
                           onChange={(e) => setApocryphaSearchQuery(e.target.value)}
                           className="w-full p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-2xl outline-none font-bold text-sm"
                         />
+                      </div>
+                      
+                      <div className="bg-white dark:bg-zinc-900 p-4 rounded-2xl border border-stone-200 dark:border-zinc-800">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 uppercase tracking-wider">Selecione os Livros</h4>
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedApocryphaBooks.length === CATHOLIC_APOCRYPHA.length + NT_APOCRYPHA.length}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedApocryphaBooks([...CATHOLIC_APOCRYPHA.map(b => b.name), ...NT_APOCRYPHA.map(b => b.name)]);
+                                } else {
+                                  setSelectedApocryphaBooks([]);
+                                }
+                              }}
+                              className="w-4 h-4 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500"
+                            />
+                            <span className="text-xs font-bold text-stone-600 dark:text-stone-400">Todos os livros</span>
+                          </label>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                          <div className="col-span-full mb-1">
+                            <h5 className="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase">Católicos</h5>
+                          </div>
+                          {CATHOLIC_APOCRYPHA.map(book => (
+                            <label key={book.name} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selectedApocryphaBooks.includes(book.name)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedApocryphaBooks([...selectedApocryphaBooks, book.name]);
+                                  } else {
+                                    setSelectedApocryphaBooks(selectedApocryphaBooks.filter(b => b !== book.name));
+                                  }
+                                }}
+                                className="w-4 h-4 text-amber-600 rounded border-stone-300 focus:ring-amber-500"
+                              />
+                              <span className="text-sm text-stone-700 dark:text-stone-300 truncate" title={book.name}>{book.name}</span>
+                            </label>
+                          ))}
+                          <div className="col-span-full mt-2 mb-1">
+                            <h5 className="text-xs font-bold text-rose-600 dark:text-rose-500 uppercase">Novo Testamento</h5>
+                          </div>
+                          {NT_APOCRYPHA.map(book => (
+                            <label key={book.name} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                              <input
+                                type="checkbox"
+                                checked={selectedApocryphaBooks.includes(book.name)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedApocryphaBooks([...selectedApocryphaBooks, book.name]);
+                                  } else {
+                                    setSelectedApocryphaBooks(selectedApocryphaBooks.filter(b => b !== book.name));
+                                  }
+                                }}
+                                className="w-4 h-4 text-amber-600 rounded border-stone-300 focus:ring-amber-500"
+                              />
+                              <span className="text-sm text-stone-700 dark:text-stone-300 truncate" title={book.name}>{book.name}</span>
+                            </label>
+                          ))}
+                        </div>
                       </div>
                     </div>
 
@@ -6475,6 +6657,56 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       </button>
                     </div>
                   </div>
+
+                  <details className="group mb-8">
+                    <summary className="flex items-center justify-between p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 cursor-pointer list-none font-bold text-stone-700 dark:text-zinc-300 hover:bg-stone-100 dark:hover:bg-zinc-800 transition-colors">
+                      <div className="flex items-center gap-2">
+                        <HelpCircle size={20} className="text-amber-600" />
+                        O que são Livros Apócrifos?
+                      </div>
+                      <ChevronDown size={20} className="text-stone-400 group-open:rotate-180 transition-transform" />
+                    </summary>
+                    <div className="mt-2 p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 prose prose-stone dark:prose-invert max-w-none">
+                      <p className="text-sm leading-relaxed m-0 mb-8">
+                        O termo "apócrifo" significa "oculto" ou "escondido". No contexto bíblico, refere-se a livros que não fazem parte do cânon oficial das Escrituras. 
+                        As Bíblias protestantes seguem o cânon hebraico (39 livros no AT), enquanto algumas Bíblias católicas incluem livros chamados "deuterocanônicos", 
+                        que estavam presentes na Septuaginta (tradução grega do AT). Os protestantes os excluem por não serem considerados divinamente inspirados, 
+                        embora reconheçam seu valor histórico e literário.
+                      </p>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="space-y-4">
+                          <h4 className="font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-2 m-0">
+                            <div className="w-2 h-2 bg-amber-500 rounded-full" />
+                            Apócrifos Católicos
+                          </h4>
+                          <div className="space-y-4">
+                            {CATHOLIC_APOCRYPHA.map((book) => (
+                              <div key={book.name} className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-stone-100 dark:border-zinc-800">
+                                <h5 className="text-sm font-bold m-0 mb-1 text-amber-700 dark:text-amber-500">{book.name}</h5>
+                                <p className="text-xs text-stone-600 dark:text-zinc-400 m-0 leading-relaxed">{book.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h4 className="font-bold text-stone-700 dark:text-zinc-300 flex items-center gap-2 m-0">
+                            <div className="w-2 h-2 bg-rose-500 rounded-full" />
+                            Apócrifos NT
+                          </h4>
+                          <div className="space-y-4">
+                            {NT_APOCRYPHA.map((book) => (
+                              <div key={book.name} className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-stone-100 dark:border-zinc-800">
+                                <h5 className="text-sm font-bold m-0 mb-1 text-rose-700 dark:text-rose-500">{book.name}</h5>
+                                <p className="text-xs text-stone-600 dark:text-zinc-400 m-0 leading-relaxed">{book.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </details>
 
                   {apocryphaResult && (
                     <div className="mt-12 space-y-6">
@@ -6588,8 +6820,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
           </motion.div>
         </AnimatePresence>
+      </div>
+      )}
 
-        {/* Outline Library Modal */}
+      {/* Outline Library Modal */}
         <AnimatePresence>
           {selectedLibraryOutline && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
@@ -7044,7 +7278,6 @@ ${selectedLibraryOutline.appeal}
             </div>
           )}
         </AnimatePresence>
-      </div>
 
       <div className="mt-12 p-8 bg-stone-50 dark:bg-zinc-800/50 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 text-sm text-stone-600 dark:text-zinc-400 space-y-4">
         <h4 className="font-bold text-stone-900 dark:text-white text-lg mb-4">Recursos dessa página:</h4>

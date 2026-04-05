@@ -1603,6 +1603,9 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       
       <div className="max-w-4xl mx-auto px-4 pb-12">
         <CreditInfoTip />
+        <p className="text-center text-xs text-stone-500 dark:text-zinc-500 mt-8 max-w-2xl mx-auto">
+          Disclamer: O App Imersão Bíblica IA gera pesquisas com Inteligência Artificial que demoram cerca de 30s na maioria das vezes. As pesquisas mais complexas, incluindo a geração de áudio demandam mais tempo cerca de 90s.
+        </p>
       </div>
     </div>
   );
