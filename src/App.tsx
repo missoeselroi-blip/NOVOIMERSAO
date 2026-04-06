@@ -111,6 +111,7 @@ import { VoiceChat } from './components/VoiceChat';
 import { FloatingBible } from './components/FloatingBible';
 import AuthModal from './components/AuthModal';
 import { MicrophonePermissionModal } from './components/MicrophonePermissionModal';
+import SectionTimer from './components/SectionTimer';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 
 function AppContent() {
@@ -240,6 +241,7 @@ function AppContent() {
       fontSize === 'xl' ? 'text-xl' :
       fontSize === '2xl' ? 'text-2xl' : 'text-3xl'
     )} style={{ lineHeight: lineHeight }}>
+      <SectionTimer />
       {/* Background Image for non-home pages */}
       {activeTab !== 'home' && (
         <div 
@@ -410,6 +412,18 @@ function AppContent() {
                             <User size={18} className="text-emerald-600" />
                             Abrir Perfil
                           </button>
+                          {user.role === 'admin' && (
+                            <button 
+                              onClick={() => {
+                                handleNavigate('admin');
+                                setIsProfileMenuOpen(false);
+                              }}
+                              className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-stone-600 dark:text-zinc-300 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
+                            >
+                              <ShieldCheck size={18} className="text-purple-600" />
+                              Painel ADM
+                            </button>
+                          )}
                           <button 
                             onClick={() => {
                               setIsAuthModalOpen(true);
@@ -613,29 +627,40 @@ function AppContent() {
 
               <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50">
                 {user ? (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <img 
-                        src={user.avatar || user.photoURL} 
-                        alt={user.name} 
-                        className="w-10 h-10 rounded-full border-2 border-emerald-500"
-                        referrerPolicy="no-referrer"
-                      />
-                      <div>
-                        <p className="text-sm font-bold">{user.name}</p>
-                        <p className="text-[10px] text-stone-400 uppercase tracking-widest">Membro da Marinha</p>
+                  <div className="space-y-4">
+                    {user.role === 'admin' && (
+                      <button
+                        onClick={() => handleNavigate('admin')}
+                        className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-2xl font-bold transition-colors"
+                      >
+                        <ShieldCheck size={20} />
+                        Painel ADM
+                      </button>
+                    )}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <img 
+                          src={user.avatar || user.photoURL} 
+                          alt={user.name} 
+                          className="w-10 h-10 rounded-full border-2 border-emerald-500"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div>
+                          <p className="text-sm font-bold">{user.name}</p>
+                          <p className="text-[10px] text-stone-400 uppercase tracking-widest">Membro da Marinha</p>
+                        </div>
                       </div>
+                      <button
+                        onClick={() => {
+                          logout();
+                          setIsMenuOpen(false);
+                          showToast("Sessão encerrada. 👋");
+                        }}
+                        className="p-2 text-stone-400 hover:text-red-500 transition-colors"
+                      >
+                        <LogOut size={20} />
+                      </button>
                     </div>
-                    <button
-                      onClick={() => {
-                        logout();
-                        setIsMenuOpen(false);
-                        showToast("Sessão encerrada. 👋");
-                      }}
-                      className="p-2 text-stone-400 hover:text-red-500 transition-colors"
-                    >
-                      <LogOut size={20} />
-                    </button>
                   </div>
                 ) : (
                   <button

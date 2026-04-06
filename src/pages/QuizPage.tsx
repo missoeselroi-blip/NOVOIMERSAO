@@ -851,7 +851,17 @@ const QuizPage: React.FC = () => {
                       <div className="space-y-4">
                         <p className="text-stone-600 dark:text-stone-400 mb-8">Você foi convidado para uma batalha! Faça login para participar.</p>
                         <button
-                          onClick={loginWithGoogle}
+                          onClick={async () => {
+                            try {
+                              await loginWithGoogle();
+                            } catch (err: any) {
+                              if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                                console.log("Login popup closed by user");
+                                return;
+                              }
+                              console.error("Erro ao fazer login com Google:", err);
+                            }
+                          }}
                           className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
                         >
                           <LogIn size={24} /> Fazer Login com Google

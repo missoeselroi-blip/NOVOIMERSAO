@@ -22,6 +22,7 @@ import { db } from '../lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
+import { useAuth } from '../contexts/AuthContext';
 
 interface UserData {
   id: string;
@@ -38,6 +39,7 @@ interface UserData {
 }
 
 export default function AdminPage() {
+  const { user } = useAuth();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminKey, setAdminKey] = useState('');
   const [adminPassword, setAdminPassword] = useState('');
@@ -46,6 +48,13 @@ export default function AdminPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
   const { showToast } = useToast();
+
+  useEffect(() => {
+    if (user?.role === 'admin') {
+      setIsAuthenticated(true);
+      fetchAllData();
+    }
+  }, [user]);
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,14 +67,17 @@ export default function AdminPage() {
     }
   };
 
+  const [creditTransactions, setCreditTransactions] = useState<any[]>([]);
+
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
-      const [usersSnap, careerSnap, theologySnap, metricsSnap] = await Promise.all([
+      const [usersSnap, careerSnap, theologySnap, metricsSnap, creditsSnap] = await Promise.all([
         getDocs(collection(db, 'users')),
         getDocs(collection(db, 'careerProgress')),
         getDocs(collection(db, 'theologyProgress')),
-        getDocs(collection(db, 'metrics'))
+        getDocs(collection(db, 'metrics')),
+        getDocs(collection(db, 'creditTransactions'))
       ]);
 
       const careerMap = new Map();
@@ -95,7 +107,13 @@ export default function AdminPage() {
         });
       });
 
+      const allCredits: any[] = [];
+      creditsSnap.forEach(doc => {
+        allCredits.push({ id: doc.id, ...doc.data() });
+      });
+
       setUsers(allUsers);
+      setCreditTransactions(allCredits);
     } catch (error) {
       console.error("Error fetching admin data:", error);
       showToast("Erro ao carregar dados dos usuários.", "error");
@@ -115,6 +133,32 @@ export default function AdminPage() {
     const m = Math.floor((seconds % 3600) / 60);
     if (h > 0) return `${h}h ${m}m`;
     return `${m}m`;
+  };
+
+  const getMostAccessedPages = () => {
+    const pageTimes: Record<string, number> = {};
+    users.forEach(u => {
+      if (u.metrics?.sectionTimes) {
+        Object.entries(u.metrics.sectionTimes).forEach(([page, time]) => {
+          pageTimes[page] = (pageTimes[page] || 0) + (time as number);
+        });
+      }
+    });
+
+    return Object.entries(pageTimes)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5);
+  };
+
+  const getCreditPurchases = () => {
+    return creditTransactions
+      .filter(t => t.type === 'purchase')
+      .sort((a, b) => {
+        const dateA = a.date?.seconds ? a.date.seconds * 1000 : new Date(a.date).getTime();
+        const dateB = b.date?.seconds ? b.date.seconds * 1000 : new Date(b.date).getTime();
+        return dateB - dateA;
+      })
+      .slice(0, 10);
   };
 
   if (!isAuthenticated) {
@@ -192,32 +236,6 @@ export default function AdminPage() {
           >
             <BarChart3 size={20} />
           </button>
-          <button 
-            onClick={async () => {
-              try {
-                const { sermonOutlines } = await import('../data/sermonOutlines');
-                const { addDoc, collection } = await import('firebase/firestore');
-                for (const outline of sermonOutlines) {
-                  await addDoc(collection(db, 'publicOutlines'), {
-                    ...outline,
-                    createdAt: new Date().toISOString()
-                  });
-                }
-                showToast("50 Esboços adicionados com sucesso!", "success");
-              } catch (error) {
-                console.error(error);
-                showToast("Erro ao popular esboços", "error");
-              }
-            }}
-            className="flex items-center gap-2 px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-600/20"
-          >
-            <Download size={18} />
-            Popular 50 Esboços
-          </button>
-          <button className="flex items-center gap-2 px-4 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20">
-            <Download size={18} />
-            Exportar CSV
-          </button>
         </div>
       </div>
 
@@ -266,6 +284,81 @@ export default function AdminPage() {
           <h3 className="text-2xl font-bold mt-1">
             {formatTime(users.reduce((acc, u) => acc + (u.metrics?.totalTime || 0), 0))}
           </h3>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Most Accessed Pages */}
+        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl flex items-center justify-center">
+              <BarChart3 size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Páginas Mais Acessadas</h2>
+              <p className="text-xs text-stone-500 uppercase tracking-widest">Por tempo de uso</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {getMostAccessedPages().map(([page, time], index) => (
+              <div key={page} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-white dark:bg-zinc-800 rounded-full flex items-center justify-center font-bold text-stone-400 shadow-sm">
+                    {index + 1}
+                  </div>
+                  <span className="font-bold capitalize">{page.replace('-', ' ')}</span>
+                </div>
+                <span className="text-sm font-bold text-emerald-600 bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
+                  {formatTime(time)}
+                </span>
+              </div>
+            ))}
+            {getMostAccessedPages().length === 0 && (
+              <p className="text-center text-stone-500 py-4">Nenhum dado de acesso disponível.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Credit Purchases */}
+        <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 text-blue-600 rounded-xl flex items-center justify-center">
+              <Trophy size={20} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Últimas Compras de Créditos</h2>
+              <p className="text-xs text-stone-500 uppercase tracking-widest">Histórico recente</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            {getCreditPurchases().map((tx) => {
+              const user = users.find(u => u.id === tx.userId);
+              const date = tx.date?.seconds ? new Date(tx.date.seconds * 1000) : new Date(tx.date);
+              return (
+                <div key={tx.id} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
+                  <div className="flex items-center gap-3">
+                    <img 
+                      src={user?.avatar || user?.photoURL || `https://ui-avatars.com/api/?name=${user?.name || 'User'}`} 
+                      alt="User" 
+                      className="w-10 h-10 rounded-full"
+                    />
+                    <div>
+                      <p className="font-bold text-sm">{user?.name || 'Usuário Desconhecido'}</p>
+                      <p className="text-xs text-stone-500">{date.toLocaleDateString('pt-BR')} às {date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold text-blue-600 bg-blue-100 dark:bg-blue-900/30 px-3 py-1 rounded-full">
+                      +{tx.amount} créditos
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {getCreditPurchases().length === 0 && (
+              <p className="text-center text-stone-500 py-4">Nenhuma compra registrada.</p>
+            )}
+          </div>
         </div>
       </div>
 

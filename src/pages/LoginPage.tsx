@@ -147,7 +147,17 @@ export const LoginPage: React.FC = () => {
           </div>
 
           <button 
-            onClick={loginWithGoogle}
+            onClick={async () => {
+              try {
+                await loginWithGoogle();
+              } catch (err: any) {
+                if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                  console.log("Login popup closed by user");
+                  return;
+                }
+                setError(err.message || "Erro ao fazer login com Google.");
+              }
+            }}
             className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
           >
             <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" alt="App Icon" className="w-5 h-5" />

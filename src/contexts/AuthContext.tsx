@@ -176,11 +176,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           let userData: User;
           if (userDoc.exists()) {
             userData = userDoc.data() as User;
+            
+            // Auto-assign admin role to specific email
+            if (firebaseUser.email === 'missoeselroi@gmail.com' && userData.role !== 'admin') {
+              userData.role = 'admin';
+              await updateDoc(userDocRef, { role: 'admin' });
+            }
+            
             // Update lastActive
             await updateDoc(userDocRef, {
               lastActive: new Date().toISOString()
             });
           } else {
+            const isAdmin = firebaseUser.email === 'missoeselroi@gmail.com';
             userData = {
               id: firebaseUser.uid,
               name: firebaseUser.displayName || 'Usuário',
@@ -188,7 +196,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
               joinDate: new Date().toISOString(),
               lastActive: new Date().toISOString(),
-              role: 'user'
+              role: isAdmin ? 'admin' : 'user'
             };
             await setDoc(userDocRef, userData);
           }
@@ -370,8 +378,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error logging in with Google:", error);
+    } catch (error: any) {
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        console.error("Error logging in with Google:", error);
+      }
       throw error;
     }
   };

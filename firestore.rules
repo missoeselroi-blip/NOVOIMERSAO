@@ -106,8 +106,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "missoeselroi@gmail.com" && request.auth.token.email_verified == true ||
-         request.auth.token.email == "imersaobiblicapp@gmail.com" && request.auth.token.email_verified == true ||
+        (request.auth.token.email == "missoeselroi@gmail.com" ||
+         request.auth.token.email == "imersaobiblicapp@gmail.com" ||
          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
@@ -443,6 +443,11 @@ service cloud.firestore {
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && request.resource.data.userId == request.auth.uid;
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /publicOutlines/{outlineId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
     }
 
     match /quizRooms/{roomId} {
