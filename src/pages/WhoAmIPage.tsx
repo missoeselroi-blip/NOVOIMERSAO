@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
-export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string) => void }) {
+export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string, state?: any) => void }) {
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-20">
       <header className="text-center space-y-4">

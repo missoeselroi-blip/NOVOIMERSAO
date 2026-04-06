@@ -44,7 +44,7 @@ import { db, auth } from '../lib/firebase';
 import { doc, updateDoc, collection, getDocs, writeBatch, query, where, orderBy, getDoc, setDoc } from 'firebase/firestore';
 import { useToast } from '../components/Toast';
 
-export default function StudentPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
+export default function StudentPage({ onNavigate }: { onNavigate: (tab: string, state?: any) => void }) {
   const { user, theologyProgress, evangelismProgress, certificates } = useAuth();
   const { showToast } = useToast();
   const [activeSubTab, setActiveSubTab] = useState<'profile' | 'theology' | 'evangelism' | 'summaries'>('profile');

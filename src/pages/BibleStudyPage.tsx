@@ -129,7 +129,7 @@ import GeneratedQuizPlayer, { QuizQuestion } from '../components/GeneratedQuizPl
 interface BibleStudyPageProps {
   deepThinking: boolean;
   setDeepThinking?: (value: boolean) => void;
-  onNavigate?: (tab: string) => void;
+  onNavigate?: (tab: string, state?: any) => void;
 }
 
 interface StudyHistoryItem {
@@ -3805,24 +3805,10 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       ref={resultRef}
                       className="bg-white dark:bg-zinc-900 p-8 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm prose dark:prose-invert max-w-none"
                     >
-                      <div className="flex justify-between items-center mb-6 not-prose">
-                        <button
-                          onClick={() => handleNavigateChapter('prev')}
-                          className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl hover:bg-stone-200 transition-all text-xs font-bold"
-                        >
-                          <ChevronLeft size={16} />
-                          Anterior
-                        </button>
-                        <span className="text-xs font-bold text-stone-400 uppercase tracking-widest">
+                      <div className="flex justify-center items-center mb-6 not-prose">
+                        <span className="text-xs font-bold text-stone-400 uppercase tracking-widest text-center">
                           {searchQuery}
                         </span>
-                        <button
-                          onClick={() => handleNavigateChapter('next')}
-                          className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl hover:bg-stone-200 transition-all text-xs font-bold"
-                        >
-                          Próximo Capítulo
-                          <ChevronRight size={16} />
-                        </button>
                       </div>
                       <ExpandableMarkdown content={result} onSearch={handleWikiSearch} />
                       <div className="mt-8 pt-8 border-t border-stone-100 dark:border-zinc-800">
@@ -5892,7 +5878,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
 
                       {/* Author and Bible Version Selection */}
                       <div className="mt-8 pt-8 border-t border-stone-100 dark:border-zinc-800">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div className="grid grid-cols-1 gap-8">
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
                               <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Autores Principais</label>
@@ -5934,18 +5920,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                                 </div>
                               ))}
                             </div>
-                          </div>
-                          <div className="space-y-4">
-                            <label className="text-xs font-bold text-stone-400 uppercase tracking-wider ml-1">Versão Bíblica</label>
-                            <select 
-                              value={selectedCommentaryVersion}
-                              onChange={(e) => setSelectedCommentaryVersion(e.target.value)}
-                              className="w-full p-4 bg-stone-50 dark:bg-zinc-800 border border-stone-100 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
-                            >
-                              {commentaryVersions.map(v => (
-                                <option key={v} value={v}>{v}</option>
-                              ))}
-                            </select>
                           </div>
                         </div>
                       </div>

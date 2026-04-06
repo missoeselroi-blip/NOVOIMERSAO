@@ -33,7 +33,7 @@ import {
   Layers,
   BookOpen
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
 import { bibleService, BibleVersion, BibleBook, BibleVerse, SearchResult } from '../services/bibleService';
 import { useAuth } from '../contexts/AuthContext';

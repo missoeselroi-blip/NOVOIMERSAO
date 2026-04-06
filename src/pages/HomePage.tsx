@@ -40,15 +40,20 @@ import {
   Loader2,
   Info,
   GraduationCap,
-  User
+  User,
+  Baby,
+  Users,
+  Star,
+  Briefcase,
+  RotateCcw,
+  UserPlus
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
-import { geminiService } from '../services/geminiService';
-import { Type } from "@google/genai";
+import { geminiService, Type } from '../services/geminiService';
 import { copyToClipboard } from '../utils/clipboard';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import NewsPage from './NewsPage';
@@ -66,10 +71,93 @@ import { useCredits } from '../contexts/CreditContext';
 import { useShare } from '../utils/share';
 
 interface HomePageProps {
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, state?: any) => void;
   deepThinking: boolean;
   setDeepThinking: (value: boolean) => void;
 }
+
+type DevotionalTheme = 'Kids' | 'Teen' | 'Casado' | 'Novo Convertido' | 'Discípulo' | 'Líder' | 'Teólogo' | 'Pastor' | 'Missionário' | 'Afastado';
+
+interface ThemeConfig {
+  id: DevotionalTheme;
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  prompt: string;
+}
+
+const DEVOTIONAL_THEMES: ThemeConfig[] = [
+  { 
+    id: 'Kids', 
+    label: 'Kids', 
+    icon: <Baby size={20} />, 
+    color: 'bg-blue-500',
+    prompt: 'Gere uma mensagem com linguagem infantil (7-9 anos). Foco no amor de Deus e obediência. Use parábolas de Jesus. Linguagem simples e direta.'
+  },
+  { 
+    id: 'Teen', 
+    label: 'Teen', 
+    icon: <Users size={20} />, 
+    color: 'bg-purple-500',
+    prompt: 'Gere mensagens com temas de interesse de adolescentes (13-17 anos), como identidade, propósito, amizades, desafios escolares, pressão social, relacionamento com pais e fé. Linguagem jovem, dinâmica e empática.'
+  },
+  { 
+    id: 'Casado', 
+    label: 'Casado', 
+    icon: <Heart size={20} />, 
+    color: 'bg-rose-500',
+    prompt: 'Gere mensagens voltadas para o matrimônio, seus desafios e suas alegrias. Motive o perdão, respeito, amor, lealdade e fidelidade. Fale sobre o papel de sacerdote do homem e mulher sábia que edifica a casa, criação de filhos, cuidar um do outro, zelo pela casa, sonhos, planejar, momento a sós, cuidar da aparência, cuidado com ciúmes, egoísmo, monotonia, sexo, intimidade e amizade.'
+  },
+  { 
+    id: 'Novo Convertido', 
+    label: 'Novo Convertido', 
+    icon: <UserPlus size={20} />, 
+    color: 'bg-emerald-500',
+    prompt: 'Mensagens simplificadas focadas em João, Salmos e Provérbios. Base para os primeiros passos na fé.'
+  },
+  { 
+    id: 'Discípulo', 
+    label: 'Discípulo', 
+    icon: <Users size={20} />, 
+    color: 'bg-indigo-500',
+    prompt: 'Foco na vida cristã prática (família, trabalho). Use as cartas de Paulo e Provérbios. Mensagem de motivação e fé.'
+  },
+  { 
+    id: 'Líder', 
+    label: 'Líder', 
+    icon: <Star size={20} />, 
+    color: 'bg-amber-500',
+    prompt: 'Foco em liderança, serviço e caráter. Mensagens sobre dons espirituais e ganhar almas. Use exemplos de líderes bíblicos.'
+  },
+  { 
+    id: 'Teólogo', 
+    label: 'Teólogo', 
+    icon: <GraduationCap size={20} />, 
+    color: 'bg-stone-800',
+    prompt: 'Abordagem acadêmica: termos originais (grego/hebraico), exegese e hermenêutica. Use as principais Bíblias de Estudo e Comentários.'
+  },
+  { 
+    id: 'Pastor', 
+    label: 'Pastor', 
+    icon: <Briefcase size={20} />, 
+    color: 'bg-zinc-700',
+    prompt: 'Mensagens estruturadas (esboços). Foco em cuidado pastoral, revelação bíblica e combate a heresias. Prático e profundo.'
+  },
+  { 
+    id: 'Missionário', 
+    label: 'Missionário', 
+    icon: <Globe size={20} />, 
+    color: 'bg-cyan-600',
+    prompt: 'Foco em missões, evangelismo e heróis da fé. Mensagens motivadoras para o campo missionário.'
+  },
+  { 
+    id: 'Afastado', 
+    label: 'Afastado', 
+    icon: <Heart size={20} />, 
+    color: 'bg-rose-500',
+    prompt: 'Mensagem de arrependimento e retorno ao primeiro amor. Foco no perdão de Deus e vida eterna.'
+  },
+];
 
 export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: HomePageProps) {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
@@ -140,7 +228,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   ];
 
   const quickActions = [
-    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsDevotionalModalOpen(true) },
     { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -397,6 +485,10 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [showQuickTips, setShowQuickTips] = useState(false);
   const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [isExplanationModalOpen, setIsExplanationModalOpen] = useState(false);
+  const [isDevotionalModalOpen, setIsDevotionalModalOpen] = useState(false);
+  const [selectedDevotionalTheme, setSelectedDevotionalTheme] = useState<DevotionalTheme | null>(null);
+  const [devotionalContent, setDevotionalContent] = useState<string | null>(null);
+  const [isGeneratingDevotional, setIsGeneratingDevotional] = useState(false);
   const [explanationText, setExplanationText] = useState('');
   const [explanationThought, setExplanationThought] = useState('');
   const [isExplaining, setIsExplaining] = useState(false);
@@ -449,6 +541,39 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       }
     } finally {
       setIsExplaining(false);
+    }
+  };
+
+  const handleGenerateDevotional = async (theme: DevotionalTheme) => {
+    setSelectedDevotionalTheme(theme);
+    setIsGeneratingDevotional(true);
+    setDevotionalContent(null);
+    showToast(getRandomWaitingMessage(), 'info');
+
+    try {
+      const themeConfig = DEVOTIONAL_THEMES.find(t => t.id === theme)!;
+      const dateStr = new Date().toLocaleDateString('pt-BR');
+      
+      const prompt = `Gere um devocional para o dia ${dateStr}. 
+        Tema/Público: ${theme}. 
+        Instruções específicas: ${themeConfig.prompt}
+        Formate a resposta com as seguintes seções em Markdown:
+        1. # [Título Inspirador]
+        2. **Versículo Chave:** [Referência e Texto]
+        3. ## Meditação
+        [Texto da meditação profunda e inspiradora]
+        4. ## Desafio do Dia
+        [Um desafio prático e acionável relacionado à mensagem]
+        5. ## Oração Final
+        [Uma oração curta e poderosa]`;
+
+      const response = await geminiService.generateFastText(prompt, "Você é um mentor espiritual experiente.");
+      setDevotionalContent(response || "Não foi possível gerar o devocional.");
+    } catch (error: any) {
+      console.error(error);
+      showToast(error.message || "Erro ao gerar devocional.", "error");
+    } finally {
+      setIsGeneratingDevotional(false);
     }
   };
 
@@ -652,7 +777,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           onClick={() => onNavigate('bible')}
-          className="flex-1 py-5 bg-gradient-to-r from-zinc-800 to-zinc-950 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-zinc-700 hover:to-zinc-900 transition-all shadow-lg shadow-zinc-900/20 group"
+          className="flex-1 py-5 bg-[#2F6C82] text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-[#255668] transition-all shadow-lg shadow-[#2F6C82]/20 group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Book size={20} className="text-white" />
@@ -881,6 +1006,8 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                   actionWithClick.onClick();
                 } else if (action.id === 'generate-message') {
                   setIsMessageModalOpen(true);
+                } else if (action.id === 'devotional') {
+                  setIsDevotionalModalOpen(true);
                 } else {
                   onNavigate(action.id);
                 }
@@ -924,17 +1051,38 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             <h3 className="text-sm font-bold tracking-widest uppercase text-stone-400">Mensagem da Semana</h3>
             <div className="h-[1px] flex-1 bg-stone-200 dark:bg-zinc-800" />
           </div>
-          <div className="text-center space-y-6">
-            <div className="space-y-1">
-              <h4 className="text-3xl font-serif italic text-stone-900 dark:text-white">"O Poder da Perseverança"</h4>
+          <div className="space-y-6">
+            <div className="text-center space-y-1">
+              <h4 className="text-3xl font-serif italic text-stone-900 dark:text-white">"Superando o Ânimo Dobre"</h4>
               <p className="text-xs text-stone-400 italic">Por Wesley Reis</p>
             </div>
-            <p className="text-stone-600 dark:text-zinc-400 leading-relaxed font-light text-lg">
-              Nesta semana, somos convidados a olhar para a vida de Paulo. Mesmo em meio a prisões e naufrágios, ele não perdeu a visão do Reino. A perseverança não é apenas aguentar, mas é avançar com propósito, sabendo que Aquele que começou a boa obra é fiel para completá-la.
-            </p>
-            <button className="inline-flex items-center gap-2 text-emerald-600 font-bold hover:gap-4 transition-all text-sm">
-              CONTINUAR LEITURA <ArrowRight size={18} />
-            </button>
+            
+            <div className="text-stone-600 dark:text-zinc-400 leading-relaxed font-light text-lg space-y-4 text-left">
+              <p>
+                O termo ânimo dobre vem do grego <em>dipsychos</em>, que significa "homem de duas almas". É o retrato de uma mente dividida e de uma vontade instável: um dia fervorosa, no outro, estagnada. Essa inconstância não é um detalhe, mas um obstáculo que afeta todas as áreas da vida.
+              </p>
+              
+              <h5 className="font-bold text-stone-800 dark:text-zinc-200 text-xl mt-6">Os Pilares da Inconstância</h5>
+              <ul className="space-y-2 list-disc list-inside">
+                <li><strong>Impacto Geral:</strong> A oscilação na fé reflete no trabalho, nas finanças e na saúde. Tiago alerta que quem duvida não recebe nada de Deus, pois a dúvida rompe a conexão com as promessas.</li>
+                <li><strong>Escravidão Emocional:</strong> O inconstante vive pelo que sente. Se está animado, faz; se não está, procrastina. O verdadeiro ânimo não é um sentimento, é uma decisão.</li>
+                <li><strong>A Base da Desistência:</strong> O ânimo dobre se esconde nas pequenas negligências: atrasos constantes, falta de cuidado com a saúde, desorganização e o hábito de trocar o que é importante pelo que é fútil.</li>
+              </ul>
+
+              <h5 className="font-bold text-stone-800 dark:text-zinc-200 text-xl mt-6">O Caminho da Transformação</h5>
+              <p>
+                Jesus ensinou que é impossível servir a dois senhores. A dualidade entre carne e espírito exige vigilância constante. Segundo Tiago 4:8, a cura para essa divisão exige três atitudes que dependem de nós:
+              </p>
+              <ul className="space-y-2 list-disc list-inside">
+                <li>Chegar-se a Deus.</li>
+                <li>Purificar as mãos (nossas ações).</li>
+                <li>Limpar o coração (nossas intenções).</li>
+              </ul>
+
+              <p className="mt-6">
+                A fé madura age mesmo quando não sente vontade. Não deixe suas emoções governarem seu propósito. Confie, espere e, acima de tudo, aja conforme a direção divina. A vitória pode estar a apenas um passo de persistência.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -1497,6 +1645,153 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                   </button>
                 </div>
               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isDevotionalModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => {
+                if (!isGeneratingDevotional) {
+                  setIsDevotionalModalOpen(false);
+                  setDevotionalContent(null);
+                  setSelectedDevotionalTheme(null);
+                }
+              }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full h-full sm:max-w-5xl sm:h-[95vh] bg-amber-50 dark:bg-stone-900 sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-amber-200/50 dark:border-stone-800 flex items-center justify-between bg-amber-100/50 dark:bg-stone-800/50 sticky top-0 z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600">
+                    <Heart size={20} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Devocional Diário</h3>
+                    <p className="text-xs text-stone-500">Sua palavra de fé e esperança</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsDevotionalModalOpen(false);
+                    setDevotionalContent(null);
+                    setSelectedDevotionalTheme(null);
+                  }}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              {/* Modal Content */}
+              <div className="p-6 sm:p-8 overflow-y-auto flex-1 custom-scrollbar">
+                {!selectedDevotionalTheme && !isGeneratingDevotional ? (
+                  <div className="space-y-8">
+                    <div className="text-center space-y-2">
+                      <h4 className="text-lg font-bold">Escolha um tema para hoje</h4>
+                      <p className="text-sm text-stone-500">Selecione o público ou estilo que mais combina com você agora.</p>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+                      {DEVOTIONAL_THEMES.map((theme) => (
+                        <button
+                          key={theme.id}
+                          onClick={() => handleGenerateDevotional(theme.id)}
+                          className="flex flex-col items-center gap-3 p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-transparent hover:border-emerald-200 transition-all group"
+                        >
+                          <div className={cn(
+                            "w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg transition-transform group-hover:scale-110",
+                            theme.color
+                          )}>
+                            {theme.icon}
+                          </div>
+                          <span className="font-bold text-xs text-stone-700 dark:text-zinc-300">{theme.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : isGeneratingDevotional ? (
+                  <div className="flex flex-col items-center justify-center py-20 space-y-6">
+                    <Book className="animate-spin text-emerald-600" size={64} />
+                    <div className="text-center space-y-2">
+                      <h4 className="text-xl font-bold">Buscando Inspiração...</h4>
+                      <p className="text-stone-500 animate-pulse">Preparando uma palavra especial para o seu coração.</p>
+                    </div>
+                  </div>
+                ) : devotionalContent ? (
+                  <div className="prose dark:prose-invert max-w-none">
+                    <div className="bg-white/50 dark:bg-stone-800/30 p-8 rounded-[2rem] border border-amber-200/50 dark:border-stone-700/50">
+                      <MarkdownRenderer content={devotionalContent} />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+              
+              {/* Modal Footer / Navigation Bar */}
+              {devotionalContent && !isGeneratingDevotional && (
+                <div className="p-6 border-t border-amber-200/50 dark:border-stone-800 bg-amber-100/50 dark:bg-stone-800/50 flex flex-wrap gap-3">
+                  <button 
+                    onClick={() => handleSaveToNotebook(`Devocional: ${selectedDevotionalTheme}`, devotionalContent)}
+                    className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                  >
+                    <Save size={18} />
+                    Salvar no Caderno
+                  </button>
+                  <button 
+                    onClick={() => {
+                      copyToClipboard(devotionalContent);
+                      showToast("Devocional copiado!");
+                    }}
+                    className="flex-1 py-3 bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-300 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Copy size={18} />
+                    Copiar
+                  </button>
+                  <button 
+                    onClick={() => {
+                      share({
+                        title: `Devocional: ${selectedDevotionalTheme}`,
+                        text: devotionalContent,
+                      });
+                    }}
+                    className="flex-1 py-3 bg-stone-200 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-300 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Share2 size={18} />
+                    Compartilhar
+                  </button>
+                  <button 
+                    onClick={() => {
+                      onNavigate('devotional', { devotional: devotionalContent });
+                      setIsDevotionalModalOpen(false);
+                    }}
+                    className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20"
+                  >
+                    <BookOpen size={18} />
+                    Ler Completo
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setDevotionalContent(null);
+                      setSelectedDevotionalTheme(null);
+                    }}
+                    className="flex-1 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 font-bold rounded-xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+                  >
+                    <RotateCcw size={18} />
+                    Novo Tema
+                  </button>
+                </div>
+              )}
             </motion.div>
           </div>
         )}

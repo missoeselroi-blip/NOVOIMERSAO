@@ -165,7 +165,7 @@ function AppContent() {
     );
   }
 
-  const handleNavigate = (tabId: string) => {
+  const handleNavigate = (tabId: string, state?: any) => {
     const protectedTabs = ['theology', 'career', 'notebook', 'journal'];
     if (protectedTabs.includes(tabId) && !user) {
       setPendingTab(tabId);
@@ -174,7 +174,7 @@ function AppContent() {
       return;
     }
     setPendingTab(null);
-    navigate(tabId === 'home' ? '/' : `/${tabId}`);
+    navigate(tabId === 'home' ? '/' : `/${tabId}`, { state });
     setIsMenuOpen(false);
   };
 

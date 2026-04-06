@@ -516,7 +516,7 @@ async function startServer() {
           middlewareMode: true,
           hmr: false,
         },
-        appType: 'custom',
+        appType: 'spa',
       });
       app.use(vite.middlewares);
     } else {
@@ -532,7 +532,8 @@ async function startServer() {
       console.log(`[Server] Request received for: ${url}`);
 
       // Skip API routes or static files that should be handled by express.static or vite
-      if (url.startsWith('/api/') || (url.includes('.') && !url.endsWith('.html'))) {
+      // In development, Vite handles .tsx, .ts, .css, etc.
+      if (url.startsWith('/api/') || (url.includes('.') && !url.endsWith('.html') && !url.endsWith('.php'))) {
         return next();
       }
 

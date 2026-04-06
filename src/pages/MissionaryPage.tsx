@@ -21,7 +21,7 @@ import { useToast } from '../components/Toast';
 import MissionaryBulkResults from './MissionaryBulkResults';
 
 interface MissionaryPageProps {
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, state?: any) => void;
 }
 
 export default function MissionaryPage({ onNavigate }: MissionaryPageProps) {

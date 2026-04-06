@@ -125,6 +125,22 @@ export const geminiService = {
     });
   },
 
+  async generateFastText(prompt: string, systemInstruction?: string) {
+    return withRetry(async (currentRetry) => {
+      const ai = getAI();
+      const model = "gemini-3.1-flash-lite-preview";
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: prompt,
+        config: {
+          systemInstruction,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
+        },
+      });
+      return response.text || "";
+    });
+  },
+
   async generateTextWithThought(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();

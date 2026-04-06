@@ -12,6 +12,7 @@ import {
   Save, 
   ArrowLeft,
   BookOpen,
+  Book,
   Baby,
   UserPlus,
   Users,
@@ -180,7 +181,7 @@ const THEMES: ThemeConfig[] = [
   },
 ];
 
-export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: string) => void }) {
+export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: string, state?: any) => void }) {
   const location = useLocation();
   const { showToast } = useToast();
   const { share } = useShare();
@@ -188,6 +189,14 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const { user } = useAuth();
   const { saveTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
+
+  useEffect(() => {
+    if (location.state?.devotional) {
+      setDevotionalResult(location.state.devotional);
+      // Clear state to prevent re-opening on refresh if needed, 
+      // but usually location.state is fine for one-time display.
+    }
+  }, [location.state]);
   const [isReadingMode, setIsReadingMode] = useState(false);
   const [readingFontSize, setReadingFontSize] = useState(18);
   const [readingLineHeight, setReadingLineHeight] = useState(1.6);
@@ -511,7 +520,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         5. ## Oração Final
         [Uma oração curta e poderosa]`;
 
-      const response = await geminiService.generateText(prompt);
+      const response = await geminiService.generateFastText(prompt, "Você é um mentor espiritual experiente.");
 
       setDevotionalResult(response || "Não foi possível gerar o devocional.");
     } catch (error: any) {
@@ -638,7 +647,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         - Mensagem de 2-3 parágrafos
         - Oração curta`;
       
-      const response = await geminiService.generateText(prompt, "Você é um mentor espiritual experiente.", true);
+      const response = await geminiService.generateFastText(prompt, "Você é um mentor espiritual experiente.");
       setSeriesResult(response);
       showToast("Série mensal gerada com sucesso! 🙌✨");
     } catch (error) {
@@ -1056,214 +1065,13 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           </div>
         </div>
 
-        {/* Result Area */}
+        {/* Result Area - Shows placeholder, result is in modal */}
         <div className="lg:col-span-7">
-          <AnimatePresence mode="wait">
-            {isLoading ? (
-              <motion.div 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                exit={{ opacity: 0 }}
-                className="h-full min-h-[400px] flex flex-col items-center justify-center bg-app-surface rounded-[2.5rem] border border-app-border p-12 text-center space-y-6"
-              >
-                <Loader2 className="animate-spin text-emerald-600" size={48} />
-                <div className="space-y-2">
-                  <h4 className="text-xl font-bold">Gerando sua meditação...</h4>
-                  <p className="text-stone-500">Buscando inspiração para o seu dia.</p>
-                </div>
-              </motion.div>
-            ) : devotionalResult ? (
-              <motion.div 
-                initial={{ opacity: 0, y: 20 }} 
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-app-surface rounded-[2.5rem] border border-app-border shadow-xl overflow-hidden flex flex-col h-full"
-              >
-                <div className="p-6 border-b border-app-border flex justify-between items-center bg-app-surface/50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-600 text-white rounded-xl">
-                      <BookOpen size={20} />
-                    </div>
-                    <span className="font-bold text-sm">Devocional: {selectedTheme}</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <button 
-                      onClick={() => setIsReadingMode(!isReadingMode)}
-                      className={cn("p-2 rounded-full transition-colors", isReadingMode ? "bg-emerald-100 text-emerald-700" : "hover:bg-stone-200 dark:hover:bg-zinc-700")}
-                      title="Modo Leitura"
-                    >
-                      <BookOpen size={20} />
-                    </button>
-                    <button 
-                      onClick={() => toggleFavorite(devotionalResult)} 
-                      className={cn(
-                        "p-2 rounded-full transition-colors",
-                        favorites.some(f => f.content === devotionalResult)
-                          ? "text-rose-500 bg-rose-50 dark:bg-rose-900/20"
-                          : "hover:bg-stone-200 dark:hover:bg-zinc-700"
-                      )}
-                      title="Favoritar"
-                    >
-                      {favorites.some(f => f.content === devotionalResult) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
-                    </button>
-                    <button onClick={handlePrint} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors" title="Imprimir"><Printer size={20} /></button>
-                    <button onClick={() => setDevotionalResult(null)} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors" title="Fechar"><X size={20} /></button>
-                  </div>
-                </div>
-                
-                <div 
-                  className={cn("flex-1 p-10 overflow-y-auto custom-scrollbar", isReadingMode && "max-w-3xl mx-auto")}
-                  style={isReadingMode ? { fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight } : {}}
-                >
-                  <MarkdownRenderer content={devotionalResult} />
-                  
-                  <div className="mt-12 pt-12 border-t border-stone-100 dark:border-zinc-800">
-                    <FeedbackSection page="Devocional" context={selectedTheme || ''} />
-                  </div>
-                </div>
-
-                <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex flex-col gap-4">
-                  <div className="flex flex-wrap gap-3 items-center">
-                    <div className="flex gap-2 mr-auto">
-                      <button onClick={() => shareSocial('whatsapp')} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors" title="WhatsApp">
-                        <MessageCircle size={20} />
-                      </button>
-                      <button onClick={() => shareSocial('facebook')} className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors" title="Facebook">
-                        <Facebook size={20} />
-                      </button>
-                      <button onClick={() => shareSocial('instagram')} className="p-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors" title="Instagram">
-                        <Instagram size={20} />
-                      </button>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={handlePlayAudio}
-                        disabled={isGeneratingNarration}
-                        className="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 flex items-center gap-2 text-xs disabled:opacity-50"
-                      >
-                        {isGeneratingNarration ? <Loader2 size={16} className="animate-spin" /> : <Volume2 size={16} />}
-                        Narração Emotiva
-                      </button>
-                    </div>
-                  </div>
-
-                  {narrationAudio && (
-                    <div className="w-full bg-app-surface p-4 rounded-2xl border border-app-border shadow-sm">
-                      <div className="flex items-center gap-4 mb-2">
-                        <button 
-                          onClick={() => {
-                            if (audioRef.current) {
-                              if (isPlaying) audioRef.current.pause();
-                              else audioRef.current.play();
-                              setIsPlaying(!isPlaying);
-                            }
-                          }}
-                          className="w-10 h-10 flex items-center justify-center bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-colors"
-                        >
-                          {isPlaying ? <X size={20} /> : <Volume2 size={20} />}
-                        </button>
-                        <div className="flex-1">
-                          <div className="h-2 bg-stone-200 dark:bg-zinc-700 rounded-full overflow-hidden">
-                            <motion.div 
-                              className="h-full bg-emerald-500"
-                              initial={{ width: 0 }}
-                              animate={{ width: `${(audioProgress / audioDuration) * 100}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between mt-1 text-[10px] text-stone-500 font-mono">
-                            <span>{Math.floor(audioProgress / 60)}:{Math.floor(audioProgress % 60).toString().padStart(2, '0')}</span>
-                            <span>{Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')}</span>
-                          </div>
-                        </div>
-                      </div>
-                      {narrationAudio && (
-                        <audio 
-                          ref={audioRef}
-                          src={narrationAudio}
-                          onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
-                          onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
-                          onEnded={() => setIsPlaying(false)}
-                          className="hidden"
-                        />
-                      )}
-                      <div className="flex gap-2">
-                        <button 
-                          onClick={() => {
-                            const a = document.createElement('a');
-                            a.href = narrationAudio;
-                            a.download = `devocional-audio-${selectedTheme}.mp3`;
-                            a.click();
-                          }}
-                          className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
-                        >
-                          <Download size={14} /> Baixar Áudio
-                        </button>
-                        <button 
-                          onClick={async () => {
-                            if (!narrationAudio) return;
-                            
-                            try {
-                              // Try to share as file if supported
-                              if (navigator.share && navigator.canShare) {
-                                const response = await fetch(narrationAudio);
-                                const blob = await response.blob();
-                                const file = new File([blob], `devocional-${selectedTheme}.mp3`, { type: 'audio/mpeg' });
-                                
-                                if (navigator.canShare({ files: [file] })) {
-                                  await navigator.share({
-                                    files: [file],
-                                    title: 'Áudio Devocional',
-                                    text: `Ouça o devocional de hoje: ${selectedTheme}`
-                                  });
-                                  return;
-                                }
-                              }
-                              
-                              // Fallback to text share
-                              await share({
-                                title: 'Áudio Devocional',
-                                text: `Devocional de hoje: ${selectedTheme}. Ouça no Imersão Bíblica IA!`,
-                              });
-                            } catch (error) {
-                              console.error("Error sharing audio:", error);
-                              showToast("Erro ao compartilhar áudio.", "error");
-                            }
-                          }}
-                          className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
-                        >
-                          <Share2 size={14} /> Compartilhar
-                        </button>
-                      </div>
-                      <button 
-                        onClick={handleSaveToAudioBox}
-                        className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
-                      >
-                        <Volume2 size={14} /> Enviar para Coletânea
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="flex flex-wrap gap-3">
-                    <button onClick={handleDownload} className="flex-1 py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm">
-                      <Download size={18} /> Baixar Texto
-                    </button>
-                    <button onClick={saveToNotebook} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/20">
-                      <Save size={18} /> Salvar no Caderno
-                    </button>
-                    <button onClick={() => setDevotionalResult(null)} className="flex-1 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-xl hover:bg-stone-300 transition-all text-sm">
-                      Retornar
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-stone-50/50 dark:bg-zinc-800/20 rounded-[2.5rem] border border-dashed border-stone-200 dark:border-zinc-800 p-12 text-center">
-                <Sparkles size={48} className="text-stone-200 mb-6" />
-                <h4 className="text-xl font-bold mb-2">Selecione um dia no calendário</h4>
-                <p className="text-stone-500 max-w-xs">Escolha um tema acima e clique em um dia para receber sua palavra diária.</p>
-              </div>
-            )}
-          </AnimatePresence>
+          <div className="h-full min-h-[400px] flex flex-col items-center justify-center bg-stone-50/50 dark:bg-zinc-800/20 rounded-[2.5rem] border border-dashed border-stone-200 dark:border-zinc-800 p-12 text-center">
+            <Sparkles size={48} className="text-stone-200 mb-6" />
+            <h4 className="text-xl font-bold mb-2">Selecione um dia no calendário</h4>
+            <p className="text-stone-500 max-w-xs">Escolha um tema acima e clique em um dia para receber sua palavra diária.</p>
+          </div>
         </div>
       </div>
 
@@ -1658,6 +1466,231 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
       <div className="px-4 pb-8">
         <CreditInfoTip />
       </div>
+
+      {/* Full-screen Loading Overlay */}
+      <AnimatePresence>
+        {isLoading && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white dark:bg-zinc-900 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-6 max-w-sm w-full z-10"
+            >
+               <Book className="animate-spin text-emerald-600" size={64} />
+               <div className="text-center space-y-2">
+                 <h4 className="text-xl font-bold">Buscando Inspiração...</h4>
+                 <p className="text-stone-500 animate-pulse">Preparando uma palavra especial para o seu coração.</p>
+               </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Devotional Result Modal */}
+      <AnimatePresence>
+        {devotionalResult && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-0 sm:p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDevotionalResult(null)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="bg-amber-50 dark:bg-stone-900 w-full h-full sm:max-w-5xl sm:h-[95vh] sm:rounded-[2.5rem] overflow-hidden shadow-2xl border border-amber-200/50 dark:border-stone-800 flex flex-col relative z-10"
+            >
+              <div className="p-6 border-b border-amber-200/50 dark:border-stone-800 flex justify-between items-center bg-amber-100/50 dark:bg-stone-800/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-600 text-white rounded-xl">
+                    <BookOpen size={20} />
+                  </div>
+                  <span className="font-bold text-sm">Devocional: {selectedTheme}</span>
+                </div>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => setIsReadingMode(!isReadingMode)}
+                    className={cn("p-2 rounded-full transition-colors", isReadingMode ? "bg-emerald-100 text-emerald-700" : "hover:bg-stone-200 dark:hover:bg-zinc-700")}
+                    title="Modo Leitura"
+                  >
+                    <BookOpen size={20} />
+                  </button>
+                  <button 
+                    onClick={() => toggleFavorite(devotionalResult)} 
+                    className={cn(
+                      "p-2 rounded-full transition-colors",
+                      favorites.some(f => f.content === devotionalResult)
+                        ? "text-rose-500 bg-rose-50 dark:bg-rose-900/20"
+                        : "hover:bg-stone-200 dark:hover:bg-zinc-700"
+                    )}
+                    title="Favoritar"
+                  >
+                    {favorites.some(f => f.content === devotionalResult) ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+                  </button>
+                  <button onClick={handlePrint} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors" title="Imprimir"><Printer size={20} /></button>
+                  <button onClick={() => setDevotionalResult(null)} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors" title="Fechar"><X size={20} /></button>
+                </div>
+              </div>
+              
+              <div 
+                className={cn("flex-1 p-6 sm:p-10 overflow-y-auto custom-scrollbar", isReadingMode && "max-w-3xl mx-auto")}
+                style={isReadingMode ? { fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight } : {}}
+              >
+                <MarkdownRenderer content={devotionalResult} />
+                
+                <div className="mt-12 pt-12 border-t border-stone-100 dark:border-zinc-800">
+                  <FeedbackSection page="Devocional" context={selectedTheme || ''} />
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-amber-200/50 dark:border-stone-800 bg-amber-100/50 dark:bg-stone-800/50 flex flex-col gap-4">
+                <div className="flex flex-wrap gap-3 items-center">
+                  <div className="flex gap-2 mr-auto">
+                    <button onClick={() => shareSocial('whatsapp')} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors" title="WhatsApp">
+                      <MessageCircle size={20} />
+                    </button>
+                    <button onClick={() => shareSocial('facebook')} className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors" title="Facebook">
+                      <Facebook size={20} />
+                    </button>
+                    <button onClick={() => shareSocial('instagram')} className="p-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors" title="Instagram">
+                      <Instagram size={20} />
+                    </button>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <button 
+                      onClick={handlePlayAudio}
+                      disabled={isGeneratingNarration}
+                      className="px-4 py-2 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 flex items-center gap-2 text-xs disabled:opacity-50"
+                    >
+                      {isGeneratingNarration ? <Loader2 size={16} className="animate-spin" /> : <Volume2 size={16} />}
+                      Narração Emotiva
+                    </button>
+                  </div>
+                </div>
+
+                {narrationAudio && (
+                  <div className="w-full bg-app-surface p-4 rounded-2xl border border-app-border shadow-sm">
+                    <div className="flex items-center gap-4 mb-2">
+                      <button 
+                        onClick={() => {
+                          if (audioRef.current) {
+                            if (isPlaying) audioRef.current.pause();
+                            else audioRef.current.play();
+                            setIsPlaying(!isPlaying);
+                          }
+                        }}
+                        className="w-10 h-10 flex items-center justify-center bg-emerald-600 text-white rounded-full hover:bg-emerald-700 transition-colors"
+                      >
+                        {isPlaying ? <X size={20} /> : <Volume2 size={20} />}
+                      </button>
+                      <div className="flex-1">
+                        <div className="h-2 bg-stone-200 dark:bg-zinc-700 rounded-full overflow-hidden">
+                          <motion.div 
+                            className="h-full bg-emerald-500"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${(audioProgress / audioDuration) * 100}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between mt-1 text-[10px] text-stone-500 font-mono">
+                          <span>{Math.floor(audioProgress / 60)}:{Math.floor(audioProgress % 60).toString().padStart(2, '0')}</span>
+                          <span>{Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {narrationAudio && (
+                      <audio 
+                        ref={audioRef}
+                        src={narrationAudio}
+                        onTimeUpdate={(e) => setAudioProgress(e.currentTarget.currentTime)}
+                        onLoadedMetadata={(e) => setAudioDuration(e.currentTarget.duration)}
+                        onEnded={() => setIsPlaying(false)}
+                        className="hidden"
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => {
+                          const a = document.createElement('a');
+                          a.href = narrationAudio;
+                          a.download = `devocional-audio-${selectedTheme}.mp3`;
+                          a.click();
+                        }}
+                        className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
+                      >
+                        <Download size={14} /> Baixar Áudio
+                      </button>
+                      <button 
+                        onClick={async () => {
+                          if (!narrationAudio) return;
+                          
+                          try {
+                            // Try to share as file if supported
+                            if (navigator.share && navigator.canShare) {
+                              const response = await fetch(narrationAudio);
+                              const blob = await response.blob();
+                              const file = new File([blob], `devocional-${selectedTheme}.mp3`, { type: 'audio/mpeg' });
+                              
+                              if (navigator.canShare({ files: [file] })) {
+                                await navigator.share({
+                                  files: [file],
+                                  title: 'Áudio Devocional',
+                                  text: `Ouça o devocional de hoje: ${selectedTheme}`
+                                });
+                                return;
+                              }
+                            }
+                            
+                            // Fallback to text share
+                            await share({
+                              title: 'Áudio Devocional',
+                              text: `Devocional de hoje: ${selectedTheme}. Ouça no Imersão Bíblica IA!`,
+                            });
+                          } catch (error) {
+                            console.error("Error sharing audio:", error);
+                            showToast("Erro ao compartilhar áudio.", "error");
+                          }
+                        }}
+                        className="flex-1 py-2 text-[10px] bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-lg hover:bg-stone-200 flex items-center justify-center gap-1"
+                      >
+                        <Share2 size={14} /> Compartilhar
+                      </button>
+                    </div>
+                    <button 
+                      onClick={handleSaveToAudioBox}
+                      className="flex-1 py-2 text-xs bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 flex items-center justify-center gap-1"
+                    >
+                      <Volume2 size={14} /> Enviar para Coletânea
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-3">
+                  <button onClick={handleDownload} className="flex-1 py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-100 flex items-center justify-center gap-2 text-sm">
+                    <Download size={18} /> Baixar Texto
+                  </button>
+                  <button onClick={saveToNotebook} className="flex-1 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 flex items-center justify-center gap-2 text-sm shadow-lg shadow-emerald-600/20">
+                    <Save size={18} /> Salvar no Caderno
+                  </button>
+                  <button onClick={() => setDevotionalResult(null)} className="flex-1 py-3 bg-stone-200 dark:bg-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-xl hover:bg-stone-300 transition-all text-sm">
+                    Retornar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}

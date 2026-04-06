@@ -12,7 +12,7 @@ import { motion } from 'framer-motion';
 import { cn } from '../types';
 
 interface CoursesPageProps {
-  onNavigate: (tab: string) => void;
+  onNavigate: (tab: string, state?: any) => void;
 }
 
 export default function CoursesPage({ onNavigate }: CoursesPageProps) {
