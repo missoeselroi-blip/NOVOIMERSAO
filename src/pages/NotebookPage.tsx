@@ -56,7 +56,7 @@ import { db } from '../lib/firebase';
 import { doc, addDoc, updateDoc, deleteDoc, collection } from 'firebase/firestore';
 
 export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
-  const { user, notes: firestoreNotes, isInitialLoading } = useAuth();
+  const { user, notes: firestoreNotes, isInitialLoading, updateUser } = useAuth();
   const { share } = useShare();
   const { saveTrack } = useAudioBox();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
@@ -75,7 +75,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
   const [diaryPasswordInput, setDiaryPasswordInput] = useState('');
   const [isSettingPassword, setIsSettingPassword] = useState(false);
   const [confirmPasswordInput, setConfirmPasswordInput] = useState('');
-  const { updateUser } = useAuth();
 
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
