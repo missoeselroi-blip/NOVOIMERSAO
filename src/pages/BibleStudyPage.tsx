@@ -373,6 +373,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isEditingLibraryOutline, setIsEditingLibraryOutline] = useState(false);
   const [editedLibraryOutline, setEditedLibraryOutline] = useState<any | null>(null);
   const [isSavingCustomOutline, setIsSavingCustomOutline] = useState(false);
+  const [isResourcesModalOpen, setIsResourcesModalOpen] = useState(false);
+  const [isResourcesModalFullscreen, setIsResourcesModalFullscreen] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -617,7 +619,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [currentNote, setCurrentNote] = useState({ title: '', content: '' });
 
   const tabs = [
-    { id: 'bibles', label: 'Bíblias de Estudo', icon: <Book size={18} /> },
+    { id: 'bibles', label: 'Bíblias e Enciclopédias', icon: <Book size={18} /> },
     { id: 'verse-search', label: 'Busca de Versículo', icon: <Search size={18} /> },
     { id: 'authors', label: 'Visão do Autor', icon: <User size={18} /> },
     { id: 'religions', label: 'Outras Religiões', icon: <Cross size={18} className="rotate-180" /> },
@@ -3068,19 +3070,15 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "Bíblia de Estudo Textual",
     "Bíblia de Estudo Thomas Nelson",
     "Bíblia de Estudos Joyce Meyer",
-    "Bíblia de Jerusalém (Versão Católica)",
     "Bíblia do Obreiro Aprovado (CPAD)",
     "Bíblia do Pregador",
     "Bíblia do Pregador Fiel",
     "Bíblia do Pregador Pentecostal",
     "Bíblia em esboços",
-    "Bíblia Judaica Completa",
-    "Bíblia Judaica E A Bíblia Cristã",
     "Bíblia Missionária de Estudo",
     "Bíblia NVI de Estudo",
     "Bíblia Para Pregadoras E Lideres | Geziel Gomes",
     "Bíblia Pregação Expositiva | RA",
-    "Bíblia Sagrada – Tradução Oficial da CNBB (Versão Católica)",
     "Bíblia Sagrada Missionária",
     "Bíblia Shedd",
     "Bíblia Thompson",
@@ -3097,26 +3095,24 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "Bíblia de Estudo de Vida Cristã",
     "Bíblia de Estudo de Santidade",
     "Bíblia de Estudo de Oração",
-    "Bíblia Tradução do Novo mundo (Versão TJ)",
-    "Bíblia Viva (PT)",
-    "ARC (Almeida Revista e Corrigida - PT)",
-    "NVI (Nova Versão Internacional - PT)",
-    "NVT (Nova Versão Transformadora - PT)",
-    "ARA (Almeida Revista e Atualizada - PT)",
-    "ACF (Almeida Corrigida Fiel - PT)",
-    "Nova Vida (PT)",
-    "NIV (New International Version - EN)",
-    "ESV (English Standard Version - EN)",
-    "KJV (King James Version - EN)",
-    "NKJV (New King James Version - EN)",
-    "NASB (New American Standard Bible - EN)",
-    "NLT (New Living Translation - EN)",
-    "NRSV (New Revised Standard Version - EN)",
-    "Reina Valera (Espanhol - ES)",
-    "RVR1960 (Reina Valera 1960 - ES)",
-    "Biblia de las Américas (Espanhol - ES)",
-    "Louis Segond (Francês - FR)",
-    "Lutherbibel (Alemão - DE)",
+    "Bíblia de Estudo Wiersbe",
+    "Bíblia de Estudo Swindoll",
+    "Bíblia de Estudo C. S. Lewis",
+    "Bíblia de Estudo A. W. Tozer",
+    "Bíblia de Estudo Billy Graham",
+    "Bíblia de Estudo John Wesley",
+    "Bíblia de Estudo Herança Reformada",
+    "Bíblia de Estudo Andrews",
+    "Bíblia de Estudo Di Nelson",
+    "Bíblia de Estudo Almeida",
+    "Bíblia de Estudo Conselheira",
+    "Bíblia de Estudo da Família",
+    "Bíblia de Estudo da Mulher de Fé",
+    "Bíblia de Estudo Indutiva",
+    "Bíblia de Estudo Integrada",
+    "Bíblia de Estudo Descoberta",
+    "Bíblia de Estudo do Jovem",
+    "Bíblia de Estudo do Adolescente",
     "Comentário Bíblico Beacon",
     "Comentário bíblico expositivo Wiersbe",
     "Comentário Bíblico Matthew Henry",
@@ -3161,7 +3157,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     "O Livro dos Espíritos (Espiritismo)",
     "Tanakh (Judaísmo)",
     "Tripitaka (Budismo)",
-    "Veda (Hinduísmo)"
+    "Veda (Hinduísmo)",
+    "Bíblia Tradução do Novo mundo (Versão TJ)"
   ];
 
   const resources = [
@@ -3723,7 +3720,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       onChange={(e) => setSelectedStudyBible(e.target.value)}
                       className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
                     >
-                      <option value="">Selecione a Bíblia de Estudo</option>
+                      <option value="">Selecione Bíblia de Estudo (85)</option>
                       <option value="Todas as Bíblias">Todos(as)...</option>
                       {biblesList.map(bible => (
                         <option key={bible} value={bible}>{bible}</option>
@@ -3735,7 +3732,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       onChange={(e) => setSelectedCommentary(e.target.value)}
                       className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
                     >
-                      <option value="">Selecione o Comentário Bíblico</option>
+                      <option value="">Selecione o Comentário Bíblico (10)</option>
                       <option value="Todos os Comentários">Todos(as)...</option>
                       {commentariesList.map(commentary => (
                         <option key={commentary} value={commentary}>{commentary}</option>
@@ -3747,7 +3744,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       onChange={(e) => setSelectedDictionary(e.target.value)}
                       className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
                     >
-                      <option value="">Selecione o Dicionário Bíblico</option>
+                      <option value="">Selecione o Dicionário Bíblico (11)</option>
                       <option value="Todos os Dicionários">Todos(as)...</option>
                       {dictionariesList.map(dictionary => (
                         <option key={dictionary} value={dictionary}>{dictionary}</option>
@@ -3759,7 +3756,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                       onChange={(e) => setSelectedEncyclopedia(e.target.value)}
                       className="w-full px-4 py-3 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-xl outline-none text-sm focus:border-emerald-500"
                     >
-                      <option value="">Selecione a Enciclopédia Bíblica</option>
+                      <option value="">Selecione a Enciclopédia Bíblica (10)</option>
                       <option value="Todas as Enciclopédias">Todos(as)...</option>
                       {encyclopediasList.map(encyclopedia => (
                         <option key={encyclopedia} value={encyclopedia}>{encyclopedia}</option>
@@ -5672,10 +5669,15 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                         <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Selecione as Versões para Comparar</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                           {[
-                            'Almeida Revista e Corrigida', 'Almeida Revista Atualizada', 'Almeida Corrigida Fiel', 'Almeida século 21',
-                            'Nova Almeida Atualizada', 'Nova Versão Transformadora', 'Nova Versão Internacional', 'Nova Vida',
+                            'Almeida Revista e Corrigida (ARC)', 'Almeida Revista Atualizada (ARA)', 'Almeida Corrigida Fiel (ACF)', 'Almeida século 21',
+                            'Nova Almeida Atualizada (NAA)', 'Nova Versão Transformadora (NVT)', 'Nova Versão Internacional (NVI)', 'Nova Vida',
                             'Tradução Brasileira', 'Bíblia Viva', 'Bíblia de Jerusalém', 'Bíblia Pastoral', 'Bíblia da CNBB',
-                            'King James Version (EN)', 'Reina Valera 1960 (ES)', 'Vulgata Latina', 'VT Hebraico', 'NT Grego'
+                            'Bíblia Judaica Completa', 'Bíblia Judaica E A Bíblia Cristã',
+                            'King James Version (EN)', 'New King James Version (EN)', 'New International Version (EN)', 'English Standard Version (EN)',
+                            'New American Standard Bible (EN)', 'New Living Translation (EN)', 'New Revised Standard Version (EN)',
+                            'Reina Valera (ES)', 'Reina Valera 1960 (ES)', 'Biblia de las Américas (ES)',
+                            'Louis Segond (FR)', 'Lutherbibel (DE)',
+                            'Vulgata Latina', 'VT Hebraico', 'NT Grego'
                           ].map(version => (
                             <label key={version} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
                               <input
@@ -7253,22 +7255,92 @@ ${selectedLibraryOutline.appeal}
           )}
         </AnimatePresence>
 
-      <div className="mt-12 p-8 bg-stone-50 dark:bg-zinc-800/50 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 text-sm text-stone-600 dark:text-zinc-400 space-y-4">
-        <h4 className="font-bold text-stone-900 dark:text-white text-lg mb-4">Recursos dessa página:</h4>
-        <p><strong className="text-stone-900 dark:text-white">Bíblias de Estudo</strong> = Aqui você vai conseguir mergulhar em uma biblioteca bíblica com 50 Bíblias de Estudo; 10 Comentários bíblicos, 10 Enciclopédias bíblicas, 10 Dicionários bíblicos e 1 Concordância.</p>
-        <p><strong className="text-stone-900 dark:text-white">Busca de Verísculo</strong> = Nesta pesquisa além de duas versões do texto pesquisado, você terá um breve relato histórico e teológico que envolve o texto pesquisado.</p>
-        <p><strong className="text-stone-900 dark:text-white">Visão do Autor</strong> = Neste recurso você vai conseguir pesquisar cerca de 50 escritores dos mais renomados, influentes da nossa época e de tempos antigos. Você poderá pesquisar palavras, termos, frases e até mesmo fazer uma pergunta como se fosse para o autor. A IA irá pesquisar em todos os seus livros e responder em uma síntese bem direta sobre o assunto específico ou assuntos correlacionados.</p>
-        <p><strong className="text-stone-900 dark:text-white">Outras Religiões</strong> = Pesquise também nas principais religiões e seguimentos cristãos que possuem um cânon (livro sagrado ou principal livro doutrinário da religião).</p>
-        <p><strong className="text-stone-900 dark:text-white">Ferramentas de Criação</strong> = Nesta versátil ferramenta você vai conseguir gerar vários materiais para a sua pesquisa, conhecimento ou utilização em seu ministério. São vários tipos de criação: Lição para células (pequenos grupos); Estudos bíblicos, Esboços, Devocional, Apostilas (chegam a 80 páginas), E-books, Perguntas Bíblicas e Mensagens (dividas em Pregação, Aniversário, Casamento, Fim do ano, Formatura, Devocional, Velório e Infantil).</p>
-        <p><strong className="text-stone-900 dark:text-white">Compare Versões</strong> = Estão disponíveis neste recurso todas as versões e traduções da bíblia mais conhecidas. Ao pesquisar o usuário terá a acesso as duas versões do texto (a primeira versão sempre NVI e a segunda opção que o leitor deseja comparar). Terá também um apanhado das principais palavras que divergem nas duas versões. Você também conseguirá pesquisar nas línguas originais: Hebraico para o VT e Grego para o NT.</p>
-        <p><strong className="text-stone-900 dark:text-white">Significado</strong> = Pesquise palavras e expressões nos três principais dicionários da língua portuguesa. Mais: Português-Hebraico, Hebraico-Português, Português-Grego, Grego-Português. E também estão quatro IAs integradas: Gemini, ChatGPT, Claude e LIama.</p>
-        <p><strong className="text-stone-900 dark:text-white">Pesquisa Infinita - Wiki</strong> = É um recurso formidável integrada a IA Gemini que transforme uma pesquisa ou um texto em hiperlink nas palavras principais direcionando a outras pesquisas com novos hiperlinks e assim indefinidamente.</p>
-        <p><strong className="text-stone-900 dark:text-white">Mapas e Notas</strong> = Neste recurso é possível pesquisar os principais mapas bíblicos antigos, momentos históricos e outros recursos gerados a partir de IA com fontes em Bíblias de Estudos e Enciclopédias.</p>
-        <p><strong className="text-stone-900 dark:text-white">Ministério Infantil</strong> = Recurso para gerar lições de EBD, atividades e roteiros adaptados para crianças de todas as idades.</p>
-        <p><strong className="text-stone-900 dark:text-white">Histórias & Teatro</strong> = Crie roteiros de teatro e histórias impactantes e criativas para o seu ministério.</p>
-        <p><strong className="text-stone-900 dark:text-white">Geração Narração</strong> = Transforme seus textos e estudos em narrações profissionais com diversas vozes e tons.</p>
-        <p><strong className="text-stone-900 dark:text-white">Comentário/Debate bíblico</strong> = Gere comentários profundos ou debates teológicos entre diferentes visões sobre qualquer tema bíblico.</p>
+      <div className="mt-12 flex justify-center">
+        <button
+          onClick={() => setIsResourcesModalOpen(true)}
+          className="px-6 py-3 bg-stone-100 dark:bg-zinc-800 text-stone-700 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all flex items-center gap-2 shadow-sm"
+        >
+          <BookOpen size={20} />
+          Recursos dessa página (Clique aqui)
+        </button>
       </div>
+
+      <AnimatePresence>
+        {isResourcesModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsResourcesModalOpen(false)}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className={cn(
+                "relative bg-white dark:bg-zinc-900 shadow-2xl flex flex-col overflow-hidden transition-all duration-300",
+                isResourcesModalFullscreen 
+                  ? "fixed inset-0 w-full h-full rounded-none" 
+                  : "w-full max-w-4xl max-h-[85vh] rounded-[2rem]"
+              )}
+            >
+              {/* Navigation Bar */}
+              <div className="flex items-center justify-between p-4 border-b border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-900/50">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <BookOpen size={20} />
+                  </div>
+                  <h3 className="font-bold text-stone-900 dark:text-white">Recursos dessa página</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsResourcesModalFullscreen(false)}
+                    className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    title="Minimizar"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+                  </button>
+                  <button
+                    onClick={() => setIsResourcesModalFullscreen(true)}
+                    className="p-2 text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                    title="Maximizar"
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+                  </button>
+                  <button
+                    onClick={() => setIsResourcesModalOpen(false)}
+                    className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors"
+                    title="Fechar"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Content */}
+              <div className="flex-1 overflow-y-auto p-6 sm:p-8">
+                <div className="prose dark:prose-invert max-w-none text-stone-600 dark:text-zinc-400 space-y-6">
+                  <p><strong className="text-stone-900 dark:text-white">Bíblias de Estudo</strong> = Aqui você vai conseguir mergulhar em uma biblioteca bíblica com 85 Bíblias de Estudo; 10 Comentários bíblicos, 10 Enciclopédias bíblicas, 10 Dicionários bíblicos e 1 Concordância.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Busca de Verísculo</strong> = Nesta pesquisa além de duas versões do texto pesquisado, você terá um breve relato histórico e teológico que envolve o texto pesquisado.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Visão do Autor</strong> = Neste recurso você vai conseguir pesquisar cerca de 50 escritores dos mais renomados, influentes da nossa época e de tempos antigos. Você poderá pesquisar palavras, termos, frases e até mesmo fazer uma pergunta como se fosse para o autor. A IA irá pesquisar em todos os seus livros e responder em uma síntese bem direta sobre o assunto específico ou assuntos correlacionados.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Outras Religiões</strong> = Pesquise também nas principais religiões e seguimentos cristãos que possuem um cânon (livro sagrado ou principal livro doutrinário da religião).</p>
+                  <p><strong className="text-stone-900 dark:text-white">Ferramentas de Criação</strong> = Nesta versátil ferramenta você vai conseguir gerar vários materiais para a sua pesquisa, conhecimento ou utilização em seu ministério. São vários tipos de criação: Lição para células (pequenos grupos); Estudos bíblicos, Esboços, Devocional, Apostilas (chegam a 80 páginas), E-books, Perguntas Bíblicas e Mensagens (dividas em Pregação, Aniversário, Casamento, Fim do ano, Formatura, Devocional, Velório e Infantil).</p>
+                  <p><strong className="text-stone-900 dark:text-white">Compare Versões</strong> = Estão disponíveis neste recurso todas as versões e traduções da bíblia mais conhecidas. Ao pesquisar o usuário terá a acesso as duas versões do texto (a primeira versão sempre NVI e a segunda opção que o leitor deseja comparar). Terá também um apanhado das principais palavras que divergem nas duas versões. Você também conseguirá pesquisar nas línguas originais: Hebraico para o VT e Grego para o NT.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Significado</strong> = Pesquise palavras e expressões nos três principais dicionários da língua portuguesa. Mais: Português-Hebraico, Hebraico-Português, Português-Grego, Grego-Português. E também estão quatro IAs integradas: Gemini, ChatGPT, Claude e LIama.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Pesquisa Infinita - Wiki</strong> = É um recurso formidável integrada a IA Gemini que transforme uma pesquisa ou um texto em hiperlink nas palavras principais direcionando a outras pesquisas com novos hiperlinks e assim indefinidamente.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Mapas e Notas</strong> = Neste recurso é possível pesquisar os principais mapas bíblicos antigos, momentos históricos e outros recursos gerados a partir de IA com fontes em Bíblias de Estudos e Enciclopédias.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Ministério Infantil</strong> = Recurso para gerar lições de EBD, atividades e roteiros adaptados para crianças de todas as idades.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Histórias & Teatro</strong> = Crie roteiros de teatro e histórias impactantes e criativas para o seu ministério.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Geração Narração</strong> = Transforme seus textos e estudos em narrações profissionais com diversas vozes e tons.</p>
+                  <p><strong className="text-stone-900 dark:text-white">Comentário/Debate bíblico</strong> = Gere comentários profundos ou debates teológicos entre diferentes visões sobre qualquer tema bíblico.</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <SaveToNotebookModal
         isOpen={isNotebookModalOpen}

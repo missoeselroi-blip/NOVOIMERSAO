@@ -5,28 +5,36 @@ import { motion } from 'framer-motion';
 const mockSermons = [
   { 
     id: 1, 
-    title: 'A Importância da Leitura Bíblica', 
-    speaker: 'Imersão Bíblica', 
+    title: 'Missões e Satanismo na Disney.', 
+    speaker: 'Pr. Josué Yrion', 
     type: 'video', 
     videoId: '69BBSmFiHOc',
-    summary: 'Descubra como a leitura diária da Palavra de Deus pode transformar sua vida e fortalecer sua fé. Uma reflexão profunda sobre o poder das Escrituras.'
+    summary: 'Mensagem impactante é dividida em duas partes: 1ª parte revela os traços sutis de satanismo, pornografia e ocultismo nos desenhos e animações da Disney. 2ª parte revela o tamanho do desafio missionário em todo o mundo. Essa mensagem tem algumas décadas, mas ainda pode tocar profundamente em seu coração.'
   },
   { 
     id: 2, 
-    title: 'Como Entender a Bíblia', 
-    speaker: 'Imersão Bíblica', 
+    title: 'Sanguessuga e Suas Filhas', 
+    speaker: 'Pr. Jorge Linhares', 
     type: 'video', 
     videoId: 'aiizOFTscsY',
-    summary: 'Dicas práticas e princípios fundamentais para interpretar e compreender os textos sagrados com mais clareza e profundidade.'
+    summary: 'Mensagem edificante que traz uma profunda reflexão sobre a importância de sermos gratos e como a ganância e exploração tem atingido o ser humano em todas as suas relações. Vale a pena ouvir.'
   },
   { 
     id: 3, 
-    title: 'O Poder da Oração', 
-    speaker: 'Imersão Bíblica', 
+    title: 'A Última Mensagem de Paulo', 
+    speaker: 'Pr. Hernandes Dias Lopes', 
     type: 'video', 
     videoId: 'O4bvWuoMmkA',
-    summary: 'Uma mensagem inspiradora sobre a importância da oração constante e como ela nos conecta diretamente com o coração de Deus.'
+    summary: 'Esta é uma mensagem inspiradora que traduz as últimas palavras do Apóstolo Paulo revelando como foram seus últimos dias, seus pedidos, preocupações e sentimentos. O ministério de Paulo é um exemplo para todos nós e um legado que precisamos relembrar e praticar.'
   },
+  {
+    id: 4,
+    title: 'Jesus Cristo',
+    speaker: 'Pr. Billy Graham',
+    type: 'video',
+    videoId: '_hgw0INtNRo',
+    summary: 'Uma mensagem inesquecível de um do maior evangelista do século XX e um dos maiores pregadores cristãos de todos os tempos que arrastava multidões ganhando almas e transformando vidas. Essa mensagem revela um pouco do seu legado e revela o quanto a sua mensagem era \'simples\', direta, poderosa e centrada em Jesus Cristo que impactou milhões de pessoas em mais de 180 países.'
+  }
 ];
 
 const SermonsPage = () => {
