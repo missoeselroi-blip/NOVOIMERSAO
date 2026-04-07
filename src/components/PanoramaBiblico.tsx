@@ -15,7 +15,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   const { user, setUser } = useAuth();
   const [currentBookIndex, setCurrentBookIndex] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(3);
+  const [timeLeft, setTimeLeft] = useState(5);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'correct' | 'wrong' | 'timeout' | 'finished'>('intro');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -27,7 +27,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
   useEffect(() => {
     if (gameState === 'playing') {
-      setTimeLeft(3);
+      setTimeLeft(5);
       const q = getRandomQuestionForBook(currentBook);
       setCurrentQuestion(q);
       setSelectedAnswer(null);
@@ -164,9 +164,10 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
         </div>
 
         {/* Game Area */}
-        <div className="flex-1 flex flex-col items-center justify-center p-6 relative">
-          <AnimatePresence mode="wait">
-            {gameState === 'intro' && (
+        <div className="flex-1 overflow-y-auto p-6 relative">
+          <div className="min-h-full flex flex-col items-center justify-center">
+            <AnimatePresence mode="wait">
+              {gameState === 'intro' && (
               <motion.div 
                 key="intro"
                 initial={{ opacity: 0, scale: 0.9 }}
@@ -179,7 +180,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                 </div>
                 <h2 className="text-3xl font-display font-bold mb-4">Panorama Bíblico</h2>
                 <p className="text-stone-600 dark:text-zinc-400 mb-8 leading-relaxed">
-                  Viaje por todos os 66 livros da Bíblia! Você tem apenas <strong>3 segundos</strong> para responder cada pergunta.
+                  Viaje por todos os 66 livros da Bíblia! Você tem apenas <strong>5 segundos</strong> para responder cada pergunta.
                   <br/><br/>
                   Acertou? Avança um livro.<br/>
                   Tempo esgotou? Volta um livro.<br/>
@@ -301,7 +302,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                 </div>
                 <h2 className="text-3xl font-display font-bold text-amber-600 mb-4">Tempo Esgotado!</h2>
                 <p className="text-stone-600 dark:text-zinc-400 mb-8">
-                  Você demorou mais de 3 segundos.
+                  Você demorou mais de 5 segundos.
                   <br/><br/>
                   Você voltou um livro.
                 </p>
@@ -337,6 +338,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
               </motion.div>
             )}
           </AnimatePresence>
+          </div>
         </div>
       </div>
     </div>
