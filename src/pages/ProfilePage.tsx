@@ -400,6 +400,68 @@ export default function ProfilePage() {
             </div>
           )}
 
+          {activeTab === 'achievements' && (
+            <div className="space-y-10">
+              <h3 className="text-2xl font-bold flex items-center gap-2">
+                <Trophy className="text-yellow-500" /> Conquistas
+              </h3>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-full flex items-center justify-center">
+                      <Medal size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg">Medalhas de Bronze</h4>
+                      <p className="text-sm text-stone-500">10 acertos seguidos no Panorama Bíblico</p>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-amber-600">{user?.panoramaMedals?.bronze || 0}</p>
+                </div>
+
+                <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-stone-200 dark:bg-stone-800 text-stone-500 rounded-full flex items-center justify-center">
+                      <Medal size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg">Medalhas de Prata</h4>
+                      <p className="text-sm text-stone-500">20 acertos seguidos no Panorama Bíblico</p>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-stone-500">{user?.panoramaMedals?.silver || 0}</p>
+                </div>
+
+                <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-500 rounded-full flex items-center justify-center">
+                      <Medal size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg">Medalhas de Ouro</h4>
+                      <p className="text-sm text-stone-500">30 acertos seguidos no Panorama Bíblico</p>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-yellow-500">{user?.panoramaMedals?.gold || 0}</p>
+                </div>
+
+                <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-full flex items-center justify-center">
+                      <Trophy size={24} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-lg">Troféus de Honra</h4>
+                      <p className="text-sm text-stone-500">66 acertos seguidos no Panorama Bíblico</p>
+                    </div>
+                  </div>
+                  <p className="text-3xl font-black text-purple-600">{user?.panoramaMedals?.trophy || 0}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'settings' && (
             <div className="space-y-10">
               <h3 className="text-2xl font-bold flex items-center gap-2">

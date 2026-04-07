@@ -48,6 +48,12 @@ interface User {
   settings?: UserSettings;
   metrics?: Metrics;
   diaryPassword?: string;
+  panoramaMedals?: {
+    bronze: number;
+    silver: number;
+    gold: number;
+    trophy: number;
+  };
 }
 
 interface Metrics {

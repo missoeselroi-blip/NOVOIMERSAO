@@ -22,7 +22,8 @@ import {
   Gift,
   LogIn,
   Plus,
-  Swords
+  Swords,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -30,6 +31,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { db } from '../lib/firebase';
 import { Question, QUESTIONS } from '../data/questions';
+import { PanoramaBiblico } from '../components/PanoramaBiblico';
 import { 
   collection, 
   query, 
@@ -89,6 +91,7 @@ const QuizPage: React.FC = () => {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [timerActive, setTimerActive] = useState(false);
   const [startTime, setStartTime] = useState(0);
+  const [showPanorama, setShowPanorama] = useState(false);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinRoomIdInput, setJoinRoomIdInput] = useState('');
@@ -518,6 +521,9 @@ const QuizPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pt-20 pb-12 px-4 bg-stone-50 dark:bg-zinc-950">
+      {showPanorama && (
+        <PanoramaBiblico onClose={() => setShowPanorama(false)} />
+      )}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
@@ -950,6 +956,14 @@ const QuizPage: React.FC = () => {
                     className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
                   >
                     <UserPlus size={24} /> Quiz Mano a Mano
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => setShowPanorama(true)}
+                    className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition-all"
+                  >
+                    <BookOpen size={24} /> Panorama Bíblico
                   </button>
                 </div>
               </motion.div>
