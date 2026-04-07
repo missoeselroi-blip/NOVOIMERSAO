@@ -58,6 +58,10 @@ export const GOSPEL_AUTHORS = [
     ]
   },
   {
+    name: "Ariovaldo Ramos",
+    works: ["Lutando pela Igreja", "Ação da Igreja na Cidade", "O que é que a gente está fazendo aqui?", "Pregações e palestras em áudio e vídeo"]
+  },
+  {
     name: "Augusto Cury",
     works: ["O Mestre dos Mestres", "O Mestre da Sensibilidade", "O Mestre da Vida", "O Mestre do Amor", "O Mestre da Esperança"]
   },
@@ -213,6 +217,10 @@ export const GOSPEL_AUTHORS = [
     works: ["Metanoia", "O Poder da Profecia", "Filhos da Luz"]
   },
   {
+    name: "Jeff Fromholz",
+    works: ["Depois disto...: O segredo do chamado missionário", "Namoro, Biscoitos e um Grande Problema!", "Liderando Lobos", "Mensagens e estudos em vídeo"]
+  },
+  {
     name: "Jimmy Swaggart",
     works: ["Bíblia de Estudo do Expositor", "Comentários Bíblicos"]
   },
@@ -285,6 +293,10 @@ export const GOSPEL_AUTHORS = [
       "Café com Deus Pai (Série de devocionais diários)",
       "Encontrei um Pai"
     ]
+  },
+  {
+    name: "Lettie Cowman",
+    works: ["Mananciais no Deserto", "Mananciais nas Montanhas"]
   },
   {
     name: "Lisa Bevere",
@@ -366,6 +378,10 @@ export const GOSPEL_AUTHORS = [
     works: ["Teologia Sistemática", "Enciclopédia de Apologética Cristã"]
   },
   {
+    name: "Patrick e Nedra Dugan",
+    works: ["Depois do Sim!", "Estou Saindo", "Cursos e palestras sobre família e casamento"]
+  },
+  {
     name: "Paul G. Hiebert",
     works: ["Antropologia Cultural: Uma Perspectiva Cristã"]
   },
@@ -427,8 +443,8 @@ export const GOSPEL_AUTHORS = [
     works: ["Temor e Tremor", "O Desespero Humano", "As Obras do Amor"]
   },
   {
-    name: "Tim LaHaye",
-    works: ["Bíblia de Estudo de Profecias", "Deixados para Trás", "Temperamentos Transformados"]
+    name: "Tim e Beverly LaHaye",
+    works: ["Bíblia de Estudo de Profecias", "Deixados para Trás", "Temperamentos Transformados", "A Mulher Controlada pelo Espírito", "O Ato Conjugal"]
   },
   {
     name: "Timothy Keller",
