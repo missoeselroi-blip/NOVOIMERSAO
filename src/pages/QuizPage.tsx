@@ -204,6 +204,13 @@ const QuizPage: React.FC = () => {
         if (data.status === 'started' && !isQuizStarted && !isQuizFinished) {
           setCurrentQuestions(data.questions || shuffleQuestions());
           setIsQuizStarted(true);
+          setCurrentQuestionIndex(0);
+          setScore(0);
+          setSelectedOption(null);
+          setIsCorrect(null);
+          setTimeLeft(60);
+          setTimerActive(true);
+          setStartTime(Date.now());
         }
 
         // Check if all players finished
