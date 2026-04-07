@@ -47,6 +47,8 @@ export default function AdminPage() {
   const [users, setUsers] = useState<UserData[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedUser, setSelectedUser] = useState<UserData | null>(null);
+  const [emailSubject, setEmailSubject] = useState('');
+  const [emailMessage, setEmailMessage] = useState('');
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -65,6 +67,25 @@ export default function AdminPage() {
     } else {
       showToast("Credenciais administrativas incorretas.", "error");
     }
+  };
+
+  const handleSendEmailToAll = () => {
+    if (!emailSubject || !emailMessage) {
+      showToast("Preencha o assunto e a mensagem.", "error");
+      return;
+    }
+    
+    const allEmails = users.map(u => u.email).filter(Boolean).join(',');
+    
+    // Copy to clipboard as backup
+    navigator.clipboard.writeText(allEmails).catch(() => {});
+    
+    const mailtoLink = `mailto:?bcc=${allEmails}&subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailMessage)}`;
+    window.location.href = mailtoLink;
+    
+    showToast("Cliente de e-mail aberto. E-mails copiados para a área de transferência.", "success");
+    setEmailSubject('');
+    setEmailMessage('');
   };
 
   const [creditTransactions, setCreditTransactions] = useState<any[]>([]);
@@ -358,6 +379,50 @@ export default function AdminPage() {
             {getCreditPurchases().length === 0 && (
               <p className="text-center text-stone-500 py-4">Nenhuma compra registrada.</p>
             )}
+          </div>
+        </div>
+      </div>
+
+      {/* Email All Users */}
+      <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-xl flex items-center justify-center">
+            <Mail size={20} />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold">Enviar E-mail para Todos</h2>
+            <p className="text-xs text-stone-500 uppercase tracking-widest">Comunicação em massa</p>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Assunto</label>
+            <input 
+              type="text"
+              value={emailSubject}
+              onChange={(e) => setEmailSubject(e.target.value)}
+              placeholder="Assunto do e-mail..."
+              className="w-full px-4 py-3 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all mt-1"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-bold uppercase tracking-widest text-stone-400 ml-2">Mensagem</label>
+            <textarea 
+              value={emailMessage}
+              onChange={(e) => setEmailMessage(e.target.value)}
+              placeholder="Sua mensagem..."
+              rows={4}
+              className="w-full px-4 py-3 bg-stone-50 dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none transition-all mt-1 resize-none"
+            />
+          </div>
+          <div className="flex justify-end">
+            <button 
+              onClick={handleSendEmailToAll}
+              className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20"
+            >
+              <Mail size={18} />
+              Abrir Cliente de E-mail
+            </button>
           </div>
         </div>
       </div>

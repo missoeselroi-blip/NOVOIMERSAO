@@ -12,6 +12,7 @@ export const LoginPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const isFirebaseConfigured = !!auth;
 
   const handleSubmit = async (e: React.FormEvent) => {

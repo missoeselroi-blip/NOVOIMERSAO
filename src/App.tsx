@@ -113,6 +113,7 @@ import AuthModal from './components/AuthModal';
 import { MicrophonePermissionModal } from './components/MicrophonePermissionModal';
 import SectionTimer from './components/SectionTimer';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
+import { LoginPage } from './pages/LoginPage';
 
 function AppContent() {
   const { user, logout, isInitialLoading } = useAuth();
@@ -166,6 +167,10 @@ function AppContent() {
     );
   }
 
+  if (!user) {
+    return <LoginPage />;
+  }
+
   const handleNavigate = (tabId: string, state?: any) => {
     const protectedTabs = ['theology', 'career', 'notebook', 'journal'];
     if (protectedTabs.includes(tabId) && !user) {
@@ -214,7 +219,6 @@ function AppContent() {
     { id: 'evangelism', label: 'Evangelismo', subtitle: 'Ide por todo o mundo', icon: <Flame size={20} />, component: <EvangelismPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'storytelling', label: 'Contação de Estórias', subtitle: 'A arte de narrar', icon: <BookOpen size={20} />, component: <StorytellingPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'contact', label: 'Contato', subtitle: 'Fale conosco', icon: <Mail size={20} />, component: <ContactPage />, hidden: true },
-    { id: 'login-nav', label: 'Entrar', icon: <LogIn size={20} />, component: <div />, hidden: true },
     { id: 'student-profile', label: 'Página do Aluno', subtitle: 'Seu progresso', icon: <User size={20} />, component: <StudentPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'theology-search', label: 'Busca de Teologia', subtitle: 'Pesquisa avançada', icon: <Search size={20} />, component: <TheologySearchPage />, hidden: true },
     { id: 'evangelism-search', label: 'Busca de Evangelismo', subtitle: 'Pesquisa missionária', icon: <Search size={20} />, component: <EvangelismSearchPage />, hidden: true },
@@ -296,20 +300,7 @@ function AppContent() {
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
-            {navItems.filter(item => !item.hidden || item.id === 'login-nav').map((item) => {
-              if (item.id === 'login-nav') {
-                if (user) return null;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setIsAuthModalOpen(true)}
-                    className="flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 text-zinc-500 py-2"
-                  >
-                    <LogIn size={18} />
-                    <span>Entrar</span>
-                  </button>
-                );
-              }
+            {navItems.filter(item => !item.hidden).map((item) => {
               return (
                 <button
                   key={item.id}
