@@ -6,7 +6,8 @@ import {
   Coins, 
   Clock,
   ChevronRight,
-  BookOpen
+  BookOpen,
+  User
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../types';
@@ -61,6 +62,27 @@ export default function CoursesPage({ onNavigate }: CoursesPageProps) {
 
   return (
     <div className="max-w-7xl mx-auto px-4 pb-32 pt-8">
+      {/* Página do Aluno Card */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        onClick={() => onNavigate('student-profile')}
+        className="mb-12 group relative p-8 rounded-[2.5rem] border-2 bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800 hover:border-emerald-400 dark:hover:border-emerald-600 cursor-pointer shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col md:flex-row items-center gap-6"
+      >
+        <div className="w-20 h-20 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg shadow-emerald-600/20 shrink-0 group-hover:scale-110 transition-transform duration-300">
+          <User size={40} />
+        </div>
+        <div className="flex-1 text-center md:text-left">
+          <h2 className="text-3xl font-bold mb-2 text-stone-900 dark:text-zinc-100">Página do Aluno</h2>
+          <p className="text-stone-600 dark:text-zinc-400 text-lg">
+            Acompanhe seu progresso, veja seus certificados e gerencie sua jornada de aprendizado.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-emerald-600 font-bold group-hover:translate-x-2 transition-transform shrink-0">
+          Acessar Perfil <ChevronRight size={24} />
+        </div>
+      </motion.div>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {courses.map((course, index) => (
           <motion.div

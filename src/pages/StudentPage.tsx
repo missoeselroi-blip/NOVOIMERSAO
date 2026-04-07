@@ -97,7 +97,10 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string, 
     try {
       const result = await multiAiService.getPersonalizedRecommendations(
         { name: user.name, email: user.email },
-        { completedSubjects, totalPoints }
+        { 
+          theology: { completedSubjects, totalPoints },
+          evangelism: { completedSubjects: completedEvangelismSubjects, totalPoints: totalEvangelismPoints }
+        }
       );
       if (result && Array.isArray(result)) {
         setRecommendations(result);
@@ -613,11 +616,11 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string, 
                   <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
                     <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                       <Brain size={20} className="text-purple-500" />
-                      Recomendações Personalizadas (Claude AI)
+                      Plano de Estudo Personalizado (IA)
                     </h3>
                     {isLoadingRecommendations ? (
                       <div className="flex items-center gap-2 text-stone-500 italic">
-                        <Loader2 className="animate-spin" size={16} /> Analisando seu perfil...
+                        <Loader2 className="animate-spin" size={16} /> Analisando seu progresso em Teologia e Evangelismo...
                       </div>
                     ) : recommendations.length > 0 ? (
                       <ul className="space-y-3 list-none p-0">

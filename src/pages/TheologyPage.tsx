@@ -316,7 +316,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         setTimeout(() => syncPointsToCareer(subject, updates[subject]), 1000);
       }
 
-      await updateDoc(progressDocRef, updates);
+      await setDoc(progressDocRef, updates, { merge: true });
     } catch (error) {
       console.error("Error saving section time:", error);
     }

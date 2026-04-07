@@ -268,7 +268,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
         setTimeout(() => syncPointsToCareer(subject, updates[subject]), 1000);
       }
 
-      await updateDoc(progressDocRef, updates);
+      await setDoc(progressDocRef, updates, { merge: true });
     } catch (error) {
       console.error("Error saving section time:", error);
     }

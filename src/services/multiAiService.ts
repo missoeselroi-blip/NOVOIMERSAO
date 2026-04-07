@@ -36,7 +36,12 @@ export const multiAiService = {
   async getPersonalizedRecommendations(userProfile: any, studyHistory: any) {
     // Gemini is our primary engine for recommendations
     try {
-      const prompt = `Based on this user profile: ${JSON.stringify(userProfile)} and study history: ${JSON.stringify(studyHistory)}, provide 3 personalized study recommendations for Biblical studies. Return ONLY a JSON object with a 'recommendations' array of strings.`;
+      const prompt = `Analise os materiais de teologia e evangelismo para identificar os próximos passos lógicos no aprendizado do usuário, com base nos módulos concluídos e no progresso do usuário. Sugira um plano de estudo personalizado.
+      
+      Perfil do Usuário: ${JSON.stringify(userProfile)}
+      Histórico de Estudos (Teologia e Evangelismo): ${JSON.stringify(studyHistory)}
+      
+      Forneça 3 recomendações personalizadas e práticas. Retorne APENAS um objeto JSON com um array 'recommendations' contendo as strings.`;
       
       const schema = {
         type: Type.OBJECT,
@@ -44,7 +49,7 @@ export const multiAiService = {
           recommendations: {
             type: Type.ARRAY,
             items: { type: Type.STRING },
-            description: "List of 3 personalized recommendations"
+            description: "Lista de 3 recomendações personalizadas para o plano de estudo"
           }
         },
         required: ["recommendations"]
@@ -52,7 +57,7 @@ export const multiAiService = {
 
       const result = await geminiService.generateJSON<{ recommendations: string[] }>(
         prompt,
-        "You are a helpful assistant providing Biblical study recommendations.",
+        "Você é um tutor especialista em Teologia e Evangelismo, focado em criar planos de estudo personalizados.",
         schema
       );
 
