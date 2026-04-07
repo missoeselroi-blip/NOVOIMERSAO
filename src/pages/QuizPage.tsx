@@ -56,6 +56,7 @@ interface LeaderboardEntry {
   score: number;
   totalScore?: number;
   battlesWon: number;
+  panoramaScore?: number;
   lastScore: number;
   month: number;
   trend: 'up' | 'down' | 'same';
@@ -129,7 +130,7 @@ const QuizPage: React.FC = () => {
             const cappedScore = Math.min(userEntry.score || 0, 100);
             updateDoc(doc(db, 'quizLeaderboard', user.id), {
               score: cappedScore,
-              totalScore: cappedScore + (userEntry.battlesWon || 0)
+              totalScore: cappedScore + (userEntry.battlesWon || 0) + (userEntry.panoramaScore || 0)
             });
           }
         } else {
@@ -142,7 +143,7 @@ const QuizPage: React.FC = () => {
                 const cappedScore = Math.min(data.score || 0, 100);
                 updateDoc(doc(db, 'quizLeaderboard', user.id), {
                   score: cappedScore,
-                  totalScore: cappedScore + (data.battlesWon || 0)
+                  totalScore: cappedScore + (data.battlesWon || 0) + (data.panoramaScore || 0)
                 });
               }
             }
@@ -237,10 +238,11 @@ const QuizPage: React.FC = () => {
                 const data = userSnap.data() as any;
                 const battlesWon = data.battlesWon || 0;
                 const currentScore = Math.min(data.score || 0, 100);
+                const panoramaScore = data.panoramaScore || 0;
                 updateDoc(userRef, { 
                   score: currentScore,
                   battlesWon: battlesWon + 1,
-                  totalScore: currentScore + battlesWon + 1
+                  totalScore: currentScore + battlesWon + 1 + panoramaScore
                 });
               }
             });
@@ -438,18 +440,20 @@ const QuizPage: React.FC = () => {
       let trend: 'up' | 'down' | 'same' = 'same';
       let previousScore = 0;
       let battlesWon = 0;
+      let panoramaScore = 0;
 
       if (userSnap.exists()) {
         const data = userSnap.data() as LeaderboardEntry;
         previousScore = data.score || 0;
         battlesWon = data.battlesWon || 0;
+        panoramaScore = data.panoramaScore || 0;
         if (finalScore > previousScore) trend = 'up';
         else if (finalScore < previousScore) trend = 'down';
       } else {
         if (finalScore > 0) trend = 'up';
       }
 
-      const newTotalScore = finalScore + battlesWon;
+      const newTotalScore = finalScore + battlesWon + panoramaScore;
 
       await setDoc(userRef, {
         name: user.name || 'Usuário',
@@ -1043,6 +1047,7 @@ const QuizPage: React.FC = () => {
                         <th className="px-3 py-2">Nome</th>
                         <th className="px-3 py-2">Quiz</th>
                         <th className="px-3 py-2">Vitórias</th>
+                        <th className="px-3 py-2">Panorama</th>
                         <th className="px-3 py-2">Total</th>
                       </tr>
                     </thead>
@@ -1062,7 +1067,8 @@ const QuizPage: React.FC = () => {
                           </td>
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.score}</td>
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.battlesWon || 0}</td>
-                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.totalScore ?? (entry.score + (entry.battlesWon || 0))}</td>
+                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.panoramaScore || 0}</td>
+                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.totalScore ?? (entry.score + (entry.battlesWon || 0) + (entry.panoramaScore || 0))}</td>
                         </tr>
                       ))}
                     </tbody>

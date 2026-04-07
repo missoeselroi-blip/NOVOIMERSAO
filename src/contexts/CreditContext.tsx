@@ -120,7 +120,8 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user]);
 
   const consumeCredits = async (amount: number, description: string) => {
-    if (!user) return false;
+    if (!user || isNaN(amount)) return false;
+    if (amount <= 0) return true; // No cost, allow action
     
     try {
       const balanceDocRef = doc(db, 'userCredits', user.uid);
@@ -130,24 +131,26 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           throw new Error("Document does not exist!");
         }
 
-        const currentBalance = balanceDoc.data().balance || 0;
+        const currentBalance = Number(balanceDoc.data().balance) || 0;
         if (currentBalance < amount) {
           return false;
         }
 
         const newBalance = currentBalance - amount;
         transaction.update(balanceDocRef, { 
+          userId: user.uid,
           balance: newBalance,
           lastUpdated: serverTimestamp()
         });
 
         // Add transaction record
         const txRef = doc(collection(db, 'creditTransactions'));
+        const safeDescription = description ? (description.length > 400 ? description.substring(0, 400) + '...' : description) : 'Consumo de créditos';
         transaction.set(txRef, {
           userId: user.uid,
           type: 'consumption',
           amount,
-          description,
+          description: safeDescription,
           date: serverTimestamp()
         });
 
@@ -162,7 +165,7 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const addCredits = async (amount: number, description: string) => {
-    if (!user) return;
+    if (!user || isNaN(amount) || amount <= 0) return;
 
     try {
       const balanceDocRef = doc(db, 'userCredits', user.uid);
@@ -171,7 +174,7 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         let currentBalance = 0;
         
         if (balanceDoc.exists()) {
-          currentBalance = balanceDoc.data().balance || 0;
+          currentBalance = Number(balanceDoc.data().balance) || 0;
         }
 
         const newBalance = currentBalance + amount;
@@ -183,11 +186,12 @@ export const CreditProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
         // Add transaction record
         const txRef = doc(collection(db, 'creditTransactions'));
+        const safeDescription = description ? (description.length > 400 ? description.substring(0, 400) + '...' : description) : 'Adição de créditos';
         transaction.set(txRef, {
           userId: user.uid,
           type: 'purchase',
           amount,
-          description,
+          description: safeDescription,
           date: serverTimestamp()
         });
       });

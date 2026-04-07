@@ -125,11 +125,57 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
     setGameState('playing');
   };
 
+  const handleClose = async () => {
+    if (user && gameState !== 'intro') {
+      try {
+        const score = gameState === 'finished' ? 10 : Math.round((currentBookIndex / 66) * 10);
+        const userRef = doc(db, 'quizLeaderboard', user.id);
+        const userSnap = await getDoc(userRef);
+        
+        if (userSnap.exists()) {
+          const data = userSnap.data() as any;
+          const currentScore = Math.min(data.score || 0, 100);
+          const battlesWon = data.battlesWon || 0;
+          await updateDoc(userRef, {
+            panoramaScore: score,
+            totalScore: currentScore + battlesWon + score
+          });
+        } else {
+          // If user doesn't exist in leaderboard yet
+          const { serverTimestamp } = await import('firebase/firestore');
+          await updateDoc(userRef, {
+            name: user.name || 'Usuário',
+            avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+            score: 0,
+            battlesWon: 0,
+            panoramaScore: score,
+            totalScore: score,
+            updatedAt: serverTimestamp()
+          }).catch(async () => {
+             const { setDoc } = await import('firebase/firestore');
+             await setDoc(userRef, {
+                name: user.name || 'Usuário',
+                avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+                score: 0,
+                battlesWon: 0,
+                panoramaScore: score,
+                totalScore: score,
+                updatedAt: serverTimestamp()
+             });
+          });
+        }
+      } catch (error) {
+        console.error("Erro ao salvar pontuação do panorama:", error);
+      }
+    }
+    onClose();
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-stone-50 dark:bg-zinc-950 flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-stone-200 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900">
-        <button onClick={onClose} className="p-2 text-stone-500 hover:text-emerald-600 transition-colors">
+        <button onClick={handleClose} className="p-2 text-stone-500 hover:text-emerald-600 transition-colors">
           <ArrowLeft size={24} />
         </button>
         <div className="text-center">
@@ -185,6 +231,8 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                   Acertou? Avança um livro.<br/>
                   Tempo esgotou? Volta um livro.<br/>
                   Errou? Volta para o início da divisão atual!
+                  <br/><br/>
+                  <strong>Atenção:</strong> A sua pontuação (de 0 a 10) será salva no Ranking Quiz Geral com base no seu último progresso alcançado, e não será somada a cada tentativa.
                 </p>
                 <button 
                   onClick={startGame}
@@ -330,7 +378,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                   Você completou o Panorama Bíblico! Uma jornada incrível por toda a Palavra de Deus.
                 </p>
                 <button 
-                  onClick={onClose}
+                  onClick={handleClose}
                   className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
                 >
                   Voltar ao Quiz
