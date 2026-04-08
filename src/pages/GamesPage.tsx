@@ -88,6 +88,10 @@ const GamesPage: React.FC = () => {
   };
   const [isQuizStarted, setIsQuizStarted] = useState(false);
   const [isBattleMode, setIsBattleMode] = useState(false);
+  const [isCupMode, setIsCupMode] = useState(false);
+  const [cupId, setCupId] = useState<string | null>(null);
+  const [cupData, setCupData] = useState<any>(null);
+  const [cupMaxPlayers, setCupMaxPlayers] = useState<number>(4);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [roomData, setRoomData] = useState<any>(null);
   const [currentQuestions, setCurrentQuestions] = useState<Question[]>([]);
@@ -116,11 +120,18 @@ const GamesPage: React.FC = () => {
 
   useEffect(() => {
     const urlRoomId = searchParams.get('roomId') || new URLSearchParams(window.location.search).get('roomId');
+    const urlCupId = searchParams.get('cupId') || new URLSearchParams(window.location.search).get('cupId');
     if (urlRoomId) {
       setJoinRoomIdInput(urlRoomId);
       setIsBattleMode(true);
       if (user) {
         setShowJoinModal(true);
+      }
+    } else if (urlCupId) {
+      setCupId(urlCupId);
+      setIsCupMode(true);
+      if (user) {
+        joinCup(urlCupId);
       }
     }
   }, [searchParams, user]);
@@ -230,6 +241,36 @@ const GamesPage: React.FC = () => {
     }
     return () => clearInterval(timer);
   }, [timerActive, timeLeft]);
+
+  // Listen to cup updates
+  useEffect(() => {
+    if (!cupId) return;
+    const cupRef = doc(db, 'quizCups', cupId);
+    const unsubscribe = onSnapshot(cupRef, async (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setCupData(data);
+        
+        // Handle cup logic here
+        if (data.status === 'playing' && user) {
+          const currentRound = data.rounds[data.currentRound];
+          if (currentRound && currentRound.status === 'playing') {
+            // Find user's match
+            const myMatch = currentRound.matches.find((m: any) => m.player1.userId === user.id || m.player2.userId === user.id);
+            if (myMatch && !isQuizStarted) {
+              // Start quiz for this match
+              setCurrentQuestions(myMatch.questions);
+              setCurrentQuestionIndex(0);
+              setScore(0);
+              setStartTime(Date.now());
+              setIsQuizStarted(true);
+            }
+          }
+        }
+      }
+    });
+    return () => unsubscribe();
+  }, [cupId, isQuizStarted, user]);
 
   // Listen to room updates
   useEffect(() => {
@@ -349,6 +390,83 @@ const GamesPage: React.FC = () => {
     setStartTime(Date.now());
   };
 
+  const createCup = async () => {
+    if (!user) return;
+    const cupRef = doc(collection(db, 'quizCups'));
+    await setDoc(cupRef, {
+      creatorId: user.id,
+      maxPlayers: cupMaxPlayers,
+      players: [{ userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0, isEliminated: false }],
+      status: 'waiting',
+      currentRound: 0,
+      rounds: [],
+      createdAt: serverTimestamp()
+    });
+    setCupId(cupRef.id);
+    showToast("Copa criada! Compartilhe o link para os jogadores entrarem.", "success");
+  };
+
+  const joinCup = async (id: string) => {
+    if (!user) return;
+    console.log("Joining cup:", id);
+    const cupRef = doc(db, 'quizCups', id);
+    try {
+      const cupSnap = await getDoc(cupRef);
+      if (cupSnap.exists()) {
+        const data = cupSnap.data();
+        if (data.status !== 'waiting') {
+          showToast("Esta copa já começou ou foi finalizada.", "error");
+          return;
+        }
+        if (data.players.length >= data.maxPlayers && !data.players.some((p: any) => p.userId === user.id)) {
+          showToast("Esta copa já está cheia.", "error");
+          return;
+        }
+        const players = data.players || [];
+        if (!players.some((p: any) => p.userId === user.id)) {
+          players.push({ userId: user.id, name: user.name, avatar: user.photoURL || user.avatar || '', score: 0, isEliminated: false });
+          await updateDoc(cupRef, { players });
+        }
+        setCupId(id);
+        setIsCupMode(true);
+      } else {
+        showToast("Copa não encontrada.", "error");
+      }
+    } catch (error) {
+      console.error("Error joining cup:", error);
+      showToast("Erro ao entrar na copa.", "error");
+    }
+  };
+
+  const startCup = async () => {
+    if (!cupId || !cupData) return;
+    if (cupData.players.length !== cupData.maxPlayers) {
+      showToast(`A copa precisa de exatamente ${cupData.maxPlayers} jogadores para iniciar.`, "error");
+      return;
+    }
+    
+    // Shuffle players
+    const shuffledPlayers = [...cupData.players].sort(() => Math.random() - 0.5);
+    
+    // Create first round matches
+    const matches = [];
+    for (let i = 0; i < shuffledPlayers.length; i += 2) {
+      matches.push({
+        player1: { ...shuffledPlayers[i], score: 0, finished: false },
+        player2: { ...shuffledPlayers[i+1], score: 0, finished: false },
+        winnerId: null,
+        questions: shuffleQuestions().slice(0, 5) // 5 questions per match
+      });
+    }
+    
+    const cupRef = doc(db, 'quizCups', cupId);
+    await updateDoc(cupRef, {
+      status: 'playing',
+      currentRound: 0,
+      rounds: [{ matches, status: 'playing' }]
+    });
+  };
+
   const createRoom = async () => {
     if (!user) return;
     const roomRef = doc(collection(db, 'quizRooms'));
@@ -447,13 +565,24 @@ const GamesPage: React.FC = () => {
       showToast("Incorreto! -10 pontos", "error");
     }
 
-    // Sync score if in battle mode
+    // Sync score if in battle mode or cup mode
     if (isBattleMode && roomId && user) {
       const roomRef = doc(db, 'quizRooms', roomId);
       const players = roomData.players.map((p: any) => 
         p.userId === user.id ? { ...p, score: (p.score || 0) + pointsEarned } : p
       );
       await updateDoc(roomRef, { players });
+    } else if (isCupMode && cupId && user && cupData) {
+      const cupRef = doc(db, 'quizCups', cupId);
+      const currentRound = cupData.rounds[cupData.currentRound];
+      const matches = currentRound.matches.map((m: any) => {
+        if (m.player1.userId === user.id) return { ...m, player1: { ...m.player1, score: (m.player1.score || 0) + pointsEarned } };
+        if (m.player2.userId === user.id) return { ...m, player2: { ...m.player2, score: (m.player2.score || 0) + pointsEarned } };
+        return m;
+      });
+      const rounds = [...cupData.rounds];
+      rounds[cupData.currentRound] = { ...currentRound, matches };
+      await updateDoc(cupRef, { rounds });
     }
 
     setTimeout(() => {
@@ -477,6 +606,84 @@ const GamesPage: React.FC = () => {
         p.userId === user.id ? { ...p, finished: true } : p
       );
       await updateDoc(roomRef, { players });
+    } else if (isCupMode && cupId && user && cupData) {
+      const cupRef = doc(db, 'quizCups', cupId);
+      const currentRound = cupData.rounds[cupData.currentRound];
+      let allFinished = true;
+      const matches = currentRound.matches.map((m: any) => {
+        if (m.player1.userId === user.id) {
+          m.player1.finished = true;
+        }
+        if (m.player2.userId === user.id) {
+          m.player2.finished = true;
+        }
+        if (!m.player1.finished || !m.player2.finished) {
+          allFinished = false;
+        } else if (!m.winnerId) {
+          // Both finished, determine winner
+          m.winnerId = m.player1.score > m.player2.score ? m.player1.userId : m.player2.userId;
+          // If tie, random winner for now
+          if (m.player1.score === m.player2.score) {
+            m.winnerId = Math.random() > 0.5 ? m.player1.userId : m.player2.userId;
+          }
+        }
+        return m;
+      });
+      
+      const rounds = [...cupData.rounds];
+      rounds[cupData.currentRound] = { ...currentRound, matches };
+      
+      if (allFinished) {
+        rounds[cupData.currentRound].status = 'finished';
+        
+        // Prepare next round
+        const winners = matches.map((m: any) => cupData.players.find((p: any) => p.userId === m.winnerId));
+        
+        if (winners.length === 1) {
+          // Cup finished
+          await updateDoc(cupRef, { 
+            rounds, 
+            status: 'finished', 
+            winnerId: winners[0].userId 
+          });
+          
+          // Add 5 points to the winner's Quiz ranking
+          const winnerRef = doc(db, 'quizLeaderboard', winners[0].userId);
+          const winnerSnap = await getDoc(winnerRef);
+          if (winnerSnap.exists()) {
+             const wData = winnerSnap.data() as any;
+             await updateDoc(winnerRef, {
+               battlesWon: (wData.battlesWon || 0) + 5,
+               totalScore: (wData.totalScore || 0) + 5
+             });
+          } else {
+             await setDoc(winnerRef, {
+               userId: winners[0].userId,
+               name: winners[0].name,
+               avatar: winners[0].avatar,
+               totalScore: 5,
+               battlesWon: 5,
+               updatedAt: serverTimestamp()
+             });
+          }
+        } else {
+          // Next round
+          const shuffledWinners = [...winners].sort(() => Math.random() - 0.5);
+          const nextMatches = [];
+          for (let i = 0; i < shuffledWinners.length; i += 2) {
+            nextMatches.push({
+              player1: { ...shuffledWinners[i], score: 0, finished: false },
+              player2: { ...shuffledWinners[i+1], score: 0, finished: false },
+              winnerId: null,
+              questions: shuffleQuestions().slice(0, 5)
+            });
+          }
+          rounds.push({ matches: nextMatches, status: 'playing' });
+          await updateDoc(cupRef, { rounds, currentRound: cupData.currentRound + 1 });
+        }
+      } else {
+        await updateDoc(cupRef, { rounds });
+      }
     }
 
     if (user) {
@@ -968,6 +1175,21 @@ const GamesPage: React.FC = () => {
                       </>
                     )}
                   </>
+                ) : isCupMode && cupData ? (
+                  <div className="py-12">
+                    <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-2">Aguardando Fim da Rodada</h2>
+                    <p className="text-stone-600 dark:text-stone-400 mb-6">Sua pontuação: {score}</p>
+                    <button
+                      onClick={() => {
+                        setIsQuizFinished(false);
+                        setIsQuizStarted(false);
+                      }}
+                      className="w-full py-4 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 text-stone-700 dark:text-stone-300 rounded-2xl font-bold transition-all"
+                    >
+                      Ver Chaveamento
+                    </button>
+                  </div>
                 ) : (
                   <>
                     <div className="mb-6">
@@ -1126,6 +1348,198 @@ const GamesPage: React.FC = () => {
                   </>
                 )}
               </div>
+            ) : isCupMode ? (
+              <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
+                {cupId ? (
+                  <>
+                    <h2 className="text-2xl font-bold mb-2 text-stone-800 dark:text-stone-200">Copa Quiz</h2>
+                    <p className="text-stone-500 mb-6 font-mono bg-stone-100 dark:bg-zinc-800 py-2 px-4 rounded-lg inline-block">ID: {cupId}</p>
+                    
+                    {cupData?.status === 'finished' ? (
+                      <div className="mb-8">
+                        <Trophy size={64} className="mx-auto text-amber-500 mb-4" />
+                        <h3 className="text-3xl font-bold text-emerald-600 mb-2">Copa Finalizada!</h3>
+                        <p className="text-xl font-medium text-stone-700 dark:text-stone-300">
+                          Vencedor: {cupData.players.find((p: any) => p.userId === cupData.winnerId)?.name} 🎉
+                        </p>
+                        {cupData.winnerId === user?.id ? (
+                          <p className="mt-4 text-emerald-600 font-bold">Parabéns! Você ganhou a copa e +5 pontos no ranking!</p>
+                        ) : (
+                          <p className="mt-4 text-stone-500">Não foi dessa vez. Continue tentando!</p>
+                        )}
+                        <button
+                          onClick={() => {
+                            setIsCupMode(false);
+                            setCupId(null);
+                            setCupData(null);
+                          }}
+                          className="mt-8 w-full py-4 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 text-stone-700 dark:text-stone-300 rounded-2xl font-bold transition-all"
+                        >
+                          Voltar ao Menu
+                        </button>
+                      </div>
+                    ) : cupData?.status === 'playing' ? (
+                      <div className="mb-8 text-left">
+                        <h3 className="font-bold text-stone-700 dark:text-stone-300 mb-4">Fase Atual: Rodada {cupData.currentRound + 1}</h3>
+                        <div className="space-y-4">
+                          {cupData.rounds[cupData.currentRound]?.matches.map((match: any, index: number) => (
+                            <div key={index} className="p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-xl border border-stone-200 dark:border-zinc-700">
+                              <div className="flex justify-between items-center mb-2">
+                                <span className="font-medium text-stone-800 dark:text-stone-200">{match.player1.name}</span>
+                                <span className="font-bold text-emerald-600">{match.player1.score}</span>
+                              </div>
+                              <div className="text-center text-xs text-stone-400 font-bold mb-2">VS</div>
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium text-stone-800 dark:text-stone-200">{match.player2.name}</span>
+                                <span className="font-bold text-emerald-600">{match.player2.score}</span>
+                              </div>
+                              {match.winnerId && (
+                                <div className="mt-3 pt-3 border-t border-stone-200 dark:border-zinc-700 text-center text-sm font-bold text-emerald-600">
+                                  Vencedor: {match.winnerId === match.player1.userId ? match.player1.name : match.player2.name}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        {cupData.players.some((p: any) => p.userId === user?.id) && cupData.rounds[cupData.currentRound]?.matches.every((m: any) => m.player1.userId !== user?.id && m.player2.userId !== user?.id) && (
+                          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 text-center">
+                            <p className="text-amber-800 dark:text-amber-300 font-medium">Você foi eliminado, mas não desanime! Continue estudando a Palavra e tente novamente na próxima Copa.</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mb-8 text-left">
+                          <h3 className="font-bold text-stone-700 dark:text-stone-300 mb-4">Jogadores ({cupData?.players?.length}/{cupData?.maxPlayers}):</h3>
+                          <div className="space-y-3">
+                            {cupData?.players?.map((p: any, index: number) => (
+                              <div key={`${p.userId}-${index}`} className="flex items-center gap-3 p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl">
+                                <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" />
+                                <span className="font-medium text-stone-800 dark:text-stone-200">{p.name}</span>
+                                {p.userId === cupData.creatorId && (
+                                  <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold">Criador</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          {cupData?.creatorId === user?.id ? (
+                            <button
+                              onClick={startCup}
+                              disabled={cupData?.players?.length !== cupData?.maxPlayers}
+                              className="w-full py-4 bg-amber-500 hover:bg-amber-600 disabled:bg-stone-300 disabled:cursor-not-allowed text-white rounded-2xl font-bold text-lg shadow-lg flex items-center justify-center gap-2 transition-all"
+                            >
+                              <Trophy size={24} /> {cupData?.players?.length !== cupData?.maxPlayers ? `Aguardando ${cupData?.maxPlayers} jogadores...` : 'Iniciar Copa!'}
+                            </button>
+                          ) : (
+                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 rounded-xl font-medium flex items-center justify-center gap-2">
+                              <Timer className="animate-spin" size={20} /> Aguardando o criador iniciar...
+                            </div>
+                          )}
+                          
+                          <button
+                            onClick={() => {
+                              let baseUrl = window.location.href.split('/#/')[0];
+                              if (baseUrl.endsWith('/')) {
+                                baseUrl = baseUrl.slice(0, -1);
+                              }
+                              baseUrl = baseUrl.replace('ais-dev', 'ais-pre');
+                              const cacheBuster = Date.now();
+                              const url = `${baseUrl}/?cupId=${cupId}&v=${cacheBuster}#/quiz`;
+                              const text = `🏆 Desafio você para a Copa Quiz!\n\nLink do App: ${baseUrl}/#/quiz\nID da Copa: ${cupId}\n\nOu clique no link direto abaixo para entrar na copa:`;
+                              window.open(`https://wa.me/?text=${encodeURIComponent(text + '\n\n' + url)}`, '_blank');
+                            }}
+                            className="w-full py-4 bg-stone-100 dark:bg-zinc-800 hover:bg-stone-200 dark:hover:bg-zinc-700 text-stone-700 dark:text-stone-300 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all"
+                          >
+                            <UserPlus size={20} /> Convidar via WhatsApp
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-2xl font-bold mb-6 text-stone-800 dark:text-stone-200">Copa Quiz</h2>
+                    {(!user) ? (
+                      <div className="space-y-4">
+                        <p className="text-stone-600 dark:text-stone-400 mb-8">Faça login para participar da Copa.</p>
+                        <button
+                          onClick={async () => {
+                            try {
+                              await loginWithGoogle();
+                            } catch (err: any) {
+                              if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+                                console.log("Login popup closed by user");
+                                return;
+                              }
+                              console.error("Erro ao fazer login com Google:", err);
+                            }
+                          }}
+                          className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2 transition-all"
+                        >
+                          <LogIn size={24} /> Fazer Login com Google
+                        </button>
+                        <button
+                          onClick={() => setIsCupMode(false)}
+                          className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                        >
+                          Voltar
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <p className="text-stone-600 dark:text-stone-400 mb-8">Crie ou entre em uma Copa.</p>
+                        <div className="space-y-4">
+                          <div className="mb-4">
+                            <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-2">Número de Jogadores</label>
+                            <select 
+                              value={cupMaxPlayers}
+                              onChange={(e) => setCupMaxPlayers(Number(e.target.value))}
+                              className="w-full p-3 rounded-xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-800 dark:text-stone-200"
+                            >
+                              <option value={4}>4 Jogadores</option>
+                              <option value={8}>8 Jogadores</option>
+                              <option value={16}>16 Jogadores</option>
+                              <option value={32}>32 Jogadores</option>
+                              <option value={64}>64 Jogadores</option>
+                              <option value={128}>128 Jogadores</option>
+                            </select>
+                          </div>
+                          <button
+                            onClick={createCup}
+                            className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all"
+                          >
+                            Criar Copa
+                          </button>
+                          <div className="flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="ID da Copa"
+                              value={joinRoomIdInput}
+                              onChange={(e) => setJoinRoomIdInput(e.target.value)}
+                              className="flex-1 p-4 rounded-2xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-stone-800 dark:text-stone-200"
+                            />
+                            <button
+                              onClick={() => joinCup(joinRoomIdInput)}
+                              className="px-6 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold shadow-lg flex items-center justify-center transition-all"
+                            >
+                              Entrar
+                            </button>
+                          </div>
+                          <button
+                            onClick={() => setIsCupMode(false)}
+                            className="w-full py-4 text-stone-500 hover:text-stone-700 dark:text-stone-400 dark:hover:text-stone-200"
+                          >
+                            Voltar
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </>
+                )}
+              </div>
             ) : (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
@@ -1175,6 +1589,14 @@ const GamesPage: React.FC = () => {
                     className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 transition-all"
                   >
                     <UserPlus size={24} /> Quiz Mano a Mano
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => setIsCupMode(true)}
+                    className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all"
+                  >
+                    <Trophy size={24} /> Copa Quiz
                   </button>
                 </div>
               </motion.div>
