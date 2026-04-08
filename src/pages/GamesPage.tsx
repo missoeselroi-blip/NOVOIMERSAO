@@ -750,7 +750,7 @@ const GamesPage: React.FC = () => {
     if (gameName === 'whoami') whoAmIScore += gameScore;
     if (gameName === 'timeline') timelineScore += gameScore;
     if (gameName === 'hiddenword') hiddenWordScore += gameScore;
-    if (gameName === 'hangman') hangmanScore += gameScore;
+    if (gameName === 'hangman') hangmanScore = gameScore; // Always record the last result for hangman
 
     const newTotalScore = previousScore + battlesWon + panoramaScore + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
 
