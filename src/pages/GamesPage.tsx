@@ -23,7 +23,11 @@ import {
   LogIn,
   Plus,
   Swords,
-  BookOpen
+  BookOpen,
+  HelpCircle,
+  Clock,
+  Type,
+  Skull
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -32,6 +36,10 @@ import { useToast } from '../components/Toast';
 import { db } from '../lib/firebase';
 import { Question, QUESTIONS } from '../data/questions';
 import { PanoramaBiblico } from '../components/PanoramaBiblico';
+import WhoAmIGame from '../components/games/WhoAmIGame';
+import TimelineGame from '../components/games/TimelineGame';
+import HiddenWordGame from '../components/games/HiddenWordGame';
+import HangmanGame from '../components/games/HangmanGame';
 import { 
   collection, 
   query, 
@@ -65,7 +73,7 @@ interface LeaderboardEntry {
 
 
 // Force rebuild
-const QuizPage: React.FC = () => {
+const GamesPage: React.FC = () => {
   const { user, loginWithGoogle } = useAuth();
   const { showToast } = useToast();
   
@@ -93,6 +101,7 @@ const QuizPage: React.FC = () => {
   const [timerActive, setTimerActive] = useState(false);
   const [startTime, setStartTime] = useState(0);
   const [showPanorama, setShowPanorama] = useState(false);
+  const [activeGame, setActiveGame] = useState<string | null>(null);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinRoomIdInput, setJoinRoomIdInput] = useState('');
@@ -474,6 +483,36 @@ const QuizPage: React.FC = () => {
     }
   };
 
+  const handleOtherGameFinish = async (gameScore: number) => {
+    setActiveGame(null);
+    if (!user) return;
+    
+    const userRef = doc(db, 'quizLeaderboard', user.id);
+    const userSnap = await getDoc(userRef);
+    
+    let previousScore = 0;
+    let battlesWon = 0;
+    let panoramaScore = 0;
+
+    if (userSnap.exists()) {
+      const data = userSnap.data() as LeaderboardEntry;
+      previousScore = data.score || 0;
+      battlesWon = data.battlesWon || 0;
+      panoramaScore = data.panoramaScore || 0;
+    }
+
+    const newTotalScore = previousScore + battlesWon + panoramaScore + gameScore;
+
+    await setDoc(userRef, {
+      name: user.name || 'Usuário',
+      avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+      totalScore: newTotalScore,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    
+    showToast(`Pontuação salva no ranking geral!`, 'success');
+  };
+
   const handleShare = async () => {
     const element = document.getElementById('quiz-result-card');
     if (!element) return;
@@ -570,23 +609,119 @@ const QuizPage: React.FC = () => {
 
       <div className="max-w-4xl mx-auto">
         
-        {/* Header */}
-        <div className="text-center mb-8">
-          <motion.div 
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="inline-flex p-4 bg-emerald-100 dark:bg-emerald-900/30 rounded-full text-emerald-600 dark:text-emerald-400 mb-4"
-          >
-            <Trophy size={48} />
-          </motion.div>
-          <h1 className="text-4xl font-display font-bold text-emerald-900 dark:text-emerald-400 mb-2">Quiz Bíblico</h1>
-          <p className="text-stone-600 dark:text-stone-400">Teste seus conhecimentos e suba no ranking!</p>
-        </div>
+        {/* Header / User Profile */}
+        {user && (
+          <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800 mb-8 flex flex-col md:flex-row items-center gap-6">
+            <img 
+              src={user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+              alt="Avatar" 
+              className="w-24 h-24 rounded-full border-4 border-emerald-500"
+              referrerPolicy="no-referrer"
+            />
+            <div className="flex-1 text-center md:text-left">
+              <h1 className="text-3xl font-display font-bold text-stone-800 dark:text-stone-200">{user.name || 'Usuário'}</h1>
+              <p className="text-stone-500 mb-4">Classificação: #{userRank?.rank || '?'}</p>
+              <div className="flex flex-wrap justify-center md:justify-start gap-4">
+                <div className="bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-800">
+                  <p className="text-xs text-emerald-600 font-bold uppercase">Pontos Totais</p>
+                  <p className="text-xl font-bold text-emerald-700">{userRank?.totalScore ?? (userRank?.score || 0)}</p>
+                </div>
+                <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl border border-blue-100 dark:border-blue-800">
+                  <p className="text-xs text-blue-600 font-bold uppercase">Vitórias (Batalha)</p>
+                  <p className="text-xl font-bold text-blue-700">{userRank?.battlesWon || 0}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Main Content Area */}
-          <div className="lg:col-span-2 space-y-6">
+        {activeGame === null ? (
+          <div className="space-y-8">
+            {/* Game Menu */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <button onClick={() => setActiveGame('quiz')} className="p-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <Zap size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Quiz Bíblico</h3>
+                <p className="text-emerald-100 text-sm">Teste seus conhecimentos gerais</p>
+              </button>
+              <button onClick={() => setActiveGame('whoami')} className="p-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <HelpCircle size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Quem Sou Eu?</h3>
+                <p className="text-blue-100 text-sm">Adivinhe com dicas progressivas</p>
+              </button>
+              <button onClick={() => setActiveGame('timeline')} className="p-6 bg-gradient-to-br from-purple-500 to-fuchsia-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <Clock size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Linha do Tempo</h3>
+                <p className="text-purple-100 text-sm">Ordene os eventos cronologicamente</p>
+              </button>
+              <button onClick={() => setActiveGame('hiddenword')} className="p-6 bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <Type size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Palavra Oculta</h3>
+                <p className="text-orange-100 text-sm">Desafio diário de 5 letras</p>
+              </button>
+              <button onClick={() => setActiveGame('hangman')} className="p-6 bg-gradient-to-br from-stone-700 to-stone-900 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <Skull size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Forca Bíblica</h3>
+                <p className="text-stone-300 text-sm">Descubra a palavra antes do fim</p>
+              </button>
+              <button onClick={() => setShowPanorama(true)} className="p-6 bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <BookOpen size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Panorama Bíblico</h3>
+                <p className="text-pink-100 text-sm">Visão geral dos livros</p>
+              </button>
+            </div>
+
+            {/* General Leaderboard */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800">
+              <div className="flex items-center gap-3 mb-6">
+                <Crown className="text-amber-500" size={24} />
+                <h2 className="text-xl font-bold text-stone-800 dark:text-stone-200">Ranking Geral dos Jogos</h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-stone-500 uppercase bg-stone-50 dark:bg-zinc-800">
+                    <tr>
+                      <th className="px-3 py-2">#</th>
+                      <th className="px-3 py-2">Nome</th>
+                      <th className="px-3 py-2">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((entry, index) => (
+                      <tr 
+                        key={entry.userId}
+                        className={cn(
+                          "border-b border-stone-100 dark:border-zinc-800",
+                          entry.userId === user?.id ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
+                        )}
+                      >
+                        <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
+                        <td className="px-3 py-3 flex items-center gap-2">
+                          <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                          <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[150px]">{entry.name}</span>
+                        </td>
+                        <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.totalScore ?? (entry.score + (entry.battlesWon || 0) + (entry.panoramaScore || 0))}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div>
+            {activeGame === 'whoami' && <WhoAmIGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'timeline' && <TimelineGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'hiddenword' && <HiddenWordGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'hangman' && <HangmanGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'quiz' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Quiz Bíblico</h2>
+                  <button onClick={() => setActiveGame(null)} className="text-stone-500 hover:text-stone-700">Voltar aos Jogos</button>
+                </div>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 space-y-6">
             
             {isQuizStarted ? (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 relative overflow-hidden">
@@ -1089,8 +1224,12 @@ const QuizPage: React.FC = () => {
 
         </div>
       </div>
+    )}
+    </div>
+    )}
+      </div>
     </div>
   );
 };
 
-export default QuizPage;
+export default GamesPage;

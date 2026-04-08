@@ -118,8 +118,10 @@ interface FirestoreErrorInfo {
 }
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  
   const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email || undefined,
@@ -136,8 +138,22 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
     operationType,
     path
   };
+  
   console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  
+  // Only throw the specific JSON error for permission issues as requested by the spec
+  if (errorMessage.includes('Missing or insufficient permissions') || errorMessage.includes('permission-denied')) {
+    throw new Error(JSON.stringify(errInfo));
+  }
+  
+  // For offline errors, we don't want to crash the app
+  if (errorMessage.includes('client is offline') || errorMessage.includes('offline')) {
+    console.warn("Firestore is operating in offline mode.");
+    return;
+  }
+  
+  // For other errors, we can throw a normal error or just log
+  // throw new Error(errorMessage);
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -177,34 +193,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         if (firebaseUser) {
           const userDocRef = doc(db, 'users', firebaseUser.uid);
-          const userDoc = await getDoc(userDocRef);
           
-          let userData: User;
-          if (userDoc.exists()) {
-            userData = userDoc.data() as User;
+          try {
+            const userDoc = await getDoc(userDocRef);
             
-            // Auto-assign admin role to specific email
-            if (firebaseUser.email === 'missoeselroi@gmail.com' && userData.role !== 'admin') {
-              userData.role = 'admin';
-              await updateDoc(userDocRef, { role: 'admin' });
+            let userData: User;
+            if (userDoc.exists()) {
+              userData = userDoc.data() as User;
+              
+              // Auto-assign admin role to specific email
+              if (firebaseUser.email === 'missoeselroi@gmail.com' && userData.role !== 'admin') {
+                userData.role = 'admin';
+                await updateDoc(userDocRef, { role: 'admin' });
+              }
+              
+              // Update lastActive
+              await updateDoc(userDocRef, {
+                lastActive: new Date().toISOString()
+              });
+            } else {
+              const isAdmin = firebaseUser.email === 'missoeselroi@gmail.com';
+              userData = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Usuário',
+                email: firebaseUser.email || '',
+                photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
+                joinDate: new Date().toISOString(),
+                lastActive: new Date().toISOString(),
+                role: isAdmin ? 'admin' : 'user'
+              };
+              await setDoc(userDocRef, userData);
             }
-            
-            // Update lastActive
-            await updateDoc(userDocRef, {
-              lastActive: new Date().toISOString()
-            });
-          } else {
-            const isAdmin = firebaseUser.email === 'missoeselroi@gmail.com';
-            userData = {
-              id: firebaseUser.uid,
-              name: firebaseUser.displayName || 'Usuário',
-              email: firebaseUser.email || '',
-              photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${firebaseUser.uid}`,
-              joinDate: new Date().toISOString(),
-              lastActive: new Date().toISOString(),
-              role: isAdmin ? 'admin' : 'user'
-            };
-            await setDoc(userDocRef, userData);
+          } catch (error: any) {
+            console.warn("Could not sync user data (possibly offline):", error);
+            // We continue to set up the onSnapshot listener which will use cached data
           }
           
           unsubscribeUser = onSnapshot(userDocRef, (doc) => {

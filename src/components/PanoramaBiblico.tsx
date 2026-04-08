@@ -12,7 +12,7 @@ interface PanoramaBiblicoProps {
 }
 
 export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => {
-  const { user, setUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const [currentBookIndex, setCurrentBookIndex] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [timeLeft, setTimeLeft] = useState(5);
@@ -89,10 +89,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
           const medals = userData.panoramaMedals || { bronze: 0, silver: 0, gold: 0, trophy: 0 };
           medals[medalEarned] += 1;
           
-          await updateDoc(userRef, { panoramaMedals: medals });
-          if (setUser) {
-            setUser({ ...user, panoramaMedals: medals } as any);
-          }
+          await updateUser({ panoramaMedals: medals });
         }
       } catch (error) {
         console.error("Erro ao salvar medalha:", error);

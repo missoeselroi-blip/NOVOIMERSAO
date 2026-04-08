@@ -19,7 +19,8 @@ import {
   Clock,
   ArrowLeft,
   Trophy,
-  Award
+  Award,
+  Medal as MedalIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
@@ -410,7 +411,7 @@ export default function ProfilePage() {
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-full flex items-center justify-center">
-                      <Medal size={24} />
+                      <MedalIcon size={24} />
                     </div>
                     <div>
                       <h4 className="font-bold text-lg">Medalhas de Bronze</h4>
@@ -423,7 +424,7 @@ export default function ProfilePage() {
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-stone-200 dark:bg-stone-800 text-stone-500 rounded-full flex items-center justify-center">
-                      <Medal size={24} />
+                      <MedalIcon size={24} />
                     </div>
                     <div>
                       <h4 className="font-bold text-lg">Medalhas de Prata</h4>
@@ -436,7 +437,7 @@ export default function ProfilePage() {
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800">
                   <div className="flex items-center gap-4 mb-4">
                     <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-500 rounded-full flex items-center justify-center">
-                      <Medal size={24} />
+                      <MedalIcon size={24} />
                     </div>
                     <div>
                       <h4 className="font-bold text-lg">Medalhas de Ouro</h4>

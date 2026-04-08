@@ -92,7 +92,7 @@ const MissionaryBulkResults = lazyWithRetry(() => import('./pages/MissionaryBulk
 const AudioBoxPage = lazyWithRetry(() => import('./pages/AudioBoxPage'));
 const AdminPage = lazyWithRetry(() => import('./pages/AdminPage'));
 const BibleRacePage = lazyWithRetry(() => import('./pages/BibleRacePage'));
-const QuizPage = lazyWithRetry(() => import('./pages/QuizPage'));
+const GamesPage = lazyWithRetry(() => import('./pages/GamesPage'));
 const BiblePage = lazyWithRetry(() => import('./pages/BiblePage'));
 const SermonsPage = lazyWithRetry(() => import('./pages/SermonsPage'));
 
@@ -194,7 +194,7 @@ function AppContent() {
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
-    { id: 'quiz', label: 'Quiz', icon: <Zap size={22} /> },
+    { id: 'quiz', label: 'Jogos', icon: <Zap size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];
@@ -209,7 +209,7 @@ function AppContent() {
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
-    { id: 'quiz', label: 'QUIZ', subtitle: 'Desafio de Conhecimento', icon: <Zap size={20} />, component: <QuizPage /> },
+    { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage /> },
     { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
