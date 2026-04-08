@@ -19,6 +19,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'correct' | 'wrong' | 'timeout' | 'finished'>('intro');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [startTime, setStartTime] = useState<number>(0);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -119,6 +120,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   const startGame = () => {
     setCurrentBookIndex(0);
     setConsecutiveCorrect(0);
+    setStartTime(Date.now());
     setGameState('playing');
   };
 
@@ -126,6 +128,8 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
     if (user && gameState !== 'intro') {
       try {
         const score = gameState === 'finished' ? 10 : Math.round((currentBookIndex / 66) * 10);
+        const duration = startTime > 0 ? Math.floor((Date.now() - startTime) / 1000) : 0;
+        
         const userRef = doc(db, 'quizLeaderboard', user.id);
         const userSnap = await getDoc(userRef);
         
@@ -133,9 +137,17 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
           const data = userSnap.data() as any;
           const currentScore = Math.min(data.score || 0, 100);
           const battlesWon = data.battlesWon || 0;
+          const whoAmIScore = data.whoAmIScore || 0;
+          const timelineScore = data.timelineScore || 0;
+          const hiddenWordScore = data.hiddenWordScore || 0;
+          const hangmanScore = data.hangmanScore || 0;
+          
+          const newTotalScore = currentScore + battlesWon + score + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
+          
           await updateDoc(userRef, {
             panoramaScore: score,
-            totalScore: currentScore + battlesWon + score
+            panoramaTime: duration,
+            totalScore: newTotalScore
           });
         } else {
           // If user doesn't exist in leaderboard yet
@@ -146,6 +158,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
             score: 0,
             battlesWon: 0,
             panoramaScore: score,
+            panoramaTime: duration,
             totalScore: score,
             updatedAt: serverTimestamp()
           }).catch(async () => {
@@ -156,6 +169,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                 score: 0,
                 battlesWon: 0,
                 panoramaScore: score,
+                panoramaTime: duration,
                 totalScore: score,
                 updatedAt: serverTimestamp()
              });

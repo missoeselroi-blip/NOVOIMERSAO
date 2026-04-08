@@ -27,7 +27,7 @@ import {
   HelpCircle,
   Clock,
   Type,
-  Skull
+  UserX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -65,6 +65,11 @@ interface LeaderboardEntry {
   totalScore?: number;
   battlesWon: number;
   panoramaScore?: number;
+  panoramaTime?: number;
+  whoAmIScore?: number;
+  timelineScore?: number;
+  hiddenWordScore?: number;
+  hangmanScore?: number;
   lastScore: number;
   month: number;
   trend: 'up' | 'down' | 'same';
@@ -93,6 +98,7 @@ const GamesPage: React.FC = () => {
   const [totalUsers, setTotalUsers] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [battleLeaderboard, setBattleLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [panoramaLeaderboard, setPanoramaLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isLoadingBattleLeaderboard, setIsLoadingBattleLeaderboard] = useState(true);
@@ -184,6 +190,30 @@ const GamesPage: React.FC = () => {
       })) as LeaderboardEntry[];
       setBattleLeaderboard(entries);
       setIsLoadingBattleLeaderboard(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // Fetch Panorama Leaderboard
+  useEffect(() => {
+    const q = query(collection(db, 'quizLeaderboard'), orderBy('panoramaScore', 'desc'), limit(20));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      let entries = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        userId: doc.id,
+        panoramaScore: (doc.data() as any).panoramaScore || 0,
+        panoramaTime: (doc.data() as any).panoramaTime || 0
+      })) as LeaderboardEntry[];
+      
+      // Sort in memory by score desc, then time asc
+      entries.sort((a, b) => {
+        if ((b.panoramaScore || 0) !== (a.panoramaScore || 0)) {
+          return (b.panoramaScore || 0) - (a.panoramaScore || 0);
+        }
+        return (a.panoramaTime || 0) - (b.panoramaTime || 0);
+      });
+      
+      setPanoramaLeaderboard(entries.slice(0, 10));
     });
     return () => unsubscribe();
   }, []);
@@ -483,7 +513,7 @@ const GamesPage: React.FC = () => {
     }
   };
 
-  const handleOtherGameFinish = async (gameScore: number) => {
+  const handleOtherGameFinish = async (gameName: string, gameScore: number) => {
     setActiveGame(null);
     if (!user) return;
     
@@ -493,20 +523,38 @@ const GamesPage: React.FC = () => {
     let previousScore = 0;
     let battlesWon = 0;
     let panoramaScore = 0;
+    let whoAmIScore = 0;
+    let timelineScore = 0;
+    let hiddenWordScore = 0;
+    let hangmanScore = 0;
 
     if (userSnap.exists()) {
       const data = userSnap.data() as LeaderboardEntry;
       previousScore = data.score || 0;
       battlesWon = data.battlesWon || 0;
       panoramaScore = data.panoramaScore || 0;
+      whoAmIScore = data.whoAmIScore || 0;
+      timelineScore = data.timelineScore || 0;
+      hiddenWordScore = data.hiddenWordScore || 0;
+      hangmanScore = data.hangmanScore || 0;
     }
 
-    const newTotalScore = previousScore + battlesWon + panoramaScore + gameScore;
+    // Update the specific game score
+    if (gameName === 'whoami') whoAmIScore += gameScore;
+    if (gameName === 'timeline') timelineScore += gameScore;
+    if (gameName === 'hiddenword') hiddenWordScore += gameScore;
+    if (gameName === 'hangman') hangmanScore += gameScore;
+
+    const newTotalScore = previousScore + battlesWon + panoramaScore + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
 
     await setDoc(userRef, {
       name: user.name || 'Usuário',
       avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
       totalScore: newTotalScore,
+      whoAmIScore,
+      timelineScore,
+      hiddenWordScore,
+      hangmanScore,
       updatedAt: serverTimestamp()
     }, { merge: true });
     
@@ -660,8 +708,8 @@ const GamesPage: React.FC = () => {
                 <p className="text-orange-100 text-sm">Desafio diário de 5 letras</p>
               </button>
               <button onClick={() => setActiveGame('hangman')} className="p-6 bg-gradient-to-br from-stone-700 to-stone-900 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
-                <Skull size={32} className="mb-4 opacity-80" />
-                <h3 className="text-xl font-bold mb-1">Forca Bíblica</h3>
+                <UserX size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Jogo da Forca</h3>
                 <p className="text-stone-300 text-sm">Descubra a palavra antes do fim</p>
               </button>
               <button onClick={() => setShowPanorama(true)} className="p-6 bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
@@ -683,26 +731,51 @@ const GamesPage: React.FC = () => {
                     <tr>
                       <th className="px-3 py-2">#</th>
                       <th className="px-3 py-2">Nome</th>
-                      <th className="px-3 py-2">Total</th>
+                      <th className="px-3 py-2 text-center">Quiz</th>
+                      <th className="px-3 py-2 text-center">Batalhas</th>
+                      <th className="px-3 py-2 text-center">Panorama</th>
+                      <th className="px-3 py-2 text-center">Quem Sou Eu</th>
+                      <th className="px-3 py-2 text-center">Linha do Tempo</th>
+                      <th className="px-3 py-2 text-center">Palavra Oculta</th>
+                      <th className="px-3 py-2 text-center">Forca</th>
+                      <th className="px-3 py-2 text-center">Total</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {leaderboard.map((entry, index) => (
-                      <tr 
-                        key={entry.userId}
-                        className={cn(
-                          "border-b border-stone-100 dark:border-zinc-800",
-                          entry.userId === user?.id ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
-                        )}
-                      >
-                        <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
-                        <td className="px-3 py-3 flex items-center gap-2">
-                          <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-                          <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[150px]">{entry.name}</span>
-                        </td>
-                        <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.totalScore ?? (entry.score + (entry.battlesWon || 0) + (entry.panoramaScore || 0))}</td>
-                      </tr>
-                    ))}
+                    {leaderboard.map((entry, index) => {
+                      const total = entry.totalScore ?? (
+                        (entry.score || 0) + 
+                        (entry.battlesWon || 0) + 
+                        (entry.panoramaScore || 0) + 
+                        (entry.whoAmIScore || 0) + 
+                        (entry.timelineScore || 0) + 
+                        (entry.hiddenWordScore || 0) + 
+                        (entry.hangmanScore || 0)
+                      );
+                      return (
+                        <tr 
+                          key={entry.userId}
+                          className={cn(
+                            "border-b border-stone-100 dark:border-zinc-800",
+                            entry.userId === user?.id ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
+                          )}
+                        >
+                          <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
+                          <td className="px-3 py-3 flex items-center gap-2">
+                            <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                            <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[150px]">{entry.name}</span>
+                          </td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.score || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.battlesWon || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.panoramaScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.whoAmIScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.timelineScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.hiddenWordScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.hangmanScore || 0}</td>
+                          <td className="px-3 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{total}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -710,10 +783,10 @@ const GamesPage: React.FC = () => {
           </div>
         ) : (
           <div>
-            {activeGame === 'whoami' && <WhoAmIGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'timeline' && <TimelineGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'hiddenword' && <HiddenWordGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'hangman' && <HangmanGame onFinish={handleOtherGameFinish} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'whoami' && <WhoAmIGame onFinish={(score) => handleOtherGameFinish('whoami', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'timeline' && <TimelineGame onFinish={(score) => handleOtherGameFinish('timeline', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'hiddenword' && <HiddenWordGame onFinish={(score) => handleOtherGameFinish('hiddenword', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'hangman' && <HangmanGame onFinish={(score) => handleOtherGameFinish('hangman', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'quiz' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-4">
@@ -1104,14 +1177,6 @@ const GamesPage: React.FC = () => {
                     <UserPlus size={24} /> Quiz Mano a Mano
                   </button>
                 </div>
-                <div className="mt-4">
-                  <button
-                    onClick={() => setShowPanorama(true)}
-                    className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition-all"
-                  >
-                    <BookOpen size={24} /> Panorama Bíblico
-                  </button>
-                </div>
               </motion.div>
             )}
 
@@ -1189,7 +1254,6 @@ const GamesPage: React.FC = () => {
                         <th className="px-3 py-2">Nome</th>
                         <th className="px-3 py-2">Quiz</th>
                         <th className="px-3 py-2">Vitórias</th>
-                        <th className="px-3 py-2">Panorama</th>
                         <th className="px-3 py-2">Total</th>
                       </tr>
                     </thead>
@@ -1209,8 +1273,7 @@ const GamesPage: React.FC = () => {
                           </td>
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.score}</td>
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.battlesWon || 0}</td>
-                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.panoramaScore || 0}</td>
-                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.totalScore ?? (entry.score + (entry.battlesWon || 0) + (entry.panoramaScore || 0))}</td>
+                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{(entry.score || 0) + (entry.battlesWon || 0)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1218,7 +1281,46 @@ const GamesPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Battle Leaderboard */}
+              {/* Panorama Leaderboard */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <BookOpen className="text-pink-500" size={24} />
+                    <h2 className="text-xl font-bold text-stone-800 dark:text-stone-200">Ranking Panorama Bíblico</h2>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left">
+                    <thead className="text-xs text-stone-500 uppercase bg-stone-50 dark:bg-zinc-800">
+                      <tr>
+                        <th className="px-3 py-2">#</th>
+                        <th className="px-3 py-2">Nome</th>
+                        <th className="px-3 py-2">Pontos</th>
+                        <th className="px-3 py-2">Tempo</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {panoramaLeaderboard.filter(e => e.panoramaScore && e.panoramaScore > 0).map((entry, index) => (
+                        <tr 
+                          key={entry.userId}
+                          className={cn(
+                            "border-b border-stone-100 dark:border-zinc-800",
+                            entry.userId === user?.id ? "bg-pink-50 dark:bg-pink-900/20" : ""
+                          )}
+                        >
+                          <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
+                          <td className="px-3 py-3 flex items-center gap-2">
+                            <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+                            <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[80px]">{entry.name}</span>
+                          </td>
+                          <td className="px-3 py-3 font-bold text-pink-600 dark:text-pink-400">{entry.panoramaScore || 0}</td>
+                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.panoramaTime ? `${entry.panoramaTime}s` : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
 
