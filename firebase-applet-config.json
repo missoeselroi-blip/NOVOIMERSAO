@@ -1,10 +1,10 @@
 {
-  "projectId": "gen-lang-client-0918959450",
-  "appId": "1:907549300370:web:608f29876c166335bab84b",
-  "apiKey": "AIzaSyBB4ZpEZLdgqOCxN5kYE_xZmTAPnXpPQRE",
-  "authDomain": "gen-lang-client-0918959450.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-2131830b-d493-4d16-8674-36cd570659ec",
-  "storageBucket": "gen-lang-client-0918959450.firebasestorage.app",
-  "messagingSenderId": "907549300370",
-  "measurementId": ""
+  "projectId": "imersao-biblica-ia",
+  "appId": "1:422412513337:web:d24de34ed0b94bcb055de8",
+  "apiKey": "AIzaSyAcKQLv69GjVorfyt6VY-uVM8YTCxD76X4",
+  "authDomain": "imersao-biblica-ia.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "imersao-biblica-ia.firebasestorage.app",
+  "messagingSenderId": "422412513337",
+  "measurementId": "G-C3TJ43J6JX"
 }

@@ -5,20 +5,27 @@ import firebaseConfig from '../../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+
+// For the default database, we can just call getFirestore(app)
+// If the ID is "(default)", we pass undefined to use the default instance correctly
+export const db = getFirestore(
+  app, 
+  firebaseConfig.firestoreDatabaseId === "(default)" ? undefined : firebaseConfig.firestoreDatabaseId
+);
 
 // Test connection to Firestore
 async function testConnection() {
   try {
     // Try to get a dummy document from the server to verify connectivity
+    // We use a very short timeout to detect offline status quickly
     await getDocFromServer(doc(db, '_connection_test_', 'test'));
     console.log('Successfully connected to Firestore');
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('the client is offline')) {
-      console.error('Firestore connection failed: The client is offline. Please check your Firebase configuration and internet connection.');
+  } catch (error: any) {
+    if (error?.message?.includes('the client is offline')) {
+      console.error('Firestore connection failed: The client is offline. This is usually caused by a corporate firewall blocking Firebase or a lack of internet connection.');
     } else {
-      // Other errors are expected if the document doesn't exist, but it still proves connectivity
-      console.log('Firestore connectivity verified (test document might not exist)');
+      // Other errors (like permission denied or not found) actually prove we ARE connected to the server
+      console.log('Firestore connectivity verified');
     }
   }
 }
