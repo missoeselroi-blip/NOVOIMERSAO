@@ -338,7 +338,7 @@ export default function CareerPage() {
           <div>
             <div className="flex items-center gap-3">
               <img 
-                src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
+                src="/logo.png" 
                 alt="Logo" 
                 className="w-8 h-8 object-contain"
                 referrerPolicy="no-referrer"
@@ -348,7 +348,7 @@ export default function CareerPage() {
                 Carreira da Marinha Celestial
               </h2>
               <img 
-                src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
+                src="/logo.png" 
                 alt="Logo" 
                 className="w-8 h-8 object-contain"
                 referrerPolicy="no-referrer"
