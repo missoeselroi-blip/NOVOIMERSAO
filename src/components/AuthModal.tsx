@@ -166,7 +166,7 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               disabled={loading}
               className="w-full py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-2xl hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-3"
             >
-              <img src="/logo.png" alt="App Icon" className="w-5 h-5" />
+              <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" alt="App Icon" className="w-5 h-5" />
               Google
             </button>
 

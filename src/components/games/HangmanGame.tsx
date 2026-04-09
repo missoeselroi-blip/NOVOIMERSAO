@@ -1,30 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Skull, Lightbulb, RefreshCw } from 'lucide-react';
+import { Skull, Lightbulb } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
 const HANGMAN_WORDS = [
-  { word: "GENESIS", hint: "É um livro da bíblia." },
-  { word: "APOCALIPSE", hint: "É um livro da bíblia." },
-  { word: "JERUSALEM", hint: "É uma cidade de Israel." },
-  { word: "GOLIAS", hint: "Foi um inimigo de Israel." },
-  { word: "ELIAS", hint: "Foi um profeta." },
-  { word: "DAVI", hint: "Foi um rei." },
-  { word: "SANSAO", hint: "Foi um juíz." },
-  { word: "PEDRO", hint: "Andou com Jesus." },
-  { word: "BARTIMEU", hint: "Foi curado." },
-  { word: "TIMOTEO", hint: "É citado por Paulo no livro..." },
-  { word: "EFESO", hint: "Foi uma das igrejas primitiva." },
-  { word: "MOISES", hint: "Foi um profeta." },
-  { word: "SALOMAO", hint: "Foi um rei." },
-  { word: "JERICO", hint: "É uma cidade de Israel." },
-  { word: "FILISTEUS", hint: "Foi um inimigo de Israel." },
-  { word: "MATEUS", hint: "Andou com Jesus." },
-  { word: "LAZARO", hint: "Foi curado." },
-  { word: "CORINTO", hint: "Foi uma das igrejas primitiva." }
+  { word: "JERUSALEM", hint: "Cidade Santa" },
+  { word: "APOCALIPSE", hint: "Último livro da Bíblia" },
+  { word: "PENTECOSTES", hint: "Descida do Espírito Santo" },
+  { word: "TABERNACULO", hint: "Tenda do Encontro" },
+  { word: "SAMARITANO", hint: "Aquele que ajudou o homem ferido" }
 ];
 
 interface HangmanGameProps {
@@ -41,20 +28,20 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [hintsUsed, setHintsUsed] = useState(0);
-
-  const startNewGame = () => {
-    const randomTarget = HANGMAN_WORDS[Math.floor(Math.random() * HANGMAN_WORDS.length)];
-    setTarget(randomTarget);
-    setGuessedLetters(new Set());
-    setWrongGuesses(0);
-    setIsGameOver(false);
-    setScore(0);
-    setHintsUsed(0);
-  };
+  const [userCredits, setUserCredits] = useState(0);
 
   useEffect(() => {
-    startNewGame();
-  }, []);
+    const randomTarget = HANGMAN_WORDS[Math.floor(Math.random() * HANGMAN_WORDS.length)];
+    setTarget(randomTarget);
+    
+    if (user) {
+      getDoc(doc(db, 'users', user.id)).then(snap => {
+        if (snap.exists()) {
+          setUserCredits(snap.data().credits || 0);
+        }
+      });
+    }
+  }, [user]);
 
   const handleGuess = (letter: string) => {
     if (isGameOver || guessedLetters.has(letter)) return;
@@ -68,13 +55,12 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
       setWrongGuesses(newWrong);
       if (newWrong >= 6) {
         showToast(`Fim de jogo! A palavra era ${target.word}`, 'error');
-        setScore(0);
         setIsGameOver(true);
       }
     } else {
       const isWin = target.word.split('').every(l => newGuessed.has(l));
       if (isWin) {
-        const points = Math.max(0, 100 - (wrongGuesses * 10) - (hintsUsed * 10));
+        const points = 100 - (wrongGuesses * 10) - (hintsUsed * 5);
         setScore(points);
         showToast(`Parabéns! Você ganhou ${points} pontos.`, 'success');
         setIsGameOver(true);
@@ -82,11 +68,27 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
     }
   };
 
-  const handleHint = () => {
-    if (isGameOver) return;
-    revealLetter();
-    setHintsUsed(prev => prev + 1);
-    showToast('Dica usada! -10 pontos.', 'success');
+  const handleHint = async () => {
+    if (hintsUsed === 0) {
+      // Free hint
+      revealLetter();
+      setHintsUsed(1);
+      showToast('Dica grátis usada!', 'success');
+    } else {
+      // Paid hint
+      if (userCredits >= 5) {
+        if (user) {
+          const userRef = doc(db, 'users', user.id);
+          await updateDoc(userRef, { credits: userCredits - 5 });
+          setUserCredits(prev => prev - 5);
+          revealLetter();
+          setHintsUsed(prev => prev + 1);
+          showToast('Dica comprada por 5 créditos!', 'success');
+        }
+      } else {
+        showToast('Créditos insuficientes! Você precisa de 5 créditos.', 'error');
+      }
+    }
   };
 
   const revealLetter = () => {
@@ -122,26 +124,17 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
       <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
         <h2 className="text-3xl font-bold text-emerald-600 mb-4">Fim de Jogo!</h2>
         <p className="text-xl mb-6">Sua pontuação final: {score}</p>
-        <div className="flex flex-col gap-3 max-w-xs mx-auto">
-          <button
-            onClick={startNewGame}
-            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
-          >
-            <RefreshCw size={20} /> Nova Palavra
-          </button>
-          <button
-            onClick={() => onFinish(score)}
-            className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all"
-          >
-            Salvar e Voltar
-          </button>
-        </div>
+        <button
+          onClick={() => onFinish(score)}
+          className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all"
+        >
+          Salvar e Voltar
+        </button>
       </div>
     );
   }
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-  const currentScore = Math.max(0, 100 - (wrongGuesses * 10) - (hintsUsed * 10));
 
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800">
@@ -150,14 +143,13 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
           <Skull className="text-red-500" /> Forca Bíblica
         </h2>
         <div className="flex items-center gap-4">
-          <span className="font-bold text-emerald-600">{currentScore} pts</span>
           <span className="font-bold text-stone-500">Erros: {wrongGuesses}/6</span>
           <button 
             onClick={handleHint}
             className="flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-bold hover:bg-amber-200"
           >
             <Lightbulb size={16} />
-            Dica (-10 pts)
+            {hintsUsed === 0 ? 'Dica Grátis' : 'Dica (5 Créditos)'}
           </button>
         </div>
       </div>
@@ -193,10 +185,7 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
         ))}
       </div>
 
-      <div className="mt-8 text-center flex justify-center gap-4">
-        <button onClick={startNewGame} className="text-blue-500 hover:text-blue-700 text-sm font-bold flex items-center gap-1">
-          <RefreshCw size={16} /> Nova Palavra
-        </button>
+      <div className="mt-8 text-center">
         <button onClick={onClose} className="text-stone-500 hover:text-stone-700 text-sm">
           Sair do Jogo
         </button>

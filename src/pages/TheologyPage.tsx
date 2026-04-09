@@ -470,11 +470,9 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         if (careerDoc.exists()) {
           const careerData = careerDoc.data();
           const bibleRacePoints = careerData.bibleRacePoints || 0;
-          const evangelismPoints = careerData.evangelismPoints || 0;
-          const storytellingPoints = careerData.storytellingPoints || 0;
           await updateDoc(careerDocRef, { 
             theologyPoints: grandTotal,
-            points: grandTotal + bibleRacePoints + evangelismPoints + storytellingPoints,
+            points: grandTotal + bibleRacePoints,
             name: user.name,
             avatar: user.photoURL,
             updatedAt: new Date().toISOString()
@@ -486,8 +484,6 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
             avatar: user.photoURL,
             theologyPoints: grandTotal,
             bibleRacePoints: 0,
-            evangelismPoints: 0,
-            storytellingPoints: 0,
             points: grandTotal,
             rankId: 1,
             stars: 0,

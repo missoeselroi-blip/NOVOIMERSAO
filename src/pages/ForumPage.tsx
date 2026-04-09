@@ -119,7 +119,7 @@ export default function ForumPage() {
         <div>
           <div className="flex items-center gap-3">
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
               alt="Logo" 
               className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
@@ -129,7 +129,7 @@ export default function ForumPage() {
               Fórum do Servo Bom e Fiel
             </h2>
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
               alt="Logo" 
               className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"

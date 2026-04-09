@@ -1907,9 +1907,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   <div style="width: 100px; h-1px; background: #064e3b; margin: 30px auto;"></div>
   <p style="font-size: 20px; color: #444; font-weight: bold;">Apostila de Estudo Profundo</p>
   <p style="font-size: 16px; color: #888; margin-top: 60px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-   <img src="/logo.png" width="24" height="24" style="object-fit: contain;" />
+   <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="24" height="24" style="object-fit: contain;" />
    Gerado por **Imersão Bíblica IA**
-   <img src="/logo.png" width="24" height="24" style="object-fit: contain;" />
+   <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="24" height="24" style="object-fit: contain;" />
  </p>
 </div>
 <div style="page-break-after: always;"></div>\n\n`;
@@ -1935,7 +1935,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             const sectionTitle = `${item.cat} - ${item.name}`;
             sections.push({ title: sectionTitle, page: pageCount });
             
-            fullContent += `\n\n---\n\n## Página ${pageCount}: ${sectionTitle}\n\n${response.text}\n\n<div style="text-align: right; font-size: 10px; color: #888; margin-top: 20px; display: flex; align-items: center; justify-content: flex-end; gap: 5px;"><img src="/logo.png" width="16" height="16" /> Imersão Bíblica IA - Página ${pageCount} <img src="/logo.png" width="16" height="16" /></div>\n\n<div style="page-break-after: always;"></div>\n\n`;
+            fullContent += `\n\n---\n\n## Página ${pageCount}: ${sectionTitle}\n\n${response.text}\n\n<div style="text-align: right; font-size: 10px; color: #888; margin-top: 20px; display: flex; align-items: center; justify-content: flex-end; gap: 5px;"><img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="16" height="16" /> Imersão Bíblica IA - Página ${pageCount} <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="16" height="16" /></div>\n\n<div style="page-break-after: always;"></div>\n\n`;
             
             // Build TOC dynamically
             let currentToc = "# Sumário\n\n";
@@ -1955,7 +1955,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       if (stopBookletRef.current) {
         fullContent += `\n\n---\n\n<div style="text-align: center; padding: 40px; border-top: 2px solid #ef4444; color: #ef4444;">\n\n### GERAÇÃO INTERROMPIDA PELO USUÁRIO\n\n</div>`;
       } else {
-        fullContent += `\n\n---\n\n<div style="text-align: center; padding: 40px; border-top: 2px solid #064e3b;">\n\n### FIM DA APOSTILA\n\n<div style="display: flex; align-items: center; justify-content: center; gap: 10px;"><img src="/logo.png" width="32" height="32" /> Gerado por **Imersão Bíblica IA** <img src="/logo.png" width="32" height="32" /></div>\n\n</div>`;
+        fullContent += `\n\n---\n\n<div style="text-align: center; padding: 40px; border-top: 2px solid #064e3b;">\n\n### FIM DA APOSTILA\n\n<div style="display: flex; align-items: center; justify-content: center; gap: 10px;"><img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="32" height="32" /> Gerado por **Imersão Bíblica IA** <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" width="32" height="32" /></div>\n\n</div>`;
       }
       
       // Final TOC construction
@@ -6255,14 +6255,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             <span>Página {idx + 1}</span>
                             <div className="flex items-center gap-2">
                               <img 
-                                src="/logo.png" 
+                                src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                                 alt="Logo" 
                                 className="w-4 h-4 object-contain"
                                 referrerPolicy="no-referrer"
                               />
                               <span>Imersão Bíblica IA - Mergulhando na Palavra - {new Date().getFullYear()}</span>
                               <img 
-                                src="/logo.png" 
+                                src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                                 alt="Logo" 
                                 className="w-4 h-4 object-contain"
                                 referrerPolicy="no-referrer"

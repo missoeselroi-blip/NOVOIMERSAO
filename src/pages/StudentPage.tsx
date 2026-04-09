@@ -82,9 +82,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string, 
     const redVideo = data.redacaoVideo || 0;
     const redPodcast = data.redacaoPodcast || 0;
     const quizPoints = data.quizPoints || 0;
-    const studyPoints = data.studyPoints || 0;
-    const readingPoints = data.readingPoints || 0;
-    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints + studyPoints + readingPoints;
+    return evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints;
   };
 
   const totalEvangelismPoints = evangelismProgress ? EVANGELISM_SUBJECTS.reduce((acc, subject) => {
@@ -334,14 +332,14 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string, 
                     <div className="text-center md:text-left space-y-2">
                       <div className="flex items-center gap-4">
                         <img 
-                          src="/logo.png" 
+                          src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                           alt="Logo" 
                           className="w-10 h-10 object-contain"
                           referrerPolicy="no-referrer"
                         />
                         <h2 className="text-4xl font-bold font-display">{user?.name || 'Página do Aluno'}</h2>
                     <img 
-                      src="/logo.png" 
+                      src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
                       alt="Logo" 
                       className="w-10 h-10 object-contain"
                       referrerPolicy="no-referrer"

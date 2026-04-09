@@ -656,15 +656,6 @@ const GamesPage: React.FC = () => {
                battlesWon: (wData.battlesWon || 0) + 5,
                totalScore: (wData.totalScore || 0) + 5
              });
-          } else {
-             await setDoc(winnerRef, {
-               userId: winners[0].userId,
-               name: winners[0].name,
-               avatar: winners[0].avatar,
-               totalScore: 5,
-               battlesWon: 5,
-               updatedAt: serverTimestamp()
-             });
           }
         } else {
           // Next round
@@ -750,7 +741,7 @@ const GamesPage: React.FC = () => {
     if (gameName === 'whoami') whoAmIScore += gameScore;
     if (gameName === 'timeline') timelineScore += gameScore;
     if (gameName === 'hiddenword') hiddenWordScore += gameScore;
-    if (gameName === 'hangman') hangmanScore = gameScore; // Always record the last result for hangman
+    if (gameName === 'hangman') hangmanScore += gameScore;
 
     const newTotalScore = previousScore + battlesWon + panoramaScore + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
 
@@ -1401,10 +1392,13 @@ const GamesPage: React.FC = () => {
                             </div>
                           ))}
                         </div>
-                        {cupData.players.some((p: any) => p.userId === user?.id) && cupData.rounds[cupData.currentRound]?.matches.every((m: any) => m.player1.userId !== user?.id && m.player2.userId !== user?.id) && (
-                          <div className="mt-6 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 text-center">
-                            <p className="text-amber-800 dark:text-amber-300 font-medium">Você foi eliminado, mas não desanime! Continue estudando a Palavra e tente novamente na próxima Copa.</p>
-                          </div>
+                        {cupData.rounds[cupData.currentRound]?.status === 'finished' && cupData.creatorId === user?.id && (
+                          <button
+                            onClick={startCup} // This will trigger next round logic in startCup? No, next round is automatic in finishQuiz.
+                            className="mt-6 w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold transition-all"
+                          >
+                            Aguardando próxima rodada...
+                          </button>
                         )}
                       </div>
                     ) : (

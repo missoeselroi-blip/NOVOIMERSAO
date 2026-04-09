@@ -322,8 +322,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                          (data.redacaoVideo || 0) + 
                          (data.redacaoPodcast || 0) + 
                          (data.quizPoints || 0) + 
-                         (data.studyPoints || 0) +
-                         (data.readingPoints || 0);
+                         (data.studyPoints || 0);
           return acc + sTotal;
         }, 0);
 
@@ -334,10 +333,9 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
           const careerData = careerDoc.data();
           const currentTheologyPoints = careerData.theologyPoints || 0;
           const bibleRacePoints = careerData.bibleRacePoints || 0;
-          const storytellingPoints = careerData.storytellingPoints || 0;
           await updateDoc(careerDocRef, { 
             evangelismPoints: grandTotal,
-            points: grandTotal + currentTheologyPoints + bibleRacePoints + storytellingPoints,
+            points: grandTotal + currentTheologyPoints + bibleRacePoints,
             updatedAt: new Date().toISOString()
           });
         }
@@ -436,42 +434,6 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     return chapterQuiz.reduce((acc, q, i) => acc + (chapterQuizAnswers[i] === q.correctIndex ? 1 : 0), 0);
   };
 
-  const calculateTotalEvangelismPoints = () => {
-    return Object.keys(evangelismProgress).reduce((acc, key) => {
-      if (key === 'userId' || key === 'enrolled') return acc;
-      const data = evangelismProgress[key] || {};
-      return acc + (data.evaluation || 0) + 
-             (data.redacaoMateria || 0) + 
-             (data.redacaoAprofundamento || 0) + 
-             (data.redacaoSlide || 0) + 
-             (data.redacaoVideo || 0) + 
-             (data.redacaoPodcast || 0) + 
-             (data.quizPoints || 0) + 
-             (data.studyPoints || 0) +
-             (data.readingPoints || 0);
-    }, 0);
-  };
-
-  const markChapterAsCompleted = async () => {
-    if (!user || !selectedSubject) return;
-    
-    const current = evangelismProgress[selectedSubject] || {};
-    if (current[`chapter${currentChapter}Completed`]) return;
-
-    const newReadingPoints = (current.readingPoints || 0) + 10;
-    const newProgress = { 
-      ...current, 
-      [`chapter${currentChapter}Completed`]: true,
-      readingPoints: newReadingPoints
-    };
-    
-    await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
-    await syncPointsToCareer(selectedSubject, newProgress);
-    
-    showToast("Capítulo concluído! +10 pontos 🔥", 'success');
-    triggerFeedback();
-  };
-
   const handleEnroll = async () => {
     if (!user) return;
     setIsEnrolling(true);
@@ -520,9 +482,8 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   };
 
   const handleNextChapter = () => {
-    const isCompleted = evangelismProgress[selectedSubject!]?.[`chapter${currentChapter}Completed`];
-    if (!isCompleted && (!isChapterQuizSubmitted || calculateQuizScore() < 4)) {
-      showToast("Conclua o questionário ou marque como concluído para avançar! 🔥", 'info');
+    if (!isChapterQuizSubmitted || calculateQuizScore() < 4) {
+      showToast("Conclua o questionário com 100% para avançar! 🔥", 'info');
       return;
     }
     if (currentChapter < 5) {
@@ -783,10 +744,6 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
               <p className="text-stone-500">Continue sua jornada de aprendizado.</p>
             </div>
             <div className="flex items-center gap-4">
-              <div className="px-4 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-xl font-bold flex items-center gap-2 shadow-sm">
-                <Trophy size={20} />
-                {calculateTotalEvangelismPoints()} pts
-              </div>
               <button onClick={() => setShowSearch(true)} className="p-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl hover:bg-stone-50 transition-all shadow-sm">
                 <Search size={24} className="text-orange-600" />
               </button>
@@ -942,24 +899,6 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
                     </div>
                     <div className="prose dark:prose-invert max-w-none" style={{ fontFamily, fontSize: `${readingFontSize}px`, lineHeight: readingLineHeight }}>
                       <MarkdownRenderer content={chapterContent[currentChapter] || ''} />
-                    </div>
-                    <div className="mt-8 pt-8 border-t border-stone-100 dark:border-zinc-800 flex justify-end">
-                      <button
-                        onClick={markChapterAsCompleted}
-                        disabled={evangelismProgress[selectedSubject!]?.[`chapter${currentChapter}Completed`]}
-                        className={cn(
-                          "px-6 py-3 rounded-2xl font-bold flex items-center gap-2 transition-all",
-                          evangelismProgress[selectedSubject!]?.[`chapter${currentChapter}Completed`]
-                            ? "bg-stone-100 dark:bg-zinc-800 text-stone-400 cursor-not-allowed"
-                            : "bg-orange-100 dark:bg-orange-900/30 text-orange-600 hover:bg-orange-200 shadow-sm"
-                        )}
-                      >
-                        {evangelismProgress[selectedSubject!]?.[`chapter${currentChapter}Completed`] ? (
-                          <><CheckCircle2 size={20} /> Capítulo Concluído</>
-                        ) : (
-                          <><CheckCircle size={20} /> Marcar como Concluído (+10 pts)</>
-                        )}
-                      </button>
                     </div>
                   </div>
                 )}

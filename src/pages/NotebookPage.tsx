@@ -331,9 +331,9 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
             <div class="meta">
               Data: ${note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : note.date}<br/>
               <div style="display: flex; align-items: center; gap: 5px;">
-                <img src="/logo.png" width="16" height="16" style="object-fit: contain;" />
+                <img src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" width="16" height="16" style="object-fit: contain;" />
                 Fonte: Imersão Bíblica IA
-                <img src="/logo.png" width="16" height="16" style="object-fit: contain;" />
+                <img src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" width="16" height="16" style="object-fit: contain;" />
               </div>
             </div>
             <div class="content">${note.content.replace(/\n/g, '<br/>')}</div>
@@ -838,7 +838,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                 {/* Page Footer */}
                 <div className="px-16 py-6 border-t border-stone-100 dark:border-zinc-800 flex items-center justify-center gap-3">
                   <img 
-                    src="/logo.png" 
+                    src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
                     alt="Logo" 
                     className="w-4 h-4 object-contain"
                     referrerPolicy="no-referrer"
@@ -847,7 +847,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                     Imersão Bíblica IA — {note.createdAt ? new Date(note.createdAt).toLocaleDateString('pt-BR') : note.date}
                   </p>
                   <img 
-                    src="/logo.png" 
+                    src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
                     alt="Logo" 
                     className="w-4 h-4 object-contain"
                     referrerPolicy="no-referrer"

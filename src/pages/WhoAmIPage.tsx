@@ -34,7 +34,7 @@ export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string, 
         >
           <div className="absolute -inset-4 bg-emerald-600/10 rounded-[3rem] blur-3xl" />
           <img 
-            src="/logo.png" 
+            src="https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png" 
             alt="Wesley Reis" 
             className="relative w-full h-auto rounded-[3rem] shadow-2xl border-8 border-white dark:border-zinc-800"
             referrerPolicy="no-referrer"
