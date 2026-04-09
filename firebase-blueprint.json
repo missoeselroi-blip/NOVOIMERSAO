@@ -119,8 +119,12 @@
         "userId": { "type": "string" },
         "title": { "type": "string" },
         "audioUrl": { "type": "string" },
+        "subject": { "type": "string" },
+        "text": { "type": "string" },
         "style": { "type": "string" },
         "emotion": { "type": "string" },
+        "size": { "type": "number" },
+        "duration": { "type": "number" },
         "date": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       },
@@ -161,7 +165,7 @@
         "title": { "type": "string" },
         "text": { "type": "string" },
         "audioUrl": { "type": "string" },
-        "createdAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string" },
         "type": { "type": "string" }
       },
       "required": ["userId", "title", "text", "audioUrl"]
@@ -198,7 +202,7 @@
         "annualPoints": { "type": "integer" },
         "dailyReadCount": { "type": "integer" },
         "streakDays": { "type": "integer" },
-        "lastReadDate": { "type": "string" },
+        "lastReadDate": { "type": "string", "format": "date-time" },
         "medals": { "type": "array", "items": { "type": "string" } },
         "finishedBooksCount": { "type": "integer" },
         "publicMessage": { "type": "string" },
