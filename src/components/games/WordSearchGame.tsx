@@ -1,0 +1,279 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Timer, Trophy, CheckCircle2, XCircle, RotateCcw, HelpCircle, ZoomIn, ZoomOut } from 'lucide-react';
+import { cn } from '../../types';
+import { useToast } from '../../components/Toast';
+
+interface WordSearchGameProps {
+  onFinish: (score: number) => void;
+  onClose: () => void;
+}
+
+const GRID_SIZE = 15;
+const PHRASE = "TUDO POSSO NAQUELE QUE ME FORTALECE";
+const WORDS_TO_FIND = ["TUDO", "POSSO", "NAQUELE", "FORTALECE"];
+const TOTAL_WORDS_IN_PHRASE = 6;
+
+const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) => {
+  const { showToast } = useToast();
+  const [grid, setGrid] = useState<string[][]>([]);
+  const [selectedCells, setSelectedCells] = useState<{ r: number; c: number }[]>([]);
+  const [foundWords, setFoundWords] = useState<string[]>([]);
+  const [score, setScore] = useState(100);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isFinished, setIsFinished] = useState(false);
+  const [userInput, setUserInput] = useState("");
+  const [showCorrection, setShowCorrection] = useState(false);
+  const [zoom, setZoom] = useState(1);
+
+  const generateGrid = useCallback(() => {
+    const newGrid = Array(GRID_SIZE).fill(null).map(() => 
+      Array(GRID_SIZE).fill(null)
+    );
+
+    WORDS_TO_FIND.forEach(word => {
+      let placed = false;
+      let attempts = 0;
+      while (!placed && attempts < 100) {
+        attempts++;
+        const direction = Math.random() > 0.5 ? 'H' : 'V';
+        const row = Math.floor(Math.random() * (direction === 'H' ? GRID_SIZE : GRID_SIZE - word.length));
+        const col = Math.floor(Math.random() * (direction === 'H' ? GRID_SIZE - word.length : GRID_SIZE));
+
+        let canPlace = true;
+        for (let i = 0; i < word.length; i++) {
+          const r = direction === 'H' ? row : row + i;
+          const c = direction === 'H' ? col + i : col;
+          if (newGrid[r][c] !== null && newGrid[r][c] !== word[i]) {
+            canPlace = false;
+            break;
+          }
+        }
+
+        if (canPlace) {
+          for (let i = 0; i < word.length; i++) {
+            const r = direction === 'H' ? row : row + i;
+            const c = direction === 'H' ? col + i : col;
+            newGrid[r][c] = word[i];
+          }
+          placed = true;
+        }
+      }
+    });
+
+    // Fill remaining with random letters
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (newGrid[r][c] === null) {
+          const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+          newGrid[r][c] = chars[Math.floor(Math.random() * chars.length)];
+        }
+      }
+    }
+
+    setGrid(newGrid);
+  }, []);
+
+  useEffect(() => {
+    generateGrid();
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [generateGrid]);
+
+  useEffect(() => {
+    if (timeLeft > 0 && timeLeft % 5 === 0) {
+      setScore(prev => Math.max(0, prev - 1));
+    }
+  }, [timeLeft]);
+
+  const handleCellClick = (r: number, c: number) => {
+    if (isFinished) return;
+    
+    const isSelected = selectedCells.some(cell => cell.r === r && cell.c === c);
+    if (isSelected) {
+      setSelectedCells(prev => prev.filter(cell => !(cell.r === r && cell.c === c)));
+    } else {
+      const newSelected = [...selectedCells, { r, c }];
+      setSelectedCells(newSelected);
+      
+      // Check if selected cells form a word
+      const word = newSelected.map(cell => grid[cell.r][cell.c]).join("");
+      const reversedWord = word.split("").reverse().join("");
+      
+      if (WORDS_TO_FIND.includes(word) && !foundWords.includes(word)) {
+        setFoundWords(prev => [...prev, word]);
+        showToast(`Palavra encontrada: ${word}!`, "success");
+        setSelectedCells([]);
+      } else if (WORDS_TO_FIND.includes(reversedWord) && !foundWords.includes(reversedWord)) {
+        setFoundWords(prev => [...prev, reversedWord]);
+        showToast(`Palavra encontrada: ${reversedWord}!`, "success");
+        setSelectedCells([]);
+      }
+    }
+  };
+
+  const handleFinalSubmit = () => {
+    if (userInput.toUpperCase().trim() === PHRASE) {
+      setIsFinished(true);
+      showToast("Parabéns! Você completou o Caça Palavras!", "success");
+      onFinish(score);
+    } else {
+      showToast("Frase incorreta! Tente novamente.", "error");
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800 max-w-5xl mx-auto">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Caça Palavras</h2>
+          <p className="text-stone-500 text-sm">Encontre as palavras e forme a verdade bíblica</p>
+        </div>
+        <div className="flex flex-wrap gap-4">
+          <div className="flex items-center gap-2 bg-stone-100 dark:bg-zinc-800 p-1 rounded-lg border border-stone-200 dark:border-zinc-700">
+            <button 
+              onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+              className="p-1 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded transition-colors"
+              title="Reduzir zoom"
+            >
+              <ZoomOut size={16} />
+            </button>
+            <span className="text-[10px] font-bold w-8 text-center">{Math.round(zoom * 100)}%</span>
+            <button 
+              onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
+              className="p-1 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded transition-colors"
+              title="Aumentar zoom"
+            >
+              <ZoomIn size={16} />
+            </button>
+          </div>
+          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-xl border border-amber-100 dark:border-amber-800">
+            <Trophy className="text-amber-500" size={20} />
+            <span className="font-bold text-amber-700">{score} pts</span>
+          </div>
+          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl border border-blue-100 dark:border-blue-800">
+            <Timer className="text-blue-500" size={20} />
+            <span className="font-bold text-blue-700">{timeLeft}s</span>
+          </div>
+        </div>
+      </div>
+
+      {!showCorrection ? (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
+              Palavras encontradas: <span className="text-emerald-600 font-bold">{foundWords.length} / {WORDS_TO_FIND.length}</span>
+            </p>
+            <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
+              Total de palavras na frase: <span className="font-bold">{TOTAL_WORDS_IN_PHRASE}</span>
+            </p>
+          </div>
+
+          <div className="relative border-2 border-stone-200 dark:border-zinc-700 rounded-2xl overflow-hidden bg-stone-50 dark:bg-zinc-900/50">
+            <div className="overflow-auto max-h-[600px] p-8 custom-scrollbar">
+              <div 
+                className="grid gap-1 mx-auto"
+                style={{ 
+                  gridTemplateColumns: `repeat(${GRID_SIZE}, ${36 * zoom}px)`,
+                  width: 'fit-content'
+                }}
+              >
+                {grid.map((row, r) => (
+                  row.map((char, c) => {
+                    const isSelected = selectedCells.some(cell => cell.r === r && cell.c === c);
+                    
+                    return (
+                      <button
+                        key={`${r}-${c}`}
+                        onClick={() => handleCellClick(r, c)}
+                        style={{ 
+                          width: 36 * zoom, 
+                          height: 36 * zoom, 
+                          fontSize: 16 * zoom 
+                        }}
+                        className={cn(
+                          "flex items-center justify-center font-bold rounded-lg transition-all shadow-sm",
+                          isSelected ? "bg-blue-500 text-white scale-110 z-10" : "bg-white dark:bg-zinc-800 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-700"
+                        )}
+                      >
+                        {char}
+                      </button>
+                    );
+                  })
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            {WORDS_TO_FIND.map(word => (
+              <span 
+                key={word} 
+                className={cn(
+                  "px-4 py-2 rounded-xl text-xs font-bold border transition-all",
+                  foundWords.includes(word) 
+                    ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
+                    : "bg-stone-100 text-stone-400 border-stone-200"
+                )}
+              >
+                {foundWords.includes(word) ? word : "???"}
+              </span>
+            ))}
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4">
+            {foundWords.length === WORDS_TO_FIND.length && (
+              <button
+                onClick={() => setShowCorrection(true)}
+                className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 size={24} />
+                Formar Frase Final
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="px-8 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+            >
+              Desistir
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-6 py-8 max-w-2xl mx-auto">
+          <div className="text-center">
+            <h3 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-2">Qual é a frase?</h3>
+            <p className="text-stone-500">Escreva a frase completa que você descobriu</p>
+          </div>
+
+          <input
+            type="text"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            placeholder="Digite a frase aqui..."
+            className="w-full p-6 rounded-2xl border-2 border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-center text-xl font-bold uppercase focus:border-blue-500 outline-none transition-all"
+          />
+
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowCorrection(false)}
+              className="flex-1 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 rounded-2xl font-bold hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+            >
+              Voltar ao Grid
+            </button>
+            <button
+              onClick={handleFinalSubmit}
+              className="flex-1 py-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg transition-all"
+            >
+              Confirmar
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WordSearchGame;

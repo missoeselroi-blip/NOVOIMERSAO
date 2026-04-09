@@ -519,9 +519,11 @@ const BibleRacePage: React.FC = () => {
       if (careerDoc.exists()) {
         const careerData = careerDoc.data();
         const theologyPoints = careerData.theologyPoints || 0;
+        const evangelismPoints = careerData.evangelismPoints || 0;
+        const storytellingPoints = careerData.storytellingPoints || 0;
         await updateDoc(careerDocRef, {
           bibleRacePoints: newPoints,
-          points: newPoints + theologyPoints,
+          points: newPoints + theologyPoints + evangelismPoints + storytellingPoints,
           updatedAt: new Date().toISOString()
         });
       } else {
@@ -531,6 +533,8 @@ const BibleRacePage: React.FC = () => {
           avatar: user.avatar || user.photoURL || '',
           theologyPoints: 0,
           bibleRacePoints: newPoints,
+          evangelismPoints: 0,
+          storytellingPoints: 0,
           points: newPoints,
           rankId: 1,
           stars: 0,

@@ -7,10 +7,24 @@
       "properties": {
         "id": { "type": "string" },
         "email": { "type": "string", "format": "email" },
+        "name": { "type": "string" },
         "displayName": { "type": "string" },
         "photoURL": { "type": "string" },
+        "avatar": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "user"] },
+        "joinDate": { "type": "string", "format": "date-time" },
+        "lastActive": { "type": "string", "format": "date-time" },
         "createdAt": { "type": "string", "format": "date-time" },
+        "diaryPassword": { "type": "string" },
+        "panoramaMedals": {
+          "type": "object",
+          "properties": {
+            "bronze": { "type": "integer" },
+            "silver": { "type": "integer" },
+            "gold": { "type": "integer" },
+            "trophy": { "type": "integer" }
+          }
+        },
         "favorites": {
           "type": "array",
           "items": {
@@ -28,6 +42,18 @@
             "theme": { "type": "string", "enum": ["light", "dark", "system"] },
             "preferredBible": { "type": "string" },
             "fontSize": { "type": "string" }
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "properties": {
+            "accesses": { "type": "integer" },
+            "totalTime": { "type": "integer" },
+            "totalStudies": { "type": "integer" },
+            "forumParticipations": { "type": "integer" },
+            "shares": { "type": "integer" },
+            "hasContributed": { "type": "boolean" },
+            "membershipMonths": { "type": "integer" }
           }
         }
       },
@@ -305,6 +331,28 @@
         "avatar": { "type": "string" },
         "score": { "type": "integer" },
         "battlesWon": { "type": "integer" },
+        "panoramaScore": { "type": "integer" },
+        "panoramaTime": { "type": "integer" },
+        "panoramaSavedBookIndex": { "type": "integer" },
+        "whoAmIScore": { "type": "integer" },
+        "timelineScore": { "type": "integer" },
+        "crosswordScore": { "type": "integer" },
+        "hangmanScore": { "type": "integer" },
+        "wordSearchScore": { "type": "integer" },
+        "cryptogramScore": { "type": "integer" },
+        "anagramScore": { "type": "integer" },
+        "hiddenWordScore": { "type": "integer" },
+        "totalScore": { "type": "integer" },
+        "credits": { "type": "integer" },
+        "panoramaMedals": {
+          "type": "object",
+          "properties": {
+            "bronze": { "type": "integer" },
+            "silver": { "type": "integer" },
+            "gold": { "type": "integer" },
+            "trophy": { "type": "integer" }
+          }
+        },
         "lastScore": { "type": "integer" },
         "trend": { "type": "string", "enum": ["up", "down", "same"] },
         "updatedAt": { "type": "string", "format": "date-time" }
@@ -374,6 +422,33 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["content", "subject", "chapter"]
+    },
+    "QuizRoom": {
+      "title": "Quiz Room",
+      "description": "Multiplayer quiz battle room",
+      "type": "object",
+      "properties": {
+        "players": { "type": "array", "items": { "type": "object" } },
+        "status": { "type": "string", "enum": ["waiting", "started", "finished"] },
+        "questions": { "type": "array", "items": { "type": "object" } },
+        "winners": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "QuizCup": {
+      "title": "Quiz Cup",
+      "description": "Tournament style quiz competition",
+      "type": "object",
+      "properties": {
+        "creatorId": { "type": "string" },
+        "maxPlayers": { "type": "integer" },
+        "players": { "type": "array", "items": { "type": "object" } },
+        "status": { "type": "string", "enum": ["waiting", "playing", "finished"] },
+        "currentRound": { "type": "integer" },
+        "rounds": { "type": "array", "items": { "type": "object" } },
+        "winnerId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
     }
   },
   "firestore": {
@@ -480,6 +555,14 @@
     "/shared_storytelling_materials/{materialId}": {
       "schema": "SharedStorytellingMaterial",
       "description": "Shared storytelling course materials"
+    },
+    "/quizRooms/{roomId}": {
+      "schema": "QuizRoom",
+      "description": "Quiz battle rooms"
+    },
+    "/quizCups/{cupId}": {
+      "schema": "QuizCup",
+      "description": "Quiz tournament cups"
     }
   }
 }

@@ -4,7 +4,7 @@ import { Trophy, Medal, AlertCircle, CheckCircle2, XCircle, Clock, ArrowLeft, Ar
 import { booksList, getDivisionForBook, getRandomQuestionForBook, Question } from '../data/panoramaQuestions';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
+import { doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { cn } from '../types';
 
 interface PanoramaBiblicoProps {
@@ -16,15 +16,42 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   const [currentBookIndex, setCurrentBookIndex] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [timeLeft, setTimeLeft] = useState(5);
-  const [gameState, setGameState] = useState<'intro' | 'playing' | 'correct' | 'wrong' | 'timeout' | 'finished'>('intro');
+  const [gameState, setGameState] = useState<'intro' | 'playing' | 'correct' | 'wrong' | 'timeout' | 'finished' | 'division_completed'>('intro');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
   const [startTime, setStartTime] = useState<number>(0);
+  const [panoramaScore, setPanoramaScore] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const currentBook = booksList[currentBookIndex];
   const currentDivision = getDivisionForBook(currentBookIndex);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      if (user) {
+        try {
+          const userRef = doc(db, 'quizLeaderboard', user.id);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            if (data.panoramaScore !== undefined) {
+              setPanoramaScore(data.panoramaScore);
+            }
+            if (data.panoramaSavedBookIndex !== undefined) {
+              const division = getDivisionForBook(data.panoramaSavedBookIndex);
+              setCurrentBookIndex(division.startIndex);
+            }
+          }
+        } catch (error) {
+          console.error("Erro ao carregar dados do panorama:", error);
+        }
+      }
+      setIsLoading(false);
+    };
+    loadUserData();
+  }, [user]);
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -50,26 +77,90 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
     };
   }, [gameState, currentBookIndex]);
 
-  const handleTimeout = () => {
-    setGameState('timeout');
-    setConsecutiveCorrect(0);
+  const saveProgress = async (newScore: number, bookIndex: number, isFinished: boolean = false) => {
+    if (!user) return;
+    try {
+      const division = getDivisionForBook(bookIndex);
+      const savedIndex = isFinished ? 0 : division.startIndex;
+
+      const userRef = doc(db, 'quizLeaderboard', user.id);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const data = userSnap.data() as any;
+        const currentScore = Math.min(data.score || 0, 100);
+        const battlesWon = data.battlesWon || 0;
+        const whoAmIScore = data.whoAmIScore || 0;
+        const timelineScore = data.timelineScore || 0;
+        const hiddenWordScore = data.hiddenWordScore || 0;
+        const hangmanScore = data.hangmanScore || 0;
+        
+        const newTotalScore = currentScore + battlesWon + newScore + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
+        
+        await updateDoc(userRef, {
+          panoramaScore: newScore,
+          panoramaSavedBookIndex: savedIndex,
+          totalScore: newTotalScore
+        });
+      } else {
+        await setDoc(userRef, {
+          name: user.name || 'Usuário',
+          avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
+          score: 0,
+          battlesWon: 0,
+          panoramaScore: newScore,
+          panoramaSavedBookIndex: savedIndex,
+          totalScore: newScore,
+          updatedAt: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao salvar progresso do panorama:", error);
+    }
   };
 
-  const handleAnswer = (answer: string) => {
+  const handleTimeout = async () => {
+    setGameState('timeout');
+    const newScore = panoramaScore - 1;
+    setPanoramaScore(newScore);
+    setConsecutiveCorrect(0);
+    await saveProgress(newScore, currentBookIndex);
+  };
+
+  const handleAnswer = async (answer: string) => {
     if (gameState !== 'playing' || !currentQuestion) return;
     
     if (timerRef.current) clearInterval(timerRef.current);
     setSelectedAnswer(answer);
 
+    let newScore = panoramaScore;
+    let nextState: 'intro' | 'playing' | 'correct' | 'wrong' | 'timeout' | 'finished' | 'division_completed' = gameState;
+    let isFinished = false;
+
     if (answer === currentQuestion.correctAnswer) {
-      setGameState('correct');
+      const isLastBookOfDivision = currentBookIndex === currentDivision.endIndex;
+      if (isLastBookOfDivision && currentBookIndex < booksList.length - 1) {
+         nextState = 'division_completed';
+         newScore += 10;
+      } else if (currentBookIndex === booksList.length - 1) {
+         nextState = 'finished';
+         newScore += 10;
+         isFinished = true;
+      } else {
+         nextState = 'correct';
+      }
       const newConsecutive = consecutiveCorrect + 1;
       setConsecutiveCorrect(newConsecutive);
       checkMedals(newConsecutive);
     } else {
-      setGameState('wrong');
+      nextState = 'wrong';
+      newScore -= 2;
       setConsecutiveCorrect(0);
     }
+
+    setPanoramaScore(newScore);
+    setGameState(nextState as any);
+    await saveProgress(newScore, currentBookIndex, isFinished);
   };
 
   const checkMedals = async (consecutive: number) => {
@@ -99,7 +190,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   };
 
   const nextStep = () => {
-    if (gameState === 'correct') {
+    if (gameState === 'correct' || gameState === 'division_completed') {
       if (currentBookIndex < booksList.length - 1) {
         setCurrentBookIndex(prev => prev + 1);
         setGameState('playing');
@@ -118,69 +209,22 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   };
 
   const startGame = () => {
-    setCurrentBookIndex(0);
     setConsecutiveCorrect(0);
     setStartTime(Date.now());
     setGameState('playing');
   };
 
-  const handleClose = async () => {
-    if (user && gameState !== 'intro') {
-      try {
-        const score = gameState === 'finished' ? 10 : Math.round((currentBookIndex / 66) * 10);
-        const duration = startTime > 0 ? Math.floor((Date.now() - startTime) / 1000) : 0;
-        
-        const userRef = doc(db, 'quizLeaderboard', user.id);
-        const userSnap = await getDoc(userRef);
-        
-        if (userSnap.exists()) {
-          const data = userSnap.data() as any;
-          const currentScore = Math.min(data.score || 0, 100);
-          const battlesWon = data.battlesWon || 0;
-          const whoAmIScore = data.whoAmIScore || 0;
-          const timelineScore = data.timelineScore || 0;
-          const hiddenWordScore = data.hiddenWordScore || 0;
-          const hangmanScore = data.hangmanScore || 0;
-          
-          const newTotalScore = currentScore + battlesWon + score + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
-          
-          await updateDoc(userRef, {
-            panoramaScore: score,
-            panoramaTime: duration,
-            totalScore: newTotalScore
-          });
-        } else {
-          // If user doesn't exist in leaderboard yet
-          const { serverTimestamp } = await import('firebase/firestore');
-          await updateDoc(userRef, {
-            name: user.name || 'Usuário',
-            avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-            score: 0,
-            battlesWon: 0,
-            panoramaScore: score,
-            panoramaTime: duration,
-            totalScore: score,
-            updatedAt: serverTimestamp()
-          }).catch(async () => {
-             const { setDoc } = await import('firebase/firestore');
-             await setDoc(userRef, {
-                name: user.name || 'Usuário',
-                avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-                score: 0,
-                battlesWon: 0,
-                panoramaScore: score,
-                panoramaTime: duration,
-                totalScore: score,
-                updatedAt: serverTimestamp()
-             });
-          });
-        }
-      } catch (error) {
-        console.error("Erro ao salvar pontuação do panorama:", error);
-      }
-    }
+  const handleClose = () => {
     onClose();
   };
+
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-stone-50 dark:bg-zinc-950 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 bg-stone-50 dark:bg-zinc-950 flex flex-col">
@@ -193,9 +237,14 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
           <h1 className="font-display font-bold text-xl text-stone-900 dark:text-zinc-100">Panorama Bíblico</h1>
           <p className="text-xs text-stone-500 uppercase tracking-widest">{currentDivision.name}</p>
         </div>
-        <div className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-xl">
-          <Trophy size={16} />
-          {consecutiveCorrect}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-xl">
+            <span>{panoramaScore} pts</span>
+          </div>
+          <div className="flex items-center gap-2 text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-900/20 px-3 py-1.5 rounded-xl">
+            <Trophy size={16} />
+            {consecutiveCorrect}
+          </div>
         </div>
       </div>
 
@@ -240,10 +289,11 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                   Viaje por todos os 66 livros da Bíblia! Você tem apenas <strong>5 segundos</strong> para responder cada pergunta.
                   <br/><br/>
                   Acertou? Avança um livro.<br/>
-                  Tempo esgotou? Volta um livro.<br/>
-                  Errou? Volta para o início da divisão atual!
+                  Tempo esgotou? Volta um livro e perde 1 ponto.<br/>
+                  Errou? Volta para o início da divisão atual e perde 2 pontos!<br/>
+                  Completou a divisão? Ganha 10 pontos!
                   <br/><br/>
-                  <strong>Atenção:</strong> A sua pontuação (de 0 a 10) será salva no Ranking Quiz Geral com base no seu último progresso alcançado, e não será somada a cada tentativa.
+                  <strong>Atenção:</strong> Seu progresso na divisão atual é salvo automaticamente para você continuar de onde parou.
                 </p>
                 <button 
                   onClick={startGame}
@@ -324,6 +374,32 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
               </motion.div>
             )}
 
+            {gameState === 'division_completed' && (
+              <motion.div 
+                key="division_completed"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center max-w-md"
+              >
+                <div className="w-32 h-32 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Trophy size={64} />
+                </div>
+                <h2 className="text-3xl font-display font-bold text-emerald-600 mb-4">Parabéns!</h2>
+                <p className="text-stone-600 dark:text-zinc-400 mb-6 font-medium text-lg">
+                  Você irá para a próxima divisão da Bíblia.
+                </p>
+                <div className="mb-8 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-200 dark:border-emerald-800">
+                  <p className="text-emerald-800 dark:text-emerald-300 font-bold">+10 Pontos!</p>
+                </div>
+                <button 
+                  onClick={nextStep}
+                  className="w-full py-4 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                >
+                  Continuar <ArrowRight size={20} />
+                </button>
+              </motion.div>
+            )}
+
             {gameState === 'wrong' && (
               <motion.div 
                 key="wrong"
@@ -338,7 +414,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                 <p className="text-stone-600 dark:text-zinc-400 mb-8">
                   A resposta correta era: <strong>{currentQuestion?.correctAnswer}</strong>.
                   <br/><br/>
-                  Você voltou para o início da divisão: <strong>{currentDivision.name}</strong>.
+                  Você perdeu 2 pontos e voltou para o início da divisão: <strong>{currentDivision.name}</strong>.
                 </p>
                 <button 
                   onClick={nextStep}
@@ -363,7 +439,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                 <p className="text-stone-600 dark:text-zinc-400 mb-8">
                   Você demorou mais de 5 segundos.
                   <br/><br/>
-                  Você voltou um livro.
+                  Você perdeu 1 ponto e voltou um livro.
                 </p>
                 <button 
                   onClick={nextStep}
@@ -403,3 +479,4 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
     </div>
   );
 };
+

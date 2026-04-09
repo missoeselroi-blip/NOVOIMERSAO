@@ -106,10 +106,10 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (request.auth.token.email == "missoeselroi@gmail.com" ||
-         request.auth.token.email == "imersaobiblicapp@gmail.com" ||
-         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
+        (((request.auth.token.email == "missoeselroi@gmail.com" ||
+           request.auth.token.email == "imersaobiblicapp@gmail.com") && request.auth.token.email_verified == true) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
     function isValidEmail(email) {
@@ -131,8 +131,17 @@ service cloud.firestore {
              data.id is string &&
              data.email is string &&
              data.role in ['admin', 'user'] &&
+             (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
+             (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 500)) &&
+             (!('avatar' in data) || (data.avatar is string && data.avatar.size() < 500)) &&
+             (!('joinDate' in data) || (data.joinDate is string && data.joinDate.size() < 50)) &&
+             (!('lastActive' in data) || (data.lastActive is string && data.lastActive.size() < 50)) &&
+             (!('diaryPassword' in data) || (data.diaryPassword is string && data.diaryPassword.size() < 100)) &&
+             (!('panoramaMedals' in data) || data.panoramaMedals is map) &&
              (!('favorites' in data) || data.favorites is list) &&
-             (!('settings' in data) || data.settings is map);
+             (!('settings' in data) || data.settings is map) &&
+             (!('metrics' in data) || data.metrics is map);
     }
 
     function isValidNote(data) {
@@ -189,7 +198,9 @@ service cloud.firestore {
              (!('medals' in data) || data.medals is list) &&
              (!('finishedBooksCount' in data) || data.finishedBooksCount is number) &&
              (!('publicMessage' in data) || (data.publicMessage is string && data.publicMessage.size() < 500)) &&
-             (!('userJoinDate' in data) || data.userJoinDate is string);
+             (!('userJoinDate' in data) || data.userJoinDate is string) &&
+             (!('userName' in data) || data.userName is string) &&
+             (!('userPhoto' in data) || data.userPhoto is string);
     }
 
     function isValidBibleRaceMessage(data) {
@@ -206,7 +217,8 @@ service cloud.firestore {
              data.userName is string &&
              data.points is number &&
              data.type in ['monthly', 'annual', 'overall'] &&
-             data.wonAt is timestamp;
+             data.wonAt is timestamp &&
+             (!('userPhoto' in data) || data.userPhoto is string);
     }
 
     function isValidJournalEntry(data) {
@@ -245,11 +257,24 @@ service cloud.firestore {
     }
 
     function isValidQuizLeaderboard(data) {
-      return data.keys().hasAll(['name', 'score', 'updatedAt']) &&
+      return data.keys().hasAll(['name', 'updatedAt']) &&
              data.name is string && data.name.size() < 100 &&
-             data.score is number && data.score >= 0 &&
+             (!('score' in data) || (data.score is number && data.score >= 0)) &&
              (!('battlesWon' in data) || data.battlesWon is number) &&
              (!('totalScore' in data) || data.totalScore is number) &&
+             (!('panoramaScore' in data) || data.panoramaScore is number) &&
+             (!('panoramaTime' in data) || data.panoramaTime is number) &&
+             (!('panoramaSavedBookIndex' in data) || data.panoramaSavedBookIndex is number) &&
+             (!('whoAmIScore' in data) || data.whoAmIScore is number) &&
+             (!('timelineScore' in data) || data.timelineScore is number) &&
+             (!('crosswordScore' in data) || data.crosswordScore is number) &&
+             (!('hangmanScore' in data) || data.hangmanScore is number) &&
+             (!('wordSearchScore' in data) || data.wordSearchScore is number) &&
+             (!('cryptogramScore' in data) || data.cryptogramScore is number) &&
+             (!('anagramScore' in data) || data.anagramScore is number) &&
+             (!('hiddenWordScore' in data) || data.hiddenWordScore is number) &&
+             (!('credits' in data) || data.credits is number) &&
+             (!('panoramaMedals' in data) || data.panoramaMedals is map) &&
              (!('avatar' in data) || (data.avatar is string && isValidUrl(data.avatar))) &&
              (!('lastScore' in data) || data.lastScore is number) &&
              (!('trend' in data) || data.trend in ['up', 'down', 'same']) &&
@@ -282,7 +307,7 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());
-      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && (isOwner(userId) || isAdmin()) && isValidUser(request.resource.data) && (request.resource.data.role == resource.data.role || isAdmin());
     }
 
     match /bibleRaceProgress/{userId} {
@@ -299,7 +324,9 @@ service cloud.firestore {
 
     match /bibleRaceChampions/{championId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow create: if isAdmin() || (isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidBibleRaceChampion(request.resource.data));
+      allow update: if isAdmin() || (isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidBibleRaceChampion(request.resource.data));
+      allow delete: if isAdmin();
     }
 
     match /journalEntries/{entryId} {
@@ -451,6 +478,11 @@ service cloud.firestore {
     }
 
     match /quizRooms/{roomId} {
+      allow read, write: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    match /quizCups/{cupId} {
       allow read, write: if isAuthenticated();
       allow delete: if isAdmin();
     }

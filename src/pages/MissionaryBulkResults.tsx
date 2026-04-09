@@ -203,14 +203,14 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
           <div>
             <div className="flex items-center gap-3">
               <img 
-                src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                src="/logo.png" 
                 alt="Logo" 
                 className="w-8 h-8 object-contain"
                 referrerPolicy="no-referrer"
               />
               <h2 className="text-2xl font-bold">Resultados do Mês</h2>
               <img 
-                src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+                src="/logo.png" 
                 alt="Logo" 
                 className="w-8 h-8 object-contain"
                 referrerPolicy="no-referrer"

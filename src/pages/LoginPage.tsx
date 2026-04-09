@@ -25,9 +25,17 @@ export const LoginPage: React.FC = () => {
       } else {
         await loginWithEmail(email, password);
       }
-    } catch (error) {
-      console.error(error);
-      alert(isRegistering ? "Erro ao criar conta." : "Erro ao entrar. Verifique suas credenciais.");
+    } catch (error: any) {
+      console.error("Erro capturado:", error);
+      let errorMessage = "Erro desconhecido";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        errorMessage = error.code;
+      }
+      alert(isRegistering ? `Erro ao criar conta: ${errorMessage}` : `Erro ao entrar: ${errorMessage}`);
     } finally {
       setIsLoading(false);
     }
@@ -59,7 +67,7 @@ export const LoginPage: React.FC = () => {
         <div className="text-center space-y-4 mb-10">
           <div className="flex items-center justify-center gap-4 mb-6">
             <img 
-              src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" 
+              src="/logo.png" 
               alt="Logo" 
               className="w-10 h-10 object-contain"
               referrerPolicy="no-referrer"
@@ -161,7 +169,7 @@ export const LoginPage: React.FC = () => {
             }}
             className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
           >
-            <img src="https://i.postimg.cc/pd0P8t4L/1000097620_removebg_preview.png" alt="App Icon" className="w-5 h-5" />
+            <img src="/logo.png" alt="App Icon" className="w-5 h-5" />
             Google
           </button>
 

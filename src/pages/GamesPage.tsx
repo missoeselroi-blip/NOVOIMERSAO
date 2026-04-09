@@ -27,7 +27,8 @@ import {
   HelpCircle,
   Clock,
   Type,
-  UserX
+  UserX,
+  Lock as LockIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
@@ -38,8 +39,11 @@ import { Question, QUESTIONS } from '../data/questions';
 import { PanoramaBiblico } from '../components/PanoramaBiblico';
 import WhoAmIGame from '../components/games/WhoAmIGame';
 import TimelineGame from '../components/games/TimelineGame';
-import HiddenWordGame from '../components/games/HiddenWordGame';
+import CrosswordGame from '../components/games/CrosswordGame';
 import HangmanGame from '../components/games/HangmanGame';
+import WordSearchGame from '../components/games/WordSearchGame';
+import CryptogramGame from '../components/games/CryptogramGame';
+import AnagramGame from '../components/games/AnagramGame';
 import { 
   collection, 
   query, 
@@ -68,8 +72,12 @@ interface LeaderboardEntry {
   panoramaTime?: number;
   whoAmIScore?: number;
   timelineScore?: number;
-  hiddenWordScore?: number;
+  crosswordScore?: number;
   hangmanScore?: number;
+  wordSearchScore?: number;
+  cryptogramScore?: number;
+  anagramScore?: number;
+  credits?: number;
   lastScore: number;
   month: number;
   trend: 'up' | 'down' | 'same';
@@ -112,11 +120,13 @@ const GamesPage: React.FC = () => {
   const [startTime, setStartTime] = useState(0);
   const [showPanorama, setShowPanorama] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
+  const [credits, setCredits] = useState(50);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinRoomIdInput, setJoinRoomIdInput] = useState('');
   const [searchParams, setSearchParams] = useSearchParams();
   const processedRooms = React.useRef<Set<string>>(new Set());
+  const processedCups = React.useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const urlRoomId = searchParams.get('roomId') || new URLSearchParams(window.location.search).get('roomId');
@@ -152,6 +162,7 @@ const GamesPage: React.FC = () => {
         const userEntry = entries.find(e => e.userId === user.id);
         if (userEntry) {
           setUserRank({ ...userEntry, rank: entries.indexOf(userEntry) + 1 });
+          setCredits((userEntry as any).credits ?? 50);
           if ((userEntry as any).totalScore === undefined || userEntry.score > 100) {
             const cappedScore = Math.min(userEntry.score || 0, 100);
             updateDoc(doc(db, 'quizLeaderboard', user.id), {
@@ -165,6 +176,7 @@ const GamesPage: React.FC = () => {
             if (docSnap.exists()) {
               const data = docSnap.data() as any;
               setUserRank(data as LeaderboardEntry);
+              setCredits(data.credits ?? 50);
               if (data.totalScore === undefined || data.score > 100) {
                 const cappedScore = Math.min(data.score || 0, 100);
                 updateDoc(doc(db, 'quizLeaderboard', user.id), {
@@ -265,6 +277,24 @@ const GamesPage: React.FC = () => {
               setStartTime(Date.now());
               setIsQuizStarted(true);
             }
+          }
+        }
+
+        // Handle cup finished - reward winner
+        if (data.status === 'finished' && user && data.winnerId === user.id) {
+          if (!processedCups.current.has(cupId)) {
+            processedCups.current.add(cupId);
+            const userRef = doc(db, 'quizLeaderboard', user.id);
+            getDoc(userRef).then((userSnap) => {
+              if (userSnap.exists()) {
+                const lData = userSnap.data() as any;
+                updateDoc(userRef, {
+                  battlesWon: (lData.battlesWon || 0) + 5,
+                  totalScore: (lData.totalScore || 0) + 5,
+                  updatedAt: serverTimestamp()
+                });
+              }
+            });
           }
         }
       }
@@ -648,14 +678,17 @@ const GamesPage: React.FC = () => {
           });
           
           // Add 5 points to the winner's Quiz ranking
-          const winnerRef = doc(db, 'quizLeaderboard', winners[0].userId);
-          const winnerSnap = await getDoc(winnerRef);
-          if (winnerSnap.exists()) {
-             const wData = winnerSnap.data() as any;
-             await updateDoc(winnerRef, {
-               battlesWon: (wData.battlesWon || 0) + 5,
-               totalScore: (wData.totalScore || 0) + 5
-             });
+          if (winners[0].userId === user.id && !processedCups.current.has(cupId)) {
+            processedCups.current.add(cupId);
+            const winnerRef = doc(db, 'quizLeaderboard', winners[0].userId);
+            const winnerSnap = await getDoc(winnerRef);
+            if (winnerSnap.exists()) {
+               const wData = winnerSnap.data() as any;
+               await updateDoc(winnerRef, {
+                 battlesWon: (wData.battlesWon || 0) + 5,
+                 totalScore: (wData.totalScore || 0) + 5
+               });
+            }
           }
         } else {
           // Next round
@@ -723,8 +756,12 @@ const GamesPage: React.FC = () => {
     let panoramaScore = 0;
     let whoAmIScore = 0;
     let timelineScore = 0;
-    let hiddenWordScore = 0;
+    let crosswordScore = 0;
     let hangmanScore = 0;
+    let wordSearchScore = 0;
+    let cryptogramScore = 0;
+    let anagramScore = 0;
+    let currentCredits = credits;
 
     if (userSnap.exists()) {
       const data = userSnap.data() as LeaderboardEntry;
@@ -733,17 +770,24 @@ const GamesPage: React.FC = () => {
       panoramaScore = data.panoramaScore || 0;
       whoAmIScore = data.whoAmIScore || 0;
       timelineScore = data.timelineScore || 0;
-      hiddenWordScore = data.hiddenWordScore || 0;
+      crosswordScore = data.crosswordScore || 0;
       hangmanScore = data.hangmanScore || 0;
+      wordSearchScore = (data as any).wordSearchScore || 0;
+      cryptogramScore = (data as any).cryptogramScore || 0;
+      anagramScore = (data as any).anagramScore || 0;
+      currentCredits = (data as any).credits ?? 50;
     }
 
     // Update the specific game score
     if (gameName === 'whoami') whoAmIScore += gameScore;
     if (gameName === 'timeline') timelineScore += gameScore;
-    if (gameName === 'hiddenword') hiddenWordScore += gameScore;
+    if (gameName === 'crossword') crosswordScore += gameScore;
     if (gameName === 'hangman') hangmanScore += gameScore;
+    if (gameName === 'wordsearch') wordSearchScore += gameScore;
+    if (gameName === 'cryptogram') cryptogramScore += gameScore;
+    if (gameName === 'anagram') anagramScore += gameScore;
 
-    const newTotalScore = previousScore + battlesWon + panoramaScore + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
+    const newTotalScore = previousScore + battlesWon + panoramaScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore;
 
     await setDoc(userRef, {
       name: user.name || 'Usuário',
@@ -751,12 +795,30 @@ const GamesPage: React.FC = () => {
       totalScore: newTotalScore,
       whoAmIScore,
       timelineScore,
-      hiddenWordScore,
+      crosswordScore,
       hangmanScore,
+      wordSearchScore,
+      cryptogramScore,
+      anagramScore,
+      credits: currentCredits,
       updatedAt: serverTimestamp()
     }, { merge: true });
     
+    setCredits(currentCredits);
     showToast(`Pontuação salva no ranking geral!`, 'success');
+  };
+
+  const handleSpendCredits = async (amount: number) => {
+    if (credits >= amount) {
+      const newCredits = credits - amount;
+      setCredits(newCredits);
+      if (user) {
+        const userRef = doc(db, 'quizLeaderboard', user.id);
+        await updateDoc(userRef, { credits: newCredits });
+      }
+      return true;
+    }
+    return false;
   };
 
   const handleShare = async () => {
@@ -900,15 +962,30 @@ const GamesPage: React.FC = () => {
                 <h3 className="text-xl font-bold mb-1">Linha do Tempo</h3>
                 <p className="text-purple-100 text-sm">Ordene os eventos cronologicamente</p>
               </button>
-              <button onClick={() => setActiveGame('hiddenword')} className="p-6 bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+              <button onClick={() => setActiveGame('crossword')} className="p-6 bg-gradient-to-br from-orange-500 to-red-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
                 <Type size={32} className="mb-4 opacity-80" />
-                <h3 className="text-xl font-bold mb-1">Palavra Oculta</h3>
-                <p className="text-orange-100 text-sm">Desafio diário de 5 letras</p>
+                <h3 className="text-xl font-bold mb-1">Palavras Cruzadas</h3>
+                <p className="text-orange-100 text-sm">Desafio de 10 palavras bíblicas</p>
               </button>
               <button onClick={() => setActiveGame('hangman')} className="p-6 bg-gradient-to-br from-stone-700 to-stone-900 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
                 <UserX size={32} className="mb-4 opacity-80" />
                 <h3 className="text-xl font-bold mb-1">Jogo da Forca</h3>
                 <p className="text-stone-300 text-sm">Descubra a palavra antes do fim</p>
+              </button>
+              <button onClick={() => setActiveGame('wordsearch')} className="p-6 bg-gradient-to-br from-emerald-700 to-emerald-900 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <HelpCircle size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Caça Palavras</h3>
+                <p className="text-emerald-100 text-sm">Encontre verdades bíblicas</p>
+              </button>
+              <button onClick={() => setActiveGame('cryptogram')} className="p-6 bg-gradient-to-br from-cyan-600 to-blue-800 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <LockIcon size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Criptograma</h3>
+                <p className="text-cyan-100 text-sm">Decifre frases bíblicas</p>
+              </button>
+              <button onClick={() => setActiveGame('anagram')} className="p-6 bg-gradient-to-br from-yellow-600 to-amber-800 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <RotateCcw size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Anagrama</h3>
+                <p className="text-yellow-100 text-sm">Ordene versículos bíblicos</p>
               </button>
               <button onClick={() => setShowPanorama(true)} className="p-6 bg-gradient-to-br from-pink-500 to-rose-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
                 <BookOpen size={32} className="mb-4 opacity-80" />
@@ -934,8 +1011,11 @@ const GamesPage: React.FC = () => {
                       <th className="px-3 py-2 text-center">Panorama</th>
                       <th className="px-3 py-2 text-center">Quem Sou Eu</th>
                       <th className="px-3 py-2 text-center">Linha do Tempo</th>
-                      <th className="px-3 py-2 text-center">Palavra Oculta</th>
+                      <th className="px-3 py-2 text-center">Palavras Cruzadas</th>
                       <th className="px-3 py-2 text-center">Forca</th>
+                      <th className="px-3 py-2 text-center">Caça Palavras</th>
+                      <th className="px-3 py-2 text-center">Criptograma</th>
+                      <th className="px-3 py-2 text-center">Anagrama</th>
                       <th className="px-3 py-2 text-center">Total</th>
                     </tr>
                   </thead>
@@ -947,7 +1027,7 @@ const GamesPage: React.FC = () => {
                         (entry.panoramaScore || 0) + 
                         (entry.whoAmIScore || 0) + 
                         (entry.timelineScore || 0) + 
-                        (entry.hiddenWordScore || 0) + 
+                        (entry.crosswordScore || 0) + 
                         (entry.hangmanScore || 0)
                       );
                       return (
@@ -968,8 +1048,11 @@ const GamesPage: React.FC = () => {
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.panoramaScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.whoAmIScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.timelineScore || 0}</td>
-                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.hiddenWordScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.crosswordScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.hangmanScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{(entry as any).wordSearchScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{(entry as any).cryptogramScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{(entry as any).anagramScore || 0}</td>
                           <td className="px-3 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{total}</td>
                         </tr>
                       );
@@ -983,8 +1066,11 @@ const GamesPage: React.FC = () => {
           <div>
             {activeGame === 'whoami' && <WhoAmIGame onFinish={(score) => handleOtherGameFinish('whoami', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'timeline' && <TimelineGame onFinish={(score) => handleOtherGameFinish('timeline', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'hiddenword' && <HiddenWordGame onFinish={(score) => handleOtherGameFinish('hiddenword', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'crossword' && <CrosswordGame onFinish={(score) => handleOtherGameFinish('crossword', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'hangman' && <HangmanGame onFinish={(score) => handleOtherGameFinish('hangman', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'wordsearch' && <WordSearchGame onFinish={(score) => handleOtherGameFinish('wordsearch', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'cryptogram' && <CryptogramGame onFinish={(score) => handleOtherGameFinish('cryptogram', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'anagram' && <AnagramGame onFinish={(score) => handleOtherGameFinish('anagram', score)} onClose={() => setActiveGame(null)} credits={credits} onSpendCredits={handleSpendCredits} />}
             {activeGame === 'quiz' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-4">
