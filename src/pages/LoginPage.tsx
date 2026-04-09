@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Mail, Lock, User, Sparkles, BookOpen, Globe, MessageSquare, AlertCircle } from 'lucide-react';
+import { Mail, Lock, User, Sparkles, BookOpen, Globe, MessageSquare, AlertCircle, Github } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../types';
 import { auth } from '../lib/firebase';
 
 export const LoginPage: React.FC = () => {
-  const { loginWithGoogle, loginWithEmail, registerWithEmail } = useAuth();
+  const { loginWithGoogle, loginWithGithub, loginWithEmail, registerWithEmail } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,6 +36,38 @@ export const LoginPage: React.FC = () => {
         errorMessage = error.code;
       }
       alert(isRegistering ? `Erro ao criar conta: ${errorMessage}` : `Erro ao entrar: ${errorMessage}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await loginWithGoogle();
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        console.log("Login popup closed by user");
+        return;
+      }
+      setError(err.message || "Erro ao fazer login com Google.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await loginWithGithub();
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        console.log("Login popup closed by user");
+        return;
+      }
+      setError(err.message || "Erro ao fazer login com GitHub.");
     } finally {
       setIsLoading(false);
     }
@@ -155,23 +187,23 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          <button 
-            onClick={async () => {
-              try {
-                await loginWithGoogle();
-              } catch (err: any) {
-                if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-                  console.log("Login popup closed by user");
-                  return;
-                }
-                setError(err.message || "Erro ao fazer login com Google.");
-              }
-            }}
-            className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
-          >
-            <img src="/logo.png" alt="App Icon" className="w-5 h-5" />
-            Google
-          </button>
+          <div className="grid grid-cols-2 gap-4">
+            <button 
+              onClick={handleGoogleLogin}
+              className="py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
+            >
+              <img src="/logo.png" alt="Google" className="w-5 h-5" />
+              Google
+            </button>
+
+            <button 
+              onClick={handleGithubLogin}
+              className="py-4 px-6 bg-zinc-900 dark:bg-zinc-700 text-white border border-transparent rounded-2xl flex items-center justify-center gap-3 hover:bg-zinc-800 dark:hover:bg-zinc-600 transition-all font-bold shadow-sm"
+            >
+              <Github size={20} />
+              GitHub
+            </button>
+          </div>
 
           <div className="mt-6 text-center">
             <p className="text-[10px] text-stone-400 dark:text-zinc-500 uppercase tracking-widest mb-1">

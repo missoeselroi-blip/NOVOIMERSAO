@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Skull, Lightbulb, RefreshCw } from 'lucide-react';
+import { Skull, Lightbulb, RefreshCw, Clock } from 'lucide-react';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../contexts/AuthContext';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../lib/firebase';
 
 const HANGMAN_WORDS = [
@@ -114,6 +114,16 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
         } else {
           showToast('Créditos insuficientes! Você precisa de 5 créditos.', 'error');
         }
+      } else {
+        // Document doesn't exist yet, create it with default credits minus 5
+        await setDoc(userRef, {
+          name: user.name || 'Usuário',
+          credits: 45,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+        revealLetter();
+        setHintsUsed(prev => prev + 1);
+        showToast('Dica usada! -5 créditos.', 'success');
       }
     } catch (error) {
       console.error("Erro ao usar dica:", error);

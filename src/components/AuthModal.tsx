@@ -10,7 +10,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { loginWithGoogle, loginWithEmail, registerWithEmail } = useAuth();
+  const { loginWithGoogle, loginWithGithub, loginWithEmail, registerWithEmail } = useAuth();
   const { showToast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -50,11 +50,28 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
       onClose();
     } catch (err: any) {
       if (err.code === 'auth/popup-closed-by-user') {
-        // Just ignore or show a very subtle message since the user intentionally closed it
         console.log("Login popup closed by user");
         return;
       }
       setError(err.message || "Erro ao fazer login com Google.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGithubLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      await loginWithGithub();
+      showToast("Login com GitHub realizado com sucesso! 🚀✨");
+      onClose();
+    } catch (err: any) {
+      if (err.code === 'auth/popup-closed-by-user') {
+        console.log("Login popup closed by user");
+        return;
+      }
+      setError(err.message || "Erro ao fazer login com GitHub.");
     } finally {
       setLoading(false);
     }
@@ -161,14 +178,24 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </div>
             </div>
 
-            <button
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-full py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-2xl hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-3"
-            >
-              <img src="/logo.png" alt="App Icon" className="w-5 h-5" />
-              Google
-            </button>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-2xl hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
+              >
+                <img src="/logo.png" alt="Google" className="w-5 h-5" />
+                Google
+              </button>
+              <button
+                onClick={handleGithubLogin}
+                disabled={loading}
+                className="py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-2xl hover:bg-zinc-800 dark:hover:bg-zinc-600 transition-all flex items-center justify-center gap-2"
+              >
+                <Github size={20} />
+                GitHub
+              </button>
+            </div>
 
             <div className="mt-8 text-center flex flex-col gap-3">
               <button

@@ -29,15 +29,17 @@ async function testConnection() {
     await getDocFromServer(doc(db, '_connection_test_', 'test'));
     console.log('✅ Firestore conectado com sucesso!');
   } catch (error: any) {
-    console.group('❌ Detalhes do Erro de Conexão:');
-    console.error('Código:', error.code);
-    console.error('Mensagem:', error.message);
-    console.groupEnd();
-
     if (error.code === 'permission-denied' || error.code === 'not-found') {
-      console.log('📡 O Firestore está ONLINE! (O servidor respondeu, o que é o mais importante).');
-    } else if (error.message?.includes('offline') || error.code === 'unavailable') {
-      console.warn('⚠️ O cliente ainda reporta offline. Isso pode ser um bloqueio de rede ou o Firestore não está ativado no projeto: ' + firebaseConfig.projectId);
+      console.log('✅ Firestore conectado com sucesso! (O servidor respondeu).');
+    } else {
+      console.group('❌ Detalhes do Erro de Conexão:');
+      console.error('Código:', error.code);
+      console.error('Mensagem:', error.message);
+      console.groupEnd();
+      
+      if (error.message?.includes('offline') || error.code === 'unavailable') {
+        console.warn('⚠️ O cliente ainda reporta offline. Isso pode ser um bloqueio de rede ou o Firestore não está ativado no projeto: ' + firebaseConfig.projectId);
+      }
     }
   }
 }

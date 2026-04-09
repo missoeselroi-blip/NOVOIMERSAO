@@ -211,7 +211,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     const saved = localStorage.getItem('devotional_favorites');
     return saved ? JSON.parse(saved) : [];
   });
-  const [activeTab, setActiveTab] = useState<'devotional' | 'journal'>('devotional');
+  const [activeTab, setActiveTab] = useState<'devotional' | 'journal' | 'readingPlan'>('devotional');
   const [journalEntries, setJournalEntries] = useState<any[]>([]);
   const [isJournalLoading, setIsJournalLoading] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
@@ -383,6 +383,139 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
   const [isReceivingWord, setIsReceivingWord] = useState(false);
   const [receivedWordAudio, setReceivedWordAudio] = useState<string | null>(null);
+
+  // Reading Plan State
+  const [readingPlans, setReadingPlans] = useState<any[]>([]);
+  const [activeReadingPlan, setActiveReadingPlan] = useState<any | null>(null);
+  const [isReadingPlanLoading, setIsReadingPlanLoading] = useState(false);
+  const [showPlanSelector, setShowPlanSelector] = useState(false);
+
+  const fetchReadingPlans = async () => {
+    if (!user) return;
+    setIsReadingPlanLoading(true);
+    try {
+      const q = query(
+        collection(db, 'readingPlans'),
+        where('userId', '==', user.id)
+      );
+      const snapshot = await getDocs(q);
+      const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setReadingPlans(plans);
+      if (plans.length > 0) {
+        setActiveReadingPlan(plans[0]);
+      }
+    } catch (error) {
+      console.error("Error fetching reading plans:", error);
+      handleFirestoreError(error, OperationType.GET, 'readingPlans');
+    } finally {
+      setIsReadingPlanLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'readingPlan') {
+      fetchReadingPlans();
+    }
+  }, [activeTab, user]);
+
+  const handleCreatePlan = async (type: 'chronological' | 'thematic' | 'testament') => {
+    if (!user) return;
+    try {
+      const newPlan = {
+        userId: user.id,
+        planType: type,
+        startDate: serverTimestamp(),
+        completedDays: [],
+        remindersEnabled: false,
+        reminderTime: '08:00',
+        currentDay: 1
+      };
+      const docRef = await addDoc(collection(db, 'readingPlans'), newPlan);
+      const planWithId = { id: docRef.id, ...newPlan };
+      setReadingPlans([planWithId]);
+      setActiveReadingPlan(planWithId);
+      setShowPlanSelector(false);
+      showToast("Plano de leitura criado com sucesso! 📖", "success");
+    } catch (error) {
+      console.error("Error creating reading plan:", error);
+      handleFirestoreError(error, OperationType.CREATE, 'readingPlans');
+      showToast("Erro ao criar plano de leitura.", "error");
+    }
+  };
+
+  const handleToggleDay = async (day: number) => {
+    if (!activeReadingPlan || !user) return;
+    
+    const isCompleted = activeReadingPlan.completedDays.includes(day);
+    const newCompletedDays = isCompleted
+      ? activeReadingPlan.completedDays.filter((d: number) => d !== day)
+      : [...activeReadingPlan.completedDays, day];
+      
+    try {
+      await updateDoc(doc(db, 'readingPlans', activeReadingPlan.id), {
+        completedDays: newCompletedDays,
+        currentDay: Math.max(...newCompletedDays, 0) + 1
+      });
+      
+      const updatedPlan = { 
+        ...activeReadingPlan, 
+        completedDays: newCompletedDays,
+        currentDay: Math.max(...newCompletedDays, 0) + 1
+      };
+      setActiveReadingPlan(updatedPlan);
+      setReadingPlans(readingPlans.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+      
+      if (!isCompleted) {
+        showToast("Dia concluído! Parabéns! 🎉", "success");
+      }
+    } catch (error) {
+      console.error("Error updating reading plan:", error);
+      handleFirestoreError(error, OperationType.UPDATE, 'readingPlans');
+    }
+  };
+
+  const handleToggleReminders = async () => {
+    if (!activeReadingPlan || !user) return;
+    
+    const newEnabled = !activeReadingPlan.remindersEnabled;
+    try {
+      await updateDoc(doc(db, 'readingPlans', activeReadingPlan.id), {
+        remindersEnabled: newEnabled
+      });
+      
+      const updatedPlan = { ...activeReadingPlan, remindersEnabled: newEnabled };
+      setActiveReadingPlan(updatedPlan);
+      setReadingPlans(readingPlans.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+      
+      showToast(newEnabled ? "Lembretes ativados! 🔔" : "Lembretes desativados. 🔕", "info");
+      
+      if (newEnabled && Notification.permission !== 'granted') {
+        Notification.requestPermission();
+      }
+    } catch (error) {
+      console.error("Error updating reminders:", error);
+      handleFirestoreError(error, OperationType.UPDATE, 'readingPlans');
+    }
+  };
+
+  const handleUpdateReminderTime = async (time: string) => {
+    if (!activeReadingPlan || !user) return;
+    
+    try {
+      await updateDoc(doc(db, 'readingPlans', activeReadingPlan.id), {
+        reminderTime: time
+      });
+      
+      const updatedPlan = { ...activeReadingPlan, reminderTime: time };
+      setActiveReadingPlan(updatedPlan);
+      setReadingPlans(readingPlans.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+      
+      showToast(`Lembrete ajustado para ${time} ⏰`, "success");
+    } catch (error) {
+      console.error("Error updating reminder time:", error);
+      handleFirestoreError(error, OperationType.UPDATE, 'readingPlans');
+    }
+  };
 
   const handleReceiveWord = async () => {
     if (!user) return;
@@ -741,6 +874,17 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
                 )}
               >
                 Caderno de Oração
+              </button>
+              <button
+                onClick={() => setActiveTab('readingPlan')}
+                className={cn(
+                  "px-6 py-2.5 rounded-full text-sm font-bold transition-all",
+                  activeTab === 'readingPlan' 
+                    ? "bg-white dark:bg-zinc-900 text-emerald-600 shadow-sm" 
+                    : "text-stone-500 hover:text-stone-700 dark:text-zinc-400 dark:hover:text-zinc-200"
+                )}
+              >
+                Plano de Leitura
               </button>
             </div>
           </div>
@@ -1230,7 +1374,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         </section>
       )}
       </>
-      ) : (
+      ) : activeTab === 'journal' ? (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
           <header className="text-center space-y-4 relative">
             <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
@@ -1442,6 +1586,218 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
               </div>
             )}
           </div>
+        </div>
+      ) : (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <header className="text-center space-y-4">
+            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-2xl flex items-center justify-center mx-auto shadow-lg">
+              <CalendarIcon size={32} />
+            </div>
+            <h2 className="text-3xl font-display font-bold">Plano de Leitura</h2>
+            <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto">
+              Acompanhe sua jornada através das Escrituras com um plano personalizado.
+            </p>
+          </header>
+
+          {isReadingPlanLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="animate-spin text-emerald-600" size={32} />
+            </div>
+          ) : !activeReadingPlan ? (
+            <div className="text-center py-12 bg-stone-50 dark:bg-zinc-800/50 rounded-3xl border border-stone-200 dark:border-zinc-800">
+              <Book size={48} className="mx-auto text-stone-300 dark:text-zinc-600 mb-4" />
+              <h3 className="text-xl font-bold mb-2">Você ainda não tem um plano</h3>
+              <p className="text-stone-500 dark:text-zinc-400 mb-8">Escolha um plano para começar sua jornada de leitura hoje.</p>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-3xl mx-auto px-4">
+                <button 
+                  onClick={() => handleCreatePlan('chronological')}
+                  className="p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-emerald-500 transition-all group"
+                >
+                  <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+                    <RotateCw size={24} />
+                  </div>
+                  <h4 className="font-bold mb-2">Cronológico</h4>
+                  <p className="text-xs text-stone-500">Leia a Bíblia na ordem em que os eventos ocorreram.</p>
+                </button>
+
+                <button 
+                  onClick={() => handleCreatePlan('thematic')}
+                  className="p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-emerald-500 transition-all group"
+                >
+                  <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 text-blue-600 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+                    <Sparkles size={24} />
+                  </div>
+                  <h4 className="font-bold mb-2">Temático</h4>
+                  <p className="text-xs text-stone-500">Explore temas específicos e como eles se conectam.</p>
+                </button>
+
+                <button 
+                  onClick={() => handleCreatePlan('testament')}
+                  className="p-6 bg-white dark:bg-zinc-900 rounded-2xl border border-stone-200 dark:border-zinc-800 hover:border-emerald-500 transition-all group"
+                >
+                  <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 text-purple-600 rounded-xl flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform">
+                    <BookOpen size={24} />
+                  </div>
+                  <h4 className="font-bold mb-2">Por Testamento</h4>
+                  <p className="text-xs text-stone-500">Alterne entre o Antigo e o Novo Testamento.</p>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-8">
+              {/* Progress Card */}
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] shadow-xl border border-stone-200 dark:border-zinc-800">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold uppercase tracking-widest rounded-full">
+                        Plano {activeReadingPlan.planType === 'chronological' ? 'Cronológico' : activeReadingPlan.planType === 'thematic' ? 'Temático' : 'Por Testamento'}
+                      </span>
+                    </div>
+                    <h3 className="text-2xl font-bold">Seu Progresso</h3>
+                  </div>
+
+                  <div className="flex items-center gap-4">
+                    <div className="text-right">
+                      <p className="text-2xl font-bold text-emerald-600">
+                        {Math.round((activeReadingPlan.completedDays.length / 365) * 100)}%
+                      </p>
+                      <p className="text-[10px] text-stone-400 font-bold uppercase tracking-wider">Concluído</p>
+                    </div>
+                    <div className="w-16 h-16 rounded-full border-4 border-stone-100 dark:border-zinc-800 flex items-center justify-center relative">
+                      <svg className="w-full h-full -rotate-90">
+                        <circle
+                          cx="32"
+                          cy="32"
+                          r="28"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                          className="text-emerald-500"
+                          strokeDasharray={175.9}
+                          strokeDashoffset={175.9 - (175.9 * (activeReadingPlan.completedDays.length / 365))}
+                        />
+                      </svg>
+                      <span className="absolute text-[10px] font-bold">{activeReadingPlan.completedDays.length}/365</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <h4 className="font-bold flex items-center gap-2">
+                      <CalendarIcon size={18} className="text-emerald-600" />
+                      Leitura de Hoje (Dia {activeReadingPlan.currentDay})
+                    </h4>
+                    <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
+                      <p className="text-lg font-bold text-stone-800 dark:text-zinc-100 mb-2">
+                        {/* This would ideally come from a real plan data source */}
+                        Gênesis 1-3
+                      </p>
+                      <p className="text-sm text-stone-500 leading-relaxed">
+                        Comece sua jornada hoje mergulhando no relato da criação e nos primeiros passos da humanidade.
+                      </p>
+                      <button 
+                        onClick={() => handleToggleDay(activeReadingPlan.currentDay)}
+                        className={cn(
+                          "w-full mt-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2",
+                          activeReadingPlan.completedDays.includes(activeReadingPlan.currentDay)
+                            ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-lg shadow-emerald-600/20"
+                        )}
+                      >
+                        {activeReadingPlan.completedDays.includes(activeReadingPlan.currentDay) ? (
+                          <>
+                            <CheckCircle size={20} />
+                            Concluído
+                          </>
+                        ) : (
+                          "Marcar como Lido"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-bold flex items-center gap-2">
+                      <ChallengeIcon size={18} className="text-amber-500" />
+                      Configurações do Plano
+                    </h4>
+                    <div className="p-6 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 space-y-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-sm">Lembretes Diários</p>
+                          <p className="text-[10px] text-stone-500">Receba uma notificação para ler</p>
+                        </div>
+                        <button 
+                          onClick={handleToggleReminders}
+                          className={cn(
+                            "w-12 h-6 rounded-full transition-colors relative",
+                            activeReadingPlan.remindersEnabled ? "bg-emerald-500" : "bg-stone-300 dark:bg-zinc-700"
+                          )}
+                        >
+                          <motion.div 
+                            className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full shadow-sm"
+                            animate={{ x: activeReadingPlan.remindersEnabled ? 24 : 0 }}
+                          />
+                        </button>
+                      </div>
+
+                      {activeReadingPlan.remindersEnabled && (
+                        <div className="flex items-center justify-between pt-4 border-t border-stone-200 dark:border-zinc-700">
+                          <p className="font-bold text-sm">Horário</p>
+                          <input 
+                            type="time" 
+                            value={activeReadingPlan.reminderTime}
+                            onChange={(e) => handleUpdateReminderTime(e.target.value)}
+                            className="bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-sm font-bold"
+                          />
+                        </div>
+                      )}
+
+                      <button 
+                        onClick={() => setShowPlanSelector(true)}
+                        className="w-full py-2 text-xs text-stone-500 hover:text-emerald-600 transition-colors font-bold flex items-center justify-center gap-1"
+                      >
+                        <RotateCcw size={14} /> Alterar Plano de Leitura
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Calendar View for Progress */}
+              <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] shadow-xl border border-stone-200 dark:border-zinc-800">
+                <h3 className="text-xl font-bold mb-6">Histórico de Leitura</h3>
+                <div className="grid grid-cols-7 sm:grid-cols-10 md:grid-cols-15 lg:grid-cols-20 gap-2">
+                  {[...Array(365)].map((_, i) => {
+                    const day = i + 1;
+                    const isCompleted = activeReadingPlan.completedDays.includes(day);
+                    const isCurrent = day === activeReadingPlan.currentDay;
+                    
+                    return (
+                      <button
+                        key={day}
+                        onClick={() => handleToggleDay(day)}
+                        className={cn(
+                          "aspect-square rounded-lg text-[10px] font-bold transition-all flex items-center justify-center border",
+                          isCompleted 
+                            ? "bg-emerald-500 border-emerald-600 text-white shadow-sm" 
+                            : isCurrent
+                              ? "bg-amber-50 border-amber-200 text-amber-600 animate-pulse"
+                              : "bg-stone-50 dark:bg-zinc-800 border-stone-100 dark:border-zinc-700 text-stone-400"
+                        )}
+                        title={`Dia ${day}`}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
       </>

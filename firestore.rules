@@ -93,6 +93,17 @@ service cloud.firestore {
     //   - originalId: string
     //   - updatedAt: timestamp
     //
+    // Collection: readingPlans
+    // Document ID: {planId}
+    // Fields:
+    //   - userId: string (required)
+    //   - planType: string (chronological|thematic|testament)
+    //   - startDate: timestamp
+    //   - completedDays: list
+    //   - remindersEnabled: bool
+    //   - reminderTime: string
+    //   - currentDay: int
+    //
     // ===============================================================
 
     // Helper Functions
@@ -276,7 +287,7 @@ service cloud.firestore {
     }
 
     function isValidQuizLeaderboard(data) {
-      return data.keys().hasAll(['name', 'updatedAt']) &&
+      return data.keys().hasAll(['name']) &&
              data.name is string && data.name.size() < 100 &&
              (!('userId' in data) || data.userId is string) &&
              (!('score' in data) || (data.score is number && data.score >= 0)) &&
@@ -298,7 +309,7 @@ service cloud.firestore {
              (!('avatar' in data) || (data.avatar is string && isValidUrl(data.avatar))) &&
              (!('lastScore' in data) || data.lastScore is number) &&
              (!('trend' in data) || data.trend in ['up', 'down', 'same']) &&
-             (data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50));
+             (!('updatedAt' in data) || data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50));
     }
 
     function isValidStudy(data) {
@@ -321,6 +332,17 @@ service cloud.firestore {
              data.isFavorite is bool &&
              (data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50)) &&
              (!('note' in data) || data.note == null || (data.note is string && data.note.size() < 5000));
+    }
+
+    function isValidReadingPlan(data) {
+      return data.keys().hasAll(['userId', 'planType', 'startDate']) &&
+             data.userId == request.auth.uid &&
+             data.planType in ['chronological', 'thematic', 'testament'] &&
+             (data.startDate is timestamp || (data.startDate is string && data.startDate.size() < 50)) &&
+             (!('completedDays' in data) || data.completedDays is list) &&
+             (!('remindersEnabled' in data) || data.remindersEnabled is bool) &&
+             (!('reminderTime' in data) || (data.reminderTime is string && data.reminderTime.size() < 10)) &&
+             (!('currentDay' in data) || data.currentDay is number);
     }
 
     // Rules
@@ -513,6 +535,13 @@ service cloud.firestore {
     match /quizCups/{cupId} {
       allow read, write: if isAuthenticated();
       allow delete: if isAdmin();
+    }
+
+    match /readingPlans/{planId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidReadingPlan(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidReadingPlan(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }

@@ -439,6 +439,21 @@
         "createdAt": { "type": "string", "format": "date-time" }
       }
     },
+    "BibleReadingPlan": {
+      "title": "Bible Reading Plan",
+      "description": "User personalized Bible reading plans and progress",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "planType": { "type": "string", "enum": ["chronological", "thematic", "testament"] },
+        "startDate": { "type": "string", "format": "date-time" },
+        "completedDays": { "type": "array", "items": { "type": "integer" } },
+        "remindersEnabled": { "type": "boolean" },
+        "reminderTime": { "type": "string" },
+        "currentDay": { "type": "integer" }
+      },
+      "required": ["userId", "planType", "startDate"]
+    },
     "QuizCup": {
       "title": "Quiz Cup",
       "description": "Tournament style quiz competition",
@@ -567,6 +582,10 @@
     "/quizCups/{cupId}": {
       "schema": "QuizCup",
       "description": "Quiz tournament cups"
+    },
+    "/readingPlans/{planId}": {
+      "schema": "BibleReadingPlan",
+      "description": "User Bible reading plans"
     }
   }
 }

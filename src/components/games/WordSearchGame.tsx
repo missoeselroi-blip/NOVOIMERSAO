@@ -19,6 +19,7 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
   const [grid, setGrid] = useState<string[][]>([]);
   const [selectedCells, setSelectedCells] = useState<{ r: number; c: number }[]>([]);
   const [foundWords, setFoundWords] = useState<string[]>([]);
+  const [foundCells, setFoundCells] = useState<{ r: number; c: number }[]>([]);
   const [score, setScore] = useState(100);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
@@ -104,10 +105,12 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
       
       if (WORDS_TO_FIND.includes(word) && !foundWords.includes(word)) {
         setFoundWords(prev => [...prev, word]);
+        setFoundCells(prev => [...prev, ...newSelected]);
         showToast(`Palavra encontrada: ${word}!`, "success");
         setSelectedCells([]);
       } else if (WORDS_TO_FIND.includes(reversedWord) && !foundWords.includes(reversedWord)) {
         setFoundWords(prev => [...prev, reversedWord]);
+        setFoundCells(prev => [...prev, ...newSelected]);
         showToast(`Palavra encontrada: ${reversedWord}!`, "success");
         setSelectedCells([]);
       }
@@ -183,6 +186,7 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
                 {grid.map((row, r) => (
                   row.map((char, c) => {
                     const isSelected = selectedCells.some(cell => cell.r === r && cell.c === c);
+                    const isFound = foundCells.some(cell => cell.r === r && cell.c === c);
                     
                     return (
                       <button
@@ -195,7 +199,9 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
                         }}
                         className={cn(
                           "flex items-center justify-center font-bold rounded-lg transition-all shadow-sm",
-                          isSelected ? "bg-blue-500 text-white scale-110 z-10" : "bg-white dark:bg-zinc-800 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-700"
+                          isSelected ? "bg-blue-500 text-white scale-110 z-10" : 
+                          isFound ? "bg-emerald-500 text-white" :
+                          "bg-white dark:bg-zinc-800 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-700"
                         )}
                       >
                         {char}
@@ -215,10 +221,10 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
                   "px-4 py-2 rounded-xl text-xs font-bold border transition-all",
                   foundWords.includes(word) 
                     ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
-                    : "bg-stone-100 text-stone-400 border-stone-200"
+                    : "bg-stone-100 text-stone-600 border-stone-200 dark:bg-zinc-800 dark:text-stone-300 dark:border-zinc-700"
                 )}
               >
-                {foundWords.includes(word) ? word : "???"}
+                {word}
               </span>
             ))}
           </div>
