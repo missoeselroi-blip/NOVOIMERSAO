@@ -43,7 +43,17 @@ export default function TimelineGame({ onFinish, onClose }: TimelineGameProps) {
   const [currentLevel, setCurrentLevel] = useState(0);
   const [items, setItems] = useState<any[]>([]);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [totalScore, setTotalScore] = useState(0);
+  const [score, setScore] = useState(100);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (!isGameOver && score > 10) {
+      timer = setInterval(() => {
+        setScore(prev => Math.max(10, prev - 1));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isGameOver, score]);
 
   useEffect(() => {
     loadLevel(currentLevel);
@@ -72,13 +82,13 @@ export default function TimelineGame({ onFinish, onClose }: TimelineGameProps) {
   const checkOrder = () => {
     const isCorrect = items.every((item, index) => item.order === index + 1);
     if (isCorrect) {
-      setTotalScore(prev => prev + 50);
-      showToast('Ordem correta! +50 pontos', 'success');
+      showToast('Ordem correta!', 'success');
       setTimeout(() => {
         setCurrentLevel(prev => prev + 1);
       }, 1500);
     } else {
-      showToast('A ordem ainda não está correta. Tente novamente!', 'error');
+      setScore(prev => Math.max(0, prev - 5));
+      showToast('A ordem ainda não está correta. -5 pontos.', 'error');
     }
   };
 
@@ -86,9 +96,9 @@ export default function TimelineGame({ onFinish, onClose }: TimelineGameProps) {
     return (
       <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
         <h2 className="text-3xl font-bold text-emerald-600 mb-4">Fim de Jogo!</h2>
-        <p className="text-xl mb-6">Sua pontuação final: {totalScore}</p>
+        <p className="text-xl mb-6">Sua pontuação final: {score}</p>
         <button
-          onClick={() => onFinish(totalScore)}
+          onClick={() => onFinish(score)}
           className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all"
         >
           Salvar e Voltar
@@ -103,7 +113,12 @@ export default function TimelineGame({ onFinish, onClose }: TimelineGameProps) {
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <Clock className="text-purple-500" /> Linha do Tempo
         </h2>
-        <span className="font-bold text-stone-500">Nível {currentLevel + 1}/{TIMELINE_LEVELS.length}</span>
+        <div className="flex items-center gap-4">
+          <span className="font-bold text-stone-500">Nível {currentLevel + 1}/{TIMELINE_LEVELS.length}</span>
+          <div className="text-lg font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl flex items-center gap-2">
+            <Clock size={20} /> {score} pts
+          </div>
+        </div>
       </div>
 
       <p className="text-stone-600 dark:text-stone-400 mb-6">

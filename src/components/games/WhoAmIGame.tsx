@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { HelpCircle, CheckCircle2, XCircle, ArrowRight } from 'lucide-react';
+import { HelpCircle, CheckCircle2, XCircle, ArrowRight, Clock, Lightbulb } from 'lucide-react';
 import { useToast } from '../../components/Toast';
+import { useAuth } from '../../contexts/AuthContext';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../../lib/firebase';
 
 const WHO_AM_I_DATA = [
   {
@@ -62,18 +65,53 @@ interface WhoAmIGameProps {
 }
 
 export default function WhoAmIGame({ onFinish, onClose }: WhoAmIGameProps) {
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [revealedHints, setRevealedHints] = useState(1);
   const [guess, setGuess] = useState('');
   const [isGameOver, setIsGameOver] = useState(false);
-  const [totalScore, setTotalScore] = useState(0);
+  const [score, setScore] = useState(100);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (!isGameOver && score > 10) {
+      timer = setInterval(() => {
+        setScore(prev => Math.max(10, prev - 1));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isGameOver, score]);
 
   const currentItem = WHO_AM_I_DATA[currentIndex];
 
-  const handleRevealHint = () => {
-    if (revealedHints < currentItem.hints.length) {
-      setRevealedHints(prev => prev + 1);
+  const handleRevealHint = async () => {
+    if (revealedHints >= currentItem.hints.length) return;
+
+    if (!user) {
+      showToast('Você precisa estar logado para usar dicas.', 'error');
+      return;
+    }
+
+    try {
+      const userRef = doc(db, 'quizLeaderboard', user.id);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const currentCredits = userSnap.data().credits ?? 50;
+        if (currentCredits >= 5) {
+          await updateDoc(userRef, {
+            credits: currentCredits - 5
+          });
+          setRevealedHints(prev => prev + 1);
+          showToast('Dica usada! -5 créditos.', 'success');
+        } else {
+          showToast('Créditos insuficientes! Você precisa de 5 créditos.', 'error');
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao usar dica:", error);
+      showToast('Erro ao usar dica.', 'error');
     }
   };
 
@@ -83,11 +121,7 @@ export default function WhoAmIGame({ onFinish, onClose }: WhoAmIGameProps) {
     const isCorrect = guess.toLowerCase().trim() === currentItem.answer.toLowerCase().trim();
     
     if (isCorrect) {
-      // Points based on hints revealed: 5 hints max. 
-      // 1 hint = 50 pts, 2 hints = 40 pts, 3 hints = 30 pts, 4 hints = 20 pts, 5 hints = 10 pts
-      const points = (6 - revealedHints) * 10;
-      setTotalScore(prev => prev + points);
-      showToast(`Correto! Você ganhou ${points} pontos.`, 'success');
+      showToast(`Correto!`, 'success');
       
       if (currentIndex < WHO_AM_I_DATA.length - 1) {
         setCurrentIndex(prev => prev + 1);
@@ -97,7 +131,8 @@ export default function WhoAmIGame({ onFinish, onClose }: WhoAmIGameProps) {
         setIsGameOver(true);
       }
     } else {
-      showToast('Incorreto! Tente novamente ou revele mais uma dica.', 'error');
+      setScore(prev => Math.max(0, prev - 5));
+      showToast('Incorreto! -5 pontos. Tente novamente.', 'error');
       setGuess('');
     }
   };
@@ -106,9 +141,9 @@ export default function WhoAmIGame({ onFinish, onClose }: WhoAmIGameProps) {
     return (
       <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
         <h2 className="text-3xl font-bold text-emerald-600 mb-4">Fim de Jogo!</h2>
-        <p className="text-xl mb-6">Sua pontuação final: {totalScore}</p>
+        <p className="text-xl mb-6">Sua pontuação final: {score}</p>
         <button
-          onClick={() => onFinish(totalScore)}
+          onClick={() => onFinish(score)}
           className="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-all"
         >
           Salvar e Voltar
@@ -123,11 +158,17 @@ export default function WhoAmIGame({ onFinish, onClose }: WhoAmIGameProps) {
         <h2 className="text-2xl font-bold flex items-center gap-2">
           <HelpCircle className="text-blue-500" /> Quem Sou Eu?
         </h2>
-        <span className="font-bold text-stone-500">Pontos: {totalScore}</span>
+        <div className="flex items-center gap-4">
+          <div className="text-lg font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl flex items-center gap-2">
+            <Clock size={20} /> {score} pts
+          </div>
+        </div>
       </div>
 
       <div className="mb-8">
-        <h3 className="font-bold text-stone-700 dark:text-stone-300 mb-4">Dicas Reveladas:</h3>
+        <h3 className="font-bold text-stone-700 dark:text-stone-300 mb-4">
+          Personagem {currentIndex + 1} de {WHO_AM_I_DATA.length}
+        </h3>
         <div className="space-y-3">
           {currentItem.hints.slice(0, revealedHints).map((hint, idx) => (
             <motion.div
@@ -144,14 +185,15 @@ export default function WhoAmIGame({ onFinish, onClose }: WhoAmIGameProps) {
         {revealedHints < currentItem.hints.length && (
           <button
             onClick={handleRevealHint}
-            className="mt-4 text-blue-600 dark:text-blue-400 font-bold hover:underline text-sm"
+            className="mt-4 flex items-center gap-2 text-amber-600 dark:text-amber-400 font-bold hover:underline text-sm bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-xl"
           >
-            + Revelar próxima dica (diminui a pontuação)
+            <Lightbulb size={16} />
+            Revelar próxima dica (-5 créditos)
           </button>
         )}
       </div>
 
-      <div className="flex gap-3">
+      <div className="flex flex-col sm:flex-row gap-3">
         <input
           type="text"
           value={guess}
@@ -162,7 +204,7 @@ export default function WhoAmIGame({ onFinish, onClose }: WhoAmIGameProps) {
         />
         <button
           onClick={handleGuess}
-          className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all flex items-center gap-2"
+          className="px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all flex items-center justify-center gap-2"
         >
           Responder <ArrowRight size={20} />
         </button>

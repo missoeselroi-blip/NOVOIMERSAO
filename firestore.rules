@@ -130,19 +130,26 @@ service cloud.firestore {
       return data.keys().hasAll(['id', 'email', 'role']) &&
              data.id is string &&
              data.email is string &&
-             data.role in ['admin', 'user'] &&
+             data.role in ['admin', 'user', 'pastor', 'missionary', 'student'] &&
              (!('name' in data) || (data.name is string && data.name.size() < 100)) &&
              (!('displayName' in data) || (data.displayName is string && data.displayName.size() < 100)) &&
              (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() < 1500000)) &&
              (!('avatar' in data) || (data.avatar is string && data.avatar.size() < 1500000)) &&
              (!('joinDate' in data) || (data.joinDate is string && data.joinDate.size() < 50)) &&
-             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('createdAt' in data) || data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50)) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50)) &&
              (!('lastActive' in data) || (data.lastActive is string && data.lastActive.size() < 50)) &&
              (!('diaryPassword' in data) || (data.diaryPassword is string && data.diaryPassword.size() < 100)) &&
              (!('panoramaMedals' in data) || data.panoramaMedals is map) &&
              (!('favorites' in data) || data.favorites is list) &&
              (!('settings' in data) || data.settings is map) &&
-             (!('metrics' in data) || data.metrics is map);
+             (!('metrics' in data) || data.metrics is map) &&
+             (!('bio' in data) || (data.bio is string && data.bio.size() < 500)) &&
+             (!('location' in data) || (data.location is string && data.location.size() < 100)) &&
+             (!('church' in data) || (data.church is string && data.church.size() < 100)) &&
+             (!('birthDate' in data) || (data.birthDate is string && data.birthDate.size() < 20)) &&
+             (!('phone' in data) || (data.phone is string && data.phone.size() < 20)) &&
+             (!('gender' in data) || (data.gender is string && data.gender.size() < 20));
     }
 
     function isValidNote(data) {
@@ -165,10 +172,10 @@ service cloud.firestore {
              (!('text' in data) || (data.text is string && data.text.size() < 100000)) &&
              (!('style' in data) || (data.style is string && data.style.size() < 200)) &&
              (!('emotion' in data) || (data.emotion is string && data.emotion.size() < 200)) &&
-             (!('size' in data) || (data.size is string && data.size.size() < 100) || data.size is number) &&
-             (!('duration' in data) || (data.duration is string && data.duration.size() < 50) || data.duration is number) &&
+             (!('size' in data) || (data.size is string && data.size.size() < 100) || data.size is number || data.size == null) &&
+             (!('duration' in data) || (data.duration is string && data.duration.size() < 50) || data.duration is number || data.duration == null) &&
              (!('date' in data) || (data.date is string && data.date.size() < 100)) &&
-             data.createdAt is timestamp;
+             (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50));
     }
 
     function isValidTheologySummary(data) {
@@ -180,7 +187,8 @@ service cloud.firestore {
              data.score is number && data.score >= 0 && data.score <= 10 &&
              (!('userName' in data) || data.userName is string) &&
              (!('aiFeedback' in data) || data.aiFeedback is string) &&
-             (!('createdAt' in data) || data.createdAt is string || data.createdAt is timestamp);
+             (!('createdAt' in data) || data.createdAt is string || data.createdAt is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is string || data.updatedAt is timestamp);
     }
 
     function isValidAudioCollection(data) {
@@ -208,7 +216,8 @@ service cloud.firestore {
              (!('userJoinDate' in data) || data.userJoinDate is string) &&
              (!('userName' in data) || data.userName is string) &&
              (!('userPhoto' in data) || data.userPhoto is string) &&
-             (!('lastReadDate' in data) || data.lastReadDate is timestamp);
+             (!('lastReadDate' in data) || data.lastReadDate is timestamp) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50));
     }
 
     function isValidBibleRaceMessage(data) {
@@ -246,7 +255,7 @@ service cloud.firestore {
              data.userId == request.auth.uid &&
              data.title is string && data.title.size() < 500 &&
              data.content is string && data.content.size() < 50000 &&
-             (!('updatedAt' in data) || (data.updatedAt is string && data.updatedAt.size() < 50)) &&
+             (!('updatedAt' in data) || data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50)) &&
              data.createdAt is timestamp;
     }
 
@@ -289,7 +298,7 @@ service cloud.firestore {
              (!('avatar' in data) || (data.avatar is string && isValidUrl(data.avatar))) &&
              (!('lastScore' in data) || data.lastScore is number) &&
              (!('trend' in data) || data.trend in ['up', 'down', 'same']) &&
-             data.updatedAt is timestamp;
+             (data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50));
     }
 
     function isValidStudy(data) {
@@ -310,8 +319,8 @@ service cloud.firestore {
              data.type in ['highlight', 'underline', 'circle', 'none'] &&
              data.color is string && data.color.size() < 50 &&
              data.isFavorite is bool &&
-             data.updatedAt is string && data.updatedAt.size() < 50 &&
-             (!('note' in data) || (data.note is string && data.note.size() < 5000));
+             (data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50)) &&
+             (!('note' in data) || data.note == null || (data.note is string && data.note.size() < 5000));
     }
 
     // Rules
@@ -352,6 +361,14 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidPersonalDiaryEntry(request.resource.data);
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidPersonalDiaryEntry(request.resource.data);
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    function isValidTheologyProgress(data) {
+      return data.keys().hasAll(['userId']) &&
+             data.userId == request.auth.uid &&
+             (!('enrolled' in data) || data.enrolled is bool) &&
+             (!('lastActive' in data) || (data.lastActive is string && data.lastActive.size() < 50)) &&
+             (!('sectionMetrics' in data) || data.sectionMetrics is map);
     }
 
     match /theologyProgress/{userId} {

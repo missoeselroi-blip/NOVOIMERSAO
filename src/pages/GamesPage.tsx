@@ -716,21 +716,34 @@ const GamesPage: React.FC = () => {
       
       let trend: 'up' | 'down' | 'same' = 'same';
       let previousScore = 0;
-      let battlesWon = 0;
       let panoramaScore = 0;
+      let whoAmIScore = 0;
+      let timelineScore = 0;
+      let crosswordScore = 0;
+      let hangmanScore = 0;
+      let wordSearchScore = 0;
+      let cryptogramScore = 0;
+      let anagramScore = 0;
 
       if (userSnap.exists()) {
-        const data = userSnap.data() as LeaderboardEntry;
+        const data = userSnap.data() as any;
         previousScore = data.score || 0;
-        battlesWon = data.battlesWon || 0;
         panoramaScore = data.panoramaScore || 0;
+        whoAmIScore = data.whoAmIScore || 0;
+        timelineScore = data.timelineScore || 0;
+        crosswordScore = data.crosswordScore || 0;
+        hangmanScore = data.hangmanScore || 0;
+        wordSearchScore = data.wordSearchScore || 0;
+        cryptogramScore = data.cryptogramScore || 0;
+        anagramScore = data.anagramScore || 0;
+        
         if (finalScore > previousScore) trend = 'up';
         else if (finalScore < previousScore) trend = 'down';
       } else {
         if (finalScore > 0) trend = 'up';
       }
 
-      const newTotalScore = finalScore + battlesWon + panoramaScore;
+      const newTotalScore = finalScore + panoramaScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore;
 
       await setDoc(userRef, {
         name: user.name || 'Usuário',
@@ -752,7 +765,6 @@ const GamesPage: React.FC = () => {
     const userSnap = await getDoc(userRef);
     
     let previousScore = 0;
-    let battlesWon = 0;
     let panoramaScore = 0;
     let whoAmIScore = 0;
     let timelineScore = 0;
@@ -766,7 +778,6 @@ const GamesPage: React.FC = () => {
     if (userSnap.exists()) {
       const data = userSnap.data() as LeaderboardEntry;
       previousScore = data.score || 0;
-      battlesWon = data.battlesWon || 0;
       panoramaScore = data.panoramaScore || 0;
       whoAmIScore = data.whoAmIScore || 0;
       timelineScore = data.timelineScore || 0;
@@ -779,15 +790,15 @@ const GamesPage: React.FC = () => {
     }
 
     // Update the specific game score
-    if (gameName === 'whoami') whoAmIScore += gameScore;
-    if (gameName === 'timeline') timelineScore += gameScore;
-    if (gameName === 'crossword') crosswordScore += gameScore;
-    if (gameName === 'hangman') hangmanScore += gameScore;
-    if (gameName === 'wordsearch') wordSearchScore += gameScore;
-    if (gameName === 'cryptogram') cryptogramScore += gameScore;
-    if (gameName === 'anagram') anagramScore += gameScore;
+    if (gameName === 'whoami') whoAmIScore = gameScore;
+    if (gameName === 'timeline') timelineScore = gameScore;
+    if (gameName === 'crossword') crosswordScore = gameScore;
+    if (gameName === 'hangman') hangmanScore = gameScore;
+    if (gameName === 'wordsearch') wordSearchScore = gameScore;
+    if (gameName === 'cryptogram') cryptogramScore = gameScore;
+    if (gameName === 'anagram') anagramScore = gameScore;
 
-    const newTotalScore = previousScore + battlesWon + panoramaScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore;
+    const newTotalScore = previousScore + panoramaScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore;
 
     await setDoc(userRef, {
       name: user.name || 'Usuário',

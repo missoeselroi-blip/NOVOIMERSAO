@@ -39,8 +39,18 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
   const [guessedLetters, setGuessedLetters] = useState<Set<string>>(new Set());
   const [wrongGuesses, setWrongGuesses] = useState(0);
   const [isGameOver, setIsGameOver] = useState(false);
-  const [score, setScore] = useState(0);
+  const [score, setScore] = useState(100);
   const [hintsUsed, setHintsUsed] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (!isGameOver && score > 10) {
+      timer = setInterval(() => {
+        setScore(prev => Math.max(10, prev - 1));
+      }, 1000);
+    }
+    return () => clearInterval(timer);
+  }, [isGameOver, score]);
 
   const startNewGame = () => {
     const randomTarget = HANGMAN_WORDS[Math.floor(Math.random() * HANGMAN_WORDS.length)];
@@ -48,7 +58,7 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
     setGuessedLetters(new Set());
     setWrongGuesses(0);
     setIsGameOver(false);
-    setScore(0);
+    setScore(100);
     setHintsUsed(0);
   };
 
@@ -74,19 +84,41 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
     } else {
       const isWin = target.word.split('').every(l => newGuessed.has(l));
       if (isWin) {
-        const points = Math.max(0, 100 - (wrongGuesses * 10) - (hintsUsed * 10));
-        setScore(points);
-        showToast(`Parabéns! Você ganhou ${points} pontos.`, 'success');
+        showToast(`Parabéns! Você ganhou ${score} pontos.`, 'success');
         setIsGameOver(true);
       }
     }
   };
 
-  const handleHint = () => {
+  const handleHint = async () => {
     if (isGameOver) return;
-    revealLetter();
-    setHintsUsed(prev => prev + 1);
-    showToast('Dica usada! -10 pontos.', 'success');
+    
+    if (!user) {
+      showToast('Você precisa estar logado para usar dicas.', 'error');
+      return;
+    }
+
+    try {
+      const userRef = doc(db, 'quizLeaderboard', user.id);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const currentCredits = userSnap.data().credits ?? 50;
+        if (currentCredits >= 5) {
+          await updateDoc(userRef, {
+            credits: currentCredits - 5
+          });
+          revealLetter();
+          setHintsUsed(prev => prev + 1);
+          showToast('Dica usada! -5 créditos.', 'success');
+        } else {
+          showToast('Créditos insuficientes! Você precisa de 5 créditos.', 'error');
+        }
+      }
+    } catch (error) {
+      console.error("Erro ao usar dica:", error);
+      showToast('Erro ao usar dica.', 'error');
+    }
   };
 
   const revealLetter = () => {
@@ -141,8 +173,6 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
   }
 
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-  const currentScore = Math.max(0, 100 - (wrongGuesses * 10) - (hintsUsed * 10));
-
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800">
       <div className="flex justify-between items-center mb-6">
@@ -150,14 +180,16 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
           <Skull className="text-red-500" /> Forca Bíblica
         </h2>
         <div className="flex items-center gap-4">
-          <span className="font-bold text-emerald-600">{currentScore} pts</span>
+          <div className="text-lg font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl flex items-center gap-2">
+            <Clock size={20} /> {score} pts
+          </div>
           <span className="font-bold text-stone-500">Erros: {wrongGuesses}/6</span>
           <button 
             onClick={handleHint}
             className="flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-bold hover:bg-amber-200"
           >
             <Lightbulb size={16} />
-            Dica (-10 pts)
+            Dica (-5 créditos)
           </button>
         </div>
       </div>
