@@ -986,6 +986,11 @@ const GamesPage: React.FC = () => {
                 <h3 className="text-xl font-bold mb-1">Panorama Bíblico</h3>
                 <p className="text-pink-100 text-sm">Visão geral dos livros</p>
               </button>
+              <button onClick={() => setActiveGame('riddles')} className="p-6 bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
+                <HelpCircle size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">Enigmas Bíblicos</h3>
+                <p className="text-purple-100 text-sm">Desafio de sabedoria e lógica</p>
+              </button>
             </div>
 
             {/* General Leaderboard */}
@@ -1647,10 +1652,10 @@ const GamesPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
-                    <Award className="text-purple-500 mt-1" size={20} />
+                    <HelpCircle className="text-purple-500 mt-1" size={20} />
                     <div>
-                      <p className="font-bold text-sm">Ranking Geral</p>
-                      <p className="text-xs text-stone-500">Apenas pontos do Quiz contam</p>
+                      <p className="font-bold text-sm">Enigmas</p>
+                      <p className="text-xs text-stone-500">3 chances: 20, 10 ou 5 pts</p>
                     </div>
                   </div>
                 </div>
@@ -1674,14 +1679,6 @@ const GamesPage: React.FC = () => {
                     className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all"
                   >
                     <Trophy size={24} /> Copa Quiz
-                  </button>
-                </div>
-                <div className="mt-4">
-                  <button
-                    onClick={() => setActiveGame('riddles')}
-                    className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition-all"
-                  >
-                    <HelpCircle size={24} /> Enigmas Bíblicos
                   </button>
                 </div>
               </motion.div>
@@ -1766,7 +1763,7 @@ const GamesPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {leaderboard.map((entry, index) => {
-                        const otherGamesScore = (entry.whoAmIScore || 0) + (entry.timelineScore || 0) + (entry.crosswordScore || 0) + (entry.hangmanScore || 0) + (entry.wordSearchScore || 0) + (entry.cryptogramScore || 0) + (entry.anagramScore || 0);
+                        const otherGamesScore = (entry.whoAmIScore || 0) + (entry.timelineScore || 0) + (entry.crosswordScore || 0) + (entry.hangmanScore || 0) + (entry.wordSearchScore || 0) + (entry.cryptogramScore || 0) + (entry.anagramScore || 0) + (entry.riddlesScore || 0);
                         return (
                         <tr 
                           key={entry.userId}
