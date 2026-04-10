@@ -33,3 +33,27 @@ export interface NotebookEntry {
   time: string;
   subject: string;
 }
+
+export interface LeaderboardEntry {
+  userId: string;
+  name: string;
+  avatar: string;
+  score: number;
+  totalScore?: number;
+  battlesWon: number;
+  panoramaScore?: number;
+  panoramaTime?: number;
+  whoAmIScore?: number;
+  timelineScore?: number;
+  crosswordScore?: number;
+  hangmanScore?: number;
+  wordSearchScore?: number;
+  cryptogramScore?: number;
+  anagramScore?: number;
+  riddlesScore?: number;
+  credits?: number;
+  lastScore: number;
+  month: number;
+  trend: 'up' | 'down' | 'same';
+  rank?: number;
+}

@@ -44,6 +44,7 @@ import HangmanGame from '../components/games/HangmanGame';
 import WordSearchGame from '../components/games/WordSearchGame';
 import CryptogramGame from '../components/games/CryptogramGame';
 import AnagramGame from '../components/games/AnagramGame';
+import RiddlesGame from '../components/games/RiddlesGame';
 import { 
   collection, 
   query, 
@@ -57,32 +58,8 @@ import {
   updateDoc,
   where
 } from 'firebase/firestore';
-import { cn } from '../types';
+import { cn, LeaderboardEntry } from '../types';
 import html2canvas from 'html2canvas';
-
-
-interface LeaderboardEntry {
-  userId: string;
-  name: string;
-  avatar: string;
-  score: number;
-  totalScore?: number;
-  battlesWon: number;
-  panoramaScore?: number;
-  panoramaTime?: number;
-  whoAmIScore?: number;
-  timelineScore?: number;
-  crosswordScore?: number;
-  hangmanScore?: number;
-  wordSearchScore?: number;
-  cryptogramScore?: number;
-  anagramScore?: number;
-  credits?: number;
-  lastScore: number;
-  month: number;
-  trend: 'up' | 'down' | 'same';
-  rank?: number;
-}
 
 
 // Force rebuild
@@ -167,7 +144,7 @@ const GamesPage: React.FC = () => {
             const cappedScore = Math.min(userEntry.score || 0, 100);
             updateDoc(doc(db, 'quizLeaderboard', user.id), {
               score: cappedScore,
-              totalScore: cappedScore + (userEntry.battlesWon || 0) + (userEntry.panoramaScore || 0)
+              totalScore: cappedScore + (userEntry.whoAmIScore || 0) + (userEntry.timelineScore || 0) + (userEntry.crosswordScore || 0) + (userEntry.hangmanScore || 0) + ((userEntry as any).wordSearchScore || 0) + ((userEntry as any).cryptogramScore || 0) + ((userEntry as any).anagramScore || 0)
             });
           }
         } else {
@@ -181,7 +158,7 @@ const GamesPage: React.FC = () => {
                 const cappedScore = Math.min(data.score || 0, 100);
                 updateDoc(doc(db, 'quizLeaderboard', user.id), {
                   score: cappedScore,
-                  totalScore: cappedScore + (data.battlesWon || 0) + (data.panoramaScore || 0)
+                  totalScore: cappedScore + (data.whoAmIScore || 0) + (data.timelineScore || 0) + (data.crosswordScore || 0) + (data.hangmanScore || 0) + (data.wordSearchScore || 0) + (data.cryptogramScore || 0) + (data.anagramScore || 0)
                 });
               }
             }
@@ -724,6 +701,7 @@ const GamesPage: React.FC = () => {
       let wordSearchScore = 0;
       let cryptogramScore = 0;
       let anagramScore = 0;
+      let riddlesScore = 0;
 
       if (userSnap.exists()) {
         const data = userSnap.data() as any;
@@ -736,6 +714,7 @@ const GamesPage: React.FC = () => {
         wordSearchScore = data.wordSearchScore || 0;
         cryptogramScore = data.cryptogramScore || 0;
         anagramScore = data.anagramScore || 0;
+        riddlesScore = data.riddlesScore || 0;
         
         if (finalScore > previousScore) trend = 'up';
         else if (finalScore < previousScore) trend = 'down';
@@ -743,7 +722,7 @@ const GamesPage: React.FC = () => {
         if (finalScore > 0) trend = 'up';
       }
 
-      const newTotalScore = finalScore + panoramaScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore;
+      const newTotalScore = finalScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore;
 
       await setDoc(userRef, {
         name: user.name || 'Usuário',
@@ -773,6 +752,7 @@ const GamesPage: React.FC = () => {
     let wordSearchScore = 0;
     let cryptogramScore = 0;
     let anagramScore = 0;
+    let riddlesScore = 0;
     let currentCredits = credits;
 
     if (userSnap.exists()) {
@@ -786,6 +766,7 @@ const GamesPage: React.FC = () => {
       wordSearchScore = (data as any).wordSearchScore || 0;
       cryptogramScore = (data as any).cryptogramScore || 0;
       anagramScore = (data as any).anagramScore || 0;
+      riddlesScore = (data as any).riddlesScore || 0;
       currentCredits = (data as any).credits ?? 50;
     }
 
@@ -797,8 +778,9 @@ const GamesPage: React.FC = () => {
     if (gameName === 'wordsearch') wordSearchScore = gameScore;
     if (gameName === 'cryptogram') cryptogramScore = gameScore;
     if (gameName === 'anagram') anagramScore = gameScore;
+    if (gameName === 'riddles') riddlesScore = gameScore;
 
-    const newTotalScore = previousScore + panoramaScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore;
+    const newTotalScore = previousScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore;
 
     await setDoc(userRef, {
       name: user.name || 'Usuário',
@@ -811,6 +793,7 @@ const GamesPage: React.FC = () => {
       wordSearchScore,
       cryptogramScore,
       anagramScore,
+      riddlesScore,
       credits: currentCredits,
       updatedAt: serverTimestamp()
     }, { merge: true });
@@ -1027,6 +1010,7 @@ const GamesPage: React.FC = () => {
                       <th className="px-3 py-2 text-center">Caça Palavras</th>
                       <th className="px-3 py-2 text-center">Criptograma</th>
                       <th className="px-3 py-2 text-center">Anagrama</th>
+                      <th className="px-3 py-2 text-center">Enigmas</th>
                       <th className="px-3 py-2 text-center">Total</th>
                     </tr>
                   </thead>
@@ -1064,6 +1048,7 @@ const GamesPage: React.FC = () => {
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{(entry as any).wordSearchScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{(entry as any).cryptogramScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{(entry as any).anagramScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{(entry as any).riddlesScore || 0}</td>
                           <td className="px-3 py-3 text-center font-bold text-emerald-600 dark:text-emerald-400">{total}</td>
                         </tr>
                       );
@@ -1082,6 +1067,7 @@ const GamesPage: React.FC = () => {
             {activeGame === 'wordsearch' && <WordSearchGame onFinish={(score) => handleOtherGameFinish('wordsearch', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'cryptogram' && <CryptogramGame onFinish={(score) => handleOtherGameFinish('cryptogram', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'anagram' && <AnagramGame onFinish={(score) => handleOtherGameFinish('anagram', score)} onClose={() => setActiveGame(null)} credits={credits} onSpendCredits={handleSpendCredits} />}
+            {activeGame === 'riddles' && <RiddlesGame onFinish={(score) => handleOtherGameFinish('riddles', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'quiz' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-4">
@@ -1663,8 +1649,8 @@ const GamesPage: React.FC = () => {
                   <div className="flex items-start gap-3 p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl">
                     <Award className="text-purple-500 mt-1" size={20} />
                     <div>
-                      <p className="font-bold text-sm">Prêmio Mensal</p>
-                      <p className="text-xs text-stone-500">1º lugar ganha prêmio surpresa</p>
+                      <p className="font-bold text-sm">Ranking Geral</p>
+                      <p className="text-xs text-stone-500">Apenas pontos do Quiz contam</p>
                     </div>
                   </div>
                 </div>
@@ -1688,6 +1674,14 @@ const GamesPage: React.FC = () => {
                     className="w-full py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-lg shadow-lg shadow-amber-500/20 flex items-center justify-center gap-2 transition-all"
                   >
                     <Trophy size={24} /> Copa Quiz
+                  </button>
+                </div>
+                <div className="mt-4">
+                  <button
+                    onClick={() => setActiveGame('riddles')}
+                    className="w-full py-4 bg-purple-600 hover:bg-purple-700 text-white rounded-2xl font-bold text-lg shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2 transition-all"
+                  >
+                    <HelpCircle size={24} /> Enigmas Bíblicos
                   </button>
                 </div>
               </motion.div>
@@ -1766,12 +1760,14 @@ const GamesPage: React.FC = () => {
                         <th className="px-3 py-2">#</th>
                         <th className="px-3 py-2">Nome</th>
                         <th className="px-3 py-2">Quiz</th>
-                        <th className="px-3 py-2">Vitórias</th>
+                        <th className="px-3 py-2">Outros Jogos</th>
                         <th className="px-3 py-2">Total</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {leaderboard.map((entry, index) => (
+                      {leaderboard.map((entry, index) => {
+                        const otherGamesScore = (entry.whoAmIScore || 0) + (entry.timelineScore || 0) + (entry.crosswordScore || 0) + (entry.hangmanScore || 0) + (entry.wordSearchScore || 0) + (entry.cryptogramScore || 0) + (entry.anagramScore || 0);
+                        return (
                         <tr 
                           key={entry.userId}
                           className={cn(
@@ -1779,57 +1775,16 @@ const GamesPage: React.FC = () => {
                             entry.userId === user?.id ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
                           )}
                         >
-                          <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
+                          <td className="px-3 py-3 font-bold text-stone-50">{index + 1}</td>
                           <td className="px-3 py-3 flex items-center gap-2">
                             <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
                             <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[80px]">{entry.name}</span>
                           </td>
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.score}</td>
-                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.battlesWon || 0}</td>
-                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{(entry.score || 0) + (entry.battlesWon || 0)}</td>
+                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{otherGamesScore}</td>
+                          <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.score + otherGamesScore}</td>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
-              {/* Panorama Leaderboard */}
-              <div className="mb-8">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <BookOpen className="text-pink-500" size={24} />
-                    <h2 className="text-xl font-bold text-stone-800 dark:text-stone-200">Ranking Panorama Bíblico</h2>
-                  </div>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="text-xs text-stone-500 uppercase bg-stone-50 dark:bg-zinc-800">
-                      <tr>
-                        <th className="px-3 py-2">#</th>
-                        <th className="px-3 py-2">Nome</th>
-                        <th className="px-3 py-2">Pontos</th>
-                        <th className="px-3 py-2">Tempo</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {panoramaLeaderboard.filter(e => e.panoramaScore && e.panoramaScore > 0).map((entry, index) => (
-                        <tr 
-                          key={entry.userId}
-                          className={cn(
-                            "border-b border-stone-100 dark:border-zinc-800",
-                            entry.userId === user?.id ? "bg-pink-50 dark:bg-pink-900/20" : ""
-                          )}
-                        >
-                          <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
-                          <td className="px-3 py-3 flex items-center gap-2">
-                            <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-                            <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[80px]">{entry.name}</span>
-                          </td>
-                          <td className="px-3 py-3 font-bold text-pink-600 dark:text-pink-400">{entry.panoramaScore || 0}</td>
-                          <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{entry.panoramaTime ? `${entry.panoramaTime}s` : '-'}</td>
-                        </tr>
-                      ))}
+                      )})}
                     </tbody>
                   </table>
                 </div>

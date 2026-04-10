@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Medal, AlertCircle, CheckCircle2, XCircle, Clock, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react';
+import { Trophy, Medal, AlertCircle, CheckCircle2, XCircle, Clock, ArrowLeft, ArrowRight, RotateCcw, BookOpen } from 'lucide-react';
 import { booksList, getDivisionForBook, getRandomQuestionForBook, Question } from '../data/panoramaQuestions';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { doc, updateDoc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { cn } from '../types';
+import { doc, updateDoc, getDoc, setDoc, serverTimestamp, collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { cn, LeaderboardEntry } from '../types';
 
 interface PanoramaBiblicoProps {
   onClose: () => void;
@@ -22,6 +22,8 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   const [startTime, setStartTime] = useState<number>(0);
   const [panoramaScore, setPanoramaScore] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -77,6 +79,19 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
     };
   }, [gameState, currentBookIndex]);
 
+  useEffect(() => {
+    const q = query(collection(db, 'quizLeaderboard'), orderBy('panoramaScore', 'desc'), limit(10));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const entries = snapshot.docs.map(doc => ({
+        ...doc.data(),
+        userId: doc.id
+      })) as LeaderboardEntry[];
+      setLeaderboard(entries);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const saveProgress = async (newScore: number, bookIndex: number, isFinished: boolean = false) => {
     if (!user) return;
     try {
@@ -92,10 +107,13 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
         const battlesWon = data.battlesWon || 0;
         const whoAmIScore = data.whoAmIScore || 0;
         const timelineScore = data.timelineScore || 0;
-        const hiddenWordScore = data.hiddenWordScore || 0;
+        const crosswordScore = data.crosswordScore || 0;
         const hangmanScore = data.hangmanScore || 0;
+        const wordSearchScore = data.wordSearchScore || 0;
+        const cryptogramScore = data.cryptogramScore || 0;
+        const anagramScore = data.anagramScore || 0;
         
-        const newTotalScore = currentScore + battlesWon + newScore + whoAmIScore + timelineScore + hiddenWordScore + hangmanScore;
+        const newTotalScore = currentScore + newScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore;
         
         await updateDoc(userRef, {
           panoramaScore: newScore,
@@ -238,6 +256,12 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
           <p className="text-xs text-stone-500 uppercase tracking-widest">{currentDivision.name}</p>
         </div>
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setShowLeaderboard(!showLeaderboard)}
+            className="p-2 text-stone-500 hover:text-amber-600 transition-colors"
+          >
+            <Trophy size={24} />
+          </button>
           <div className="flex items-center gap-2 text-blue-600 font-bold bg-blue-50 dark:bg-blue-900/20 px-3 py-1.5 rounded-xl">
             <span>{panoramaScore} pts</span>
           </div>
@@ -271,7 +295,66 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
         {/* Game Area */}
         <div className="flex-1 overflow-y-auto p-6 relative">
-          <div className="min-h-full flex flex-col items-center justify-center">
+          {showLeaderboard ? (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="max-w-2xl mx-auto bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 shadow-xl border border-stone-200 dark:border-zinc-800"
+            >
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <BookOpen className="text-pink-500" size={32} />
+                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Ranking Panorama</h2>
+                </div>
+                <button 
+                  onClick={() => setShowLeaderboard(false)}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                >
+                  <RotateCcw size={20} className="text-stone-500" />
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="text-xs text-stone-500 uppercase bg-stone-50 dark:bg-zinc-800">
+                    <tr>
+                      <th className="px-4 py-3">#</th>
+                      <th className="px-4 py-3">Nome</th>
+                      <th className="px-4 py-3 text-right">Pontos</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.filter(e => e.panoramaScore && e.panoramaScore > 0).map((entry, index) => (
+                      <tr 
+                        key={entry.userId}
+                        className={cn(
+                          "border-b border-stone-100 dark:border-zinc-800",
+                          entry.userId === user?.id ? "bg-pink-50 dark:bg-pink-900/20" : ""
+                        )}
+                      >
+                        <td className="px-4 py-4 font-bold text-stone-500">{index + 1}</td>
+                        <td className="px-4 py-4 flex items-center gap-3">
+                          <img src={entry.avatar} alt={entry.name} className="w-8 h-8 rounded-full" referrerPolicy="no-referrer" />
+                          <span className="font-medium text-stone-700 dark:text-stone-300">{entry.name}</span>
+                        </td>
+                        <td className="px-4 py-4 text-right font-bold text-pink-600 dark:text-pink-400">
+                          {entry.panoramaScore}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              <button
+                onClick={() => setShowLeaderboard(false)}
+                className="w-full mt-8 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-400 font-bold rounded-2xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+              >
+                Voltar ao Jogo
+              </button>
+            </motion.div>
+          ) : (
+            <div className="min-h-full flex flex-col items-center justify-center">
             <AnimatePresence mode="wait">
               {gameState === 'intro' && (
               <motion.div 
@@ -474,6 +557,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
             )}
           </AnimatePresence>
           </div>
+        )}
         </div>
       </div>
     </div>
