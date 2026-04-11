@@ -65,6 +65,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 
+import { ShareButtons } from '../components/ShareButtons';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { CreditInfoTip } from '../components/CreditInfoTip';
 import { useCredits } from '../contexts/CreditContext';
@@ -815,27 +816,10 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
               >
                 <Heart size={18} className={cn(isFavorited && "fill-current")} />
               </button>
-              <button 
-                onClick={() => shareToSocial('whatsapp')}
-                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full text-stone-400 hover:text-emerald-600 transition-colors"
-                title="Compartilhar no WhatsApp"
-              >
-                <MessageCircle size={18} />
-              </button>
-              <button 
-                onClick={() => shareToSocial('facebook')}
-                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full text-stone-400 hover:text-blue-600 transition-colors"
-                title="Compartilhar no Facebook"
-              >
-                <Facebook size={18} />
-              </button>
-              <button 
-                onClick={() => shareToSocial('instagram')}
-                className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full text-stone-400 hover:text-pink-600 transition-colors"
-                title="Compartilhar no Instagram"
-              >
-                <Instagram size={18} />
-              </button>
+              <ShareButtons 
+                title="Versículo do Dia" 
+                text={`"${dailyVerse.text}" — ${dailyVerse.reference}`} 
+              />
             </div>
           </div>
 
@@ -1367,18 +1351,12 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                             <StickyNote size={24} />
                             Salvar no Caderno
                           </button>
-                          <button 
-                            onClick={() => {
-                              share({
-                                title: `Mensagem de ${selectedSentiment.name}`,
-                                text: generatedMessage,
-                              });
-                            }}
-                            className="flex-1 py-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-2xl hover:bg-stone-200 transition-all flex items-center justify-center gap-2"
-                          >
-                            <Share2 size={24} />
-                            Compartilhar
-                          </button>
+                          <div className="flex-1 flex items-center justify-center">
+                            <ShareButtons 
+                              title={`Mensagem: ${selectedSentiment.name}`} 
+                              text={generatedMessage} 
+                            />
+                          </div>
                           <button 
                             onClick={() => {
                               const element = document.createElement("a");

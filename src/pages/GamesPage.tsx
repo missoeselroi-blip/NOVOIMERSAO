@@ -1139,8 +1139,24 @@ const GamesPage: React.FC = () => {
                       )}
                     >
                       <span>{option}</span>
-                      {selectedOption !== null && idx === currentQuestions[currentQuestionIndex].correctAnswer && <CheckCircle2 size={20} />}
-                      {selectedOption === idx && idx !== currentQuestions[currentQuestionIndex].correctAnswer && <XCircle size={20} />}
+                      {selectedOption !== null && idx === currentQuestions[currentQuestionIndex].correctAnswer && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        >
+                          <CheckCircle2 size={20} />
+                        </motion.div>
+                      )}
+                      {selectedOption === idx && idx !== currentQuestions[currentQuestionIndex].correctAnswer && (
+                        <motion.div
+                          initial={{ scale: 0, opacity: 0 }}
+                          animate={{ scale: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 20 }}
+                        >
+                          <XCircle size={20} />
+                        </motion.div>
+                      )}
                     </button>
                   ))}
                 </div>

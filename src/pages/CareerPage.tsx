@@ -338,20 +338,18 @@ export default function CareerPage() {
           <div>
             <div className="flex items-center gap-3">
               <img 
-                src="/logo.png" 
+                src="logo.png" 
                 alt="Logo" 
                 className="w-8 h-8 object-contain"
-                referrerPolicy="no-referrer"
               />
               <h2 className="text-3xl font-display font-bold flex items-center gap-3 text-emerald-900 dark:text-emerald-400">
                 <Trophy className="text-amber-500" size={32} />
                 Carreira da Marinha Celestial
               </h2>
               <img 
-                src="/logo.png" 
+                src="logo.png" 
                 alt="Logo" 
                 className="w-8 h-8 object-contain"
-                referrerPolicy="no-referrer"
               />
             </div>
             <p className="text-stone-500 dark:text-zinc-400">Sua jornada de aprendizado e crescimento na Marinha de Cristo - Vamos navegar nessa aventura.</p>

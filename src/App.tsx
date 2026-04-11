@@ -151,10 +151,9 @@ function AppContent() {
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">
         <div className="text-center space-y-6">
           <img 
-            src="/logo.png" 
+            src="logo.png" 
             alt="Logo" 
             className="w-20 h-20 object-contain mx-auto animate-pulse"
-            referrerPolicy="no-referrer"
           />
           <div className="space-y-2">
             <Loader2 className="animate-spin text-emerald-600 mx-auto" size={32} />
@@ -290,10 +289,9 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="/logo.png" 
+              src="logo.png" 
               alt="App Icon" 
               className="w-8 h-8 object-contain"
-              referrerPolicy="no-referrer"
             />
             <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Imersão Bíblica IA</span>
           </div>
@@ -538,10 +536,9 @@ function AppContent() {
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg overflow-hidden bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                     <img 
-                      src="/logo.png" 
+                      src="logo.png" 
                       alt="App Icon" 
                       className="w-6 h-6 object-contain"
-                      referrerPolicy="no-referrer"
                     />
                   </div>
                   <span className="font-bold text-lg">Menu</span>

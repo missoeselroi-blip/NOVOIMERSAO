@@ -88,6 +88,7 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
   console.error('Firestore Error: ', JSON.stringify(errInfo));
   throw new Error(JSON.stringify(errInfo));
 };
+import { ShareButtons } from '../components/ShareButtons';
 import { useLocation } from 'react-router-dom';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -1912,15 +1913,10 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
               <div className="p-6 border-t border-amber-200/50 dark:border-stone-800 bg-amber-100/50 dark:bg-stone-800/50 flex flex-col gap-4">
                 <div className="flex flex-wrap gap-3 items-center">
                   <div className="flex gap-2 mr-auto">
-                    <button onClick={() => shareSocial('whatsapp')} className="p-3 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors" title="WhatsApp">
-                      <MessageCircle size={20} />
-                    </button>
-                    <button onClick={() => shareSocial('facebook')} className="p-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors" title="Facebook">
-                      <Facebook size={20} />
-                    </button>
-                    <button onClick={() => shareSocial('instagram')} className="p-3 bg-pink-600 text-white rounded-xl hover:bg-pink-700 transition-colors" title="Instagram">
-                      <Instagram size={20} />
-                    </button>
+                    <ShareButtons 
+                      title={`Devocional: ${selectedTheme}`} 
+                      text={devotionalResult || ''} 
+                    />
                   </div>
                   
                   <div className="flex gap-2">
