@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Maximize2, 
   Minimize2, 
@@ -21,7 +21,11 @@ import {
   X,
   BookOpen,
   Book,
-  Glasses
+  Glasses,
+  Mic,
+  Square,
+  UserCheck,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
@@ -52,6 +56,16 @@ const LessonPage: React.FC = () => {
   const [showSummary, setShowSummary] = useState(false);
   const [showLeaderGuide, setShowLeaderGuide] = useState(false);
   const [showAudio, setShowAudio] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showSearch, setShowSearch] = useState(false);
+  const [showMentor, setShowMentor] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [mentorResponse, setMentorResponse] = useState("");
+  const [isMentorLoading, setIsMentorLoading] = useState(false);
+  const [mentorAudioUrl, setMentorAudioUrl] = useState<string | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [contentToSave, setContentToSave] = useState({ title: '', content: '' });
@@ -332,32 +346,121 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
     }
   };
 
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = async () => {
+          const base64Audio = (reader.result as string).split(',')[1];
+          handleMentorQuery(base64Audio);
+        };
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+      showToast("Gravando sua pergunta...", "info");
+    } catch (error) {
+      console.error("Error starting recording:", error);
+      showToast("Erro ao acessar microfone.", "error");
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
+    }
+  };
+
+  const handleMentorQuery = async (base64Audio: string) => {
+    setIsMentorLoading(true);
+    setMentorResponse("");
+    setMentorAudioUrl(null);
+    try {
+      const transcription = await geminiService.transcribeAudio(base64Audio);
+      if (!transcription) throw new Error("Não foi possível transcrever o áudio.");
+
+      const systemPrompt = `Você é um Mentor espiritual e de liderança cristã. Seus princípios são baseados nos valores bíblicos do Novo Testamento e nos ensinamentos de Abe Huber sobre discipulado, consolidação, evangelismo, reuniões de célula, liderança e supervisão. Você também integra conhecimentos de outros grandes autores referência em liderança pastoral e evangelismo (como John Maxwell, Rick Warren, Billy Graham). Seu objetivo é fornecer dicas práticas, encorajamento e sabedoria para líderes e membros de células. Responda de forma pastoral, direta e inspiradora.`;
+      
+      const response = await geminiService.generateText(transcription, systemPrompt);
+      setMentorResponse(response);
+
+      const audioUrl = await geminiService.generateSpeech(response, 'Charon', 'pastor');
+      setMentorAudioUrl(audioUrl);
+      
+      showToast("Mentor respondeu! 🎙️✨");
+    } catch (error) {
+      console.error("Mentor error:", error);
+      showToast("Erro ao falar com o Mentor.", "error");
+    } finally {
+      setIsMentorLoading(false);
+    }
+  };
+
+  const filteredLessons = lessons.filter(lesson => 
+    lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (lesson.theme && lesson.theme.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    lesson.content.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 pb-20">
-      <div className="max-w-7xl mx-auto px-4 py-8">
-        <header className="mb-12 text-center">
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <header className="mb-16 text-center">
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-3 px-4 py-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-full mb-4"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="inline-flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 dark:from-emerald-500/20 dark:to-blue-500/20 text-emerald-600 dark:text-emerald-400 rounded-full mb-6 border border-emerald-200/50 dark:border-emerald-800/50 shadow-sm"
           >
-            <Glasses size={20} />
-            <span className="text-sm font-bold uppercase tracking-widest">Módulo de Estudos</span>
+            <Glasses size={20} className="animate-pulse" />
+            <span className="text-xs font-black uppercase tracking-[0.2em]">Módulo de Estudos Bíblicos</span>
           </motion.div>
-          <h1 className="text-4xl md:text-6xl font-display font-black text-stone-900 dark:text-white tracking-tighter mb-4">
-            Lições Bíblicas
+          
+          <h1 className="text-5xl md:text-7xl font-display font-black text-stone-900 dark:text-white tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-stone-900 to-stone-600 dark:from-white dark:to-zinc-500">
+            Lições de Vida
           </h1>
-          <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto font-medium">
-            Explore nossa jornada de 50 lições fundamentais para o seu crescimento espiritual e conhecimento teológico.
+          
+          <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto font-medium text-lg leading-relaxed">
+            Uma jornada profunda de 50 lições fundamentais para o seu <span className="text-emerald-600 dark:text-emerald-400 font-bold">crescimento espiritual</span> e conhecimento teológico.
           </p>
+          
+          <div className="mt-12 max-w-2xl mx-auto relative px-4">
+            <div className="relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-blue-500 rounded-2xl blur opacity-20 group-focus-within:opacity-40 transition duration-500"></div>
+              <div className="relative">
+                <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-stone-400 group-focus-within:text-emerald-500 transition-colors" size={22} />
+                <input 
+                  type="text"
+                  placeholder="Pesquisar por título, tema ou conteúdo..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-14 pr-6 py-5 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl shadow-xl focus:ring-0 outline-none transition-all text-lg font-medium placeholder:text-stone-300 dark:placeholder:text-zinc-700"
+                />
+              </div>
+            </div>
+          </div>
         </header>
 
         {/* Lessons Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {lessons.map((lesson) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {filteredLessons.map((lesson) => (
             <motion.button
               key={lesson.id}
-              whileHover={{ scale: 1.05 }}
+              whileHover={{ scale: 1.05, y: -5 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => {
                 setSelectedLesson(lesson);
@@ -365,23 +468,23 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
                 setIsFullScreen(true); // Default to fullscreen
               }}
               className={cn(
-                "aspect-square flex flex-col items-center justify-center p-6 rounded-[2rem] border-2 transition-all shadow-lg",
+                "aspect-square flex flex-col items-center justify-center p-6 rounded-[2.5rem] border-2 transition-all shadow-xl group relative overflow-hidden",
                 lesson.hasAttachment 
                   ? "bg-amber-50 border-amber-200 dark:bg-amber-900/20 dark:border-amber-800" 
                   : "bg-white border-stone-100 dark:bg-zinc-900 dark:border-zinc-800"
               )}
             >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+              
               <div className={cn(
-                "w-12 h-12 rounded-2xl flex items-center justify-center mb-4",
+                "w-16 h-16 rounded-3xl flex items-center justify-center mb-4 shadow-inner transition-transform group-hover:scale-110 duration-300",
                 lesson.hasAttachment ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
               )}>
-                {lesson.hasAttachment ? <FileText size={24} /> : (
-                  <Glasses size={24} />
-                )}
+                <Glasses size={32} />
               </div>
-              <span className="font-bold text-lg text-stone-900 dark:text-white">{lesson.title}</span>
+              <span className="font-black text-2xl text-stone-900 dark:text-white tracking-tighter">{lesson.title}</span>
               {lesson.theme && (
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-2 text-center px-2">
+                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-2 text-center px-2 leading-tight opacity-80">
                   {lesson.theme}
                 </span>
               )}
@@ -430,25 +533,29 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar max-w-[60vw] md:max-w-none">
+                <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
                   <button onClick={toggleFullScreen} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title={isFullScreen ? "Minimizar" : "Maximizar"}>
-                    {isFullScreen ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                    {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
                   </button>
                   <button onClick={handleDownload} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Baixar">
-                    <Download size={20} />
+                    <Download size={18} />
                   </button>
                   <button onClick={handleShare} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Compartilhar">
-                    <Share2 size={20} />
+                    <Share2 size={18} />
                   </button>
                   <button onClick={handleSave} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Salvar no Caderno">
-                    <StickyNote size={20} />
+                    <StickyNote size={18} />
                   </button>
                   <button onClick={handleListen} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
-                    <Volume2 size={20} />
+                    <Volume2 size={18} />
+                  </button>
+                  <button onClick={() => setShowMentor(true)} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
+                    <UserCheck size={18} />
+                    <span className="text-[10px] font-bold uppercase">Mentor</span>
                   </button>
                   <button onClick={handleWiki} className="p-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Wiki">
                     <Globe size={18} />
-                    <span className="hidden md:inline text-xs font-bold uppercase">Wiki</span>
+                    <span className="text-[10px] font-bold uppercase">Wiki</span>
                   </button>
                   <button 
                     onClick={() => setShowNotes(true)} 
@@ -456,7 +563,7 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
                     title="Anotar"
                   >
                     <PenTool size={18} />
-                    <span className="hidden md:inline text-xs font-bold uppercase">Anotar</span>
+                    <span className="text-[10px] font-bold uppercase">Anotar</span>
                   </button>
                   <button 
                     onClick={() => setShowSummary(true)} 
@@ -464,7 +571,7 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
                     title="Resumo"
                   >
                     <FileSearch size={18} />
-                    <span className="hidden md:inline text-xs font-bold uppercase">Resumo</span>
+                    <span className="text-[10px] font-bold uppercase">Resumo</span>
                   </button>
                 </div>
               </div>
@@ -905,16 +1012,20 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1 md:gap-2 overflow-x-auto no-scrollbar max-w-[40vw] md:max-w-none">
+                <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
                   <button onClick={handleDownload} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Baixar">
-                    <Download size={20} />
+                    <Download size={18} />
                   </button>
                   <button onClick={handleShare} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Compartilhar">
-                    <Share2 size={20} />
+                    <Share2 size={18} />
+                  </button>
+                  <button onClick={() => setShowMentor(true)} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
+                    <UserCheck size={18} />
+                    <span className="text-[10px] font-bold uppercase">Mentor</span>
                   </button>
                   <button onClick={handleWiki} className="p-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Wiki">
                     <Globe size={18} />
-                    <span className="hidden md:inline text-xs font-bold uppercase">Wiki</span>
+                    <span className="text-[10px] font-bold uppercase">Wiki</span>
                   </button>
                   <button 
                     onClick={() => setShowNotes(true)} 
@@ -922,7 +1033,7 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
                     title="Anotar"
                   >
                     <PenTool size={18} />
-                    <span className="hidden md:inline text-xs font-bold uppercase">Anotar</span>
+                    <span className="text-[10px] font-bold uppercase">Anotar</span>
                   </button>
                   <button 
                     onClick={() => setShowSummary(true)} 
@@ -930,7 +1041,7 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
                     title="Resumo"
                   >
                     <FileSearch size={18} />
-                    <span className="hidden md:inline text-xs font-bold uppercase">Resumo</span>
+                    <span className="text-[10px] font-bold uppercase">Resumo</span>
                   </button>
                   <button onClick={() => setShowLeaderGuide(false)} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full transition-colors shrink-0">
                     <X size={24} />
@@ -974,6 +1085,151 @@ Creia que é possível mudar. A transformação pode estar a um passo, a uma por
           </motion.div>
         )}
       </AnimatePresence>
+      <AnimatePresence>
+        {showMentor && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-purple-50/50 dark:bg-purple-900/10">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/20">
+                    <UserCheck size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-black tracking-tight">MENTOR</h3>
+                    <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dicas de Liderança e Discipulado</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {mentorResponse && (
+                    <>
+                      <button 
+                        onClick={() => {
+                          const blob = new Blob([mentorResponse], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `mentor-resposta-${new Date().getTime()}.txt`;
+                          a.click();
+                        }}
+                        className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                        title="Baixar Resposta"
+                      >
+                        <Download size={20} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setContentToSave({ title: "Resposta do Mentor", content: mentorResponse });
+                          setIsNotebookModalOpen(true);
+                        }}
+                        className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                        title="Salvar no Caderno"
+                      >
+                        <StickyNote size={20} />
+                      </button>
+                      {mentorAudioUrl && (
+                        <button 
+                          onClick={() => {
+                            const a = document.createElement('a');
+                            a.href = mentorAudioUrl;
+                            a.download = `mentor-audio-${new Date().getTime()}.mp3`;
+                            a.click();
+                          }}
+                          className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                          title="Salvar Áudio"
+                        >
+                          <Save size={20} />
+                        </button>
+                      )}
+                    </>
+                  )}
+                  <button onClick={() => setShowMentor(false)} className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full transition-colors">
+                    <X size={24} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-[2rem] min-h-[150px] flex flex-col items-center justify-center text-center">
+                  {isMentorLoading ? (
+                    <div className="space-y-4">
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        className="mx-auto"
+                      >
+                        <Loader2 className="text-purple-600" size={32} />
+                      </motion.div>
+                      <p className="text-sm font-bold text-stone-400 animate-pulse">O Mentor está processando sua sabedoria...</p>
+                    </div>
+                  ) : mentorResponse ? (
+                    <div className="space-y-4 w-full">
+                      <p className="text-sm leading-relaxed text-stone-700 dark:text-zinc-300 italic font-serif">
+                        "{mentorResponse}"
+                      </p>
+                      {mentorAudioUrl && (
+                        <audio src={mentorAudioUrl} autoPlay className="hidden" />
+                      )}
+                      <button 
+                        onClick={() => {
+                          setMentorResponse("");
+                          setMentorAudioUrl(null);
+                        }}
+                        className="text-xs font-bold text-purple-600 uppercase tracking-widest hover:underline"
+                      >
+                        Fazer outra pergunta
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <p className="text-sm text-stone-500">Pressione o botão abaixo e fale sua dúvida sobre liderança, discipulado ou célula.</p>
+                      <div className="flex justify-center">
+                        <button
+                          onMouseDown={startRecording}
+                          onMouseUp={stopRecording}
+                          onTouchStart={startRecording}
+                          onTouchEnd={stopRecording}
+                          className={cn(
+                            "w-20 h-20 rounded-full flex items-center justify-center transition-all shadow-xl",
+                            isRecording 
+                              ? "bg-red-500 text-white scale-110 animate-pulse" 
+                              : "bg-purple-600 text-white hover:bg-purple-700"
+                          )}
+                        >
+                          {isRecording ? <Square size={32} /> : <Mic size={32} />}
+                        </button>
+                      </div>
+                      <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
+                        {isRecording ? "Solte para enviar" : "Segure para falar"}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30">
+                    <h5 className="text-[10px] font-black text-purple-600 uppercase mb-1">Base de Conhecimento</h5>
+                    <p className="text-[9px] text-stone-500 leading-tight">Abe Huber, John Maxwell, Rick Warren e Princípios do NT.</p>
+                  </div>
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
+                    <h5 className="text-[10px] font-black text-emerald-600 uppercase mb-1">Foco</h5>
+                    <p className="text-[9px] text-stone-500 leading-tight">Discipulado, Consolidação e Liderança de Célula.</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <SaveToNotebookModal 
         isOpen={isNotebookModalOpen}
         isLoading={isSavingToNotebook}
