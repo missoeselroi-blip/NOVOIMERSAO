@@ -36,6 +36,7 @@ import { useToast } from '../components/Toast';
 import { geminiService } from '../services/geminiService';
 import { SpeechGenerator } from '../components/SpeechGenerator';
 
+import { useAuth } from '../contexts/AuthContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { lessons, Lesson } from '../data/lessons';
 
@@ -55,6 +56,7 @@ const LessonPage: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [mentorResponse, setMentorResponse] = useState("");
   const [isMentorLoading, setIsMentorLoading] = useState(false);
+  const [isMentorPlaying, setIsMentorPlaying] = useState(false);
   const [mentorAudioUrl, setMentorAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -76,6 +78,8 @@ const LessonPage: React.FC = () => {
     loading: false
   });
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const mentorAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const bibleVersions = ["NVI", "ACF", "ARA", "KJV", "NTLH"];
 
@@ -271,13 +275,19 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
       const transcription = await geminiService.transcribeAudio(base64Audio);
       if (!transcription) throw new Error("Não foi possível transcrever o áudio.");
 
-      const systemPrompt = `Você é um Mentor espiritual e de liderança cristã. Seus princípios são baseados nos valores bíblicos do Novo Testamento e nos ensinamentos de Abe Huber sobre discipulado, consolidação, evangelismo, reuniões de célula, liderança e supervisão. Você também integra conhecimentos de outros grandes autores referência em liderança pastoral e evangelismo (como John Maxwell, Rick Warren, Billy Graham). Seu objetivo é fornecer dicas práticas, encorajamento e sabedoria para líderes e membros de células. Responda de forma pastoral, direta e inspiradora.`;
-      
-      const response = await geminiService.generateText(transcription, systemPrompt);
+      const response = await geminiService.generateText(transcription, getMentorSystemPrompt());
       setMentorResponse(response);
 
       const audioUrl = await geminiService.generateSpeech(response, 'Charon', 'pastor');
       setMentorAudioUrl(audioUrl);
+      
+      if (audioUrl && mentorAudioRef.current) {
+        mentorAudioRef.current.src = audioUrl;
+        mentorAudioRef.current.onplay = () => setIsMentorPlaying(true);
+        mentorAudioRef.current.onended = () => setIsMentorPlaying(false);
+        mentorAudioRef.current.onpause = () => setIsMentorPlaying(false);
+        mentorAudioRef.current.play();
+      }
       
       showToast("Mentor respondeu! 🎙️✨");
     } catch (error) {
@@ -285,6 +295,58 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
       showToast("Erro ao falar com o Mentor.", "error");
     } finally {
       setIsMentorLoading(false);
+    }
+  };
+
+  const getMentorSystemPrompt = () => {
+    return `Você é um Mentor espiritual e de liderança cristã altamente experiente. 
+Seus princípios são baseados nos valores bíblicos do Novo Testamento e, de forma central, nos ensinamentos de Abe Huber sobre o MDA (Modelo de Discipulado Apostólico), discipulado um a um, consolidação, evangelismo, reuniões de célula, liderança e supervisão. 
+Você também integra conhecimentos profundos de outros grandes autores referência em liderança e crescimento (como John Maxwell, Rick Warren, Billy Graham, e outros escritores de liderança contemporâneos). 
+Seu objetivo é fornecer dicas práticas, encorajamento e sabedoria para líderes e membros de células, sempre focando na aplicação prática da lição atual.
+Responda de forma pastoral, direta, inspiradora e acolhedora.
+O nome do usuário é ${user?.name || 'amigo'}. 
+Sempre que possível, faça conexões entre a lição "${selectedLesson?.title || 'Bíblica'}" e os princípios de liderança de Abe Huber.
+Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
+  };
+
+  const openMentor = async () => {
+    setShowMentor(true);
+    if (!mentorResponse) {
+      setIsMentorLoading(true);
+      try {
+        const hour = new Date().getHours();
+        let greeting = "Bom dia";
+        if (hour >= 12 && hour < 18) greeting = "Boa tarde";
+        else if (hour >= 18) greeting = "Boa noite";
+        
+        const userName = user?.name ? user.name.split(' ')[0] : 'amigo';
+        const lessonTitle = selectedLesson?.title || 'nossa lição';
+        
+        const prompt = `Gere uma saudação inicial curta e calorosa como um Mentor de liderança cristã. 
+        Cumprimente o usuário pelo nome (${userName}) com um "${greeting}". 
+        Mencione que você está aqui para ajudar com a lição "${lessonTitle}". 
+        Cite brevemente que seus ensinamentos são baseados em Abe Huber e outros grandes líderes. 
+        Termine com uma pergunta convidando o usuário a falar ou perguntar algo sobre a lição. 
+        A resposta deve ser curta, direta e em áudio-friendly (sem markdown complexo).`;
+
+        const response = await geminiService.generateText(prompt, getMentorSystemPrompt());
+        setMentorResponse(response);
+        
+        const audioUrl = await geminiService.generateSpeech(response, 'Charon', 'pastor');
+        setMentorAudioUrl(audioUrl);
+        
+        if (audioUrl && mentorAudioRef.current) {
+          mentorAudioRef.current.src = audioUrl;
+          mentorAudioRef.current.onplay = () => setIsMentorPlaying(true);
+          mentorAudioRef.current.onended = () => setIsMentorPlaying(false);
+          mentorAudioRef.current.onpause = () => setIsMentorPlaying(false);
+          mentorAudioRef.current.play();
+        }
+      } catch (error) {
+        console.error("Error initializing mentor:", error);
+      } finally {
+        setIsMentorLoading(false);
+      }
     }
   };
 
@@ -298,21 +360,12 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
     <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 pb-20">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <header className="mb-16 text-center">
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="inline-flex items-center gap-3 px-6 py-2 bg-gradient-to-r from-emerald-500/10 to-blue-500/10 dark:from-emerald-500/20 dark:to-blue-500/20 text-emerald-600 dark:text-emerald-400 rounded-full mb-6 border border-emerald-200/50 dark:border-emerald-800/50 shadow-sm"
-          >
-            <Glasses size={20} className="animate-pulse" />
-            <span className="text-xs font-black uppercase tracking-[0.2em]">Módulo de Estudos Bíblicos</span>
-          </motion.div>
-          
           <h1 className="text-5xl md:text-7xl font-display font-black text-stone-900 dark:text-white tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-stone-900 to-stone-600 dark:from-white dark:to-zinc-500">
-            Lições de Vida
+            Lições de Célula
           </h1>
           
           <p className="text-stone-500 dark:text-zinc-400 max-w-2xl mx-auto font-medium text-lg leading-relaxed">
-            Uma jornada profunda de 50 lições fundamentais para o seu <span className="text-emerald-600 dark:text-emerald-400 font-bold">crescimento espiritual</span> e conhecimento teológico.
+            Uma jornada profunda de 50 lições de célula previstas para 2026 atualizadas semanalmente e utilizadas pela Igreja Betânia de Ipatinga.
           </p>
           
           <div className="mt-12 max-w-2xl mx-auto relative px-4">
@@ -354,14 +407,14 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
               <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-blue-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
               
               <div className={cn(
-                "w-16 h-16 rounded-3xl flex items-center justify-center mb-4 shadow-inner transition-transform group-hover:scale-110 duration-300",
+                "w-12 h-12 rounded-2xl flex items-center justify-center mb-3 shadow-inner transition-transform group-hover:scale-110 duration-300",
                 lesson.hasAttachment ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
               )}>
-                <Glasses size={32} />
+                <Glasses size={24} />
               </div>
-              <span className="font-black text-2xl text-stone-900 dark:text-white tracking-tighter">{lesson.title}</span>
+              <span className="font-black text-lg text-stone-900 dark:text-white tracking-tighter">{lesson.title}</span>
               {lesson.theme && (
-                <span className="text-[10px] font-black uppercase tracking-widest text-emerald-600 mt-2 text-center px-2 leading-tight opacity-80">
+                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mt-1 text-center px-2 leading-tight opacity-80">
                   {lesson.theme}
                 </span>
               )}
@@ -426,7 +479,7 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
                   <button onClick={handleListen} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
                     <Volume2 size={18} />
                   </button>
-                  <button onClick={() => setShowMentor(true)} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
+                  <button onClick={openMentor} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
                     <UserCheck size={18} />
                     <span className="text-[10px] font-bold uppercase">Mentor</span>
                   </button>
@@ -896,7 +949,7 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
                   <button onClick={handleShare} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Compartilhar">
                     <Share2 size={18} />
                   </button>
-                  <button onClick={() => setShowMentor(true)} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
+                  <button onClick={openMentor} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
                     <UserCheck size={18} />
                     <span className="text-[10px] font-bold uppercase">Mentor</span>
                   </button>
@@ -963,7 +1016,8 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
         )}
       </AnimatePresence>
       <AnimatePresence>
-        {showMentor && (
+        <audio ref={mentorAudioRef} className="hidden" />
+      {showMentor && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1028,7 +1082,13 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
                       )}
                     </>
                   )}
-                  <button onClick={() => setShowMentor(false)} className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full transition-colors">
+                  <button onClick={() => {
+                    if (mentorAudioRef.current) {
+                      mentorAudioRef.current.pause();
+                      mentorAudioRef.current.currentTime = 0;
+                    }
+                    setShowMentor(false);
+                  }} className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full transition-colors">
                     <X size={24} />
                   </button>
                 </div>
@@ -1052,11 +1112,26 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
                       <p className="text-sm leading-relaxed text-stone-700 dark:text-zinc-300 italic font-serif">
                         "{mentorResponse}"
                       </p>
-                      {mentorAudioUrl && (
-                        <audio src={mentorAudioUrl} autoPlay className="hidden" />
+                      {isMentorPlaying && (
+                        <button 
+                          onClick={() => {
+                            if (mentorAudioRef.current) {
+                              mentorAudioRef.current.pause();
+                              mentorAudioRef.current.currentTime = 0;
+                            }
+                          }}
+                          className="flex items-center gap-2 mx-auto px-4 py-2 bg-stone-100 dark:bg-zinc-800 rounded-full text-xs font-bold text-stone-600 dark:text-stone-400 hover:bg-stone-200 transition-colors"
+                        >
+                          <Square size={14} />
+                          PARAR ÁUDIO
+                        </button>
                       )}
                       <button 
                         onClick={() => {
+                          if (mentorAudioRef.current) {
+                            mentorAudioRef.current.pause();
+                            mentorAudioRef.current.currentTime = 0;
+                          }
                           setMentorResponse("");
                           setMentorAudioUrl(null);
                         }}
@@ -1068,7 +1143,21 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
                   ) : (
                     <div className="space-y-4">
                       <p className="text-sm text-stone-500">Pressione o botão abaixo e fale sua dúvida sobre liderança, discipulado ou célula.</p>
-                      <div className="flex justify-center">
+                      <div className="flex justify-center items-center gap-6">
+                        {isMentorPlaying && (
+                          <button
+                            onClick={() => {
+                              if (mentorAudioRef.current) {
+                                mentorAudioRef.current.pause();
+                                mentorAudioRef.current.currentTime = 0;
+                              }
+                            }}
+                            className="p-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 rounded-full hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
+                            title="Parar Áudio"
+                          >
+                            <Square size={24} />
+                          </button>
+                        )}
                         <button
                           onMouseDown={startRecording}
                           onMouseUp={stopRecording}
