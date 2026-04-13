@@ -1579,7 +1579,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         </head>
         <body>
           <h1>${title}</h1>
-          ${isImage ? `<img src="${content}" />` : `<div class="content">${content}</div>`}
+          ${isImage ? `<img src="${content}" referrerpolicy="no-referrer" />` : `<div class="content">${content}</div>`}
           <script>
             window.onload = () => {
               setTimeout(() => {
@@ -1908,9 +1908,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   <div style="width: 100px; h-1px; background: #064e3b; margin: 30px auto;"></div>
   <p style="font-size: 20px; color: #444; font-weight: bold;">Apostila de Estudo Profundo</p>
   <p style="font-size: 16px; color: #888; margin-top: 60px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-   <img src="/logo.png" width="24" height="24" style="object-fit: contain;" />
+   <img src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" width="24" height="24" style="object-fit: contain;" referrerpolicy="no-referrer" />
    Gerado por **Imersão Bíblica IA**
-   <img src="/logo.png" width="24" height="24" style="object-fit: contain;" />
+   <img src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" width="24" height="24" style="object-fit: contain;" referrerpolicy="no-referrer" />
  </p>
 </div>
 <div style="page-break-after: always;"></div>\n\n`;
@@ -1936,7 +1936,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
             const sectionTitle = `${item.cat} - ${item.name}`;
             sections.push({ title: sectionTitle, page: pageCount });
             
-            fullContent += `\n\n---\n\n## Página ${pageCount}: ${sectionTitle}\n\n${response.text}\n\n<div style="text-align: right; font-size: 10px; color: #888; margin-top: 20px; display: flex; align-items: center; justify-content: flex-end; gap: 5px;"><img src="/logo.png" width="16" height="16" /> Imersão Bíblica IA - Página ${pageCount} <img src="/logo.png" width="16" height="16" /></div>\n\n<div style="page-break-after: always;"></div>\n\n`;
+            fullContent += `\n\n---\n\n## Página ${pageCount}: ${sectionTitle}\n\n${response.text}\n\n<div style="text-align: right; font-size: 10px; color: #888; margin-top: 20px; display: flex; align-items: center; justify-content: flex-end; gap: 5px;"><img src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" width="16" height="16" referrerpolicy="no-referrer" /> Imersão Bíblica IA - Página ${pageCount} <img src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" width="16" height="16" referrerpolicy="no-referrer" /></div>\n\n<div style="page-break-after: always;"></div>\n\n`;
             
             // Build TOC dynamically
             let currentToc = "# Sumário\n\n";
@@ -1956,7 +1956,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       if (stopBookletRef.current) {
         fullContent += `\n\n---\n\n<div style="text-align: center; padding: 40px; border-top: 2px solid #ef4444; color: #ef4444;">\n\n### GERAÇÃO INTERROMPIDA PELO USUÁRIO\n\n</div>`;
       } else {
-        fullContent += `\n\n---\n\n<div style="text-align: center; padding: 40px; border-top: 2px solid #064e3b;">\n\n### FIM DA APOSTILA\n\n<div style="display: flex; align-items: center; justify-content: center; gap: 10px;"><img src="/logo.png" width="32" height="32" /> Gerado por **Imersão Bíblica IA** <img src="/logo.png" width="32" height="32" /></div>\n\n</div>`;
+        fullContent += `\n\n---\n\n<div style="text-align: center; padding: 40px; border-top: 2px solid #064e3b;">\n\n### FIM DA APOSTILA\n\n<div style="display: flex; align-items: center; justify-content: center; gap: 10px;"><img src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" width="32" height="32" referrerpolicy="no-referrer" /> Gerado por **Imersão Bíblica IA** <img src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" width="32" height="32" referrerpolicy="no-referrer" /></div>\n\n</div>`;
       }
       
       // Final TOC construction
@@ -2694,11 +2694,22 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     const search = searchParams.get('search');
     const outlineParam = searchParams.get('outline');
     const tabParam = searchParams.get('tab');
+    const wikiParam = searchParams.get('wikiQuery');
 
     // Skip if we've already processed these exact parameters
     if (search === processedParams.current.search && 
         outlineParam === processedParams.current.outline && 
-        tabParam === processedParams.current.tab) return;
+        tabParam === processedParams.current.tab &&
+        !wikiParam) return;
+
+    if (wikiParam) {
+      setWikiQuery(wikiParam);
+      setActiveTab('wiki');
+      handleWikiSearch(wikiParam);
+      // Clear params to avoid re-triggering
+      setSearchParams({}, { replace: true });
+      return;
+    }
 
     // Update ref immediately to prevent re-entry
     processedParams.current = { search, outline: outlineParam, tab: tabParam };
@@ -6277,14 +6288,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             <span>Página {idx + 1}</span>
                             <div className="flex items-center gap-2">
                               <img 
-                                src="/logo.png" 
+                                src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                                 alt="Logo" 
                                 className="w-4 h-4 object-contain"
                                 referrerPolicy="no-referrer"
                               />
                               <span>Imersão Bíblica IA - Mergulhando na Palavra - {new Date().getFullYear()}</span>
                               <img 
-                                src="/logo.png" 
+                                src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                                 alt="Logo" 
                                 className="w-4 h-4 object-contain"
                                 referrerPolicy="no-referrer"

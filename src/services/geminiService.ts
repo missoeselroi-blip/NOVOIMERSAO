@@ -265,9 +265,13 @@ export const geminiService = {
     });
   },
 
-  async generateSpeech(text: string, voiceName: string = 'Kore') {
+  async generateSpeech(text: string, voiceName: string = 'Kore', emotion?: string) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
+      
+      // Prepend emotion/tone if provided
+      const instruction = emotion ? `Say this with a ${emotion} tone: ` : '';
+      
       // Clean text: remove markdown and limit length for stability
       const cleanText = text
         .replace(/#+\s/g, '') 
@@ -279,16 +283,18 @@ export const geminiService = {
         .replace(/>\s/g, '') 
         .replace(/-\s/g, '') 
         .replace(/\n+/g, ' ') 
-        .slice(0, 5000) 
+        .slice(0, 4000) // Increased from 3000 to 4000 for better stability
         .trim();
 
       if (!cleanText) return null;
 
-      console.log("Generating speech for:", { voiceName, textLength: cleanText.length });
+      const fullText = instruction + cleanText;
+
+      console.log("Generating speech for:", { voiceName, emotion, textLength: fullText.length, retry: MAX_RETRIES - currentRetry });
 
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: cleanText }] }],
+        contents: [{ parts: [{ text: fullText }] }],
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
@@ -301,7 +307,8 @@ export const geminiService = {
       
       if (!response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data) {
         console.warn("No audio data in Gemini TTS response:", response);
-        return null;
+        // If it's a 500 or empty response, we might want to throw to trigger retry
+        throw new Error("Empty audio response from Gemini TTS");
       }
 
       const base64Audio = response.candidates[0].content.parts[0].inlineData.data;

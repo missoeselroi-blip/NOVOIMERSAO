@@ -117,14 +117,14 @@ export default function TutorialsPage() {
         </div>
         <h1 className="text-4xl font-display font-bold flex items-center justify-center gap-4">
           <img 
-            src="/logo.png" 
+            src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
             alt="Logo" 
             className="w-10 h-10 object-contain"
             referrerPolicy="no-referrer"
           />
           Tutoriais do App
           <img 
-            src="/logo.png" 
+            src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
             alt="Logo" 
             className="w-10 h-10 object-contain"
             referrerPolicy="no-referrer"

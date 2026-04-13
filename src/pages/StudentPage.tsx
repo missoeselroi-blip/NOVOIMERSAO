@@ -326,7 +326,7 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string, 
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
                     <div className="w-32 h-32 bg-emerald-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl shadow-emerald-600/20 overflow-hidden">
                       {user?.avatar || user?.photoURL ? (
-                        <img src={user.avatar || user.photoURL} alt={user.name} className="w-full h-full object-cover" />
+                        <img src={user.avatar || user.photoURL} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                       ) : (
                         <User size={64} />
                       )}
@@ -334,14 +334,14 @@ export default function StudentPage({ onNavigate }: { onNavigate: (tab: string, 
                     <div className="text-center md:text-left space-y-2">
                       <div className="flex items-center gap-4">
                         <img 
-                          src="/logo.png" 
+                          src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                           alt="Logo" 
                           className="w-10 h-10 object-contain"
                           referrerPolicy="no-referrer"
                         />
                         <h2 className="text-4xl font-bold font-display">{user?.name || 'Página do Aluno'}</h2>
                     <img 
-                      src="/logo.png" 
+                      src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                       alt="Logo" 
                       className="w-10 h-10 object-contain"
                       referrerPolicy="no-referrer"

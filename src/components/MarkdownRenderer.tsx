@@ -75,8 +75,8 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onS
         img: ({ node, ...props }) => (
           <img 
             {...props} 
-            referrerPolicy="no-referrer" 
             className="rounded-2xl shadow-lg max-w-full h-auto my-6 mx-auto block" 
+            referrerPolicy="no-referrer"
           />
         ),
         div: ({ node, ...props }) => {

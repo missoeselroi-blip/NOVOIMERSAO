@@ -142,6 +142,14 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-stone-400 dark:bg-zinc-600;
   }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 
 .prose h1, .prose h2, .prose h3, .prose h4 {

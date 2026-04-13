@@ -46,7 +46,8 @@ import {
   RefreshCw,
   Medal,
   Flame,
-  PlayCircle
+  PlayCircle,
+  Glasses
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -95,6 +96,7 @@ const BibleRacePage = lazyWithRetry(() => import('./pages/BibleRacePage'));
 const GamesPage = lazyWithRetry(() => import('./pages/GamesPage'));
 const BiblePage = lazyWithRetry(() => import('./pages/BiblePage'));
 const SermonsPage = lazyWithRetry(() => import('./pages/SermonsPage'));
+const LessonPage = lazyWithRetry(() => import('./pages/LessonPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -151,9 +153,10 @@ function AppContent() {
       <div className="flex items-center justify-center min-h-screen bg-stone-50 dark:bg-zinc-950">
         <div className="text-center space-y-6">
           <img 
-            src="logo.png" 
+            src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
             alt="Logo" 
             className="w-20 h-20 object-contain mx-auto animate-pulse"
+            referrerPolicy="no-referrer"
           />
           <div className="space-y-2">
             <Loader2 className="animate-spin text-emerald-600 mx-auto" size={32} />
@@ -194,6 +197,7 @@ function AppContent() {
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
     { id: 'quiz', label: 'Jogos', icon: <Zap size={22} /> },
+    { id: 'lesson', label: 'Lição', icon: <Glasses size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];
@@ -208,6 +212,7 @@ function AppContent() {
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
+    { id: 'lesson', label: 'Lição', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage /> },
     { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage /> },
     { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
@@ -289,9 +294,10 @@ function AppContent() {
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img 
-              src="logo.png" 
+              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
               alt="App Icon" 
               className="w-8 h-8 object-contain"
+              referrerPolicy="no-referrer"
             />
             <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Imersão Bíblica IA</span>
           </div>
@@ -536,9 +542,10 @@ function AppContent() {
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg overflow-hidden bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
                     <img 
-                      src="logo.png" 
+                      src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                       alt="App Icon" 
                       className="w-6 h-6 object-contain"
+                      referrerPolicy="no-referrer"
                     />
                   </div>
                   <span className="font-bold text-lg">Menu</span>
@@ -815,14 +822,14 @@ function AppContent() {
           <div className="flex flex-col items-center gap-6">
             <div className="flex items-center justify-center gap-3">
               <img 
-                src="/logo.png" 
+                src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                 alt="Logo" 
                 className="w-6 h-6 object-contain opacity-50"
                 referrerPolicy="no-referrer"
               />
               <p className="font-bold tracking-tight">© {new Date().getFullYear()} Imersão Bíblica IA • Mergulhando na Palavra</p>
               <img 
-                src="/logo.png" 
+                src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                 alt="Logo" 
                 className="w-6 h-6 object-contain opacity-50"
                 referrerPolicy="no-referrer"

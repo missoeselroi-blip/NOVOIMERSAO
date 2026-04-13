@@ -105,14 +105,14 @@ export default function NewsPage() {
         <div>
           <div className="flex items-center gap-4">
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
               alt="Logo" 
               className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
             />
             <h2 className="text-3xl font-display font-bold">Sinais da Vinda de Cristo</h2>
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
               alt="Logo" 
               className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"

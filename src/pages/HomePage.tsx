@@ -46,7 +46,8 @@ import {
   Star,
   Briefcase,
   RotateCcw,
-  UserPlus
+  UserPlus,
+  Glasses
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
@@ -231,6 +232,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const quickActions = [
     { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsDevotionalModalOpen(true) },
     { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'lesson', label: 'Lição', desc: '50 Lições Bíblicas.', icon: <Glasses size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'quiz', label: 'Quiz', desc: 'Desafio de Conhecimento.', icon: <Zap size={20} className="text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20 shadow-yellow-100/50', image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -242,7 +244,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-pink-600" />, color: 'bg-pink-50 dark:bg-pink-900/20 shadow-pink-100/50', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-sky-600" />, color: 'bg-sky-50 dark:bg-sky-900/20 shadow-sky-100/50', onClick: () => setIsNewsModalOpen(true) },
     { id: 'credits', label: 'Créditos', desc: 'Gerencie seus créditos.', icon: <Sparkles size={20} className="text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20 shadow-yellow-100/50', image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20 shadow-red-100/50', image: 'https://i.postimg.cc/qq3vPB49/1000105226-removebg-preview.png' },
+    { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20 shadow-red-100/50', image: 'https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png' },
     { id: 'donate', label: 'Doe', desc: 'Apoie a obra.', icon: <HeartHandshake size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'bible-online', label: 'Bíblia Online', desc: 'Acesso imediato à Palavra.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', onClick: () => window.open('https://www.bibliaonline.com.br/nvi', '_blank') },
   ];

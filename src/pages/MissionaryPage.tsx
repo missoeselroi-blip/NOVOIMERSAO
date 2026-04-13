@@ -89,14 +89,14 @@ export default function MissionaryPage({ onNavigate }: MissionaryPageProps) {
         <div className="relative z-10 space-y-6 max-w-2xl">
           <div className="flex items-center gap-4">
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
               alt="Logo" 
               className="w-10 h-10 object-contain"
               referrerPolicy="no-referrer"
             />
             <h2 className="text-4xl font-bold font-display">Missões & Impacto</h2>
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
               alt="Logo" 
               className="w-10 h-10 object-contain"
               referrerPolicy="no-referrer"

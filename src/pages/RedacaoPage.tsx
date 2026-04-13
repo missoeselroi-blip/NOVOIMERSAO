@@ -189,14 +189,14 @@ export default function RedacaoPage() {
           <div>
             <div className="flex items-center gap-3">
               <img 
-                src="/logo.png" 
+                src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                 alt="Logo" 
                 className="w-6 h-6 object-contain"
                 referrerPolicy="no-referrer"
               />
               <h2 className="text-2xl font-bold">Oficina de Redação</h2>
               <img 
-                src="/logo.png" 
+                src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
                 alt="Logo" 
                 className="w-6 h-6 object-contain"
                 referrerPolicy="no-referrer"

@@ -362,6 +362,7 @@ export default function AdminPage() {
                       src={user?.avatar || user?.photoURL || `https://ui-avatars.com/api/?name=${user?.name || 'User'}`} 
                       alt="User" 
                       className="w-10 h-10 rounded-full"
+                      referrerPolicy="no-referrer"
                     />
                     <div>
                       <p className="font-bold text-sm">{user?.name || 'Usuário Desconhecido'}</p>
@@ -484,6 +485,7 @@ export default function AdminPage() {
                             src={user.avatar || user.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
                             alt={user.name} 
                             className="w-10 h-10 rounded-full border-2 border-emerald-500/20"
+                            referrerPolicy="no-referrer"
                           />
                           {user.lastActive && new Date().getTime() - new Date(user.lastActive).getTime() < 15 * 60 * 1000 && (
                             <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-white dark:border-zinc-900 rounded-full"></div>
@@ -570,6 +572,7 @@ export default function AdminPage() {
                     src={selectedUser.avatar || selectedUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${selectedUser.id}`} 
                     alt={selectedUser.name} 
                     className="w-16 h-16 rounded-2xl border-4 border-white dark:border-zinc-800 shadow-lg"
+                    referrerPolicy="no-referrer"
                   />
                   <div>
                     <h2 className="text-2xl font-display font-bold">{selectedUser.name}</h2>

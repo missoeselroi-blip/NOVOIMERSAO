@@ -62,22 +62,12 @@ interface AudioBoxContextType {
 
 const AudioBoxContext = createContext<AudioBoxContextType | undefined>(undefined);
 
-import { GoogleGenAI, Modality } from "@google/genai";
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-
 export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [tracks, setTracks] = useState<AudioTrack[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
   const generateAudio = async (text: string, voice: string, emotion: string) => {
-    if (!GEMINI_API_KEY) {
-      throw new Error("Gemini API Key is required for audio generation.");
-    }
-
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    
     // Map user voice choices to prebuilt voices
     let voiceName: 'Kore' | 'Puck' | 'Charon' | 'Fenrir' | 'Zephyr' = 'Kore';
     
@@ -92,30 +82,14 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     else if (voice.includes('ninar')) voiceName = 'Zephyr';
     else if (voice.includes('energético')) voiceName = 'Puck';
 
-    const prompt = `Fale o seguinte texto com um tom ${emotion} e voz de ${voice}: ${text.slice(0, 5000)}`;
-
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash-preview-tts",
-        contents: [{ parts: [{ text: prompt }] }],
-        config: {
-          responseModalities: [Modality.AUDIO],
-          speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName },
-            },
-          },
-        },
-      });
-
-      const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-      if (!base64Audio) {
-        throw new Error("Failed to generate audio data.");
+      const url = await geminiService.generateSpeech(text, voiceName, emotion);
+      if (!url) {
+        throw new Error("Não foi possível gerar o áudio. Tente um texto mais curto.");
       }
-
-      return geminiService.pcmToWav(base64Audio, 24000);
+      return url;
     } catch (error) {
-      console.error("Error generating audio:", error);
+      console.error("Error generating audio in context:", error);
       throw error;
     }
   };

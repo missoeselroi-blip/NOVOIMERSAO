@@ -75,6 +75,7 @@ const SermonsPage = () => {
                   src={`https://img.youtube.com/vi/${sermon.videoId}/maxresdefault.jpg`} 
                   alt={sermon.title}
                   className="w-full h-full object-cover"
+                  referrerPolicy="no-referrer"
                   onError={(e) => {
                     // Fallback se maxresdefault não existir
                     (e.target as HTMLImageElement).src = `https://img.youtube.com/vi/${sermon.videoId}/hqdefault.jpg`;

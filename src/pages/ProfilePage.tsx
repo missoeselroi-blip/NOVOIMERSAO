@@ -131,7 +131,7 @@ export default function ProfilePage() {
         
         <div className="w-32 h-32 bg-emerald-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl shadow-emerald-600/20 overflow-hidden relative group">
           {user.avatar || user.photoURL ? (
-            <img src={user.avatar || user.photoURL} alt={user.name} className="w-full h-full object-cover" />
+            <img src={user.avatar || user.photoURL} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
           ) : (
             <UserIcon size={64} />
           )}

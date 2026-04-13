@@ -1101,7 +1101,7 @@ const GamesPage: React.FC = () => {
                     <div className="flex gap-4">
                       {roomData.players.map((p: any, index: number) => (
                         <div key={`${p.userId}-${index}`} className="flex items-center gap-2 text-sm font-bold">
-                          <img src={p.avatar} className="w-6 h-6 rounded-full" />
+                          <img src={p.avatar} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
                           <span className={p.userId === user?.id ? "text-emerald-600" : "text-blue-600"}>
                             {p.score}
                           </span>
@@ -1202,7 +1202,7 @@ const GamesPage: React.FC = () => {
                                 : "bg-stone-50 border-transparent dark:bg-zinc-800/50"
                             )}>
                               <div className="font-bold text-lg w-6 text-stone-400">#{index + 1}</div>
-                              <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" />
+                              <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
                               <span className="font-medium text-stone-800 dark:text-stone-200 flex-1">{p.name}</span>
                               <span className="font-bold text-xl text-emerald-600">{p.score} pts</span>
                             </div>
@@ -1343,7 +1343,7 @@ const GamesPage: React.FC = () => {
                       <div className="space-y-3">
                         {roomData?.players?.map((p: any, index: number) => (
                           <div key={`${p.userId}-${index}`} className="flex items-center gap-3 p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl">
-                            <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" />
+                            <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
                             <span className="font-medium text-stone-800 dark:text-stone-200">{p.name}</span>
                             {p.userId === roomData.players[0].userId && (
                               <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold">Criador</span>
@@ -1512,7 +1512,7 @@ const GamesPage: React.FC = () => {
                           <div className="space-y-3">
                             {cupData?.players?.map((p: any, index: number) => (
                               <div key={`${p.userId}-${index}`} className="flex items-center gap-3 p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-xl">
-                                <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" />
+                                <img src={p.avatar} alt={p.name} className="w-10 h-10 rounded-full" referrerPolicy="no-referrer" />
                                 <span className="font-medium text-stone-800 dark:text-stone-200">{p.name}</span>
                                 {p.userId === cupData.creatorId && (
                                   <span className="ml-auto text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full font-bold">Criador</span>

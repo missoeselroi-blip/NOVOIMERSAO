@@ -99,7 +99,7 @@ export const LoginPage: React.FC = () => {
         <div className="text-center space-y-4 mb-10">
           <div className="flex items-center justify-center gap-4 mb-6">
             <img 
-              src="/logo.png" 
+              src="https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png" 
               alt="Logo" 
               className="w-10 h-10 object-contain"
               referrerPolicy="no-referrer"
@@ -192,7 +192,7 @@ export const LoginPage: React.FC = () => {
               onClick={handleGoogleLogin}
               className="py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
             >
-              <img src="/logo.png" alt="Google" className="w-5 h-5" />
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
               Google
             </button>
 
