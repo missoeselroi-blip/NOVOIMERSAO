@@ -47,7 +47,8 @@ import {
   Medal,
   Flame,
   PlayCircle,
-  Glasses
+  Glasses,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -97,6 +98,7 @@ const GamesPage = lazyWithRetry(() => import('./pages/GamesPage'));
 const BiblePage = lazyWithRetry(() => import('./pages/BiblePage'));
 const SermonsPage = lazyWithRetry(() => import('./pages/SermonsPage'));
 const LessonPage = lazyWithRetry(() => import('./pages/LessonPage'));
+const GreatestStoryGame = lazyWithRetry(() => import('./pages/GreatestStoryGame'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -231,6 +233,7 @@ function AppContent() {
     { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
     { id: 'profile', label: 'Perfil', subtitle: 'Sua conta e preferências', icon: <User size={20} />, component: <ProfilePage />, hidden: true },
     { id: 'admin', label: 'Painel ADM', subtitle: 'Administração do Sistema', icon: <ShieldCheck size={20} />, component: <AdminPage />, hidden: true },
+    { id: 'greatest-story', label: 'A Maior História', subtitle: 'Uma Jornada Imersiva', icon: <Sparkles size={20} />, component: <GreatestStoryGame />, hidden: true },
   ];
 
   const activeItem = navItems.find(item => item.id === activeTab);

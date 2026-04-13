@@ -28,10 +28,11 @@ import {
   Clock,
   Type,
   UserX,
-  Lock as LockIcon
+  Lock as LockIcon,
+  Sparkles
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../components/Toast';
 import { db } from '../lib/firebase';
@@ -66,6 +67,7 @@ import html2canvas from 'html2canvas';
 const GamesPage: React.FC = () => {
   const { user, loginWithGoogle } = useAuth();
   const { showToast } = useToast();
+  const navigate = useNavigate();
   
   const handleBattleMode = () => {
     console.log("Quiz Mano a Mano button clicked");
@@ -990,6 +992,14 @@ const GamesPage: React.FC = () => {
                 <HelpCircle size={32} className="mb-4 opacity-80" />
                 <h3 className="text-xl font-bold mb-1">Enigmas Bíblicos</h3>
                 <p className="text-purple-100 text-sm">Desafio de sabedoria e lógica</p>
+              </button>
+              <button 
+                onClick={() => navigate('/greatest-story')} 
+                className="p-6 bg-gradient-to-br from-amber-500 to-orange-700 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg border-4 border-amber-300/30"
+              >
+                <Sparkles size={32} className="mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-1">A Maior História</h3>
+                <p className="text-amber-100 text-sm">Jornada Imersiva e Narrada</p>
               </button>
             </div>
 
