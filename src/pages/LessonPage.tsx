@@ -39,6 +39,7 @@ import { SpeechGenerator } from '../components/SpeechGenerator';
 import { useAuth } from '../contexts/AuthContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { lessons, Lesson } from '../data/lessons';
+import html2pdf from 'html2pdf.js';
 
 const LessonPage: React.FC = () => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
@@ -198,7 +199,51 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
   };
 
   const handleDownload = () => {
-    showToast("Iniciando download da lição...", "info");
+    if (!selectedLesson) return;
+
+    showToast("Gerando seu PDF... Quase pronto! 📄💎", 'info');
+
+    const element = document.createElement('div');
+    element.className = 'p-8 bg-white text-black font-serif';
+    
+    // Basic Markdown to HTML conversion for the PDF
+    const htmlContent = selectedLesson.content
+      .replace(/^# (.*$)/gm, '<h1 style="font-size: 24pt; font-weight: bold; margin-bottom: 16pt; color: #065f46;">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 style="font-size: 18pt; font-weight: bold; margin-top: 20pt; margin-bottom: 12pt; color: #047857;">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 style="font-size: 14pt; font-weight: bold; margin-top: 16pt; margin-bottom: 8pt; color: #059669;">$1</h3>')
+      .replace(/^\* (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 4pt;">$1</li>')
+      .replace(/^- (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 4pt;">$1</li>')
+      .replace(/\n\n/g, '</p><p style="margin-bottom: 12pt; line-height: 1.6;">')
+      .replace(/\n/g, '<br/>');
+
+    element.innerHTML = `
+      <div style="padding: 40px; font-family: 'Times New Roman', serif; color: #1a1a1a; line-height: 1.6;">
+        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #065f46; padding-bottom: 10px;">
+          <h1 style="color: #065f46; margin: 0; font-size: 24px;">IMERSÃO BÍBLICA IA</h1>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 5px;">Lição: ${selectedLesson.title}</p>
+        </div>
+        <div class="content">
+          ${htmlContent}
+        </div>
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 10px; color: #9ca3af;">
+          Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}<br/>
+          © Imersão Bíblica IA - Todos os direitos reservados
+        </div>
+      </div>
+    `;
+    
+    const opt = {
+      margin: 10,
+      filename: `Licao_${selectedLesson.title.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    // @ts-ignore
+    html2pdf().from(element).set(opt).save().then(() => {
+      showToast("Download concluído! 📄✨", "success");
+    });
   };
 
   const navigate = useNavigate();
