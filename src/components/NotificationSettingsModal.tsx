@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Bell, Clock, Check } from 'lucide-react';
+import { X, Bell, Clock, Check, AlertTriangle } from 'lucide-react';
 import { notificationService } from '../services/notificationService';
 import { NotificationSettings } from '../types';
+import { useToast } from './Toast';
 
 interface NotificationSettingsModalProps {
   isOpen: boolean;
@@ -10,33 +11,63 @@ interface NotificationSettingsModalProps {
 }
 
 export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps> = ({ isOpen, onClose }) => {
+  const { showToast } = useToast();
   const [settings, setSettings] = useState<NotificationSettings>(notificationService.getSettings());
   const [permissionGranted, setPermissionGranted] = useState(
     typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
   );
 
+  useEffect(() => {
+    if (isOpen) {
+      setSettings(notificationService.getSettings());
+      setPermissionGranted(
+        typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
+      );
+    }
+  }, [isOpen]);
+
   const handleToggleEnabled = async () => {
     if (typeof window !== 'undefined' && !('Notification' in window)) {
-      alert('Seu navegador não suporta notificações.');
+      showToast('Seu navegador não suporta notificações desktop.', 'error');
       return;
     }
 
     if (!permissionGranted) {
-      const granted = await notificationService.requestPermission();
-      setPermissionGranted(granted);
-      if (!granted) return;
+      try {
+        const granted = await notificationService.requestPermission();
+        setPermissionGranted(granted);
+        if (!granted) {
+          showToast('Permissão de notificação negada. Por favor, ative nas configurações do seu navegador.', 'error');
+          return;
+        }
+        showToast('Notificações ativadas com sucesso!', 'success');
+      } catch (error) {
+        showToast('Erro ao solicitar permissão de notificação.', 'error');
+        return;
+      }
     }
     
     const newEnabled = !settings.enabled;
     const newSettings = { ...settings, enabled: newEnabled };
     setSettings(newSettings);
     notificationService.updateSettings({ enabled: newEnabled });
+    
+    if (newEnabled) {
+      showToast('Lembretes ativados!', 'success');
+    } else {
+      showToast('Lembretes desativados.', 'info');
+    }
   };
 
   const handleTimeChange = (key: keyof NotificationSettings, value: string) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     notificationService.updateSettings({ [key]: value });
+  };
+
+  const handleSave = () => {
+    showToast('Configurações de notificações salvas!', 'success');
+    onClose();
   };
 
   return (
@@ -99,18 +130,31 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                   value={settings.studyReminderTime}
                   onChange={(val) => handleTimeChange('studyReminderTime', val)}
                 />
+
+                <button
+                  onClick={() => {
+                    notificationService.sendNotification('Teste de Notificação', 'As notificações estão funcionando corretamente! 🙌');
+                    showToast('Notificação de teste enviada!', 'info');
+                  }}
+                  className="w-full py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl text-xs font-bold hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
+                >
+                  Enviar Notificação de Teste
+                </button>
               </div>
 
               {!permissionGranted && (
-                <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 font-medium">
-                  * Permissão do navegador necessária para receber notificações.
-                </p>
+                <div className="flex items-start gap-2 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/30">
+                  <AlertTriangle className="text-amber-600 shrink-0" size={16} />
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium leading-tight">
+                    Atenção: A permissão do navegador é necessária. Se você estiver usando o App dentro de outro site (iframe), as notificações podem ser bloqueadas pelo navegador por segurança.
+                  </p>
+                </div>
               )}
             </div>
 
             <div className="p-6 bg-stone-50 dark:bg-zinc-900/50 border-t border-stone-100 dark:border-zinc-800">
               <button
-                onClick={onClose}
+                onClick={handleSave}
                 className="w-full py-4 bg-[#E2725B] text-white rounded-2xl font-bold hover:bg-[#D2624B] transition-colors shadow-lg shadow-[#E2725B]/20"
               >
                 Salvar Configurações
