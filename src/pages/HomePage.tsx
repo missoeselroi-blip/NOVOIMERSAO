@@ -201,11 +201,7 @@ const FAQ_ITEMS = [
   },
   {
     question: "Quais os cursos tem no App?",
-    answer: "O App oferece diversos cursos para seu crescimento, como Teologia, Evangelismo, Contação de estórias, Liderança Cristã e muito mais. Você pode acessá-los na seção 'Lições'."
-  },
-  {
-    question: "Como funcionam os jogos e como desafiar um amigo?",
-    answer: "No 'Bible Race', você pode testar seus conhecimentos bíblicos. Para desafiar um amigo, compartilhe seu progresso ou convide-o para tentar superar sua pontuação no ranking geral."
+    answer: "O App oferece diversos cursos para seu crescimento, como Teologia, Evangelismo, Contação de estórias, Liderança Cristã e muito mais. Você pode acessá-los na seção 'Cursos'."
   }
 ];
 
