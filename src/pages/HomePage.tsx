@@ -233,6 +233,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsDevotionalModalOpen(true) },
     { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'lesson', label: 'Lição', desc: '50 Lições Bíblicas.', icon: <Glasses size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'games', label: 'Jogos', desc: 'Desafios e Histórias.', icon: <Trophy size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'quiz', label: 'Quiz', desc: 'Desafio de Conhecimento.', icon: <Zap size={20} className="text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20 shadow-yellow-100/50', image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -779,6 +780,19 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
+          onClick={() => onNavigate('lesson')}
+          className="flex-1 py-5 bg-[#E2725B] text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-[#D2624B] transition-all shadow-lg shadow-[#E2725B]/20 group"
+        >
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Glasses size={20} className="text-white" />
+          </div>
+          <span className="text-sm md:text-base text-white">Lições</span>
+        </motion.button>
+
+        <motion.button 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
           onClick={() => onNavigate('bible')}
           className="flex-1 py-5 bg-[#2F6C82] text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-[#255668] transition-all shadow-lg shadow-[#2F6C82]/20 group"
         >

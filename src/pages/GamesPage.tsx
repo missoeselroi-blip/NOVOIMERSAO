@@ -98,6 +98,7 @@ const GamesPage: React.FC = () => {
   const [timerActive, setTimerActive] = useState(false);
   const [startTime, setStartTime] = useState(0);
   const [showPanorama, setShowPanorama] = useState(false);
+  const [showStorySelection, setShowStorySelection] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [credits, setCredits] = useState(50);
 
@@ -878,6 +879,51 @@ const GamesPage: React.FC = () => {
       {showPanorama && (
         <PanoramaBiblico onClose={() => setShowPanorama(false)} />
       )}
+      
+      {showStorySelection && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="bg-white dark:bg-zinc-900 rounded-[3rem] p-8 w-full max-w-4xl shadow-2xl border border-stone-200 dark:border-zinc-800 max-h-[90vh] overflow-y-auto"
+          >
+            <div className="flex justify-between items-center mb-8">
+              <div>
+                <h2 className="text-3xl font-display font-black text-stone-900 dark:text-white tracking-tight">Jogo das Histórias</h2>
+                <p className="text-stone-500 dark:text-zinc-400">Escolha uma jornada para começar</p>
+              </div>
+              <button 
+                onClick={() => setShowStorySelection(false)}
+                className="p-3 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+              >
+                <XCircle size={32} className="text-stone-400" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { id: 'son-of-man', title: 'O Filho do Homem', desc: 'A vida de Jesus Cristo', img: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'david', title: 'Um Homem Segundo o Coração de Deus', desc: 'A jornada de Davi, do curral ao trono', img: 'https://images.unsplash.com/photo-1590076175582-40940b43f021?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'abraham', title: 'O Pai da Fé', desc: 'A história de Abraão e as promessas de Deus', img: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'moses', title: 'O Homem Mais Manso da Terra', desc: 'Moisés e a libertação do Egito', img: 'https://images.unsplash.com/photo-1590076175582-40940b43f021?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'paul', title: 'O Apóstolo dos Gentios', desc: 'A transformação e viagens de Paulo', img: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=800&h=600' }
+              ].map((story) => (
+                <button
+                  key={story.id}
+                  onClick={() => navigate(`/greatest-story?id=${story.id}`)}
+                  className="group relative h-48 rounded-[2rem] overflow-hidden shadow-lg hover:scale-[1.02] transition-all"
+                >
+                  <img src={story.img} alt={story.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" referrerPolicy="no-referrer" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent p-6 flex flex-col justify-end text-left">
+                    <h4 className="text-xl font-black text-white mb-1">{story.title}</h4>
+                    <p className="text-white/70 text-sm line-clamp-1">{story.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
       {showJoinModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <motion.div 
@@ -994,11 +1040,11 @@ const GamesPage: React.FC = () => {
                 <p className="text-purple-100 text-sm">Desafio de sabedoria e lógica</p>
               </button>
               <button 
-                onClick={() => navigate('/greatest-story')} 
+                onClick={() => setShowStorySelection(true)} 
                 className="p-6 bg-gradient-to-br from-amber-500 to-orange-700 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg border-4 border-amber-300/30"
               >
                 <Sparkles size={32} className="mb-4 opacity-80" />
-                <h3 className="text-xl font-bold mb-1">A Maior História</h3>
+                <h3 className="text-xl font-bold mb-1">Jogo das Histórias</h3>
                 <p className="text-amber-100 text-sm">Jornada Imersiva e Narrada</p>
               </button>
             </div>
@@ -1016,7 +1062,11 @@ const GamesPage: React.FC = () => {
                       <th className="px-3 py-2">#</th>
                       <th className="px-3 py-2">Nome</th>
                       <th className="px-3 py-2 text-center">Quiz</th>
-                      <th className="px-3 py-2 text-center">Batalhas</th>
+                      <th className="px-3 py-2 text-center">Filho do Homem</th>
+                      <th className="px-3 py-2 text-center">Davi</th>
+                      <th className="px-3 py-2 text-center">Abraão</th>
+                      <th className="px-3 py-2 text-center">Moisés</th>
+                      <th className="px-3 py-2 text-center">Paulo</th>
                       <th className="px-3 py-2 text-center">Panorama</th>
                       <th className="px-3 py-2 text-center">Quem Sou Eu</th>
                       <th className="px-3 py-2 text-center">Linha do Tempo</th>
@@ -1033,7 +1083,11 @@ const GamesPage: React.FC = () => {
                     {leaderboard.map((entry, index) => {
                       const total = entry.totalScore ?? (
                         (entry.score || 0) + 
-                        (entry.battlesWon || 0) + 
+                        (entry.sonOfManScore || 0) + 
+                        (entry.davidScore || 0) + 
+                        (entry.abrahamScore || 0) + 
+                        (entry.mosesScore || 0) + 
+                        (entry.paulScore || 0) + 
                         (entry.panoramaScore || 0) + 
                         (entry.whoAmIScore || 0) + 
                         (entry.timelineScore || 0) + 
@@ -1054,7 +1108,11 @@ const GamesPage: React.FC = () => {
                             <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[150px]">{entry.name}</span>
                           </td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.score || 0}</td>
-                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.battlesWon || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.sonOfManScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.davidScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.abrahamScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.mosesScore || 0}</td>
+                          <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.paulScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.panoramaScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.whoAmIScore || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.timelineScore || 0}</td>
@@ -1789,7 +1847,7 @@ const GamesPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {leaderboard.map((entry, index) => {
-                        const otherGamesScore = (entry.whoAmIScore || 0) + (entry.timelineScore || 0) + (entry.crosswordScore || 0) + (entry.hangmanScore || 0) + (entry.wordSearchScore || 0) + (entry.cryptogramScore || 0) + (entry.anagramScore || 0) + (entry.riddlesScore || 0);
+                        const otherGamesScore = (entry.whoAmIScore || 0) + (entry.timelineScore || 0) + (entry.crosswordScore || 0) + (entry.hangmanScore || 0) + (entry.wordSearchScore || 0) + (entry.cryptogramScore || 0) + (entry.anagramScore || 0) + (entry.riddlesScore || 0) + (entry.sonOfManScore || 0) + (entry.davidScore || 0) + (entry.abrahamScore || 0) + (entry.mosesScore || 0) + (entry.paulScore || 0);
                         return (
                         <tr 
                           key={entry.userId}

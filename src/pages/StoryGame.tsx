@@ -19,12 +19,22 @@ import { useNavigate } from 'react-router-dom';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
 import { geminiService } from '../services/geminiService';
-import { GREATEST_STORY, StorySegment } from '../data/greatestStory';
+import { STORIES, StorySegment } from '../data/storyGames';
+import { useSearchParams } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-const GreatestStoryGame: React.FC = () => {
+const StoryGame: React.FC = () => {
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const storyId = searchParams.get('id') || 'son-of-man';
   
+  const currentStory = STORIES.find(s => s.id === storyId) || STORIES[0];
+  const storySegments = currentStory.segments;
+
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'question' | 'finished'>('intro');
   const [currentSegmentIndex, setCurrentSegmentIndex] = useState(0);
   const [score, setScore] = useState(0);
@@ -42,7 +52,7 @@ const GreatestStoryGame: React.FC = () => {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const currentSegment = GREATEST_STORY[currentSegmentIndex];
+  const currentSegment = storySegments[currentSegmentIndex];
 
   useEffect(() => {
     if (gameState === 'playing') {
@@ -54,7 +64,7 @@ const GreatestStoryGame: React.FC = () => {
       }
       
       // Preload next segment
-      if (currentSegmentIndex + 1 < GREATEST_STORY.length) {
+      if (currentSegmentIndex + 1 < storySegments.length) {
         preloadSegment(currentSegmentIndex + 1);
       }
     }
@@ -67,11 +77,11 @@ const GreatestStoryGame: React.FC = () => {
     setIsPreloadingAll(true);
     setPreloadProgress(0);
     
-    for (let i = 0; i < GREATEST_STORY.length; i++) {
+    for (let i = 0; i < storySegments.length; i++) {
       if (!audioCache[i]) {
         await preloadSegment(i);
       }
-      setPreloadProgress(Math.round(((i + 1) / GREATEST_STORY.length) * 100));
+      setPreloadProgress(Math.round(((i + 1) / storySegments.length) * 100));
     }
     
     setIsPreloadingAll(false);
@@ -83,9 +93,9 @@ const GreatestStoryGame: React.FC = () => {
 
     setPreloadingIndices(prev => new Set(prev).add(index));
     try {
-      const segment = GREATEST_STORY[index];
+      const segment = storySegments[index];
       const textToSpeak = segment.text.replace(segment.hiddenWord, "...");
-      const url = await geminiService.generateSpeech(textToSpeak, 'Charon', 'pastor');
+      const url = await geminiService.generateSpeech(textToSpeak, 'Charon', 'storytelling for youth');
       if (url) {
         setAudioCache(prev => ({ ...prev, [index]: url }));
       }
@@ -105,10 +115,10 @@ const GreatestStoryGame: React.FC = () => {
     setIsPlaying(false);
     setHighlightedWordIndex(-1);
     try {
-      const segment = GREATEST_STORY[index];
+      const segment = storySegments[index];
       // Replace hidden word with a pause/placeholder for audio
       const textToSpeak = segment.text.replace(segment.hiddenWord, "...");
-      const url = await geminiService.generateSpeech(textToSpeak, 'Charon', 'pastor');
+      const url = await geminiService.generateSpeech(textToSpeak, 'Charon', 'storytelling for youth');
       if (url) {
         setAudioUrl(url);
         setAudioCache(prev => ({ ...prev, [index]: url }));
@@ -170,6 +180,8 @@ const GreatestStoryGame: React.FC = () => {
     const correct = optionIndex === currentSegment.question?.correctAnswer;
     setIsAnswerCorrect(correct);
     
+    const finalScore = correct ? score + 5 : Math.max(0, score - 5);
+
     if (correct) {
       setScore(prev => prev + 5);
       showToast("Correto! +5 pontos", "success");
@@ -178,8 +190,12 @@ const GreatestStoryGame: React.FC = () => {
       showToast("Incorreto! -5 pontos", "error");
     }
 
+    if (currentSegmentIndex === storySegments.length - 1) {
+      saveScore(finalScore);
+    }
+
     setTimeout(() => {
-      if (currentSegmentIndex < GREATEST_STORY.length - 1) {
+      if (currentSegmentIndex < storySegments.length - 1) {
         setCurrentSegmentIndex(prev => prev + 1);
         setAudioUrl(null);
         setSelectedOption(null);
@@ -198,6 +214,33 @@ const GreatestStoryGame: React.FC = () => {
     setGameState('intro');
     setSelectedOption(null);
     setIsAnswerCorrect(null);
+  };
+
+  const saveScore = async (finalScore: number) => {
+    if (!user) return;
+    
+    const fieldName = `${storyId.replace(/-/g, '')}Score`;
+    const userRef = doc(db, 'quizLeaderboard', user.id);
+    
+    try {
+      const docSnap = await getDoc(userRef);
+      const currentData = docSnap.exists() ? docSnap.data() : {};
+      const currentBest = currentData[fieldName] || 0;
+      
+      if (finalScore > currentBest) {
+        const scoreDiff = finalScore - currentBest;
+        await setDoc(userRef, {
+          [fieldName]: finalScore,
+          totalScore: (currentData.totalScore || 0) + scoreDiff,
+          name: user.name,
+          avatar: user.photoURL || user.avatar || '',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        showToast(`Nova melhor pontuação em ${currentStory.title}!`, 'success');
+      }
+    } catch (error) {
+      console.error("Error saving story score:", error);
+    }
   };
 
   return (
@@ -220,7 +263,7 @@ const GreatestStoryGame: React.FC = () => {
             </div>
             <div className="px-4 py-2 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-stone-200 dark:border-zinc-800 flex items-center gap-2">
               <Star size={18} className="text-blue-500" />
-              <span className="font-black text-lg">{currentSegmentIndex + 1}/20</span>
+              <span className="font-black text-lg">{currentSegmentIndex + 1}/{storySegments.length}</span>
             </div>
           </div>
         </div>
@@ -238,10 +281,10 @@ const GreatestStoryGame: React.FC = () => {
                 <Sparkles size={48} />
               </div>
               <h1 className="text-5xl md:text-6xl font-display font-black text-stone-900 dark:text-white tracking-tighter mb-6">
-                A Maior História
+                {currentStory.title}
               </h1>
               <p className="text-stone-500 dark:text-zinc-400 text-lg max-w-2xl mx-auto mb-12 leading-relaxed">
-                Uma jornada imersiva pela vida de Jesus. Ouça a narração, mergulhe nos sentimentos e responda aos desafios para testar seu conhecimento e fé.
+                {currentStory.description}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
@@ -252,7 +295,7 @@ const GreatestStoryGame: React.FC = () => {
                   COMEÇAR JORNADA
                 </button>
                 
-                {!isPreloadingAll && Object.keys(audioCache).length < GREATEST_STORY.length && (
+                {!isPreloadingAll && Object.keys(audioCache).length < storySegments.length && (
                   <button
                     onClick={preloadAll}
                     className="px-8 py-5 bg-white dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-2xl font-bold hover:bg-stone-100 dark:hover:bg-zinc-700 transition-all border border-stone-200 dark:border-zinc-700 flex items-center gap-2"
@@ -432,4 +475,4 @@ const GreatestStoryGame: React.FC = () => {
   );
 };
 
-export default GreatestStoryGame;
+export default StoryGame;

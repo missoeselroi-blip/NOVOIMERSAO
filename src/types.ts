@@ -51,6 +51,11 @@ export interface LeaderboardEntry {
   cryptogramScore?: number;
   anagramScore?: number;
   riddlesScore?: number;
+  sonOfManScore?: number;
+  davidScore?: number;
+  abrahamScore?: number;
+  mosesScore?: number;
+  paulScore?: number;
   credits?: number;
   lastScore: number;
   month: number;
