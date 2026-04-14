@@ -479,17 +479,17 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                   <button onClick={handleListen} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
                     <Volume2 size={18} />
                   </button>
-                  <button onClick={openMentor} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
+                  <button onClick={openMentor} className="p-2 bg-[#BC6C25] text-white hover:bg-[#A15B1F] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
                     <UserCheck size={18} />
                     <span className="text-[10px] font-bold uppercase">Mentor</span>
                   </button>
-                  <button onClick={handleWiki} className="p-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Wiki">
+                  <button onClick={handleWiki} className="p-2 bg-[#8A9A5B] text-white hover:bg-[#7A8A4B] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Wiki">
                     <Globe size={18} />
                     <span className="text-[10px] font-bold uppercase">Wiki</span>
                   </button>
                   <button 
                     onClick={() => setShowNotes(true)} 
-                    className="p-2 bg-amber-500 text-white hover:bg-amber-600 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" 
+                    className="p-2 bg-[#D4A373] text-white hover:bg-[#C49363] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" 
                     title="Anotar"
                   >
                     <PenTool size={18} />
@@ -497,7 +497,7 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                   </button>
                   <button 
                     onClick={() => setShowSummary(true)} 
-                    className="p-2 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" 
+                    className="p-2 bg-[#5B8A9A] text-white hover:bg-[#4B7A8A] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" 
                     title="Resumo"
                   >
                     <FileSearch size={18} />
@@ -618,7 +618,7 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                       {selectedLesson.id === 12 && (
                         <button 
                           onClick={() => setShowLeaderGuide(true)}
-                          className="mt-8 px-8 py-3 bg-emerald-600 text-white rounded-full font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center gap-2 mx-auto"
+                          className="mt-8 px-8 py-3 bg-[#E2725B] text-white rounded-full font-bold hover:bg-[#D2624B] transition-all shadow-lg shadow-[#E2725B]/20 flex items-center gap-2 mx-auto"
                         >
                           <BookOpen size={20} />
                           GUIA DO LÍDER
@@ -705,7 +705,7 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                   />
                   <button 
                     onClick={handleSaveNote}
-                    className="w-full py-3 bg-amber-500 text-white rounded-xl font-bold hover:bg-amber-600 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 bg-[#D4A373] text-white rounded-xl font-bold hover:bg-[#C49363] transition-all flex items-center justify-center gap-2"
                   >
                     <Save size={18} />
                     Salvar Anotação
@@ -749,15 +749,15 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
               animate={{ scale: 1, y: 0 }}
               className="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             >
-              <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-blue-50/50 dark:bg-blue-900/10">
+              <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-[#5B8A9A]/10">
                 <div className="flex items-center gap-3">
-                  <FileSearch className="text-blue-600" size={28} />
+                  <FileSearch className="text-[#5B8A9A]" size={28} />
                   <div>
                     <h3 className="text-2xl font-black tracking-tight">Resumo Executivo</h3>
-                    <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest">Ideias Centrais & Recursos</p>
+                    <p className="text-[10px] font-bold text-[#5B8A9A] uppercase tracking-widest">Ideias Centrais & Recursos</p>
                   </div>
                 </div>
-                <button onClick={() => setShowSummary(false)} className="p-2 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-full transition-colors">
+                <button onClick={() => setShowSummary(false)} className="p-2 hover:bg-[#5B8A9A]/30 rounded-full transition-colors">
                   <X size={24} />
                 </button>
               </div>

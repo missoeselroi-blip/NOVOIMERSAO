@@ -844,7 +844,7 @@ const BibleRacePage: React.FC = () => {
           </div>
           <button 
             onClick={startTieBreaker}
-            className="px-6 py-3 bg-amber-600 text-white font-black rounded-2xl hover:bg-amber-700 shadow-lg shadow-amber-600/20 transition-all active:scale-95"
+            className="px-6 py-3 bg-[#E2725B] text-white font-black rounded-2xl hover:bg-[#D2624B] shadow-lg shadow-[#E2725B]/20 transition-all active:scale-95"
           >
             Iniciar Desempate
           </button>
@@ -871,7 +871,7 @@ const BibleRacePage: React.FC = () => {
                   </div>
                   <button 
                     onClick={startReading}
-                    className="px-6 py-3 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 shadow-lg shadow-emerald-600/20 flex items-center gap-2 transition-all active:scale-95"
+                    className="px-6 py-3 bg-[#8A9A5B] text-white font-black rounded-2xl hover:bg-[#7A8A4B] shadow-lg shadow-[#8A9A5B]/20 flex items-center gap-2 transition-all active:scale-95"
                   >
                     <BookOpen size={20} />
                     Continuar Leitura
@@ -954,7 +954,7 @@ const BibleRacePage: React.FC = () => {
                           setSearchTerm(user.name || '');
                         }
                       }}
-                      className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-all active:scale-95"
+                      className="px-4 py-2 bg-[#5B8A9A]/10 text-[#5B8A9A] rounded-xl text-[10px] font-black uppercase flex items-center gap-2 hover:bg-[#5B8A9A]/20 transition-all active:scale-95"
                       title="Minha Localização"
                     >
                       <User size={14} />

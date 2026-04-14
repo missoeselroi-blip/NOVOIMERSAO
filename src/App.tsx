@@ -506,7 +506,7 @@ function AppContent() {
             className={cn(
               "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all",
               isMenuOpen 
-                ? "text-emerald-600" 
+                ? "text-[#8A9A5B]" 
                 : isDarkMode ? "text-zinc-500" : "text-stone-400"
             )}
           >
@@ -572,7 +572,7 @@ function AppContent() {
                     className={cn(
                       "w-full flex items-center gap-4 p-4 rounded-2xl text-sm font-bold transition-all",
                       activeTab === item.id 
-                        ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" 
+                        ? "bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20" 
                         : isDarkMode ? "hover:bg-zinc-800 text-zinc-300" : "hover:bg-stone-50 text-stone-600"
                     )}
                   >
@@ -594,7 +594,7 @@ function AppContent() {
                     onClick={() => setTheme('light')}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all",
-                      theme === 'light' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
+                      theme === 'light' ? "bg-[#8A9A5B] text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
                     )}
                   >
                     <Sun size={20} />
@@ -604,7 +604,7 @@ function AppContent() {
                     onClick={() => setTheme('dark')}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all",
-                      theme === 'dark' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
+                      theme === 'dark' ? "bg-[#8A9A5B] text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
                     )}
                   >
                     <Moon size={20} />
@@ -614,7 +614,7 @@ function AppContent() {
                     onClick={() => setTheme('devotional')}
                     className={cn(
                       "flex flex-col items-center gap-2 p-3 rounded-2xl transition-all",
-                      theme === 'devotional' ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
+                      theme === 'devotional' ? "bg-[#8A9A5B] text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500"
                     )}
                   >
                     <Coffee size={20} />

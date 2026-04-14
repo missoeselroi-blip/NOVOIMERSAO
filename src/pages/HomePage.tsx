@@ -21,6 +21,8 @@ import {
   Pencil,
   ArrowLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Plus,
   Save,
   Trash2,
@@ -71,6 +73,9 @@ import { AudioSearchButton } from '../components/AudioSearchButton';
 import { CreditInfoTip } from '../components/CreditInfoTip';
 import { useCredits } from '../contexts/CreditContext';
 import { useShare } from '../utils/share';
+import { notificationService } from '../services/notificationService';
+import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
+import { Bell } from 'lucide-react';
 
 interface HomePageProps {
   onNavigate: (tab: string, state?: any) => void;
@@ -161,6 +166,80 @@ const DEVOTIONAL_THEMES: ThemeConfig[] = [
   },
 ];
 
+const FAQ_ITEMS = [
+  {
+    question: "Como usar as funcionalidades de estudo bíblico?",
+    answer: "Acesse a seção 'Imersão' ou 'Bíblia' no menu principal. Lá você encontrará ferramentas para pesquisar versículos, consultar comentários bíblicos e usar a IA para aprofundar seu entendimento de passagens específicas."
+  },
+  {
+    question: "Como gerar um esboço de pregação?",
+    answer: "Na página inicial, utilize o campo de mensagem e selecione o tipo 'Esboço Pregação'. Descreva o tema ou texto base e nossa IA criará uma estrutura completa com introdução, tópicos principais e conclusão."
+  },
+  {
+    question: "Como criar postagens com IA?",
+    answer: "Vá para a seção 'Post' no menu. Você pode descrever a imagem que deseja criar e a mensagem bíblica que a acompanhará. A IA gerará artes exclusivas para você compartilhar em suas redes sociais."
+  },
+  {
+    question: "O que é a Trindade?",
+    answer: "A Trindade é a doutrina bíblica de que existe um só Deus que subsiste eternamente em três pessoas distintas: o Pai, o Filho (Jesus Cristo) e o Espírito Santo. Eles são iguais em substância, poder e glória."
+  },
+  {
+    question: "Como começar a evangelizar?",
+    answer: "O evangelismo começa com o seu testemunho pessoal e amor ao próximo. Use as ferramentas do App para compartilhar versículos e artes, e ore por oportunidades de falar do amor de Jesus com as pessoas ao seu redor."
+  },
+  {
+    question: "Como gerar o Devocional?",
+    answer: "Selecione um dos temas na página inicial (Kids, Teen, Casado, etc.) e clique no botão de gerar. A IA criará uma mensagem personalizada baseada no perfil escolhido."
+  },
+  {
+    question: "Como gerar áudio das mensagens?",
+    answer: "Em qualquer mensagem gerada pela IA ou no Versículo do Dia, clique no botão 'Ouvir' ou no ícone de volume para que a IA faça a leitura em áudio para você."
+  },
+  {
+    question: "Como utilizar o Tutor, Bate-papo e Mentor?",
+    answer: "Estas ferramentas estão disponíveis nas lições e estudos. O Tutor ajuda com dúvidas, o Bate-papo permite conversar sobre o tema e o Mentor oferece orientação espiritual baseada na Bíblia."
+  },
+  {
+    question: "Quais os cursos tem no App?",
+    answer: "O App oferece diversos cursos para seu crescimento, como Teologia, Evangelismo, Contação de estórias, Liderança Cristã e muito mais. Você pode acessá-los na seção 'Lições'."
+  },
+  {
+    question: "Como funcionam os jogos e como desafiar um amigo?",
+    answer: "No 'Bible Race', você pode testar seus conhecimentos bíblicos. Para desafiar um amigo, compartilhe seu progresso ou convide-o para tentar superar sua pontuação no ranking geral."
+  }
+];
+
+function FAQItem({ question, answer }: { question: string, answer: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <div className="border border-stone-100 dark:border-zinc-800 rounded-2xl overflow-hidden bg-white dark:bg-zinc-900/50">
+      <button 
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-stone-50 dark:hover:bg-zinc-800/50 transition-colors"
+      >
+        <span className="font-bold text-stone-800 dark:text-white">{question}</span>
+        <ChevronDown className={cn("text-stone-400 transition-transform duration-200", isOpen && "rotate-180")} size={20} />
+      </button>
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-6 pb-4 text-sm text-stone-600 dark:text-zinc-400 leading-relaxed">
+              {answer}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: HomePageProps) {
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { saveTrack } = useAudioBox();
@@ -172,6 +251,8 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isMessageExpanded, setIsMessageExpanded] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -230,24 +311,24 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   ];
 
   const quickActions = [
-    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsDevotionalModalOpen(true) },
-    { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'lesson', label: 'Lição', desc: '50 Lições Bíblicas.', icon: <Glasses size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'games', label: 'Jogos', desc: 'Desafios e Histórias.', icon: <Trophy size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-emerald-600" />, color: 'bg-emerald-50 dark:bg-emerald-900/20 shadow-emerald-100/50', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-purple-600" />, color: 'bg-purple-50 dark:bg-purple-900/20 shadow-purple-100/50', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'quiz', label: 'Quiz', desc: 'Desafio de Conhecimento.', icon: <Zap size={20} className="text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20 shadow-yellow-100/50', image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'bible-race', label: 'Corrida Bíblica', desc: 'A Jornada da Palavra.', icon: <Trophy size={20} className="text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20 shadow-orange-100/50', image: 'https://images.unsplash.com/photo-1552674605-171ff3ea36f0?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'notebook', label: 'Meu Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-amber-600" />, color: 'bg-amber-50 dark:bg-amber-900/20 shadow-amber-100/50', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-indigo-600" />, color: 'bg-indigo-50 dark:bg-indigo-900/20 shadow-indigo-100/50', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-orange-600" />, color: 'bg-orange-50 dark:bg-orange-900/20 shadow-orange-100/50', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
-    { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-indigo-600" />, color: 'bg-indigo-50 dark:bg-indigo-900/20 shadow-indigo-100/50', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-pink-600" />, color: 'bg-pink-50 dark:bg-pink-900/20 shadow-pink-100/50', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-sky-600" />, color: 'bg-sky-50 dark:bg-sky-900/20 shadow-sky-100/50', onClick: () => setIsNewsModalOpen(true) },
-    { id: 'credits', label: 'Créditos', desc: 'Gerencie seus créditos.', icon: <Sparkles size={20} className="text-yellow-600" />, color: 'bg-yellow-50 dark:bg-yellow-900/20 shadow-yellow-100/50', image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-red-600" />, color: 'bg-red-50 dark:bg-red-900/20 shadow-red-100/50', image: 'https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png' },
-    { id: 'donate', label: 'Doe', desc: 'Apoie a obra.', icon: <HeartHandshake size={20} className="text-rose-600" />, color: 'bg-rose-50 dark:bg-rose-900/20 shadow-rose-100/50', image: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'bible-online', label: 'Bíblia Online', desc: 'Acesso imediato à Palavra.', icon: <BookOpen size={20} className="text-blue-600" />, color: 'bg-blue-50 dark:bg-blue-900/20 shadow-blue-100/50', onClick: () => window.open('https://www.bibliaonline.com.br/nvi', '_blank') },
+    { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsDevotionalModalOpen(true) },
+    { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'lesson', label: 'Lição', desc: '50 Lições Bíblicas.', icon: <Glasses size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'games', label: 'Jogos', desc: 'Desafios e Histórias.', icon: <Trophy size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'quiz', label: 'Quiz', desc: 'Desafio de Conhecimento.', icon: <Zap size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'bible-race', label: 'Corrida Bíblica', desc: 'A Jornada da Palavra.', icon: <Trophy size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1552674605-171ff3ea36f0?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'notebook', label: 'Meu Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
+    { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', onClick: () => setIsNewsModalOpen(true) },
+    { id: 'credits', label: 'Créditos', desc: 'Gerencie seus créditos.', icon: <Sparkles size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png' },
+    { id: 'donate', label: 'Doe', desc: 'Apoie a obra.', icon: <HeartHandshake size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'bible-online', label: 'Bíblia Online', desc: 'Acesso imediato à Palavra.', icon: <BookOpen size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', onClick: () => window.open('https://www.bibliaonline.com.br/nvi', '_blank') },
   ];
 
   const handleGenerateMessage = async () => {
@@ -442,6 +523,15 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const dailyVerse = verses[currentVerseIndex];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      notificationService.checkAndNotify(dailyVerse);
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [dailyVerse]);
+
   const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
@@ -762,18 +852,18 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       </div>
 
       {/* App Action Buttons */}
-      <div className="flex flex-col sm:flex-row gap-4 -mt-6 mb-12">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 -mt-6 mb-12">
         <motion.button 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
           onClick={handleShareApp}
-          className="flex-1 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg shadow-emerald-200/50 dark:shadow-none group"
+          className="flex-1 py-5 bg-[#D4A373] text-white rounded-[2rem] flex flex-col items-center justify-center gap-2 font-bold hover:bg-[#C49363] transition-all shadow-lg shadow-[#D4A373]/20 group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Share2 size={20} className="text-white" />
           </div>
-          <span className="text-sm md:text-base">Compartilhar App</span>
+          <span className="text-xs md:text-sm">Compartilhar</span>
         </motion.button>
 
         <motion.button 
@@ -781,12 +871,12 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           onClick={() => onNavigate('lesson')}
-          className="flex-1 py-5 bg-[#E2725B] text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-[#D2624B] transition-all shadow-lg shadow-[#E2725B]/20 group"
+          className="flex-1 py-5 bg-[#E2725B] text-white rounded-[2rem] flex flex-col items-center justify-center gap-2 font-bold hover:bg-[#D2624B] transition-all shadow-lg shadow-[#E2725B]/20 group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Glasses size={20} className="text-white" />
           </div>
-          <span className="text-sm md:text-base text-white">Lições</span>
+          <span className="text-xs md:text-sm">Lições</span>
         </motion.button>
 
         <motion.button 
@@ -794,12 +884,25 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
           onClick={() => onNavigate('bible')}
-          className="flex-1 py-5 bg-[#2F6C82] text-white rounded-[2rem] flex items-center justify-center gap-3 font-bold hover:bg-[#255668] transition-all shadow-lg shadow-[#2F6C82]/20 group"
+          className="flex-1 py-5 bg-[#8A9A5B] text-white rounded-[2rem] flex flex-col items-center justify-center gap-2 font-bold hover:bg-[#7A8A4B] transition-all shadow-lg shadow-[#8A9A5B]/20 group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Book size={20} className="text-white" />
           </div>
-          <span className="text-sm md:text-base text-white">Bíblia Pessoal</span>
+          <span className="text-xs md:text-sm">Bíblia</span>
+        </motion.button>
+
+        <motion.button 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          onClick={() => setIsNotificationModalOpen(true)}
+          className="flex-1 py-5 bg-[#5B8A9A] text-white rounded-[2rem] flex flex-col items-center justify-center gap-2 font-bold hover:bg-[#4B7A8A] transition-all shadow-lg shadow-[#5B8A9A]/20 group"
+        >
+          <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <Bell size={20} className="text-white" />
+          </div>
+          <span className="text-xs md:text-sm">Lembre-me</span>
         </motion.button>
       </div>
 
@@ -807,13 +910,13 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="relative overflow-hidden rounded-[2.5rem] bg-app-surface border border-app-border shadow-xl p-8 md:p-12"
+        className="relative overflow-hidden rounded-[2.5rem] bg-app-surface border border-app-border shadow-xl p-6 md:p-8"
       >
-        <div className="absolute top-0 right-0 p-8 opacity-5">
-          <Book size={120} className="text-emerald-600" />
+        <div className="absolute top-0 right-0 p-6 opacity-5">
+          <Book size={100} className="text-emerald-600" />
         </div>
         
-        <div className="relative z-10 space-y-6">
+        <div className="relative z-10 space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-black uppercase tracking-widest">
               <Sparkles size={12} />
@@ -839,38 +942,46 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             </div>
           </div>
 
-          <div className="space-y-4">
-            <p className="text-2xl md:text-3xl font-display font-medium text-stone-800 dark:text-white leading-tight italic">
+          <div className="space-y-3">
+            <p className="text-xl md:text-2xl font-display font-medium text-stone-800 dark:text-white leading-tight italic">
               "{dailyVerse.text}"
             </p>
-            <p className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-xs">
-              — {dailyVerse.reference}
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-emerald-600 dark:text-emerald-400 font-bold tracking-widest uppercase text-[10px]">
+                — {dailyVerse.reference}
+              </p>
+              <button 
+                onClick={() => onNavigate('bible', { reference: dailyVerse.reference })}
+                className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline"
+              >
+                Leia Mais <ArrowRight size={12} />
+              </button>
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-3 pt-4">
+          <div className="flex flex-wrap gap-2 pt-2">
             <button 
               onClick={() => handlePlayAudio(dailyVerse.text)}
               disabled={isAudioLoading}
-              className="px-6 py-2.5 bg-stone-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+              className="px-4 py-2 bg-stone-900 dark:bg-white text-white dark:text-zinc-900 rounded-xl text-[10px] font-bold flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
             >
-              {isAudioLoading ? <Loader2 className="animate-spin" size={14} /> : <Volume2 size={14} />}
-              Ouvir Versículo
+              {isAudioLoading ? <Loader2 className="animate-spin" size={12} /> : <Volume2 size={12} />}
+              Ouvir
             </button>
             <button 
               onClick={() => handleSaveToNotebook(dailyVerse.reference, dailyVerse.text)}
-              className="px-6 py-2.5 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-105 transition-all"
+              className="px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl text-[10px] font-bold flex items-center gap-2 hover:scale-105 transition-all"
             >
-              <StickyNote size={14} />
-              Salvar no Caderno
+              <StickyNote size={12} />
+              Salvar
             </button>
             <button 
               onClick={handleExplainVerse}
               disabled={isExplaining}
-              className="px-6 py-2.5 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-xl text-xs font-bold flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
+              className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-[10px] font-bold flex items-center gap-2 hover:scale-105 transition-all disabled:opacity-50"
             >
-              {isExplaining ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
-              Explique o Versículo
+              {isExplaining ? <Loader2 className="animate-spin" size={12} /> : <Brain size={12} />}
+              Explicar
             </button>
           </div>
         </div>
@@ -1044,7 +1155,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       </section>
 
       {/* Message of the Week - Soft Reading Area */}
-      <section className="bg-stone-50 dark:bg-zinc-800/30 p-10 rounded-[3rem] border border-stone-100 dark:border-zinc-800/50">
+      <section id="message-of-the-week" className="bg-stone-50 dark:bg-zinc-800/30 p-10 rounded-[3rem] border border-stone-100 dark:border-zinc-800/50">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="h-[1px] flex-1 bg-stone-200 dark:bg-zinc-800" />
@@ -1062,26 +1173,60 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                 O termo ânimo dobre vem do grego <em>dipsychos</em>, que significa "homem de duas almas". É o retrato de uma mente dividida e de uma vontade instável: um dia fervorosa, no outro, estagnada. Essa inconstância não é um detalhe, mas um obstáculo que afeta todas as áreas da vida.
               </p>
               
-              <h5 className="font-bold text-stone-800 dark:text-zinc-200 text-xl mt-6">Os Pilares da Inconstância</h5>
-              <ul className="space-y-2 list-disc list-inside">
-                <li><strong>Impacto Geral:</strong> A oscilação na fé reflete no trabalho, nas finanças e na saúde. Tiago alerta que quem duvida não recebe nada de Deus, pois a dúvida rompe a conexão com as promessas.</li>
-                <li><strong>Escravidão Emocional:</strong> O inconstante vive pelo que sente. Se está animado, faz; se não está, procrastina. O verdadeiro ânimo não é um sentimento, é uma decisão.</li>
-                <li><strong>A Base da Desistência:</strong> O ânimo dobre se esconde nas pequenas negligências: atrasos constantes, falta de cuidado com a saúde, desorganização e o hábito de trocar o que é importante pelo que é fútil.</li>
-              </ul>
+              {!isMessageExpanded && (
+                <div className="flex justify-center pt-4">
+                  <button 
+                    onClick={() => setIsMessageExpanded(true)}
+                    className="px-8 py-3 bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-stone-300 dark:hover:bg-zinc-700 transition-all"
+                  >
+                    Ler Mais <ChevronDown size={18} />
+                  </button>
+                </div>
+              )}
 
-              <h5 className="font-bold text-stone-800 dark:text-zinc-200 text-xl mt-6">O Caminho da Transformação</h5>
-              <p>
-                Jesus ensinou que é impossível servir a dois senhores. A dualidade entre carne e espírito exige vigilância constante. Segundo Tiago 4:8, a cura para essa divisão exige três atitudes que dependem de nós:
-              </p>
-              <ul className="space-y-2 list-disc list-inside">
-                <li>Chegar-se a Deus.</li>
-                <li>Purificar as mãos (nossas ações).</li>
-                <li>Limpar o coração (nossas intenções).</li>
-              </ul>
+              <AnimatePresence>
+                {isMessageExpanded && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    className="overflow-hidden space-y-4"
+                  >
+                    <h5 className="font-bold text-stone-800 dark:text-zinc-200 text-xl mt-6">Os Pilares da Inconstância</h5>
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li><strong>Impacto Geral:</strong> A oscilação na fé reflete no trabalho, nas finanças e na saúde. Tiago alerta que quem duvida não recebe nada de Deus, pois a dúvida rompe a conexão com as promessas.</li>
+                      <li><strong>Escravidão Emocional:</strong> O inconstante vive pelo que sente. Se está animado, faz; se não está, procrastina. O verdadeiro ânimo não é um sentimento, é uma decisão.</li>
+                      <li><strong>A Base da Desistência:</strong> O ânimo dobre se esconde nas pequenas negligências: atrasos constantes, falta de cuidado com a saúde, desorganização e o hábito de trocar o que é importante pelo que é fútil.</li>
+                    </ul>
 
-              <p className="mt-6">
-                A fé madura age mesmo quando não sente vontade. Não deixe suas emoções governarem seu propósito. Confie, espere e, acima de tudo, aja conforme a direção divina. A vitória pode estar a apenas um passo de persistência.
-              </p>
+                    <h5 className="font-bold text-stone-800 dark:text-zinc-200 text-xl mt-6">O Caminho da Transformação</h5>
+                    <p>
+                      Jesus ensinou que é impossível servir a dois senhores. A dualidade entre carne e espírito exige vigilância constante. Segundo Tiago 4:8, a cura para essa divisão exige três atitudes que dependem de nós:
+                    </p>
+                    <ul className="space-y-2 list-disc list-inside">
+                      <li>Chegar-se a Deus.</li>
+                      <li>Purificar as mãos (nossas ações).</li>
+                      <li>Limpar o coração (nossas intenções).</li>
+                    </ul>
+
+                    <p className="mt-6">
+                      A fé madura age mesmo quando não sente vontade. Não deixe suas emoções governarem seu propósito. Confie, espere e, acima de tudo, aja conforme a direção divina. A vitória pode estar a apenas um passo de persistência.
+                    </p>
+
+                    <div className="flex justify-center pt-8">
+                      <button 
+                        onClick={() => {
+                          setIsMessageExpanded(false);
+                          document.getElementById('message-of-the-week')?.scrollIntoView({ behavior: 'smooth' });
+                        }}
+                        className="px-8 py-3 bg-stone-200 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-2xl text-sm font-bold flex items-center gap-2 hover:bg-stone-300 dark:hover:bg-zinc-700 transition-all"
+                      >
+                        Ler Menos <ChevronUp size={18} />
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
@@ -1889,7 +2034,26 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         onConfirm={confirmPlayAudio}
         isLoading={isAudioLoading}
       />
+
+      <NotificationSettingsModal
+        isOpen={isNotificationModalOpen}
+        onClose={() => setIsNotificationModalOpen(false)}
+      />
       
+      {/* FAQ Section */}
+      <div className="max-w-4xl mx-auto px-4 py-16 border-t border-stone-100 dark:border-zinc-800">
+        <div className="text-center mb-12">
+          <h2 className="text-3xl font-display font-bold text-stone-800 dark:text-white mb-4">Perguntas Frequentes</h2>
+          <p className="text-stone-500 dark:text-zinc-400">Tire suas dúvidas sobre como usar o App e conceitos básicos.</p>
+        </div>
+        
+        <div className="space-y-4">
+          {FAQ_ITEMS.map((item, index) => (
+            <FAQItem key={index} question={item.question} answer={item.answer} />
+          ))}
+        </div>
+      </div>
+
       <div className="max-w-4xl mx-auto px-4 pb-12">
         <CreditInfoTip />
         <p className="text-center text-xs text-stone-500 dark:text-zinc-500 mt-8 max-w-2xl mx-auto">

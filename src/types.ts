@@ -62,3 +62,11 @@ export interface LeaderboardEntry {
   trend: 'up' | 'down' | 'same';
   rank?: number;
 }
+
+export interface NotificationSettings {
+  enabled: boolean;
+  dailyVerseTime: string;
+  readingReminderTime: string;
+  prayerReminderTime: string;
+  studyReminderTime: string;
+}
