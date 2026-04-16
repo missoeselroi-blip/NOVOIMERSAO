@@ -42,6 +42,7 @@ import {
   Loader2,
   Info,
   GraduationCap,
+  ShieldCheck,
   User,
   Baby,
   Users,
@@ -59,7 +60,6 @@ import { useAudioBox } from '../contexts/AudioBoxContext';
 import { geminiService, Type } from '../services/geminiService';
 import { copyToClipboard } from '../utils/clipboard';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
-import NewsPage from './NewsPage';
 import { useToast } from '../components/Toast';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
@@ -246,7 +246,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [isNewsModalOpen, setIsNewsModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isMessageExpanded, setIsMessageExpanded] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -309,18 +308,17 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const quickActions = [
     { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsDevotionalModalOpen(true) },
     { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'lesson', label: 'Lição', desc: '50 Lições Bíblicas.', icon: <Glasses size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'games', label: 'Jogos', desc: 'Desafios e Histórias.', icon: <Trophy size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'quiz', label: 'Quiz', desc: 'Desafio de Conhecimento.', icon: <Zap size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1495020689067-958852a7765e?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'truth-detector', label: 'Fato ou Fake', desc: 'Detector de Verdade.', icon: <ShieldCheck size={20} className="text-[#3B82F6]" />, color: 'bg-[#3B82F6]/10 shadow-[#3B82F6]/5', image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'bible-race', label: 'Corrida Bíblica', desc: 'A Jornada da Palavra.', icon: <Trophy size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1552674605-171ff3ea36f0?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'notebook', label: 'Meu Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
     { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'news', label: 'Sinais', desc: 'Notícias sinais da Vinda.', icon: <Newspaper size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', onClick: () => setIsNewsModalOpen(true) },
     { id: 'credits', label: 'Créditos', desc: 'Gerencie seus créditos.', icon: <Sparkles size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'who-am-i', label: 'Quem Somos?', desc: 'Nossa história.', icon: <User size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png' },
     { id: 'donate', label: 'Doe', desc: 'Apoie a obra.', icon: <HeartHandshake size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://images.unsplash.com/photo-1532629345422-7515f3d16bb6?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -480,9 +478,14 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       showToast('Abrindo seu Caderno... 📓', 'success');
       return;
     }
-    if (command.includes('ir para notícias') || command.includes('ir para noticias')) {
-      setIsNewsModalOpen(true);
+    if (command.includes('ir para notícias') || command.includes('ir para noticias') || command.includes('ir para sinais')) {
+      onNavigate('news');
       showToast('Abrindo Notícias... 📰', 'success');
+      return;
+    }
+    if (command.includes('ir para fato ou fake') || command.includes('ir para detector de verdade')) {
+      onNavigate('truth-detector');
+      showToast('Abrindo Fato ou Fake... 🛡️', 'success');
       return;
     }
     if (command.includes('ir para perfil')) {
@@ -1016,11 +1019,11 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-emerald-600 dark:text-emerald-400" size={20} />
             <input 
               type="text"
-              placeholder="Pesquisar no App, Meu Caderno e Fontes Bíblicas..."
+              placeholder="Pesquisar..."
+              className="w-full pl-14 pr-24 py-4 md:py-5 bg-gradient-to-r from-white/90 to-emerald-50/90 dark:from-zinc-900/90 dark:to-emerald-900/10 backdrop-blur-xl border border-white/20 dark:border-zinc-800/50 rounded-[1.85rem] focus:outline-none shadow-xl text-sm transition-all"
               value={appSearchQuery}
               onChange={(e) => handleAppSearch(e.target.value)}
               onFocus={() => setIsSearchFocused(true)}
-              className="w-full pl-14 pr-24 py-5 bg-gradient-to-r from-white/90 to-emerald-50/90 dark:from-zinc-900/90 dark:to-emerald-900/10 backdrop-blur-xl border border-white/20 dark:border-zinc-800/50 rounded-[1.85rem] focus:outline-none shadow-xl text-sm transition-all"
             />
             <div className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2">
               <button 
@@ -1096,7 +1099,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
 
       {/* Quick Actions - Minimalist & Compact */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 md:gap-4">
         {quickActions.map((action, index) => (
           <motion.div
             key={`quick-action-${action.id}-${index}`}
@@ -1151,7 +1154,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       </section>
 
       {/* Message of the Week - Soft Reading Area */}
-      <section id="message-of-the-week" className="bg-stone-50 dark:bg-zinc-800/30 p-10 rounded-[3rem] border border-stone-100 dark:border-zinc-800/50">
+      <section id="message-of-the-week" className="bg-stone-50 dark:bg-zinc-800/30 p-6 sm:p-10 rounded-[2rem] sm:rounded-[3rem] border border-stone-100 dark:border-zinc-800/50">
         <div className="max-w-3xl mx-auto space-y-6">
           <div className="flex items-center justify-center gap-3 mb-4">
             <div className="h-[1px] flex-1 bg-stone-200 dark:bg-zinc-800" />
@@ -1688,36 +1691,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                     )}
                   </div>
                 )}
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
-
-      {/* News Modal */}
-      <AnimatePresence>
-        {isNewsModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col"
-            >
-              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-900">
-                <h3 className="text-xl font-bold flex items-center gap-2">
-                  <Newspaper className="text-orange-600" />
-                  Notícias do Reino
-                </h3>
-                <button 
-                  onClick={() => setIsNewsModalOpen(false)}
-                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-y-auto p-6">
-                <NewsPage />
               </div>
             </motion.div>
           </div>

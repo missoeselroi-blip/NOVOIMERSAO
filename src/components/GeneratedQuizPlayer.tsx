@@ -162,7 +162,14 @@ export default function GeneratedQuizPlayer({ questions, onClose }: GeneratedQui
           </div>
           <div className="flex items-center gap-2 text-amber-600">
             <Trophy className="w-5 h-5" />
-            <span className="font-bold text-lg">{score} pts</span>
+            <motion.span 
+              key={score}
+              initial={{ scale: 1.5, color: "#f59e0b" }}
+              animate={{ scale: 1, color: "#d97706" }}
+              className="font-bold text-lg"
+            >
+              {score} pts
+            </motion.span>
           </div>
         </div>
       </div>
@@ -193,16 +200,28 @@ export default function GeneratedQuizPlayer({ questions, onClose }: GeneratedQui
           }
 
           return (
-            <button
+            <motion.button
               key={index}
               onClick={() => handleAnswer(index)}
               disabled={isAnswered}
               className={buttonClass}
+              animate={isAnswered && isCorrect ? {
+                scale: [1, 1.05, 1],
+                transition: { repeat: 2, duration: 0.3 }
+              } : {}}
             >
               <span className="font-medium text-lg">{option}</span>
-              {isAnswered && isCorrect && <CheckCircle2 className="w-6 h-6 text-emerald-500" />}
+              {isAnswered && isCorrect && (
+                <motion.div
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
+                >
+                  <CheckCircle2 className="w-6 h-6 text-emerald-500" />
+                </motion.div>
+              )}
               {isAnswered && isSelected && !isCorrect && <XCircle className="w-6 h-6 text-red-500" />}
-            </button>
+            </motion.button>
           );
         })}
       </div>

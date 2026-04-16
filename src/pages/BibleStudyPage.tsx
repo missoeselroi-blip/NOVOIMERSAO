@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   useNavigate,
-  useSearchParams
+  useSearchParams,
+  useLocation
 } from 'react-router-dom';
 import { 
   Search, 
@@ -83,6 +84,7 @@ import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { useAuth } from '../contexts/AuthContext';
 import { compressImage } from '../utils/imageUtils';
 import { auth, db } from '../lib/firebase';
+import { offlineService } from '../services/offlineService';
 import { collection, addDoc, doc, updateDoc, deleteDoc, query, where, onSnapshot, serverTimestamp } from 'firebase/firestore';
 import { copyToClipboard } from '../utils/clipboard';
 import { sermonOutlines } from '../constants/sermonOutlines';
@@ -146,10 +148,31 @@ interface StudyHistoryItem {
 
 import { SearchLoadingOverlay } from '../components/SearchLoadingOverlay';
 
-const ExpandableMarkdown = ({ content, onSearch }: { content: string, onSearch?: (q: string) => void }) => {
+const ExpandableMarkdown = ({ content, title, onSearch }: { content: string, title?: string, onSearch?: (q: string) => void }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const { showToast } = useToast();
+  const { downloadMaterial } = useOffline();
   
   if (!content) return null;
+
+  const handleDownloadOffline = async () => {
+    if (!content) return;
+    
+    const id = `study-${Date.now()}`;
+    try {
+      await downloadMaterial({
+        id,
+        type: 'study',
+        title: title || 'Estudo Bíblico',
+        content: content,
+        downloadedAt: Date.now()
+      });
+      showToast("Estudo baixado para acesso offline! 📱✨", "success");
+    } catch (error) {
+      console.error("Error downloading study:", error);
+      showToast("Erro ao baixar estudo.", "error");
+    }
+  };
 
   const handleDownloadPDF = () => {
     const element = document.createElement('div');
@@ -254,6 +277,13 @@ const ExpandableMarkdown = ({ content, onSearch }: { content: string, onSearch?:
         >
           <FileText size={18} /> Baixar PDF
         </button>
+
+        <button
+          onClick={handleDownloadOffline}
+          className="flex items-center gap-2 px-8 py-3 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 transition-all text-sm shadow-lg shadow-blue-600/20"
+        >
+          <WifiOff size={18} /> Offline
+        </button>
       </div>
     </div>
   );
@@ -324,6 +354,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const { balance, consumeCredits, estimateCredits } = useCredits();
   const { share } = useShare();
   const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('menu');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const processedParams = useRef({ search: null, outline: null, tab: null });
@@ -458,6 +490,16 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [verseSearch, setVerseSearch] = useState('');
   const [verseContent, setVerseContent] = useState('');
   const [isFavorited, setIsFavorited] = useState(false);
+
+  useEffect(() => {
+    if (location.state?.offlineContent) {
+      setResult(location.state.offlineContent);
+      setActiveTab('result');
+      if (location.state.title) {
+        setSearchQuery(location.state.title);
+      }
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (user && user.favorites && (verseSearch || searchQuery)) {
@@ -1997,7 +2039,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     try {
       const opt = {
         margin:       15,
-        filename:     `ebook-${topic.replace(/\s+/g, '_')}.pdf`,
+        filename:     `ebook-${(topic || "estudo").replace(/\s+/g, '_')}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
           scale: 2, 
@@ -2028,7 +2070,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     try {
       const opt = {
         margin:       15,
-        filename:     `apostila-${topic.replace(/\s+/g, '_')}.pdf`,
+        filename:     `apostila-${(topic || "estudo").replace(/\s+/g, '_')}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
           scale: 2, 
@@ -2076,7 +2118,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     const element = document.createElement("a");
     const file = new Blob([`TÍTULO: ${note.title}\n\n${note.content}`], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = `${note.title.toLowerCase().replace(/\s+/g, '-')}.txt`;
+    element.download = `${(note.title || "nota").toLowerCase().replace(/\s+/g, '-')}.txt`;
     document.body.appendChild(element);
     element.click();
     showToast("Baixando página... 📄");
@@ -2467,7 +2509,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     try {
       const opt = {
         margin:       15,
-        filename:     `${title.toLowerCase().replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
+        filename:     `${(title || "estudo").toLowerCase().replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
         html2canvas:  { 
           scale: 2, 
@@ -3240,7 +3282,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           id: offlineId,
           title: `${searchSource}: ${searchQuery}`,
           content: result,
-          type: 'study_bible',
+          type: 'study',
           downloadedAt: Date.now()
         });
       }
@@ -3313,7 +3355,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                           {item.query}
                         </h4>
                         <p className="text-xs text-stone-500 dark:text-zinc-500 mt-1 line-clamp-2">
-                          {item.result.replace(/[#*`]/g, '').slice(0, 150)}...
+                          {(item.result || "").replace(/[#*`]/g, '').slice(0, 150)}...
                         </p>
                       </button>
                     ))}
@@ -3916,7 +3958,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                             <button
                               key={`related-resource-${resource.title}-${idx}`}
                               onClick={() => {
-                                const term = resource.url.replace('search:', '');
+                                const term = (resource.url || "").replace('search:', '');
                                 setSearchQuery(term);
                                 handleSearch(getSelectedSources(), term);
                               }}
@@ -7069,6 +7111,28 @@ ${selectedLibraryOutline.appeal}
                   >
                     <Copy size={20} />
                     Copiar Esboço
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const id = `outline-${selectedLibraryOutline.id}`;
+                      try {
+                        await downloadMaterial({
+                          id,
+                          type: 'outline',
+                          title: selectedLibraryOutline.theme,
+                          content: selectedLibraryOutline,
+                          downloadedAt: Date.now()
+                        });
+                        showToast("Esboço baixado para acesso offline! 📱✨", "success");
+                      } catch (error) {
+                        console.error("Error downloading outline:", error);
+                        showToast("Erro ao baixar esboço.", "error");
+                      }
+                    }}
+                    className="flex-1 min-w-[140px] py-3 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 flex items-center justify-center gap-2 shadow-lg shadow-purple-600/20 transition-all"
+                  >
+                    <WifiOff size={20} />
+                    Baixar Offline
                   </button>
                   <button
                     onClick={() => {

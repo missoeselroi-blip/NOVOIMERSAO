@@ -43,11 +43,26 @@ export const OfflineProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const downloadChapter = async (chapter: OfflineBibleChapter) => {
     await offlineService.saveChapter(chapter);
+    await offlineService.saveContent({
+      id: chapter.id,
+      type: 'bible',
+      title: `${chapter.book} ${chapter.chapter}`,
+      content: chapter.content,
+      version: chapter.version,
+      downloadedAt: chapter.downloadedAt
+    });
     await refreshOfflineData();
   };
 
   const downloadMaterial = async (material: OfflineStudyMaterial) => {
     await offlineService.saveStudyMaterial(material);
+    await offlineService.saveContent({
+      id: material.id,
+      type: material.type,
+      title: material.title,
+      content: material.content,
+      downloadedAt: material.downloadedAt
+    });
     await refreshOfflineData();
   };
 

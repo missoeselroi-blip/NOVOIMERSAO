@@ -1,85 +1,136 @@
 import { openDB, IDBPDatabase } from 'idb';
 
-const DB_NAME = 'bible_offline_db';
-const DB_VERSION = 1;
+export interface OfflineContent {
+  id: string;
+  type: 'bible' | 'study' | 'outline' | 'lesson';
+  title: string;
+  content: any;
+  version?: string;
+  downloadedAt: number;
+}
 
 export interface OfflineBibleChapter {
-  id: string; // e.g., "NVI-GEN-1"
-  version: string;
+  id: string;
   book: string;
   chapter: number;
-  content: string;
+  version: string;
+  content: any;
   downloadedAt: number;
 }
 
 export interface OfflineStudyMaterial {
   id: string;
+  type: 'study' | 'outline' | 'lesson';
   title: string;
   content: string;
-  type: 'commentary' | 'study_bible' | 'article';
   downloadedAt: number;
 }
 
 class OfflineService {
-  private db: Promise<IDBPDatabase>;
+  private dbPromise: Promise<IDBPDatabase>;
 
   constructor() {
-    this.db = openDB(DB_NAME, DB_VERSION, {
+    this.dbPromise = openDB('imersao-biblica-offline', 1, {
       upgrade(db) {
-        if (!db.objectStoreNames.contains('bible_chapters')) {
-          db.createObjectStore('bible_chapters', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('content')) {
+          db.createObjectStore('content', { keyPath: 'id' });
         }
-        if (!db.objectStoreNames.contains('study_materials')) {
-          db.createObjectStore('study_materials', { keyPath: 'id' });
+        if (!db.objectStoreNames.contains('chapters')) {
+          db.createObjectStore('chapters', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('materials')) {
+          db.createObjectStore('materials', { keyPath: 'id' });
         }
       },
     });
   }
 
+  // Generic methods
+  async saveContent(content: OfflineContent) {
+    const db = await this.dbPromise;
+    await db.put('content', content);
+  }
+
+  async getContent(id: string): Promise<OfflineContent | undefined> {
+    const db = await this.dbPromise;
+    return db.get('content', id);
+  }
+
+  async getAllContent(): Promise<OfflineContent[]> {
+    const db = await this.dbPromise;
+    const content = await db.getAll('content');
+    const chapters = await db.getAll('chapters');
+    const materials = await db.getAll('materials');
+    
+    // Convert chapters and materials to OfflineContent format if they are not in 'content' store
+    const convertedChapters = chapters.map(c => ({
+      id: c.id,
+      type: 'bible' as const,
+      title: `${c.book} ${c.chapter}`,
+      content: c.content,
+      version: c.version,
+      downloadedAt: c.downloadedAt
+    }));
+    
+    const convertedMaterials = materials.map(m => ({
+      id: m.id,
+      type: m.type,
+      title: m.title,
+      content: m.content,
+      downloadedAt: m.downloadedAt
+    }));
+    
+    // Use a Map to avoid duplicates by ID
+    const allContentMap = new Map<string, OfflineContent>();
+    
+    [...content, ...convertedChapters, ...convertedMaterials].forEach(item => {
+      allContentMap.set(item.id, item);
+    });
+    
+    return Array.from(allContentMap.values());
+  }
+
+  async deleteContent(id: string) {
+    const db = await this.dbPromise;
+    await db.delete('content', id);
+    await db.delete('chapters', id);
+    await db.delete('materials', id);
+  }
+
+  async isDownloaded(id: string): Promise<boolean> {
+    const content = await this.getContent(id);
+    return !!content;
+  }
+
+  // Backward compatibility methods
   async saveChapter(chapter: OfflineBibleChapter) {
-    const db = await this.db;
-    await db.put('bible_chapters', chapter);
-  }
-
-  async getChapter(id: string): Promise<OfflineBibleChapter | undefined> {
-    const db = await this.db;
-    return db.get('bible_chapters', id);
-  }
-
-  async saveStudyMaterial(material: OfflineStudyMaterial) {
-    const db = await this.db;
-    await db.put('study_materials', material);
-  }
-
-  async getStudyMaterial(id: string): Promise<OfflineStudyMaterial | undefined> {
-    const db = await this.db;
-    return db.get('study_materials', id);
+    const db = await this.dbPromise;
+    await db.put('chapters', chapter);
   }
 
   async getAllChapters(): Promise<OfflineBibleChapter[]> {
-    const db = await this.db;
-    return db.getAll('bible_chapters');
-  }
-
-  async getAllStudyMaterials(): Promise<OfflineStudyMaterial[]> {
-    const db = await this.db;
-    return db.getAll('study_materials');
+    const db = await this.dbPromise;
+    return db.getAll('chapters');
   }
 
   async deleteChapter(id: string) {
-    const db = await this.db;
-    await db.delete('bible_chapters', id);
+    const db = await this.dbPromise;
+    await db.delete('chapters', id);
+  }
+
+  async saveStudyMaterial(material: OfflineStudyMaterial) {
+    const db = await this.dbPromise;
+    await db.put('materials', material);
+  }
+
+  async getAllStudyMaterials(): Promise<OfflineStudyMaterial[]> {
+    const db = await this.dbPromise;
+    return db.getAll('materials');
   }
 
   async deleteStudyMaterial(id: string) {
-    const db = await this.db;
-    await db.delete('study_materials', id);
-  }
-
-  async clearAll() {
-    const db = await this.db;
-    await db.clear('bible_chapters');
-    await db.clear('study_materials');
+    const db = await this.dbPromise;
+    await db.delete('materials', id);
   }
 }
 

@@ -96,6 +96,7 @@ import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { DEVOTIONAL_MATRIX } from '../constants/devotionals';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import MissionaryPage from './MissionaryPage';
+import { PrayerRequestsSection } from '../components/PrayerRequestsSection';
 
 import { useShare } from '../utils/share';
 
@@ -1819,6 +1820,10 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
           Consulte o calendário para ver o livro base de cada dia.
         </p>
       </footer>
+
+      <div className="max-w-4xl mx-auto px-4">
+        <PrayerRequestsSection />
+      </div>
 
       <div className="px-4 pb-8">
         <CreditInfoTip />

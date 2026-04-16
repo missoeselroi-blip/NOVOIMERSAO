@@ -345,6 +345,27 @@ service cloud.firestore {
              (!('currentDay' in data) || data.currentDay is number);
     }
 
+    function isValidPrayerRequest(data) {
+      return data.keys().hasAll(['userId', 'userName', 'content', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.userName is string && data.userName.size() < 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 2000 &&
+             (!('userPhoto' in data) || data.userPhoto is string) &&
+             (!('prayerCount' in data) || data.prayerCount is number) &&
+             (!('prayingUserIds' in data) || data.prayingUserIds is list) &&
+             (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50));
+    }
+
+    function isValidPrayerComment(data) {
+      return data.keys().hasAll(['requestId', 'userId', 'userName', 'content', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.requestId is string &&
+             data.userName is string && data.userName.size() < 100 &&
+             data.content is string && data.content.size() > 0 && data.content.size() < 1000 &&
+             (!('userPhoto' in data) || data.userPhoto is string) &&
+             (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50));
+    }
+
     // Rules
     match /users/{userId} {
       allow read: if isAuthenticated();
@@ -542,6 +563,23 @@ service cloud.firestore {
       allow create: if isAuthenticated() && isValidReadingPlan(request.resource.data);
       allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidReadingPlan(request.resource.data);
       allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
+    match /prayerRequests/{requestId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPrayerRequest(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (resource.data.userId == request.auth.uid && isValidPrayerRequest(request.resource.data)) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['prayerCount', 'prayingUserIds']))
+      );
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+
+      match /comments/{commentId} {
+        allow read: if isAuthenticated();
+        allow create: if isAuthenticated() && isValidPrayerComment(request.resource.data);
+        allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidPrayerComment(request.resource.data);
+        allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      }
     }
   }
 }

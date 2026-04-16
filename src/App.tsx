@@ -98,7 +98,10 @@ const GamesPage = lazyWithRetry(() => import('./pages/GamesPage'));
 const BiblePage = lazyWithRetry(() => import('./pages/BiblePage'));
 const SermonsPage = lazyWithRetry(() => import('./pages/SermonsPage'));
 const LessonPage = lazyWithRetry(() => import('./pages/LessonPage'));
+const OfflinePage = lazyWithRetry(() => import('./pages/OfflinePage'));
 const StoryGame = lazyWithRetry(() => import('./pages/StoryGame'));
+const NewsPage = lazyWithRetry(() => import('./pages/NewsPage'));
+const TruthDetectorPage = lazyWithRetry(() => import('./pages/TruthDetectorPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -198,15 +201,15 @@ function AppContent() {
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
-    { id: 'lesson', label: 'Lições', icon: <Glasses size={22} /> },
-    { id: 'quiz', label: 'Jogos', icon: <Zap size={22} /> },
+    { id: 'news', label: 'Sinais', icon: <Newspaper size={22} /> },
+    { id: 'truth-detector', label: 'Fato ou Fake', icon: <ShieldCheck size={22} /> },
     { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];
   const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'bible', label: 'Bíblia', subtitle: 'A Palavra de Deus', icon: <Book size={20} />, component: <BiblePage /> },
-    { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage /> },
+    { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage />, hidden: true },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'courses', label: 'Cursos', subtitle: 'Jornada de aprendizado', icon: <GraduationCap size={20} />, component: <CoursesPage onNavigate={handleNavigate} /> },
@@ -215,12 +218,15 @@ function AppContent() {
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
-    { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage /> },
+    { id: 'news', label: 'Sinais', subtitle: 'Sinais da Vinda de Cristo', icon: <Newspaper size={20} />, component: <NewsPage /> },
+    { id: 'truth-detector', label: 'Fato ou Fake', subtitle: 'Detector de Verdade', icon: <ShieldCheck size={20} />, component: <TruthDetectorPage /> },
+    { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage />, hidden: true },
     { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'who-am-i', label: 'Quem Somos?', subtitle: 'Nossa história', icon: <User size={20} />, component: <WhoAmIPage onNavigate={handleNavigate} /> },
     { id: 'donate', label: 'Doe', subtitle: 'Apoie a obra', icon: <Heart size={20} />, component: <DonatePage /> },
+    { id: 'offline', label: 'Downloads', subtitle: 'Conteúdo Offline', icon: <WifiOff size={20} />, component: <OfflinePage onNavigate={handleNavigate} /> },
     { id: 'theology', label: 'Teologia', subtitle: 'Conhecimento Profundo', icon: <GraduationCap size={20} />, component: <TheologyPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'evangelism', label: 'Evangelismo', subtitle: 'Ide por todo o mundo', icon: <Flame size={20} />, component: <EvangelismPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'storytelling', label: 'Contação de Estórias', subtitle: 'A arte de narrar', icon: <BookOpen size={20} />, component: <StorytellingPage onNavigate={handleNavigate} />, hidden: true },
@@ -422,6 +428,16 @@ function AppContent() {
                               Painel ADM
                             </button>
                           )}
+                          <button 
+                            onClick={() => {
+                              handleNavigate('offline');
+                              setIsProfileMenuOpen(false);
+                            }}
+                            className="w-full flex items-center gap-3 px-4 py-3 text-sm font-bold text-stone-600 dark:text-zinc-300 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-2xl transition-colors"
+                          >
+                            <WifiOff size={18} className="text-amber-600" />
+                            Downloads Offline
+                          </button>
                           <button 
                             onClick={() => {
                               setIsAuthModalOpen(true);
@@ -687,26 +703,26 @@ function AppContent() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="mb-12 relative flex justify-center overflow-hidden rounded-[2.5rem] group shadow-2xl"
+            className="mb-8 md:mb-12 relative flex justify-center overflow-hidden rounded-[1.5rem] md:rounded-[2.5rem] group shadow-2xl"
           >
             <img 
               src="https://i.postimg.cc/1Rqjh4bB/Screenshot-2026-03-09-12-08-27-022-com-google-android-googlequicksearchbox-edit.jpg" 
               alt="Banner" 
-              className="w-full h-auto max-h-[350px] object-cover rounded-[2.5rem] transition-transform duration-1000 group-hover:scale-105"
+              className="w-full h-auto max-h-[200px] md:max-h-[350px] object-cover rounded-[1.5rem] md:rounded-[2.5rem] transition-transform duration-1000 group-hover:scale-105"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col items-center justify-center p-6 text-center">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent flex flex-col items-center justify-center p-4 md:p-6 text-center">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="space-y-3"
+                className="space-y-2 md:space-y-3"
               >
-                <h2 className="text-4xl md:text-7xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
+                <h2 className="text-2xl sm:text-4xl md:text-7xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
                   {activeItem?.label || 'Página'}
                 </h2>
-                <div className="h-1.5 w-24 bg-emerald-500 mx-auto rounded-full shadow-lg shadow-emerald-500/50" />
-                <p className="text-white/90 text-xs md:text-base font-black tracking-[0.4em] uppercase drop-shadow-lg">
+                <div className="h-1 w-16 md:h-1.5 md:w-24 bg-emerald-500 mx-auto rounded-full shadow-lg shadow-emerald-500/50" />
+                <p className="text-white/90 text-[10px] md:text-base font-black tracking-[0.2em] md:tracking-[0.4em] uppercase drop-shadow-lg">
                   {activeItem?.subtitle || 'Imersão Bíblica IA'}
                 </p>
               </motion.div>

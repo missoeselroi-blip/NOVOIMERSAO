@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Maximize2, 
   Minimize2, 
@@ -9,6 +9,7 @@ import {
   StickyNote, 
   Volume2, 
   Globe,
+  WifiOff,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -28,7 +29,7 @@ import {
   Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import rehypeRaw from 'rehype-raw';
 import { cn } from '../types';
@@ -37,6 +38,7 @@ import { geminiService } from '../services/geminiService';
 import { SpeechGenerator } from '../components/SpeechGenerator';
 
 import { useAuth } from '../contexts/AuthContext';
+import { useOffline } from '../contexts/OfflineContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { lessons, Lesson } from '../data/lessons';
 import html2pdf from 'html2pdf.js';
@@ -46,15 +48,30 @@ const LessonPage: React.FC = () => {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [zoom, setZoom] = useState(1);
   const [showNotes, setShowNotes] = useState(false);
+  const [showAudio, setShowAudio] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { showToast } = useToast();
+  const { downloadMaterial, isOffline } = useOffline();
+
+  useEffect(() => {
+    if (location.state?.offlineContent) {
+      setSelectedLesson(location.state.offlineContent);
+    }
+  }, [location.state]);
   const [notes, setNotes] = useState<string>("");
   const [notesHistory, setNotesHistory] = useState<string[]>([]);
   const [showSummary, setShowSummary] = useState(false);
   const [showLeaderGuide, setShowLeaderGuide] = useState(false);
-  const [showAudio, setShowAudio] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  const [showLeaderAudio, setShowLeaderAudio] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [showMentor, setShowMentor] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [mentorGreeting, setMentorGreeting] = useState<string | null>(null);
   const [mentorResponse, setMentorResponse] = useState("");
   const [isMentorLoading, setIsMentorLoading] = useState(false);
   const [isMentorPlaying, setIsMentorPlaying] = useState(false);
@@ -78,7 +95,6 @@ const LessonPage: React.FC = () => {
     content: "",
     loading: false
   });
-  const { showToast } = useToast();
   const { user } = useAuth();
   const mentorAudioRef = useRef<HTMLAudioElement | null>(null);
 
@@ -162,7 +178,7 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
   };
 
   const processedContent = React.useMemo(() => {
-    if (!selectedLesson) return "";
+    if (!selectedLesson || !selectedLesson.content) return "";
     // Regex to match biblical references like "João 3:16", "1 Coríntios 13:1-8", etc.
     const bibleRegex = /((?:[123]\s)?[A-Z][a-zà-ÿ]+)\s\d+:\d+(?:-\d+)?/g;
     return selectedLesson.content.replace(bibleRegex, (match) => `**${match}**`);
@@ -199,7 +215,10 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
   };
 
   const handleDownload = () => {
-    if (!selectedLesson) return;
+    if (!selectedLesson || !selectedLesson.content || !selectedLesson.title) {
+      showToast("Conteúdo da lição incompleto para download.", "error");
+      return;
+    }
 
     showToast("Gerando seu PDF... Quase pronto! 📄💎", 'info');
 
@@ -207,7 +226,7 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
     element.className = 'p-8 bg-white text-black font-serif';
     
     // Basic Markdown to HTML conversion for the PDF
-    const htmlContent = selectedLesson.content
+    const htmlContent = (selectedLesson.content || "")
       .replace(/^# (.*$)/gm, '<h1 style="font-size: 24pt; font-weight: bold; margin-bottom: 16pt; color: #065f46;">$1</h1>')
       .replace(/^## (.*$)/gm, '<h2 style="font-size: 18pt; font-weight: bold; margin-top: 20pt; margin-bottom: 12pt; color: #047857;">$1</h2>')
       .replace(/^### (.*$)/gm, '<h3 style="font-size: 14pt; font-weight: bold; margin-top: 16pt; margin-bottom: 8pt; color: #059669;">$1</h3>')
@@ -220,7 +239,7 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
       <div style="padding: 40px; font-family: 'Times New Roman', serif; color: #1a1a1a; line-height: 1.6;">
         <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #065f46; padding-bottom: 10px;">
           <h1 style="color: #065f46; margin: 0; font-size: 24px;">IMERSÃO BÍBLICA IA</h1>
-          <p style="color: #6b7280; font-size: 12px; margin-top: 5px;">Lição: ${selectedLesson.title}</p>
+          <p style="color: #6b7280; font-size: 12px; margin-top: 5px;">Lição: ${selectedLesson.title || "Sem Título"}</p>
         </div>
         <div class="content">
           ${htmlContent}
@@ -234,7 +253,7 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
     
     const opt = {
       margin: 10,
-      filename: `Licao_${selectedLesson.title.replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
+      filename: `Licao_${(selectedLesson.title || "Licao").replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
       image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
@@ -246,12 +265,30 @@ Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar a
     });
   };
 
-  const navigate = useNavigate();
+  const handleDownloadOffline = async () => {
+    if (!selectedLesson) return;
+    
+    try {
+      await downloadMaterial({
+        id: `lesson-${selectedLesson.id}`,
+        type: 'lesson',
+        title: selectedLesson.title,
+        content: selectedLesson.content,
+        downloadedAt: Date.now()
+      });
+      showToast("Lição salva para acesso offline! 📱✨", "success");
+    } catch (error) {
+      console.error("Error saving lesson offline:", error);
+      showToast("Erro ao salvar lição offline.", "error");
+    }
+  };
 
   const handleWiki = () => {
-    if (selectedLesson) {
-      const text = selectedLesson.content.replace(/<br\/>/g, '\n').replace(/#|##|###|\*/g, '');
+    if (selectedLesson && selectedLesson.content) {
+      const text = String(selectedLesson.content).replace(/<br\/>/g, '\n').replace(/#|##|###|\*/g, '');
       navigate(`/study?wikiQuery=${encodeURIComponent(text)}`);
+    } else {
+      showToast("Conteúdo da lição não disponível para pesquisa.", "error");
     }
   };
 
@@ -360,15 +397,17 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
       setIsMentorLoading(true);
       try {
         const hour = new Date().getHours();
-        let greeting = "Bom dia";
-        if (hour >= 12 && hour < 18) greeting = "Boa tarde";
-        else if (hour >= 18) greeting = "Boa noite";
+        let greetingText = "Bom dia";
+        if (hour >= 12 && hour < 18) greetingText = "Boa tarde";
+        else if (hour >= 18) greetingText = "Boa noite";
         
         const userName = user?.name ? user.name.split(' ')[0] : 'amigo';
+        setMentorGreeting(`${greetingText}, ${userName}! Que alegria ter você aqui.`);
+        
         const lessonTitle = selectedLesson?.title || 'nossa lição';
         
         const prompt = `Gere uma saudação inicial curta e calorosa como um Mentor de liderança cristã. 
-        Cumprimente o usuário pelo nome (${userName}) com um "${greeting}". 
+        Cumprimente o usuário pelo nome (${userName}) com um "${greetingText}". 
         Mencione que você está aqui para ajudar com a lição "${lessonTitle}". 
         Cite brevemente que seus ensinamentos são baseados em Abe Huber e outros grandes líderes. 
         Termine com uma pergunta convidando o usuário a falar ou perguntar algo sobre a lição. 
@@ -377,18 +416,24 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
         const response = await geminiService.generateText(prompt, getMentorSystemPrompt());
         setMentorResponse(response);
         
-        const audioUrl = await geminiService.generateSpeech(response, 'Charon', 'pastor');
-        setMentorAudioUrl(audioUrl);
-        
-        if (audioUrl && mentorAudioRef.current) {
-          mentorAudioRef.current.src = audioUrl;
-          mentorAudioRef.current.onplay = () => setIsMentorPlaying(true);
-          mentorAudioRef.current.onended = () => setIsMentorPlaying(false);
-          mentorAudioRef.current.onpause = () => setIsMentorPlaying(false);
-          mentorAudioRef.current.play();
+        try {
+          const audioUrl = await geminiService.generateSpeech(response, 'Charon', 'pastor');
+          setMentorAudioUrl(audioUrl);
+          
+          if (audioUrl && mentorAudioRef.current) {
+            mentorAudioRef.current.src = audioUrl;
+            mentorAudioRef.current.onplay = () => setIsMentorPlaying(true);
+            mentorAudioRef.current.onended = () => setIsMentorPlaying(false);
+            mentorAudioRef.current.onpause = () => setIsMentorPlaying(false);
+            mentorAudioRef.current.play();
+          }
+        } catch (speechError) {
+          console.error("Error generating mentor speech:", speechError);
+          // Don't fail the whole thing if speech fails
         }
       } catch (error) {
         console.error("Error initializing mentor:", error);
+        showToast("O Mentor está um pouco ocupado agora, mas você pode tentar novamente em breve.", "error");
       } finally {
         setIsMentorLoading(false);
       }
@@ -491,62 +536,65 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                 "relative bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden flex flex-col",
                 isFullScreen 
                   ? "w-full h-full rounded-none" 
-                  : "w-full max-w-4xl max-h-[90vh] rounded-[3rem] border border-stone-200 dark:border-zinc-800"
+                  : "w-full max-w-4xl max-h-[90vh] rounded-[1.5rem] md:rounded-[3rem] border border-stone-200 dark:border-zinc-800"
               )}
             >
               {/* Toolbar */}
-              <div className="p-4 md:p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-stone-50/50 dark:bg-zinc-800/50">
-                <div className="flex items-center gap-4">
+              <div className="p-3 md:p-6 border-b border-stone-100 dark:border-zinc-800 flex flex-wrap items-center justify-between gap-3 bg-stone-50/50 dark:bg-zinc-800/50">
+                <div className="flex items-center gap-2 md:gap-4">
                   <button 
                     onClick={() => setSelectedLesson(null)}
                     className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-full transition-colors"
                   >
-                    <ChevronLeft size={24} />
+                    <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
                   </button>
-                  <div>
-                    <h2 className="text-xl font-black tracking-tight">{selectedLesson.title}</h2>
+                  <div className="max-w-[150px] sm:max-w-none">
+                    <h2 className="text-base md:text-xl font-black tracking-tight truncate">{selectedLesson.title}</h2>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
-                  <button onClick={toggleFullScreen} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title={isFullScreen ? "Minimizar" : "Maximizar"}>
-                    {isFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                  <button onClick={toggleFullScreen} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title={isFullScreen ? "Minimizar" : "Maximizar"}>
+                    {isFullScreen ? <Minimize2 className="w-4 h-4 md:w-[18px] md:h-[18px]" /> : <Maximize2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />}
                   </button>
-                  <button onClick={handleDownload} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Baixar">
-                    <Download size={18} />
+                  <button onClick={handleDownload} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Baixar PDF">
+                    <Download className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
-                  <button onClick={handleShare} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Compartilhar">
-                    <Share2 size={18} />
+                  <button onClick={handleDownloadOffline} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Salvar Offline">
+                    <WifiOff className="w-4 h-4 md:w-[18px] md:h-[18px] text-amber-600" />
                   </button>
-                  <button onClick={handleSave} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Salvar no Caderno">
-                    <StickyNote size={18} />
+                  <button onClick={handleShare} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Compartilhar">
+                    <Share2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
-                  <button onClick={handleListen} className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
-                    <Volume2 size={18} />
+                  <button onClick={handleSave} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Salvar no Caderno">
+                    <StickyNote className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
-                  <button onClick={openMentor} className="p-2 bg-[#BC6C25] text-white hover:bg-[#A15B1F] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
-                    <UserCheck size={18} />
-                    <span className="text-[10px] font-bold uppercase">Mentor</span>
+                  <button onClick={handleListen} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
+                    <Volume2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
-                  <button onClick={handleWiki} className="p-2 bg-[#8A9A5B] text-white hover:bg-[#7A8A4B] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Wiki">
-                    <Globe size={18} />
-                    <span className="text-[10px] font-bold uppercase">Wiki</span>
+                  <button onClick={openMentor} className="p-1.5 md:p-2 bg-[#BC6C25] text-white hover:bg-[#A15B1F] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Mentor">
+                    <UserCheck className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Mentor</span>
+                  </button>
+                  <button onClick={handleWiki} className="p-1.5 md:p-2 bg-[#8A9A5B] text-white hover:bg-[#7A8A4B] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Wiki">
+                    <Globe className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Wiki</span>
                   </button>
                   <button 
                     onClick={() => setShowNotes(true)} 
-                    className="p-2 bg-[#D4A373] text-white hover:bg-[#C49363] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" 
+                    className="p-1.5 md:p-2 bg-[#D4A373] text-white hover:bg-[#C49363] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" 
                     title="Anotar"
                   >
-                    <PenTool size={18} />
-                    <span className="text-[10px] font-bold uppercase">Anotar</span>
+                    <PenTool className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Anotar</span>
                   </button>
                   <button 
                     onClick={() => setShowSummary(true)} 
-                    className="p-2 bg-[#5B8A9A] text-white hover:bg-[#4B7A8A] rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" 
+                    className="p-1.5 md:p-2 bg-[#5B8A9A] text-white hover:bg-[#4B7A8A] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" 
                     title="Resumo"
                   >
-                    <FileSearch size={18} />
-                    <span className="text-[10px] font-bold uppercase">Resumo</span>
+                    <FileSearch className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Resumo</span>
                   </button>
                 </div>
               </div>
@@ -565,6 +613,21 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                 )}
                 
                 <div className="max-w-3xl mx-auto relative z-10 mb-8">
+                  {selectedLesson.id === 12 && (
+                    <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800 flex items-center justify-between group">
+                      <div>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400 mb-1">Referência Principal</p>
+                        <h3 className="text-lg font-bold text-stone-800 dark:text-white">TIAGO 1:6-8</h3>
+                      </div>
+                      <button 
+                        onClick={() => handleBibleRefClick("Tiago 1:6-8")}
+                        className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white rounded-full text-xs font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20"
+                      >
+                        <ExternalLink size={14} />
+                        ABRIR NA BÍBLIA
+                      </button>
+                    </div>
+                  )}
                   <AnimatePresence>
                     {showAudio && (
                       <motion.div
@@ -578,8 +641,8 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                           <h4 className="font-black uppercase tracking-widest text-xs">Narração Emotiva da Lição</h4>
                         </div>
                         <SpeechGenerator 
-                          initialText={selectedLesson.content.replace(/<br\/>/g, '\n').replace(/#|##|###|\*/g, '')}
-                          initialTitle={`Narração: ${selectedLesson.title}`}
+                          initialText={(selectedLesson?.content || "").replace(/<br\/>/g, '\n').replace(/#|##|###|\*/g, '')}
+                          initialTitle={`Narração: ${selectedLesson?.title || "Lição"}`}
                           initialSubject="Lição Bíblica"
                           initialEmotion="inspirador"
                           initialVoice="homem"
@@ -692,8 +755,12 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                 </div>
               </div>
 
-              {/* Zoom Controls (Floating) */}
-              <div className="absolute bottom-8 right-8 flex items-center gap-2 bg-white dark:bg-zinc-800 p-2 rounded-2xl shadow-2xl border border-stone-200 dark:border-zinc-700 z-[110]">
+              {/* Zoom Controls (Floating & Movable) */}
+              <motion.div 
+                drag
+                dragMomentum={false}
+                className="absolute bottom-8 right-8 flex items-center gap-2 bg-white dark:bg-zinc-800 p-2 rounded-2xl shadow-2xl border border-stone-200 dark:border-zinc-700 z-[110] cursor-move"
+              >
                 <button 
                   onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
                   className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-700 rounded-xl transition-colors text-stone-600 dark:text-zinc-400"
@@ -709,7 +776,7 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                 >
                   <ZoomIn size={18} />
                 </button>
-              </div>
+              </motion.div>
             </motion.div>
           </motion.div>
         )}
@@ -954,6 +1021,19 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                   </div>
                 )}
               </div>
+
+              <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/30">
+                <button 
+                  onClick={() => {
+                    navigate('/bible', { state: { reference: bibleModal.reference } });
+                    setBibleModal(prev => ({ ...prev, isOpen: false }));
+                  }}
+                  className="w-full py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-600/20 flex items-center justify-center gap-2"
+                >
+                  <ExternalLink size={18} />
+                  ABRIR NA BÍBLIA COMPLETA
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -988,6 +1068,19 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
+                  <button 
+                    onClick={() => setShowLeaderAudio(!showLeaderAudio)}
+                    className={cn(
+                      "p-2 rounded-xl transition-all flex items-center gap-2 font-bold text-sm",
+                      showLeaderAudio 
+                        ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" 
+                        : "bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-200"
+                    )}
+                    title="Ouvir Guia"
+                  >
+                    <Volume2 size={18} />
+                    <span className="text-[10px] uppercase hidden sm:inline">{showLeaderAudio ? "Ouvindo" : "Áudio"}</span>
+                  </button>
                   <button onClick={handleDownload} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Baixar">
                     <Download size={18} />
                   </button>
@@ -1025,23 +1118,32 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
               </div>
               
               <div className="flex-1 overflow-y-auto p-8 md:p-12">
-                <div className="max-w-3xl mx-auto mb-8">
-                  <div className="flex items-center gap-2 mb-4 text-emerald-600 dark:text-emerald-400">
-                    <Volume2 size={20} />
-                    <h4 className="font-black uppercase tracking-widest text-xs">Narração Emotiva do Guia</h4>
-                  </div>
-                  <SpeechGenerator 
-                    initialText={leaderGuideContent}
-                    initialTitle="Narração: Guia do Líder - Lição 12"
-                    initialSubject="Guia do Líder"
-                    initialEmotion="pastor"
-                    initialVoice="homem"
-                    onSaveToNotebook={(title, content) => {
-                      setContentToSave({ title, content });
-                      setIsNotebookModalOpen(true);
-                    }}
-                  />
-                </div>
+                <AnimatePresence>
+                  {showLeaderAudio && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="max-w-3xl mx-auto mb-8 overflow-hidden"
+                    >
+                      <div className="flex items-center gap-2 mb-4 text-emerald-600 dark:text-emerald-400">
+                        <Volume2 size={20} />
+                        <h4 className="font-black uppercase tracking-widest text-xs">Narração Emotiva do Guia</h4>
+                      </div>
+                      <SpeechGenerator 
+                        initialText={leaderGuideContent}
+                        initialTitle="Narração: Guia do Líder - Lição 12"
+                        initialSubject="Guia do Líder"
+                        initialEmotion="pastor"
+                        initialVoice="homem"
+                        onSaveToNotebook={(title, content) => {
+                          setContentToSave({ title, content });
+                          setIsNotebookModalOpen(true);
+                        }}
+                      />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="prose dark:prose-invert max-w-none leader-guide-content">
                   <style>{`
                     .leader-guide-content h2 { color: #059669; font-weight: 900; margin-top: 2rem; border-bottom: 2px solid #ecfdf5; padding-bottom: 0.5rem; }
@@ -1143,6 +1245,15 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-[2rem] min-h-[150px] flex flex-col items-center justify-center text-center">
                   {isMentorLoading ? (
                     <div className="space-y-4">
+                      {mentorGreeting && (
+                        <motion.p 
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="text-lg font-bold text-purple-600 mb-4"
+                        >
+                          {mentorGreeting}
+                        </motion.p>
+                      )}
                       <motion.div
                         animate={{ rotate: 360 }}
                         transition={{ duration: 1, repeat: Infinity, ease: "linear" }}

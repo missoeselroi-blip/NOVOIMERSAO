@@ -468,6 +468,37 @@
         "winnerId": { "type": "string" },
         "createdAt": { "type": "string", "format": "date-time" }
       }
+    },
+    "PrayerRequest": {
+      "title": "Prayer Request",
+      "description": "User shared prayer requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "content": { "type": "string" },
+        "prayerCount": { "type": "integer" },
+        "prayingUserIds": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "content", "createdAt"]
+    },
+    "PrayerComment": {
+      "title": "Prayer Comment",
+      "description": "Comments on prayer requests",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "requestId": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "content": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["requestId", "userId", "userName", "content", "createdAt"]
     }
   },
   "firestore": {
@@ -586,6 +617,14 @@
     "/readingPlans/{planId}": {
       "schema": "BibleReadingPlan",
       "description": "User Bible reading plans"
+    },
+    "/prayerRequests/{requestId}": {
+      "schema": "PrayerRequest",
+      "description": "Public prayer requests"
+    },
+    "/prayerRequests/{requestId}/comments/{commentId}": {
+      "schema": "PrayerComment",
+      "description": "Comments on specific prayer requests"
     }
   }
 }

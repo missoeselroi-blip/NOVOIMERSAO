@@ -31,7 +31,8 @@ import {
   LogOut,
   ArrowLeft,
   Layers,
-  BookOpen
+  BookOpen,
+  Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
@@ -40,9 +41,12 @@ import { useAuth } from '../contexts/AuthContext';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { useBible, AnnotationType } from '../contexts/BibleContext';
 import { useToast } from '../components/Toast';
+import { useOffline } from '../contexts/OfflineContext';
 import { geminiService } from '../services/geminiService';
 import Markdown from 'react-markdown';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+
+import { offlineService } from '../services/offlineService';
 
 interface BiblePageProps {
   isOverlay?: boolean;
@@ -53,7 +57,9 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   const { user, addStudy } = useAuth();
   const { annotations, setAnnotation, removeAnnotation, toggleFavorite, lastState, setLastState } = useBible();
   const { showToast } = useToast();
+  const { downloadChapter } = useOffline();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // State
   const [versions, setVersions] = useState<BibleVersion[]>([]);
@@ -106,9 +112,53 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         const filteredVersions = v.filter(ver => requestedVersions.includes(ver.short_name));
         setVersions(filteredVersions.length > 0 ? filteredVersions : v);
         
-        const defaultVer = lastState?.version || 'ARA';
-        const defaultBook = lastState?.book || 1;
-        const defaultChapter = lastState?.chapter || 1;
+        let defaultVer = lastState?.version || 'ARA';
+        let defaultBook = lastState?.book || 1;
+        let defaultChapter = lastState?.chapter || 1;
+
+        // Check for offline content or incoming reference from state
+        if (location.state?.offlineContent) {
+          const offlineData = location.state.offlineContent;
+          if (offlineData.verses) {
+            setVerses(offlineData.verses);
+          } else {
+            setVerses(offlineData); // Fallback if it was saved differently
+          }
+          
+          if (location.state.version) setSelectedVersion(location.state.version);
+          // Try to set book/chapter from ID if possible
+          const parts = location.state.id?.split('-');
+          if (parts && parts.length >= 3) {
+            setSelectedBook(parseInt(parts[1]));
+            setSelectedChapter(parseInt(parts[2]));
+          }
+          return; // Skip loading from API
+        }
+
+        const incomingRef = location.state?.reference;
+        if (incomingRef) {
+          try {
+            // Simple parsing for "Book Chapter:Verse"
+            const match = incomingRef.match(/((?:\d\s)?[A-Z][a-zà-ÿ]+)\s(\d+):/);
+            if (match) {
+              const bookName = match[1];
+              const chapterNum = parseInt(match[2]);
+              
+              const b = await bibleService.getBooks(defaultVer);
+              setBooks(b);
+              
+              const foundBook = b.find(bk => bk.name.toLowerCase().includes(bookName.toLowerCase()));
+              if (foundBook) {
+                defaultBook = foundBook.pk;
+                defaultChapter = chapterNum;
+                setSelectedBook(foundBook.pk);
+                setSelectedChapter(chapterNum);
+              }
+            }
+          } catch (e) {
+            console.error("Error parsing incoming reference:", e);
+          }
+        }
         
         const b = await bibleService.getBooks(defaultVer);
         setBooks(b);
@@ -359,6 +409,33 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     showToast("Versículo copiado!", "success");
   };
 
+  const handleDownloadOffline = async () => {
+    const bookName = books.find(b => b.pk === selectedBook)?.name || '';
+    const id = `bible-${selectedVersion}-${selectedBook}-${selectedChapter}`;
+    
+    const content = {
+      book: bookName,
+      chapter: selectedChapter,
+      version: selectedVersion,
+      verses: verses
+    };
+
+    try {
+      await downloadChapter({
+        id,
+        book: bookName,
+        chapter: selectedChapter,
+        version: selectedVersion,
+        content,
+        downloadedAt: Date.now()
+      });
+      showToast(`Capítulo ${selectedChapter} de ${bookName} baixado para acesso offline!`, 'success');
+    } catch (error) {
+      console.error("Error downloading chapter:", error);
+      showToast("Erro ao baixar capítulo.", "error");
+    }
+  };
+
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       if (document.documentElement.requestFullscreen) {
@@ -383,8 +460,8 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
       isFullscreen ? "p-0" : ""
     )}>
       {/* Header / Toolbar */}
-      <div className="p-4 md:p-6 border-b border-emerald-300 dark:border-emerald-800/50 flex flex-wrap items-center justify-between gap-4 bg-emerald-100 dark:bg-emerald-900/30 sticky top-0 z-[60]">
-        <div className="flex items-center gap-2">
+      <div className="p-3 md:p-6 border-b border-emerald-300 dark:border-emerald-800/50 flex flex-wrap items-center justify-between gap-2 md:gap-4 bg-emerald-100 dark:bg-emerald-900/30 sticky top-0 z-[60]">
+        <div className="flex items-center gap-1 md:gap-2">
           <button 
             onClick={() => {
               if (document.fullscreenElement && document.exitFullscreen) {
@@ -396,31 +473,31 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                 navigate('/');
               }
             }}
-            className="flex items-center gap-2 p-2 px-3 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400 mr-2"
+            className="flex items-center gap-1 md:gap-2 p-2 px-2 md:px-3 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400 mr-1 md:mr-2"
             title="Sair da Bíblia"
           >
             <X size={20} />
-            <span className="text-sm font-medium hidden sm:inline">Sair</span>
+            <span className="text-sm font-medium hidden md:inline">Sair</span>
           </button>
           
           <button 
             onClick={toggleFullscreen}
-            className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400 mr-2"
+            className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400 mr-1 md:mr-2"
             title={isFullscreen ? "Minimizar" : "Maximizar"}
           >
-            {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+            {isFullscreen ? <Minimize2 className="w-5 h-5 md:w-6 md:h-6" /> : <Maximize2 className="w-5 h-5 md:w-6 md:h-6" />}
           </button>
           
           <button 
             onClick={() => setShowVersionSelector(!showVersionSelector)}
-            className="flex items-center px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-emerald-200 dark:border-emerald-800 hover:border-emerald-500 transition-all shadow-sm"
+            className="flex items-center px-3 md:px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-emerald-200 dark:border-emerald-800 hover:border-emerald-500 transition-all shadow-sm"
           >
             <span className="text-sm font-bold">{selectedVersion}</span>
           </button>
 
           <button 
             onClick={() => setShowBookSelector(!showBookSelector)}
-            className="flex items-center px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-emerald-200 dark:border-emerald-800 hover:border-emerald-500 transition-all shadow-sm"
+            className="flex items-center px-3 md:px-4 py-2 bg-white dark:bg-zinc-800 rounded-xl border border-emerald-200 dark:border-emerald-800 hover:border-emerald-500 transition-all shadow-sm"
           >
             <BookOpen size={18} className="md:hidden text-emerald-600" />
             <span className="text-sm font-bold hidden md:inline">
@@ -428,27 +505,35 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
             </span>
           </button>
 
-          <div className="flex items-center gap-1 ml-2">
+          <div className="flex items-center gap-0.5 md:gap-1 ml-1 md:ml-2">
             <button 
               onClick={prevChapter}
-              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-lg transition-colors text-emerald-700 dark:text-emerald-400"
+              className="p-1.5 md:p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-lg transition-colors text-emerald-700 dark:text-emerald-400"
               title="Capítulo Anterior"
             >
               <ChevronLeft size={20} />
             </button>
             <button 
               onClick={nextChapter}
-              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-lg transition-colors text-emerald-700 dark:text-emerald-400"
+              className="p-1.5 md:p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-lg transition-colors text-emerald-700 dark:text-emerald-400"
               title="Próximo Capítulo"
             >
               <ChevronRight size={20} />
             </button>
             
-            <div className="w-px h-6 bg-emerald-200 dark:bg-emerald-800 mx-2 hidden md:block" />
+            <button 
+              onClick={handleDownloadOffline}
+              className="p-1.5 md:p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-lg transition-colors text-emerald-700 dark:text-emerald-400 hidden sm:block"
+              title="Baixar para Offline"
+            >
+              <Download size={20} />
+            </button>
+            
+            <div className="w-px h-6 bg-emerald-200 dark:bg-emerald-800 mx-1 md:mx-2 hidden md:block" />
             
             <button 
               onClick={() => setShowSettings(!showSettings)}
-              className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400"
+              className="p-1.5 md:p-2 hover:bg-emerald-100 dark:hover:bg-emerald-800/50 rounded-xl transition-colors text-emerald-700 dark:text-emerald-400"
               title="Configurações"
             >
               <Settings size={20} />
