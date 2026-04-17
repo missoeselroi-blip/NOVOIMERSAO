@@ -516,9 +516,42 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "title", "mediaUrl", "type"]
+    },
+    "UserMusic": {
+      "title": "User Music",
+      "description": "User personal music compositions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "title": { "type": "string" },
+        "rhythm": { "type": "string" },
+        "lyrics": { "type": "string" },
+        "audioUrl": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "isFavorite": { "type": "boolean" },
+        "isPublic": { "type": "boolean" },
+        "lyricsTimestamps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "time": { "type": "number" },
+              "text": { "type": "string" }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "rhythm"]
     }
   },
   "firestore": {
+    "/userMusic/{musicId}": {
+      "schema": "UserMusic",
+      "description": "User personal music compositions"
+    },
     "/userSermons/{sermonId}": {
       "schema": "UserSermon",
       "description": "User personal recorded sermons"

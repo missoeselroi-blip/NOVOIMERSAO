@@ -378,7 +378,29 @@ service cloud.firestore {
              (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50));
     }
 
+    function isValidUserMusic(data) {
+      return data.keys().hasAll(['userId', 'title', 'rhythm', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.rhythm is string && data.rhythm.size() > 0 && data.rhythm.size() < 100 &&
+             (!('authorName' in data) || data.authorName is string) &&
+             (!('lyrics' in data) || (data.lyrics is string && data.lyrics.size() < 50000)) &&
+             (!('audioUrl' in data) || (isValidUrl(data.audioUrl) && data.audioUrl.size() < 1500000)) &&
+             (!('videoUrl' in data) || (isValidUrl(data.videoUrl) && data.videoUrl.size() < 1500000)) &&
+             (!('isFavorite' in data) || data.isFavorite is bool) &&
+             (!('isPublic' in data) || data.isPublic is bool) &&
+             (!('lyricsTimestamps' in data) || data.lyricsTimestamps is list) &&
+             (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50));
+    }
+
     // Rules
+    match /userMusic/{musicId} {
+      allow read: if isAuthenticated() && (resource.data.isPublic == true || resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidUserMusic(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidUserMusic(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     match /userSermons/{sermonId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidUserSermon(request.resource.data);

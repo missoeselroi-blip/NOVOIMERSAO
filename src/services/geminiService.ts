@@ -462,5 +462,35 @@ export const geminiService = {
       });
       return await chat.sendMessageStream({ message });
     });
+  },
+
+  async identifyMusicRhythm(lyrics: string) {
+    const prompt = `Analise a seguinte letra de música e identifique o ritmo mais provável entre: Worship, Gospel Pop, Rock Cristão, Folk, MPB Cristã, Sertanejo, Pentecostal, Instrumental.
+    Letra: "${lyrics}"
+    Retorne apenas o nome do ritmo.`;
+    return this.generateFastText(prompt, "Você é um produtor musical especializado em música cristã.");
+  },
+
+  async generateLyricsTimestamps(lyrics: string, totalDurationSeconds: number) {
+    const prompt = `Dada a seguinte letra de música e a duração total de ${totalDurationSeconds} segundos, gere timestamps (em segundos) sugeridos para cada linha da letra para sincronização "karaokê".
+    Letra:
+    ${lyrics}
+    
+    Retorne um array JSON de objetos: [{ "time": number, "text": string }] 
+    Distribua os tempos de forma equilibrada.`;
+    
+    const schema = {
+      type: Type.ARRAY,
+      items: {
+        type: Type.OBJECT,
+        properties: {
+          time: { type: Type.NUMBER },
+          text: { type: Type.STRING }
+        },
+        required: ["time", "text"]
+      }
+    };
+    
+    return (this as any).generateJSON(prompt, "Você é um editor de áudio especializado em letras sincronizadas.", schema);
   }
 };
