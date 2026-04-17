@@ -209,25 +209,38 @@ const MusicPage = () => {
       let lyricsTimestamps: any[] = [];
 
       if (newTrack.audioFile) {
-        // Get duration before upload
+        // Get duration before upload with timeout
         const audioObj = new Audio(URL.createObjectURL(newTrack.audioFile));
-        await new Promise((resolve) => {
-          audioObj.onloadedmetadata = () => {
-            duration = audioObj.duration;
-            resolve(null);
-          };
-        });
+        try {
+          await Promise.race([
+            new Promise((resolve, reject) => {
+              audioObj.onloadedmetadata = () => {
+                duration = audioObj.duration;
+                resolve(null);
+              };
+              audioObj.onerror = () => reject(new Error("Erro ao carregar metadados do áudio."));
+            }),
+            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout ao carregar áudio.")), 5000))
+          ]);
+        } catch (e) {
+          console.warn("Could not get duration, proceeding without timestamps:", e);
+        }
 
         const fileRef = ref(storage, `music/${user.uid}/${Date.now()}_${newTrack.audioFile.name}`);
         const uploadResult = await uploadBytes(fileRef, newTrack.audioFile);
         audioUrl = await getDownloadURL(uploadResult.ref);
 
-        // Generate timestamps if lyrics exist
+        // Generate timestamps if lyrics exist and we have duration
         if (newTrack.lyrics.trim() && duration > 0) {
           try {
-            lyricsTimestamps = await geminiService.generateLyricsTimestamps(newTrack.lyrics, duration);
+            // Set a timeout for the AI call to avoid infinite "Processing"
+            lyricsTimestamps = await Promise.race([
+              geminiService.generateLyricsTimestamps(newTrack.lyrics, duration),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("AI Timeout")), 15000))
+            ]);
           } catch (e) {
-             console.warn("Failed to generate timestamps", e);
+             console.warn("Failed to generate timestamps or timed out", e);
+             showToast("Sincronização de letra falhou, mas a música foi salva.", "info");
           }
         }
       }
