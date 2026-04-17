@@ -64,7 +64,6 @@ enum OperationType {
 }
 
 import { FeedbackSection } from '../components/FeedbackSection';
-import { CreditInfoTip } from '../components/CreditInfoTip';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
   const errInfo = {
@@ -1823,10 +1822,6 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
       <div className="max-w-4xl mx-auto px-4">
         <PrayerRequestsSection />
-      </div>
-
-      <div className="px-4 pb-8">
-        <CreditInfoTip />
       </div>
 
       {/* Full-screen Loading Overlay */}

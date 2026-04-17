@@ -81,7 +81,6 @@ enum OperationType {
 }
 
 import { FeedbackSection } from '../components/FeedbackSection';
-import { CreditInfoTip } from '../components/CreditInfoTip';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {

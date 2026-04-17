@@ -122,6 +122,9 @@ import SectionTimer from './components/SectionTimer';
 import { Coins, WifiOff, Coffee, LogOut } from 'lucide-react';
 import { LoginPage } from './pages/LoginPage';
 
+import { notificationService } from './services/notificationService';
+import { verses } from './constants/verses';
+
 function AppContent() {
   const { user, logout, isInitialLoading } = useAuth();
   const { showToast } = useToast();
@@ -151,6 +154,26 @@ function AppContent() {
     if (!key) {
       console.warn("⚠️ GEMINI_API_KEY não detectada no frontend. Verifique 'Settings > Secrets'.");
     }
+  }, []);
+
+  useEffect(() => {
+    const handleAppNotification = (e: any) => {
+      const { title, body } = e.detail;
+      showToast(`${title}: ${body}`, 'info');
+    };
+    window.addEventListener('app_notification', handleAppNotification);
+    return () => window.removeEventListener('app_notification', handleAppNotification);
+  }, [showToast]);
+
+  useEffect(() => {
+    // Shared notification check that runs on any page while app is open
+    const interval = setInterval(() => {
+      // Use a random verse for the daily verse notification
+      const randomVerse = verses[Math.floor(Math.random() * verses.length)];
+      notificationService.checkAndNotify(randomVerse);
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
   }, []);
 
   if (isInitialLoading) {

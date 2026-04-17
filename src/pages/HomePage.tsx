@@ -59,6 +59,7 @@ import { useAccessibility } from '../contexts/AccessibilityContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
 import { geminiService, Type } from '../services/geminiService';
 import { copyToClipboard } from '../utils/clipboard';
+import { CreditInfoTip } from '../components/CreditInfoTip';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
@@ -70,12 +71,12 @@ import { collection, addDoc } from 'firebase/firestore';
 
 import { ShareButtons } from '../components/ShareButtons';
 import { AudioSearchButton } from '../components/AudioSearchButton';
-import { CreditInfoTip } from '../components/CreditInfoTip';
 import { useCredits } from '../contexts/CreditContext';
 import { useShare } from '../utils/share';
 import { notificationService } from '../services/notificationService';
 import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
-import { Bell } from 'lucide-react';
+import { Bell, Quote, Send, History } from 'lucide-react';
+import { verses } from '../constants/verses';
 
 interface HomePageProps {
   onNavigate: (tab: string, state?: any) => void;
@@ -248,6 +249,11 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
   const [isMessageExpanded, setIsMessageExpanded] = useState(false);
+  const [customVerseRef, setCustomVerseRef] = useState('');
+  const [customVerseVersion, setCustomVerseVersion] = useState('Almeida Século 21');
+  const [isFetchingCustomVerse, setIsFetchingCustomVerse] = useState(false);
+  const [customVerseResult, setCustomVerseResult] = useState<{ text: string, reference: string } | null>(null);
+  const [isCustomVerseModalOpen, setIsCustomVerseModalOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
 
   useEffect(() => {
@@ -276,6 +282,43 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     await share({
       title: 'Imersão Bíblica',
       text: 'Confira este aplicativo incrível para estudo bíblico e devocional!',
+      url: 'https://imersaobiblicaia.com',
+    });
+  };
+
+  const handleFetchCustomVerse = async () => {
+    if (!customVerseRef.trim()) {
+      showToast("Por favor, digite uma referência bíblica.", "info");
+      return;
+    }
+
+    setIsFetchingCustomVerse(true);
+    showToast("Buscando versículo sagrado... ✨", "info");
+
+    try {
+      const prompt = `Busque o versículo exato para a referência "${customVerseRef}" na versão "${customVerseVersion}". 
+      Retorne APENAS um objeto JSON com o seguinte formato:
+      {"text": "O texto do versículo", "reference": "A referência formatada"}
+      Não adicione comentários ou explicações, apenas o JSON.`;
+
+      const response = await geminiService.generateFastText(prompt, "Você é um assistente bíblico preciso.");
+      const cleaned = response.replace(/```json|```/g, '').trim();
+      const result = JSON.parse(cleaned);
+      setCustomVerseResult(result);
+      showToast("Versículo encontrado!", "success");
+    } catch (error) {
+      console.error("Error fetching custom verse:", error);
+      showToast("Erro ao buscar o versículo. Verifique se a referência está correta.", "error");
+    } finally {
+      setIsFetchingCustomVerse(false);
+    }
+  };
+
+  const handleShareCustomVerse = async () => {
+    if (!customVerseResult) return;
+    await share({
+      title: 'Versículo do Dia',
+      text: `"${customVerseResult.text}" — ${customVerseResult.reference} (${customVerseVersion})`,
       url: 'https://imersaobiblicaia.com',
     });
   };
@@ -522,14 +565,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
   const [currentVerseIndex, setCurrentVerseIndex] = useState(0);
   const dailyVerse = verses[currentVerseIndex];
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      notificationService.checkAndNotify(dailyVerse);
-    }, 60000); // Check every minute
-
-    return () => clearInterval(interval);
-  }, [dailyVerse]);
 
   const [isFavorited, setIsFavorited] = useState(false);
 
@@ -985,6 +1020,102 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           </div>
         </div>
       </motion.div>
+
+      {/* Custom Verse Selection */}
+      <section className="bg-white dark:bg-zinc-900 rounded-[2.5rem] border border-app-border shadow-lg p-6 md:p-8 space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-amber-100 dark:bg-amber-900/30 text-amber-600 rounded-2xl">
+            <Quote size={24} />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold font-display">Versículo Personalizado ⚓</h3>
+            <p className="text-xs text-stone-500">Escolha um versículo para compartilhar no estilo Pão Diário</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 px-2">Referência</label>
+            <div className="relative">
+              <Book className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={18} />
+              <input 
+                type="text" 
+                placeholder="Ex: João 3:16"
+                value={customVerseRef}
+                onChange={(e) => setCustomVerseRef(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-stone-50 dark:bg-zinc-800 border-none rounded-2xl focus:ring-2 focus:ring-amber-500/20 transition-all font-medium"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-stone-400 px-2">Versão</label>
+            <select 
+              value={customVerseVersion}
+              onChange={(e) => setCustomVerseVersion(e.target.value)}
+              className="w-full px-4 py-3 bg-stone-50 dark:bg-zinc-800 border-none rounded-2xl focus:ring-2 focus:ring-amber-500/20 transition-all font-medium appearance-none"
+            >
+              <option>Almeida Século 21</option>
+              <option>Almeida Corrigida Fiel (ACF)</option>
+              <option>Nova Versão Internacional (NVI)</option>
+              <option>Nova Tradução na Linguagem de Hoje (NTLH)</option>
+              <option>King James Version (KJV)</option>
+            </select>
+          </div>
+        </div>
+
+        <button 
+          onClick={handleFetchCustomVerse}
+          disabled={isFetchingCustomVerse}
+          className="w-full py-4 bg-amber-600 text-white font-bold rounded-2xl hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+        >
+          {isFetchingCustomVerse ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
+          Buscar e Compartilhar
+        </button>
+
+        <AnimatePresence>
+          {customVerseResult && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="p-6 bg-amber-50 dark:bg-amber-900/10 rounded-3xl border border-amber-100 dark:border-amber-800/30 space-y-4"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black uppercase tracking-widest text-amber-700 dark:text-amber-400">Preview do Pão Diário</span>
+                <button 
+                  onClick={() => setCustomVerseResult(null)}
+                  className="p-2 hover:bg-amber-100 dark:hover:bg-amber-800/50 rounded-full transition-colors text-amber-400"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <p className="text-lg font-display italic text-amber-950 dark:text-amber-100">
+                "{customVerseResult.text}"
+              </p>
+              <div className="flex items-center justify-between">
+                <p className="font-bold text-amber-600">— {customVerseResult.reference}</p>
+                <div className="flex gap-2">
+                  <button 
+                    onClick={() => {
+                      copyToClipboard(`"${customVerseResult.text}" — ${customVerseResult.reference} (${customVerseVersion})`);
+                      showToast("Texto copiado!", "success");
+                    }}
+                    className="p-3 bg-white dark:bg-zinc-800 rounded-xl text-amber-600 shadow-sm hover:scale-105 transition-transform"
+                  >
+                    <Copy size={18} />
+                  </button>
+                  <button 
+                    onClick={handleShareCustomVerse}
+                    className="flex items-center gap-2 px-6 py-3 bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 hover:scale-105 transition-transform"
+                  >
+                    <Share2 size={18} /> Compartilhar
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </section>
 
       {/* Sentiment Button - Modern Gradient */}
       <div className="grid grid-cols-1 gap-6">

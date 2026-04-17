@@ -27,7 +27,6 @@ import { db } from '../lib/firebase';
 import { query, collection, orderBy, limit, getDocs } from 'firebase/firestore';
 
 import { useShare } from '../utils/share';
-import { CreditInfoTip } from '../components/CreditInfoTip';
 
 export default function AudioBoxPage() {
   const { tracks, deleteTrack, isLoading } = useAudioBox();
@@ -312,9 +311,6 @@ export default function AudioBoxPage() {
         onPause={() => setIsPlaying(false)}
       />
       
-      <div className="max-w-4xl mx-auto px-4 pb-12">
-        <CreditInfoTip />
-      </div>
     </div>
   );
 }

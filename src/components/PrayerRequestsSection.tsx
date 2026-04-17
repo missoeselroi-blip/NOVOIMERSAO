@@ -88,15 +88,17 @@ export function PrayerRequestsSection() {
 
   const moderateContent = async (content: string): Promise<boolean> => {
     try {
-      const prompt = `Analise o seguinte texto e determine se ele contém conteúdo inapropriado, ofensivo, indecoroso, palavrões ou discurso de ódio. Responda apenas "SAFE" se o conteúdo for apropriado ou "UNSAFE" se for inapropriado.
+      const prompt = `Analise o seguinte texto e determine se ele contém conteúdo inapropriado, ofensivo, indecoroso, palavrões, discurso de ódio ou algo que fira a ética e os bons costumes cristãos.
+Estamos em uma comunidade de oração e fé cristã.
+Responda apenas "SAFE" se o conteúdo for apropriado ou "UNSAFE" se for inapropriado.
 
 Texto: "${content}"`;
       
-      const result = await geminiService.generateText(prompt, "Você é um moderador de conteúdo para uma comunidade cristã.");
+      const result = await geminiService.generateText(prompt, "Você é um moderador de conteúdo para uma comunidade cristã conservadora e respeitosa.");
       return result.trim().toUpperCase() === 'SAFE';
     } catch (error) {
       console.error("Moderation error:", error);
-      return true; // Fallback to safe if API fails, or handle as needed
+      return true; // Fallback to safe if API fails
     }
   };
 
@@ -196,6 +198,16 @@ Texto: "${content}"`;
     }
   };
 
+  const handleDeleteComment = async (requestId: string, commentId: string) => {
+    if (!window.confirm("Deseja realmente excluir este comentário?")) return;
+    try {
+      await deleteDoc(doc(db, `prayerRequests/${requestId}/comments`, commentId));
+      showToast("Comentário removido.", "info");
+    } catch (error) {
+      console.error("Error deleting comment:", error);
+    }
+  };
+
   return (
     <section className="mt-12 space-y-8">
       <div className="text-center space-y-2">
@@ -248,6 +260,7 @@ Texto: "${content}"`;
                   user={user}
                   onTogglePrayer={handleTogglePrayer}
                   onDelete={handleDeleteRequest}
+                  onDeleteComment={handleDeleteComment}
                   commentingOn={commentingOn}
                   setCommentingOn={setCommentingOn}
                   newComment={newComment}
@@ -269,6 +282,7 @@ function PrayerRequestCard({
   user, 
   onTogglePrayer, 
   onDelete,
+  onDeleteComment,
   commentingOn,
   setCommentingOn,
   newComment,
@@ -280,6 +294,7 @@ function PrayerRequestCard({
   user: any,
   onTogglePrayer: (id: string, isPraying: boolean) => void,
   onDelete: (id: string) => void,
+  onDeleteComment: (reqId: string, comId: string) => void,
   commentingOn: string | null,
   setCommentingOn: (id: string | null) => void,
   newComment: string,
@@ -388,12 +403,23 @@ function PrayerRequestCard({
                       <UserIcon className="text-stone-400" size={14} />
                     )}
                   </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-xs text-stone-800 dark:text-zinc-100">{comment.userName}</span>
-                      <span className="text-[9px] text-stone-400">
-                        {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString() : 'Recentemente'}
-                      </span>
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-xs text-stone-800 dark:text-zinc-100">{comment.userName}</span>
+                        <span className="text-[9px] text-stone-400">
+                          {comment.createdAt?.toDate ? comment.createdAt.toDate().toLocaleString() : 'Recentemente'}
+                        </span>
+                      </div>
+                      {user && (user.id === comment.userId || user.role === 'admin') && (
+                        <button 
+                          onClick={() => onDeleteComment(request.id, comment.id)} 
+                          className="p-1 text-stone-300 hover:text-red-500 transition-colors"
+                          title="Excluir comentário"
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      )}
                     </div>
                     <p className="text-xs text-stone-600 dark:text-zinc-400">{comment.content}</p>
                   </div>

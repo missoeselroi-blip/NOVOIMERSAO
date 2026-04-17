@@ -19,7 +19,6 @@ import { useAccessibility } from '../contexts/AccessibilityContext';
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
-import { CreditInfoTip } from '../components/CreditInfoTip';
 
 import { useShare } from '../utils/share';
 
@@ -350,7 +349,6 @@ export default function RedacaoPage() {
           </div>
         </div>
       )}
-      <CreditInfoTip />
     </div>
   );
 }

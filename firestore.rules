@@ -366,7 +366,26 @@ service cloud.firestore {
              (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50));
     }
 
+    function isValidUserSermon(data) {
+      return data.keys().hasAll(['userId', 'title', 'mediaUrl', 'type', 'createdAt']) &&
+             data.userId == request.auth.uid &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 500 &&
+             data.mediaUrl is string && isValidUrl(data.mediaUrl) &&
+             data.type in ['video', 'audio'] &&
+             (!('notes' in data) || (data.notes is string && data.notes.size() < 50000)) &&
+             (!('fileName' in data) || (data.fileName is string && data.fileName.size() < 500)) &&
+             (!('duration' in data) || data.duration is number) &&
+             (data.createdAt is timestamp || (data.createdAt is string && data.createdAt.size() < 50));
+    }
+
     // Rules
+    match /userSermons/{sermonId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidUserSermon(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidUserSermon(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+    }
+
     match /users/{userId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && (request.resource.data.role == 'user' || isAdmin());

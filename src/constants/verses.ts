@@ -1,0 +1,21 @@
+export const verses = [
+  { text: "Pois eu bem sei os planos que tenho para vocês, diz o Senhor, planos de fazê-los prosperar e não de causar dano, planos de dar a vocês esperança e um futuro.", reference: "Jeremias 29:11" },
+  { text: "O Senhor é o meu pastor; nada me faltará.", reference: "Salmos 23:1" },
+  { text: "Tudo posso naquele que me fortalece.", reference: "Filipenses 4:13" },
+  { text: "Porque Deus amou o mundo de tal maneira que deu o seu Filho unigênito, para que todo aquele que nele crê não pereça, mas tenha a vida eterna.", reference: "João 3:16" },
+  { text: "O Senhor te abençoe e te guarde; o Senhor faça resplandecer o seu rosto sobre ti e tenha misericórdia de ti.", reference: "Números 6:24-25" },
+  { text: "Mil cairão ao teu lado, e dez mil, à tua direita, mas tu não serás atingido.", reference: "Salmos 91:7" },
+  { text: "Alegrem-se sempre no Senhor. Novamente direi: Alegrem-se!", reference: "Filipenses 4:4" },
+  { text: "Deixo-lhes a paz; a minha paz lhes dou. Não lha dou como o mundo a dá. Não se perturbem os seus corações, nem tenham medo.", reference: "João 14:27" },
+  { text: "O meu Deus suprirá todas as necessidades de vocês, de acordo com as suas gloriosas riquezas em Cristo Jesus.", reference: "Filipenses 4:19" },
+  { text: "Lancem sobre ele toda a sua ansiedade, porque ele tem cuidado de vocês.", reference: "1 Pedro 5:7" },
+  { text: "Sei que a tua bondade e a tua misericórdia me seguirão todos os dias da minha vida.", reference: "Salmos 23:6" },
+  { text: "A tua palavra é lâmpada que ilumina os meus passos e luz que clareia o meu caminho.", reference: "Salmos 119:105" },
+  { text: "Buscai primeiro o Reino de Deus e a sua justiça, e todas estas coisas vos serão acrescentadas.", reference: "Mateus 6:33" },
+  { text: "Não fui eu que lhe ordenei? Seja forte e corajoso! Não se apavore nem desanime.", reference: "Josué 1:9" },
+  { text: "O coração alegre aformoseia o rosto, mas pela dor do coração o espírito se abate.", reference: "Provérbios 15:13" },
+  { text: "Elevo os olhos para os montes: de onde me virá o socorro? O meu socorro vem do Senhor.", reference: "Salmos 121:1-2" },
+  { text: "Vinde a mim, todos os que estais cansados e sobrecarregados, e eu vos darei descanso.", reference: "Mateus 11:28" },
+  { text: "Até aqui nos ajudou o Senhor.", reference: "1 Samuel 7:12" },
+  { text: "Em paz me deitarei e dormirei, porque só tu, Senhor, me fazes habitar em segurança.", reference: "Salmos 4:8" }
+];

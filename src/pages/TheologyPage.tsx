@@ -80,7 +80,6 @@ enum OperationType {
 }
 
 import { FeedbackSection } from '../components/FeedbackSection';
-import { CreditInfoTip } from '../components/CreditInfoTip';
 
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 
@@ -2671,7 +2670,6 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         onConfirm={confirmGenerateSpeech}
         isLoading={isGeneratingSpeech}
       />
-      <CreditInfoTip />
     </div>
   );
 }

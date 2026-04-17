@@ -499,9 +499,30 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["requestId", "userId", "userName", "content", "createdAt"]
+    },
+    "UserSermon": {
+      "title": "User Sermon",
+      "description": "User recorded sermons (video or audio)",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "notes": { "type": "string" },
+        "mediaUrl": { "type": "string" },
+        "type": { "type": "string", "enum": ["video", "audio"] },
+        "fileName": { "type": "string" },
+        "duration": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "mediaUrl", "type"]
     }
   },
   "firestore": {
+    "/userSermons/{sermonId}": {
+      "schema": "UserSermon",
+      "description": "User personal recorded sermons"
+    },
     "/users/{userId}": {
       "schema": "User",
       "description": "User profile documents"

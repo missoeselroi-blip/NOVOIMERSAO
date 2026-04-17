@@ -146,7 +146,8 @@ export const NotificationSettingsModal: React.FC<NotificationSettingsModalProps>
                 <div className="flex items-start gap-2 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-100 dark:border-amber-800/30">
                   <AlertTriangle className="text-amber-600 shrink-0" size={16} />
                   <p className="text-[10px] text-amber-700 dark:text-amber-400 font-medium leading-tight">
-                    Atenção: A permissão do navegador é necessária. Se você estiver usando o App dentro de outro site (iframe), as notificações podem ser bloqueadas pelo navegador por segurança.
+                    Atenção: Para receber notificações nativas fora do app, você precisa abri-lo em uma nova aba. 
+                    Enquanto estiver aqui, usaremos notificações internas (balões) para te avisar no horário agendado.
                   </p>
                 </div>
               )}

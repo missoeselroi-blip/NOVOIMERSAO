@@ -11,7 +11,6 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { geminiService } from '../services/geminiService';
 import { useToast } from '../components/Toast';
 import { useAccessibility } from '../contexts/AccessibilityContext';
-import { CreditInfoTip } from '../components/CreditInfoTip';
 
 export default function NewsPage() {
   const { showToast } = useToast();
@@ -92,7 +91,6 @@ export default function NewsPage() {
           </div>
         </div>
       </div>
-      <CreditInfoTip />
     </div>
   );
 }

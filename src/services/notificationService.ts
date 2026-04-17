@@ -43,13 +43,27 @@ class NotificationService {
 
   sendNotification(title: string, body: string) {
     if (this.settings.enabled && Notification.permission === 'granted') {
-      new Notification(title, {
-        body,
-        icon: '/favicon.ico', // Fallback icon
-      });
+      try {
+        new Notification(title, {
+          body,
+          icon: 'https://i.postimg.cc/3N279HyV/1000105226-removebg-preview.png',
+        });
+      } catch (e) {
+        console.warn('Erro ao disparar notificação nativa:', e);
+        this.fallbackNotify(title, body);
+      }
     } else {
-      console.log('Notificação (Simulada):', title, body);
+      console.log('Notificação (Simulada/Inativa):', title, body);
+      if (this.settings.enabled) {
+        this.fallbackNotify(title, body);
+      }
     }
+  }
+
+  private fallbackNotify(title: string, body: string) {
+    // Internal event or simple console log for now
+    // We can dispatch a custom event that UI can listen to show Toast
+    window.dispatchEvent(new CustomEvent('app_notification', { detail: { title, body } }));
   }
 
   // This would normally be handled by a service worker for real push
