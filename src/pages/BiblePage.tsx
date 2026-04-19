@@ -61,7 +61,16 @@ interface BiblePageProps {
 
 export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps) {
   const { user, addStudy } = useAuth();
-  const { annotations, setAnnotation, removeAnnotation, toggleFavorite, lastState, setLastState } = useBible();
+  const { 
+    annotations, 
+    generalNotes, 
+    setAnnotation, 
+    removeAnnotation, 
+    toggleFavorite, 
+    setGeneralNote, 
+    lastState, 
+    setLastState 
+  } = useBible();
   const { showToast } = useToast();
   const { downloadChapter } = useOffline();
   const navigate = useNavigate();
@@ -97,6 +106,8 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   const [annotationColor, setAnnotationColor] = useState('#fbbf24');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
   const [isEditingCommentary, setIsEditingCommentary] = useState(false);
+  const [isEditingGeneralNote, setIsEditingGeneralNote] = useState(false);
+  const [generalNoteDraft, setGeneralNoteDraft] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(true); // Default to fullscreen
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -288,13 +299,69 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   ];
 
   useEffect(() => {
-    if (showStudyPanel && selectedBook && selectedChapter && studyPanelType === 'shedd') {
-      generateSheddCommentary();
+    if (showStudyPanel && selectedBook && selectedChapter) {
+      if (studyPanelType === 'shedd') {
+        generateSheddCommentary();
+      } else if (studyPanelType === 'tutor' && !commentary && !isGeneratingCommentary) {
+        generateChapterTutorCommentary();
+      }
     }
   }, [selectedBook, selectedChapter, showStudyPanel, studyPanelType]);
 
+  const generateChapterTutorCommentary = async () => {
+    setIsGeneratingCommentary(true);
+    setCommentary(null);
+    setIsEditingCommentary(false);
+    
+    try {
+      const bookName = books.find(b => b.pk === selectedBook)?.name || 'Livro';
+      
+      const prompt = `Você é um tutor teológico experiente. Forneça uma análise profunda e panorâmica para o seguinte capítulo bíblico:
+      LIVRO: ${bookName}
+      CAPÍTULO: ${selectedChapter}
+      VERSÃO: ${selectedVersion}
+      
+      A análise deve incluir:
+      1. Visão Geral do Capítulo: Tema principal e estrutura.
+      2. Contexto Histórico e Geográfico: Onde e quando isso se encaixa na narrativa bíblica.
+      3. Pontos Teológicos Chave: Doutrinas ou ensinamentos fundamentais presentes.
+      4. Versículos de Destaque: Comentários curtos sobre passagens cruciais do capítulo.
+      5. Aplicação Prática: Como este capítulo fala à vida do cristão hoje.
+      6. Cristo no Capítulo: Como este texto aponta para Jesus ou para o plano da redenção.
+      
+      Use uma linguagem clara, inspiradora e rica teologicamente. Formate em Markdown.`;
+
+      const result = await geminiService.generateText(prompt, "Você é um pastor e teólogo bíblico altamente qualificado.");
+      setCommentary(result || "Não foi possível gerar a análise do capítulo.");
+    } catch (error) {
+      console.error("Error generating chapter commentary:", error);
+      showToast("Erro ao gerar análise do capítulo com IA.", "error");
+    } finally {
+      setIsGeneratingCommentary(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showStudyPanel && selectedBook && selectedChapter && studyPanelType === 'notes') {
+      const chapterKey = `${selectedVersion}_${selectedBook}_${selectedChapter}`;
+      setGeneralNoteDraft(generalNotes[chapterKey] || '');
+    }
+  }, [selectedVersion, selectedBook, selectedChapter, showStudyPanel, studyPanelType, generalNotes]);
+
+  const handleSaveGeneralNote = async () => {
+    const chapterKey = `${selectedVersion}_${selectedBook}_${selectedChapter}`;
+    setIsAutoSaving(true);
+    await setGeneralNote(chapterKey, generalNoteDraft);
+    setIsEditingGeneralNote(false);
+    setIsAutoSaving(false);
+    showToast("Nota geral salva!", "success");
+  };
+
   const loadChapter = async (version: string, bookId: number, chapter: number) => {
     setIsLoading(true);
+    setCommentary(null);
+    setSheddCommentary(null);
+    setSelectedVerses([]);
     try {
       const v = await bibleService.getChapter(version, bookId, chapter);
       setVerses(v);
@@ -1045,7 +1112,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                     )}
                   >
                     <StickyNote size={14} />
-                    Notas
+                    Nota Geral
                   </button>
                 </div>
               </div>
@@ -1146,42 +1213,99 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                       </motion.div>
                     ) : (
                       <div className="text-center py-12 bg-white dark:bg-zinc-950 rounded-3xl border border-dashed border-stone-200 dark:border-zinc-800 p-8">
-                        <Sparkles size={40} className="mx-auto text-purple-200 mb-4" />
-                        <p className="text-sm font-medium text-stone-500 italic">"O temor do Senhor é o princípio da sabedoria."</p>
-                        <p className="text-xs text-stone-400 mt-2">Toque no ícone de brilho ao lado de qualquer versículo para iniciar uma análise profunda.</p>
+                        <Brain size={40} className="mx-auto text-purple-200 mb-4" />
+                        <h4 className="text-sm font-black uppercase text-stone-900 dark:text-white mb-2">Análise do Capítulo</h4>
+                        <p className="text-xs text-stone-500 mb-6 italic">Inicie uma análise profunda de todo o capítulo {selectedChapter} ou selecione um versículo específico.</p>
+                        <button 
+                          onClick={() => generateChapterTutorCommentary()}
+                          className="px-6 py-2 bg-purple-100 text-purple-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-purple-200 transition-all flex items-center gap-2 mx-auto"
+                        >
+                          <Sparkles size={14} />
+                          Analisar Capítulo
+                        </button>
                       </div>
                     )}
                   </div>
                 )}
                 
                 {studyPanelType === 'notes' && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black text-stone-400 uppercase tracking-widest px-1">Minhas Anotações</h3>
-                    {Object.keys(annotations).filter(id => annotations[id].note).length > 0 ? (
-                      Object.keys(annotations)
-                        .filter(id => annotations[id].note)
-                        .map(id => {
-                          const [v, b, c, vr] = id.split('_');
-                          return (
-                            <div key={id} className="p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-stone-100 dark:border-zinc-800 shadow-sm space-y-2">
-                               <div className="flex justify-between items-center">
-                                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
-                                   {books.find(bk => bk.pk === parseInt(b))?.name} {c}:{vr}
-                                 </span>
-                                 <button onClick={() => removeAnnotation(id)} className="text-stone-300 hover:text-red-500 transition-colors">
-                                   <Trash2 size={12} />
-                                 </button>
-                               </div>
-                               <p className="text-xs font-medium text-stone-800 dark:text-zinc-200">{annotations[id].note}</p>
-                            </div>
-                          );
-                        })
-                    ) : (
-                      <div className="text-center py-12 opacity-50">
-                        <StickyNote size={40} className="mx-auto text-stone-300 mb-4" />
-                        <p className="text-sm">Nenhuma nota encontrada.</p>
+                  <div className="space-y-6">
+                    {/* General Chapter Note */}
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center px-1">
+                        <h3 className="text-xs font-black text-stone-400 uppercase tracking-widest">Nota Geral do Capítulo</h3>
+                        <button 
+                          onClick={() => {
+                            if (isEditingGeneralNote) {
+                              handleSaveGeneralNote();
+                            } else {
+                              setIsEditingGeneralNote(true);
+                            }
+                          }}
+                          className="p-1 px-3 bg-emerald-600 text-white rounded-lg text-[10px] font-bold hover:bg-emerald-700 transition-colors flex items-center gap-1"
+                        >
+                          {isEditingGeneralNote ? <Bookmark size={12} /> : <Pencil size={12} />}
+                          {isEditingGeneralNote ? 'Salvar' : 'Editar'}
+                        </button>
                       </div>
-                    )}
+
+                      {isEditingGeneralNote ? (
+                        <textarea
+                          value={generalNoteDraft}
+                          onChange={(e) => setGeneralNoteDraft(e.target.value)}
+                          placeholder="Escreva uma reflexão geral sobre este capítulo..."
+                          className="w-full h-48 p-4 bg-white dark:bg-zinc-950 border border-emerald-500/30 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-sm font-medium resize-none transition-all shadow-inner"
+                        />
+                      ) : (
+                        <div className="p-6 bg-emerald-50/50 dark:bg-emerald-900/10 rounded-2xl border border-dashed border-emerald-200 dark:border-emerald-800/50 min-h-[120px] flex flex-col items-center justify-center text-center">
+                          {generalNoteDraft ? (
+                            <p className="text-sm font-medium text-stone-800 dark:text-zinc-200 whitespace-pre-wrap w-full text-left">{generalNoteDraft}</p>
+                          ) : (
+                            <>
+                              <StickyNote size={32} className="text-emerald-300 mb-3" />
+                              <p className="text-xs text-stone-400 mb-4 italic">Registre aqui suas reflexões gerais sobre este capítulo.</p>
+                              <button 
+                                onClick={() => setIsEditingGeneralNote(true)}
+                                className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-emerald-200 transition-all font-sans"
+                              >
+                                Criar Nota Geral
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="h-px bg-stone-100 dark:bg-zinc-800 my-2" />
+
+                    <div className="space-y-4">
+                      <h3 className="text-xs font-black text-stone-400 uppercase tracking-widest px-1">Notas por Versículo</h3>
+                      {Object.keys(annotations).filter(id => annotations[id].note && id.includes(`${selectedVersion}_${selectedBook}_${selectedChapter}`)).length > 0 ? (
+                        Object.keys(annotations)
+                          .filter(id => annotations[id].note && id.includes(`${selectedVersion}_${selectedBook}_${selectedChapter}`))
+                          .map(id => {
+                            const [v, b, c, vr] = id.split('_');
+                            return (
+                              <div key={id} className="p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-stone-100 dark:border-zinc-800 shadow-sm space-y-2 group">
+                                 <div className="flex justify-between items-center">
+                                   <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                     {books.find(bk => bk.pk === parseInt(b))?.name} {c}:{vr}
+                                   </span>
+                                   <button onClick={() => removeAnnotation(id)} className="text-stone-300 hover:text-red-500 transition-colors">
+                                     <Trash2 size={12} />
+                                   </button>
+                                 </div>
+                                 <p className="text-xs font-medium text-stone-800 dark:text-zinc-200">{annotations[id].note}</p>
+                              </div>
+                            );
+                          })
+                      ) : (
+                        <div className="text-center py-8 opacity-50 bg-stone-50 dark:bg-zinc-900/50 rounded-2xl border border-stone-100 dark:border-zinc-800">
+                          <StickyNote size={32} className="mx-auto text-stone-300 mb-2" />
+                          <p className="text-xs">Clique em um versículo na bíblia para adicionar uma nota individual.</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

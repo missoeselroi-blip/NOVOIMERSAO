@@ -104,6 +104,14 @@ service cloud.firestore {
     //   - reminderTime: string
     //   - currentDay: int
     //
+    // Collection: chapterNotes
+    // Document ID: {userId}_{chapterKey}
+    // Fields:
+    //   - userId: string (required)
+    //   - chapterKey: string (required)
+    //   - note: string (required)
+    //   - updatedAt: string|timestamp
+    //
     // ===============================================================
 
     // Helper Functions
@@ -345,6 +353,14 @@ service cloud.firestore {
              (!('currentDay' in data) || data.currentDay is number);
     }
 
+    function isValidChapterNote(data) {
+      return data.keys().hasAll(['userId', 'chapterKey', 'note', 'updatedAt']) &&
+             data.userId == request.auth.uid &&
+             data.chapterKey is string && data.chapterKey.size() < 100 &&
+             data.note is string && data.note.size() < 50000 &&
+             (data.updatedAt is timestamp || (data.updatedAt is string && data.updatedAt.size() < 50));
+    }
+
     function isValidPrayerRequest(data) {
       return data.keys().hasAll(['userId', 'userName', 'content', 'createdAt']) &&
              data.userId == request.auth.uid &&
@@ -545,6 +561,13 @@ service cloud.firestore {
 
     match /storytellingProgress/{userId} {
       allow read, write: if isOwner(userId) || isAdmin();
+    }
+
+    match /chapterNotes/{noteId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidChapterNote(request.resource.data);
+      allow update: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin()) && isValidChapterNote(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
     }
 
     match /shared_storytelling_materials/{materialId} {

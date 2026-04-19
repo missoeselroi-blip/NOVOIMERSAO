@@ -34,9 +34,11 @@ interface BibleState {
 
 interface BibleContextType {
   annotations: Record<string, BibleAnnotation>;
+  generalNotes: Record<string, string>; // Format: userId_version_bookId_chapter
   setAnnotation: (verseId: string, updates: Partial<BibleAnnotation>) => Promise<void>;
   removeAnnotation: (verseId: string) => Promise<void>;
   toggleFavorite: (verseId: string, verseText: string, reference: string) => Promise<void>;
+  setGeneralNote: (chapterKey: string, note: string) => Promise<void>;
   isLoading: boolean;
   lastState: BibleState | null;
   setLastState: (state: BibleState) => void;
@@ -47,12 +49,14 @@ const BibleContext = createContext<BibleContextType | undefined>(undefined);
 export const BibleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [annotations, setAnnotations] = useState<Record<string, BibleAnnotation>>({});
+  const [generalNotes, setGeneralNotes] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [lastState, setLastState] = useState<BibleState | null>(null);
 
   useEffect(() => {
     if (!user || !db) {
       setAnnotations({});
+      setGeneralNotes({});
       setIsLoading(false);
       return;
     }
@@ -65,14 +69,44 @@ export const BibleProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         newAnnotations[data.verseId] = { ...data, id: doc.id };
       });
       setAnnotations(newAnnotations);
-      setIsLoading(false);
     }, (error) => {
       console.error("Error fetching bible annotations:", error);
+    });
+
+    const gnQuery = query(collection(db, 'chapterNotes'), where('userId', '==', user.id));
+    const unsubscribeGn = onSnapshot(gnQuery, (snapshot) => {
+      const newNotes: Record<string, string> = {};
+      snapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        newNotes[data.chapterKey] = data.note;
+      });
+      setGeneralNotes(newNotes);
+      setIsLoading(false);
+    }, (error) => {
+      console.error("Error fetching chapter notes:", error);
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      unsubscribeGn();
+    };
   }, [user?.id]);
+
+  const setGeneralNote = async (chapterKey: string, note: string) => {
+    if (!user || !db) return;
+    const docId = `${user.id}_${chapterKey}`;
+    try {
+      await setDoc(doc(db, 'chapterNotes', docId), {
+        userId: user.id,
+        chapterKey,
+        note,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error setting general note:", error);
+    }
+  };
 
   const setAnnotation = async (verseId: string, updates: Partial<BibleAnnotation>) => {
     if (!user || !db) return;
@@ -115,7 +149,17 @@ export const BibleProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   return (
-    <BibleContext.Provider value={{ annotations, setAnnotation, removeAnnotation, toggleFavorite, isLoading, lastState, setLastState }}>
+    <BibleContext.Provider value={{ 
+      annotations, 
+      generalNotes, 
+      setAnnotation, 
+      removeAnnotation, 
+      toggleFavorite, 
+      setGeneralNote, 
+      isLoading, 
+      lastState, 
+      setLastState 
+    }}>
       {children}
     </BibleContext.Provider>
   );
