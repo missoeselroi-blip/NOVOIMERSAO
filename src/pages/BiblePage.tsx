@@ -32,7 +32,12 @@ import {
   ArrowLeft,
   Layers,
   BookOpen,
-  Download
+  Download,
+  BookCheck,
+  Book,
+  Brain,
+  GraduationCap,
+  Anchor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
@@ -83,6 +88,10 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [history, setHistory] = useState<{book: string, chapter: number, version: string}[]>([]);
   const [showAnnotationMenu, setShowAnnotationMenu] = useState(false);
+  const [showStudyPanel, setShowStudyPanel] = useState<boolean>(true); // Default to open
+  const [studyPanelType, setStudyPanelType] = useState<'shedd' | 'tutor' | 'notes'>('shedd');
+  const [sheddCommentary, setSheddCommentary] = useState<string | null>(null);
+  const [isGeneratingShedd, setIsGeneratingShedd] = useState<boolean>(false);
   const [annotationNote, setAnnotationNote] = useState('');
   const [annotationColor, setAnnotationColor] = useState('#fbbf24');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
@@ -107,7 +116,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         const v = await bibleService.getVersions();
         // Filter for requested versions
         const requestedVersions = [
-          'ARA', 'NTLH'
+          'ARA', 'NTLH', 'NVI', 'ARC', 'BV', 'KJA'
         ];
         const filteredVersions = v.filter(ver => requestedVersions.includes(ver.short_name));
         setVersions(filteredVersions.length > 0 ? filteredVersions : v);
@@ -276,6 +285,12 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     '#fb923c', // Orange
   ];
 
+  useEffect(() => {
+    if (showStudyPanel && selectedBook && selectedChapter && studyPanelType === 'shedd') {
+      generateSheddCommentary();
+    }
+  }, [selectedBook, selectedChapter, showStudyPanel, studyPanelType]);
+
   const loadChapter = async (version: string, bookId: number, chapter: number) => {
     setIsLoading(true);
     try {
@@ -372,6 +387,39 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     } catch (error) {
       console.error("Error saving study:", error);
       showToast("Erro ao salvar estudo.", "error");
+    }
+  };
+
+  const generateSheddCommentary = async (verse?: BibleVerse) => {
+    setIsGeneratingShedd(true);
+    setSheddCommentary(null);
+    
+    try {
+      const bookName = books.find(b => b.pk === selectedBook)?.name || 'Livro';
+      const reference = verse 
+        ? `${bookName} ${selectedChapter}:${verse.verse}` 
+        : `${bookName} ${selectedChapter}`;
+      
+      const prompt = `Você é o Dr. Russell Shedd, um teólogo e editor respeitado. 
+      Forneça as notas de estudo da Bíblia de Estudo Shedd para o seguinte texto bíblico:
+      Referência: ${reference} (${selectedVersion})
+      ${verse ? `Texto do Versículo: "${verse.text}"` : `Contexto: Capítulo ${selectedChapter} de ${bookName}`}
+      
+      As notas devem refletir fielmente o espírito do comentário de Shedd:
+      1. Introdução ao contexto histórico e literário.
+      2. Exegese detalhada (comentários palavra por palavra ou frase por frase se necessário).
+      3. Notas de rodapé e referências cruzadas que Shedd costuma destacar.
+      4. Aplicações práticas ministeriais e espirituais.
+      
+      Seja teologicamente profundo, acadêmico, porém profundamente pastoral. Formate em Markdown claro.`;
+
+      const result = await geminiService.generateText(prompt, "Você é a voz espiritual e teológica do Dr. Russell Shedd.");
+      setSheddCommentary(result || "Não foi possível carregar as notas da Bíblia Shedd.");
+    } catch (error) {
+      console.error("Error generating Shedd commentary:", error);
+      showToast("Erro ao carregar comentários Shedd.", "error");
+    } finally {
+      setIsGeneratingShedd(false);
     }
   };
 
@@ -537,6 +585,19 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
               title="Configurações"
             >
               <Settings size={20} />
+            </button>
+
+            <button 
+              onClick={() => setShowStudyPanel(!showStudyPanel)}
+              className={cn(
+                "p-1.5 md:p-2 rounded-xl transition-all",
+                showStudyPanel 
+                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30" 
+                  : "hover:bg-emerald-100 dark:hover:bg-emerald-800/50 text-emerald-700 dark:text-emerald-400"
+              )}
+              title="Bíblia de Estudo"
+            >
+              <Anchor size={20} />
             </button>
           </div>
         </div>
@@ -928,67 +989,173 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
 
         {/* Side Panel (Commentaries / Study Notes) */}
         <AnimatePresence>
-          {(selectedVerses.length > 0 || isGeneratingCommentary) && (
+          {showStudyPanel && (
             <motion.div 
               key="study-panel"
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              className="w-full md:w-96 bg-stone-50 dark:bg-zinc-900 border-l border-stone-200 dark:border-zinc-800 flex flex-col shadow-2xl z-40"
+              className="w-full md:w-[400px] bg-stone-50 dark:bg-zinc-900 border-l border-emerald-200 dark:border-emerald-800/50 flex flex-col shadow-2xl z-40"
             >
-              <div className="p-6 border-b border-stone-200 dark:border-zinc-800 flex justify-between items-center bg-white dark:bg-zinc-950">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 rounded-xl">
-                    <Sparkles size={20} />
-                  </div>
-                  <div>
-                    <h3 className="font-black tracking-tighter uppercase">Imersão IA</h3>
-                    <p className="text-[10px] text-stone-400 uppercase tracking-widest">Estudo & Comentário</p>
-                  </div>
+              {/* Sidebar Header / Tabs */}
+              <div className="bg-white dark:bg-zinc-950 border-b border-stone-200 dark:border-zinc-800">
+                <div className="p-4 flex items-center justify-between border-b border-stone-100 dark:border-zinc-900">
+                   <div className="flex items-center gap-2">
+                     <Anchor className="text-emerald-600" size={18} />
+                     <span className="text-xs font-black uppercase tracking-tighter">Central de Estudo</span>
+                   </div>
+                   <button 
+                     onClick={() => setShowStudyPanel(false)}
+                     className="p-1.5 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+                   >
+                     <X size={18} />
+                   </button>
                 </div>
-                <button onClick={() => { setSelectedVerses([]); setCommentary(null); }} className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full"><X size={20} /></button>
+                <div className="flex">
+                  <button 
+                    onClick={() => setStudyPanelType('shedd')}
+                    className={cn(
+                      "flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex flex-col items-center gap-1",
+                      studyPanelType === 'shedd' ? "border-emerald-500 text-emerald-600 bg-emerald-50/50" : "border-transparent text-stone-400"
+                    )}
+                  >
+                    <Book size={14} />
+                    Dr. Shedd
+                  </button>
+                  <button 
+                    onClick={() => setStudyPanelType('tutor')}
+                    className={cn(
+                      "flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex flex-col items-center gap-1",
+                      studyPanelType === 'tutor' ? "border-emerald-500 text-emerald-600 bg-emerald-50/50" : "border-transparent text-stone-400"
+                    )}
+                  >
+                    <Sparkles size={14} />
+                    IA Tutor
+                  </button>
+                  <button 
+                    onClick={() => setStudyPanelType('notes')}
+                    className={cn(
+                      "flex-1 py-3 text-[10px] font-black uppercase tracking-widest border-b-2 transition-all flex flex-col items-center gap-1",
+                      studyPanelType === 'notes' ? "border-emerald-500 text-emerald-600 bg-emerald-50/50" : "border-transparent text-stone-400"
+                    )}
+                  >
+                    <StickyNote size={14} />
+                    Notas
+                  </button>
+                </div>
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {selectedVerses.length > 0 && (
-                  <div className="p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-stone-200 dark:border-zinc-800 shadow-sm">
-                    <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">
-                      {books.find(b => b.pk === selectedBook)?.name} {selectedChapter}:{selectedVerses[0].verse}{selectedVerses.length > 1 ? `-${selectedVerses[selectedVerses.length - 1].verse}` : ''}
-                    </p>
-                    <p className="text-sm italic text-stone-600 dark:text-zinc-400">"{selectedVerses[0].text}"</p>
+                {studyPanelType === 'shedd' && (
+                  <div className="space-y-4">
+                    <div className="p-5 bg-emerald-600 rounded-3xl text-white shadow-xl shadow-emerald-600/20 relative overflow-hidden group">
+                      <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+                        <Palette size={80} />
+                      </div>
+                      <h4 className="text-lg font-black tracking-tighter uppercase mb-1">Bíblia Shedd</h4>
+                      <p className="text-[10px] font-bold text-emerald-100 uppercase tracking-widest">Exegese e Espiritualidade</p>
+                    </div>
+
+                    {isGeneratingShedd ? (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <Loader2 className="animate-spin text-emerald-600" size={32} />
+                        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest animate-pulse">Consultando Notas Shedd...</p>
+                      </div>
+                    ) : sheddCommentary ? (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="prose dark:prose-invert prose-emerald prose-sm max-w-none bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm"
+                      >
+                        <Markdown>{sheddCommentary}</Markdown>
+                      </motion.div>
+                    ) : (
+                      <div className="text-center py-12 bg-white dark:bg-zinc-950 rounded-3xl border border-dashed border-stone-200 dark:border-zinc-800 p-8">
+                        <Info size={40} className="mx-auto text-emerald-200 mb-4" />
+                        <p className="text-sm font-medium text-stone-500">As notas de estudo serão carregadas automaticamente para o capítulo atual.</p>
+                        <button 
+                          onClick={() => generateSheddCommentary()}
+                          className="mt-4 px-6 py-2 bg-emerald-100 text-emerald-700 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-200 transition-all"
+                        >
+                          Carregar Agora
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {isGeneratingCommentary ? (
-                  <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                    <Loader2 className="animate-spin text-emerald-600" size={32} />
-                    <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest animate-pulse">Consultando Sabedoria IA...</p>
-                  </div>
-                ) : commentary ? (
-                  <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="prose dark:prose-invert prose-sm max-w-none"
-                  >
-                    <Markdown>{commentary}</Markdown>
-                  </motion.div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Info size={48} className="mx-auto text-stone-200 mb-4" />
-                    <p className="text-sm text-stone-400">Selecione um versículo e clique no ícone de brilho para gerar um comentário teológico profundo.</p>
+                {studyPanelType === 'tutor' && (
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-3 mb-6 p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-stone-100 dark:border-zinc-900">
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 rounded-xl">
+                        <Brain size={20} />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-black tracking-tighter uppercase">Imersão IA</h3>
+                        <p className="text-[9px] text-stone-400 uppercase tracking-widest">Tutor de Estudo Profundo</p>
+                      </div>
+                    </div>
+
+                    {isGeneratingCommentary ? (
+                      <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <Loader2 className="animate-spin text-purple-600" size={32} />
+                        <p className="text-[10px] font-black text-stone-400 uppercase tracking-widest animate-pulse">Consultando Sabedoria IA...</p>
+                      </div>
+                    ) : commentary ? (
+                      <motion.div 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        className="prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm"
+                      >
+                        <Markdown>{commentary}</Markdown>
+                        <button 
+                          onClick={handleSaveStudy}
+                          className="w-full mt-6 py-3 bg-zinc-900 text-white font-bold rounded-xl hover:bg-black transition-all flex items-center justify-center gap-2"
+                        >
+                          <Bookmark size={18} />
+                          Salvar Estudo
+                        </button>
+                      </motion.div>
+                    ) : (
+                      <div className="text-center py-12 bg-white dark:bg-zinc-950 rounded-3xl border border-dashed border-stone-200 dark:border-zinc-800 p-8">
+                        <Sparkles size={40} className="mx-auto text-purple-200 mb-4" />
+                        <p className="text-sm font-medium text-stone-500 italic">"O temor do Senhor é o princípio da sabedoria."</p>
+                        <p className="text-xs text-stone-400 mt-2">Toque no ícone de brilho ao lado de qualquer versículo para iniciar uma análise profunda.</p>
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-
-              <div className="p-4 bg-white dark:bg-zinc-950 border-t border-stone-200 dark:border-zinc-800">
-                <button 
-                  onClick={handleSaveStudy}
-                  disabled={!commentary || isGeneratingCommentary}
-                  className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  <Bookmark size={18} />
-                  Salvar nos Meus Estudos
-                </button>
+                
+                {studyPanelType === 'notes' && (
+                  <div className="space-y-4">
+                    <h3 className="text-xs font-black text-stone-400 uppercase tracking-widest px-1">Minhas Anotações</h3>
+                    {Object.keys(annotations).filter(id => annotations[id].note).length > 0 ? (
+                      Object.keys(annotations)
+                        .filter(id => annotations[id].note)
+                        .map(id => {
+                          const [v, b, c, vr] = id.split('_');
+                          return (
+                            <div key={id} className="p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-stone-100 dark:border-zinc-800 shadow-sm space-y-2">
+                               <div className="flex justify-between items-center">
+                                 <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                                   {books.find(bk => bk.pk === parseInt(b))?.name} {c}:{vr}
+                                 </span>
+                                 <button onClick={() => removeAnnotation(id)} className="text-stone-300 hover:text-red-500 transition-colors">
+                                   <Trash2 size={12} />
+                                 </button>
+                               </div>
+                               <p className="text-xs font-medium text-stone-800 dark:text-zinc-200">{annotations[id].note}</p>
+                            </div>
+                          );
+                        })
+                    ) : (
+                      <div className="text-center py-12 opacity-50">
+                        <StickyNote size={40} className="mx-auto text-stone-300 mb-4" />
+                        <p className="text-sm">Nenhuma nota encontrada.</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           )}

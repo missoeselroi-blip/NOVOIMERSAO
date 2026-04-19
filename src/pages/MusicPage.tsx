@@ -34,10 +34,11 @@ import {
   onSnapshot, deleteDoc, doc, serverTimestamp, 
   updateDoc, limit, getDocs
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
 import { useToast } from '../components/Toast';
 import { cn } from '../types';
 import { geminiService } from '../services/geminiService';
+import { useAuth } from '../contexts/AuthContext';
 
 const RHYTHMS = [
   'Todos',
@@ -69,6 +70,8 @@ interface MusicTrack {
 
 const MusicPage = () => {
   const [user] = useAuthState(auth);
+  const { user: userData } = useAuth();
+  const isAdmin = userData?.role === 'admin';
   const { showToast } = useToast();
   const [myTracks, setMyTracks] = useState<MusicTrack[]>([]);
   const [publicTracks, setPublicTracks] = useState<MusicTrack[]>([]);
@@ -80,6 +83,7 @@ const MusicPage = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   
   // New track form state
   const [newTrack, setNewTrack] = useState({
@@ -88,8 +92,24 @@ const MusicPage = () => {
     lyrics: '',
     audioFile: null as File | null,
     isPublic: true,
-    authorName: user?.displayName || 'Autor'
+    authorName: user?.displayName || 'Autor',
+    duration: 0
   });
+
+  const handleAudioSelect = (file: File | null) => {
+    if (!file) {
+      setNewTrack(prev => ({ ...prev, audioFile: null, duration: 0 }));
+      return;
+    }
+
+    const audioObj = new Audio(URL.createObjectURL(file));
+    audioObj.onloadedmetadata = () => {
+      setNewTrack(prev => ({ ...prev, audioFile: file, duration: audioObj.duration }));
+    };
+    audioObj.onerror = () => {
+      setNewTrack(prev => ({ ...prev, audioFile: file, duration: 0 }));
+    };
+  };
 
   // Player state
   const [playingTrack, setPlayingTrack] = useState<MusicTrack | null>(null);
@@ -172,27 +192,8 @@ const MusicPage = () => {
   };
 
   const identifyRhythm = async () => {
-    if (!newTrack.lyrics.trim()) {
-      showToast("Escreva a letra para a IA analisar o ritmo.", 'info');
-      return;
-    }
-    setIsAnalyzing(true);
-    try {
-      const suggestedRhythm = await geminiService.identifyMusicRhythm(newTrack.lyrics);
-      // Logic to find closest match in RHYTHMS
-      const match = RHYTHMS.find(r => suggestedRhythm.toLowerCase().includes(r.toLowerCase()));
-      if (match) {
-        setNewTrack(prev => ({ ...prev, rhythm: match }));
-        showToast(`IA sugeriu o ritmo: ${match}`, 'success');
-      } else {
-        setNewTrack(prev => ({ ...prev, rhythm: 'Outro' }));
-        showToast(`IA sugeriu ritmo: ${suggestedRhythm}`, 'info');
-      }
-    } catch (error) {
-       showToast("Erro na análise da IA.", 'error');
-    } finally {
-      setIsAnalyzing(false);
-    }
+    // Feature removed to simplify page to a basic music list
+    showToast("Função simplificada.", 'info');
   };
 
   const handleSaveTrack = async () => {
@@ -202,70 +203,79 @@ const MusicPage = () => {
       return;
     }
 
+    if (newTrack.audioFile && newTrack.audioFile.size > 50 * 1024 * 1024) {
+      showToast("O arquivo é muito grande (limite: 50MB). Tente converter para MP3 se for muito pesado.", 'info');
+      return;
+    }
+
     setIsSaving(true);
+    setUploadProgress(0);
     try {
       let audioUrl = '';
-      let duration = 0;
       let lyricsTimestamps: any[] = [];
+      const duration = newTrack.duration;
 
       if (newTrack.audioFile) {
-        // Get duration before upload with timeout
-        const audioObj = new Audio(URL.createObjectURL(newTrack.audioFile));
-        try {
-          await Promise.race([
-            new Promise((resolve, reject) => {
-              audioObj.onloadedmetadata = () => {
-                duration = audioObj.duration;
-                resolve(null);
-              };
-              audioObj.onerror = () => reject(new Error("Erro ao carregar metadados do áudio."));
-            }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout ao carregar áudio.")), 5000))
-          ]);
-        } catch (e) {
-          console.warn("Could not get duration, proceeding without timestamps:", e);
-        }
-
-        const fileRef = ref(storage, `music/${user.uid}/${Date.now()}_${newTrack.audioFile.name}`);
-        const uploadResult = await uploadBytes(fileRef, newTrack.audioFile);
-        audioUrl = await getDownloadURL(uploadResult.ref);
-
-        // Generate timestamps if lyrics exist and we have duration
-        if (newTrack.lyrics.trim() && duration > 0) {
-          try {
-            // Set a timeout for the AI call to avoid infinite "Processing"
-            lyricsTimestamps = await Promise.race([
-              geminiService.generateLyricsTimestamps(newTrack.lyrics, duration),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("AI Timeout")), 15000))
-            ]);
-          } catch (e) {
-             console.warn("Failed to generate timestamps or timed out", e);
-             showToast("Sincronização de letra falhou, mas a música foi salva.", "info");
-          }
-        }
+        const fileRef = ref(storage, `music/${user.uid}/${Date.now()}_${newTrack.audioFile.name.replace(/[^a-zA-Z0-9.]/g, '_')}`);
+        
+        const uploadTask = uploadBytesResumable(fileRef, newTrack.audioFile);
+        
+        audioUrl = await new Promise((resolve, reject) => {
+          uploadTask.on('state_changed', 
+            (snapshot) => {
+              const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+              setUploadProgress(progress);
+            }, 
+            (error) => reject(error), 
+            async () => {
+              try {
+                const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+                resolve(downloadUrl);
+              } catch (e) {
+                reject(e);
+              }
+            }
+          );
+        });
       }
 
-      await addDoc(collection(db, 'userMusic'), {
+      const musicData: any = {
         userId: user.uid,
         authorName: newTrack.authorName || user.displayName || 'Autor',
         title: newTrack.title,
         rhythm: newTrack.rhythm,
         lyrics: newTrack.lyrics,
-        audioUrl,
         isFavorite: false,
         isPublic: newTrack.isPublic,
-        lyricsTimestamps: lyricsTimestamps.length > 0 ? lyricsTimestamps : null,
         createdAt: serverTimestamp()
-      });
+      };
 
-      showToast("Música registrada e compartilhada!", 'success');
+      if (audioUrl) musicData.audioUrl = audioUrl;
+      if (lyricsTimestamps && lyricsTimestamps.length > 0) {
+        musicData.lyricsTimestamps = lyricsTimestamps;
+      }
+
+      await addDoc(collection(db, 'userMusic'), musicData);
+
+       showToast("Música adicionada!", 'success');
       setIsAddModalOpen(false);
-      setNewTrack({ title: '', rhythm: 'Worship', lyrics: '', audioFile: null, isPublic: true, authorName: user.displayName || '' });
-    } catch (error) {
+      setNewTrack({ title: '', rhythm: 'Worship', lyrics: '', audioFile: null, isPublic: true, authorName: user.displayName || '', duration: 0 });
+    } catch (error: any) {
       console.error("Erro ao salvar música:", error);
-      showToast("Erro ao salvar.", 'error');
+      
+      let msg = "Erro ao salvar a música.";
+      if (error?.code === 'storage/retry-limit-exceeded') {
+        msg = "Tempo limite excedido.";
+      } else if (error?.code === 'storage/unauthorized') {
+        msg = "Sem permissão.";
+      } else if (error?.code === 'storage/quota-exceeded') {
+        msg = "Limite de armazenamento atingido.";
+      }
+
+      showToast(msg, 'error');
     } finally {
       setIsSaving(false);
+      setUploadProgress(0);
     }
   };
 
@@ -293,9 +303,9 @@ const MusicPage = () => {
              <div className="p-3 bg-emerald-600 rounded-2xl shadow-lg shadow-emerald-500/20">
                <Music className="text-white" size={28} />
              </div>
-             Minha Autoria
+             Minhas Músicas
           </h1>
-          <p className="text-zinc-400 pl-1">Registre, organize e compartilhe suas composições.</p>
+          <p className="text-zinc-400 pl-1">Gerencie e ouça suas músicas autorais.</p>
         </div>
 
         <div className="flex p-1 bg-zinc-900/50 rounded-2xl border border-zinc-800">
@@ -306,8 +316,8 @@ const MusicPage = () => {
                activeTab === 'studio' ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20" : "text-zinc-500 hover:text-white"
              )}
            >
-             <Settings size={18} />
-             Meu Estúdio
+             <Music size={18} />
+             {isAdmin ? 'Meu Estúdio' : 'Minhas Marcadas'}
            </button>
            <button
              onClick={() => setActiveTab('community')}
@@ -321,13 +331,15 @@ const MusicPage = () => {
            </button>
         </div>
 
-        <button
-          onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center justify-center gap-2 px-8 py-3 bg-white text-zinc-950 font-black rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-xl"
-        >
-          <Plus size={20} />
-          Registrar Obra
-        </button>
+        {isAdmin && (
+          <button
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center justify-center gap-2 px-8 py-3 bg-white text-zinc-950 font-black rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-xl"
+          >
+            <Plus size={20} />
+            Adicionar Música
+          </button>
+        )}
       </div>
 
       {/* Filters */}
@@ -336,7 +348,7 @@ const MusicPage = () => {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" size={20} />
           <input
             type="text"
-            placeholder={activeTab === 'studio' ? "Buscar nas minhas músicas..." : "Descobrir composições na comunidade..."}
+            placeholder={activeTab === 'studio' ? "Buscar nas minhas músicas..." : "Descobrir músicas na comunidade..."}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full bg-zinc-900/50 border border-zinc-800 rounded-3xl py-5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all text-white placeholder:text-zinc-600 font-medium"
@@ -396,9 +408,8 @@ const MusicPage = () => {
                     )}>
                       <Music size={28} />
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                       {track.userId === user?.uid && (
+                       <div className="flex items-center gap-2">
+                       {track.userId === user?.uid && isAdmin && (
                           <div className={cn(
                             "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest",
                             track.isPublic ? "bg-blue-500/10 text-blue-400" : "bg-zinc-800 text-zinc-500"
@@ -407,15 +418,19 @@ const MusicPage = () => {
                             {track.isPublic ? 'Público' : 'Privado'}
                           </div>
                        )}
-                       <button 
-                        onClick={() => {
-                          if (!user) return;
-                          deleteDoc(doc(db, 'userMusic', track.id));
-                        }}
-                        className="p-3 text-zinc-700 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                       {isAdmin && (
+                         <button 
+                          onClick={() => {
+                            if (!user) return;
+                            if (window.confirm("Deseja excluir esta música?")) {
+                              deleteDoc(doc(db, 'userMusic', track.id));
+                            }
+                          }}
+                          className="p-3 text-zinc-700 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition-all"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                       )}
                     </div>
                   </div>
 
@@ -479,12 +494,12 @@ const MusicPage = () => {
              <Music size={56} />
            </div>
            <h3 className="text-2xl font-black text-white mb-2 underline decoration-emerald-500 underline-offset-8">
-             {activeTab === 'studio' ? 'Seu estúdio está vago' : 'Sem obras na comunidade'}
+             {activeTab === 'studio' ? 'Nenhuma música adicionada' : 'Sem músicas na comunidade'}
            </h3>
            <p className="text-zinc-500 max-w-sm font-medium">
              {activeTab === 'studio' 
-               ? 'Suas composições aparecerão aqui. Comece um novo projeto agora!' 
-               : 'Seja o primeiro a compartilhar sua arte com a comunidade cristã.'}
+               ? 'Suas músicas aparecerão aqui. Adicione uma música para começar!' 
+               : 'Seja o primeiro a compartilhar sua música com a comunidade.'}
            </p>
         </div>
       )}
@@ -599,10 +614,10 @@ const MusicPage = () => {
                 <div className="flex items-center justify-between">
                   <div className="space-y-1">
                     <h2 className="text-3xl font-black text-white flex items-center gap-3">
-                      <Save className="text-emerald-500" size={32} />
-                      Nova Obra
+                      <Music className="text-emerald-500" size={32} />
+                      Nova Música
                     </h2>
-                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Registro de Propriedade Intelectual e Compartilhamento</p>
+                    <p className="text-zinc-500 font-bold uppercase tracking-widest text-[10px]">Adicione suas músicas para ouvir e compartilhar</p>
                   </div>
                   <button onClick={() => setIsAddModalOpen(false)} className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl text-zinc-500 hover:text-white"><X /></button>
                 </div>
@@ -610,7 +625,7 @@ const MusicPage = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                   <div className="space-y-6">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] ml-1">Título da Composição</label>
+                      <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] ml-1">Título da Música</label>
                       <input
                         type="text"
                         placeholder="Ex: Refúgio e Fortaleza"
@@ -634,14 +649,6 @@ const MusicPage = () => {
                     <div className="space-y-3">
                       <div className="flex items-center justify-between px-1">
                          <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em]">Ritmo e Estilo</label>
-                         <button 
-                           onClick={identifyRhythm}
-                           disabled={isAnalyzing}
-                           className="flex items-center gap-1.5 text-[9px] font-black text-emerald-400 border border-emerald-500/30 px-2 py-1 rounded-md hover:bg-emerald-500/10 transition-colors uppercase tracking-widest"
-                         >
-                           {isAnalyzing ? <RefreshCw className="animate-spin" size={12} /> : <Sparkles size={12} />}
-                           Identificar via IA
-                         </button>
                       </div>
                       <select
                         value={newTrack.rhythm}
@@ -694,12 +701,12 @@ const MusicPage = () => {
                     </div>
 
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] ml-1">Arquivo Demo (Áudio)</label>
+                      <label className="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] ml-1">Arquivo de Áudio</label>
                       <div className="relative">
                         <input
                           type="file"
                           accept="audio/*"
-                          onChange={(e) => setNewTrack({ ...newTrack, audioFile: e.target.files?.[0] || null })}
+                          onChange={(e) => handleAudioSelect(e.target.files?.[0] || null)}
                           className="hidden"
                           id="audio-upload-modal"
                         />
@@ -713,14 +720,13 @@ const MusicPage = () => {
                                 <Volume2 size={24} />
                               </div>
                               <p className="text-sm text-white font-black truncate max-w-[200px]">{newTrack.audioFile.name}</p>
-                              <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">Sincronização de letra habilitada</p>
                             </div>
                           ) : (
                             <div className="text-center">
                               <div className="w-12 h-12 bg-zinc-900 rounded-2xl flex items-center justify-center text-zinc-700 mx-auto mb-3 group-hover:text-emerald-500 group-hover:bg-emerald-500/10 transition-all">
                                 <Plus size={24} />
                               </div>
-                              <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Selecionar Arquivo MP3/WAV</p>
+                              <p className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Selecionar Arquivo de Áudio</p>
                             </div>
                           )}
                         </label>
@@ -740,18 +746,33 @@ const MusicPage = () => {
                   <button
                     disabled={isSaving}
                     onClick={handleSaveTrack}
-                    className="flex-[2] py-5 bg-white text-zinc-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-zinc-100 transition-all shadow-xl shadow-white/5 flex items-center justify-center gap-3 disabled:opacity-50"
+                    className="flex-[2] py-5 bg-white text-zinc-950 font-black uppercase tracking-widest text-xs rounded-2xl hover:bg-zinc-100 transition-all shadow-xl shadow-white/5 flex flex-col items-center justify-center gap-1 disabled:opacity-50 min-h-[64px]"
                   >
                     {isSaving ? (
-                      <>
-                        <RefreshCw className="animate-spin" size={18} />
-                        Processando na Nuvem...
-                      </>
+                      <div className="flex flex-col items-center gap-2 w-full px-4">
+                        <div className="flex items-center gap-3">
+                          <RefreshCw className="animate-spin" size={18} />
+                          <span className="text-[10px]">
+                            {uploadProgress > 0 && uploadProgress < 100 
+                              ? `Enviando ${Math.round(uploadProgress)}%` 
+                              : "Salvando..."}
+                          </span>
+                        </div>
+                        {uploadProgress > 0 && uploadProgress < 100 && (
+                          <div className="w-full h-1.5 bg-zinc-100 rounded-full overflow-hidden border border-zinc-200">
+                             <motion.div 
+                               initial={{ width: 0 }}
+                               animate={{ width: `${uploadProgress}%` }}
+                               className="h-full bg-emerald-500"
+                             />
+                          </div>
+                        )}
+                      </div>
                     ) : (
-                      <>
+                      <div className="flex items-center gap-3">
                         <Save size={18} />
                         Registrar e Publicar
-                      </>
+                      </div>
                     )}
                   </button>
                 </div>

@@ -100,59 +100,7 @@ const LessonPage: React.FC = () => {
 
   const bibleVersions = ["NVI", "ACF", "ARA", "KJV", "NTLH"];
 
-  const leaderGuideContent = `## 1. Aprofundamento Teológico
-“O ânimo dobre é uma fragmentação da Alma”
-
-### A Etimologia e o Contexto 
-O termo grego dipsychos (Tiago 1:8; 4:8) é uma palavra composta: dis (duas vezes) e psyche (alma/mente). Curiosamente, essa palavra não aparece na literatura grega clássica ou na Septuaginta (LXX); muitos estudiosos acreditam que o próprio Tiago a cunhou para descrever a exigência VT de amar a Deus com todo o coração (Dt 6:4-5).
-* Conexão no Antigo Testamento: O correspondente hebraico seria o "coração e coração" (leb wa leb) de Salmos 12:2, descrevendo alguém que fala com duplicidade.
-* O Dicionário de Kittel (TDNT): Define o homem de ânimo dobre como aquele que deseja desfrutar de dois mundos; ele quer a segurança de Deus, mas não renuncia à autonomia do "eu".
-
-### A Luta de Agostinho e a Vontade Dividida
-Em suas Confissões, Santo Agostinho descreve perfeitamente esse estado: "Eu era aquele que queria e aquele que não queria. Era eu mesmo em ambos os lados... mas eu não estava inteiro em nenhum". O ânimo dobre é uma vontade doente que não consegue se decidir pela Verdade. Essa mesma luta é descrita também por Paulo (Rm 7:18-24).
-
-### Referências Bíblicas de Apoio:
-* Mateus 6:24: A impossibilidade de servir a dois senhores (A raiz da divisão).
-* 1 Reis 18:21: Elias confronta o povo: "Até quando coxeareis entre dois pensamentos?"
-* Oséias 10:2: "O seu coração está dividido; por isso serão culpados".
-
-## 2. Sugestão de Quebra-Gelo: "O Conflito de Comandos"
-Objetivo: Mostrar como a divisão interna gera paralisia e erro.
-1. Formar uma fila com os participantes uns 4 ou 5 participantes.
-2. Combine (secretamente) com o participante que ficará à frente para errar os comandos. E de vez em quando conversar com o pessoal atrás. 
-3. Comandos: “Direita”; “Esquerda”; “Abaixa”; “Levanta”; "Pule!", "Mão na cabeça". Começa devagar e vai aumentando o ritmo.
-** A ideia é o participante da frente induzir os demais ao erro.
-Lição: Somos induzidos a seguir o que vemos e não o que ouvimos. Estamos ouvindo a voz de Deus, na mesma proporção que vemos Deus nas pessoas?
-
-## 3. Dinâmica de Perguntas
-### Perguntas Retóricas (Para despertar a consciência)
-* "Se a sua vida fosse um barco sem leme, ao sabor das ondas das suas emoções, onde você estaria daqui a cinco anos?"
-* "Deus pode confiar uma grande missão a alguém que não consegue cumprir um pequeno compromisso de horário?"
-* "Quem está sentado no trono da sua vontade hoje: o seu propósito em Cristo ou o seu sentimento do momento?"
-
-### Perguntas de Aprofundamento (Para análise de raízes)
-* Tiago associa o ânimo dobre à dúvida (Tg 1:6). Em qual área da sua vida a falta de confiança no caráter de Deus tem gerado instabilidade?
-* O texto diz que o inconstante "não recebe nada do Senhor". Por que a integridade é um pré-requisito para a recepção das promessas divinas?
-* Como a cultura do "imediatismo" e das redes sociais tem alimentado a nossa inconstância?
-
-### Perguntas Práticas (Para mudança de comportamento)
-* Qual é o "projeto inacabado" que você precisa retomar ou encerrar formalmente esta semana para limpar sua estrutura mental?
-* Cite uma área onde você tem sido guiado pelo "sentir" e não pelo "decidir". O que muda se você inverter essa lógica amanhã?
-* No que diz respeito à pontualidade e palavra empenhada, qual ajuste imediato o Espírito Santo está te pedindo agora?
-
-## 4. Dicas para a Ministração da Lição
-1. Fuja do Moralismo: Não foque apenas no "pare de procrastinar". Foque no "purifique o coração". A inconstância externa é apenas o sintoma de uma deslealdade interna.
-2. Seja Vulnerável: Como líder, compartilhe um projeto que você quase abandonou e como a disciplina (que é fruto do Espírito) te sustentou quando a motivação sumiu.
-3. Ênfase na Soberania: Lembre ao grupo que o ânimo dobre pode ser uma tentativa de autocontrole que entra em conflito com a confiança em Deus. Quando confiamos em Deus (temos um ânimo firme) porque Ele é imutável, enquanto nós somos mutáveis.
-
-## 5. Ganchos para Evangelismo (Dicas Práticas)
-O tema do ânimo dobre toca na ferida da ansiedade moderna.
-* O Gancho da Paz: "Você se sente exausto por tentar ser várias pessoas ao mesmo tempo ou por nunca terminar o que começa? Jesus oferece o jugo que é suave e que unifica o coração".
-* O Gancho do Propósito: "Muitas pessoas buscam o sentido da vida, mas o perdem porque mudam de direção a cada dificuldade. Conhecer a Cristo é encontrar a 'âncora da alma' (Hb 6:19)".
-* O Convite: Convide o visitante a entregar não apenas seus problemas, mas a sua vontade a Cristo.
-
-## 6. Finalizando a Lição
-Líder, lembre-se: Tiago 4:8 apresenta uma progressão: Chegar-se -> Purificar as mãos (ações externas) -> Limpar o coração (motivações internas). Não espere "sentir vontade" para ser constante. A constância é o terreno onde o milagre caminha. Tenha uma mensagem de motivação, desafio e até correção, mas jamais esqueça de finalizar ministrando fé, esperança e graça.`;
+  const leaderGuideContent = selectedLesson?.leaderGuide || "";
 
   const fetchBibleText = async (ref: string, version: string) => {
     setBibleModal(prev => ({ ...prev, loading: true, reference: ref, version }));
@@ -719,11 +667,9 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                       <div className="italic text-stone-400 dark:text-zinc-500 text-sm space-y-1">
                         <p>Escrito por Wesley Reis</p>
                         <p>Temas e revisão: Eliomar e Rosa Ferrari</p>
-                        {selectedLesson.id === 12 && (
-                          <p className="mt-4 font-bold not-italic text-stone-600 dark:text-zinc-400">Igreja Betânia de Ipatinga</p>
-                        )}
+                        <p className="mt-4 font-bold not-italic text-stone-600 dark:text-zinc-400">Igreja Betânia de Ipatinga</p>
                       </div>
-                      {selectedLesson.id === 12 && (
+                      {selectedLesson.leaderGuide && (
                         <button 
                           onClick={() => setShowLeaderGuide(true)}
                           className="mt-8 px-8 py-3 bg-[#E2725B] text-white rounded-full font-bold hover:bg-[#D2624B] transition-all shadow-lg shadow-[#E2725B]/20 flex items-center gap-2 mx-auto"
@@ -734,7 +680,7 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                       )}
                     </div>
                     
-                    {selectedLesson.hasAttachment && selectedLesson.id !== 12 && (
+                    {selectedLesson.hasAttachment && (
                       <div className="mt-12 p-8 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] border-2 border-dashed border-amber-200 dark:border-amber-800 flex flex-col items-center text-center">
                         <div className="w-16 h-16 bg-amber-100 dark:bg-amber-800 rounded-2xl flex items-center justify-center mb-4 text-amber-600 dark:text-amber-400">
                           <FileText size={32} />
@@ -745,7 +691,7 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                         </p>
                         <button className="flex items-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-full font-bold hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20">
                           <Download size={20} />
-                          Baixar PDF da Lição 12
+                          Baixar PDF da {selectedLesson.title}
                         </button>
                       </div>
                     )}
@@ -1132,7 +1078,7 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
                       </div>
                       <SpeechGenerator 
                         initialText={leaderGuideContent}
-                        initialTitle="Narração: Guia do Líder - Lição 12"
+                        initialTitle={`Narração: Guia do Líder - ${selectedLesson?.title}`}
                         initialSubject="Guia do Líder"
                         initialEmotion="pastor"
                         initialVoice="homem"

@@ -98,16 +98,12 @@ export const bibleService = {
       return [
         { id: 1, name: "Almeida Revista e Atualizada", short_name: "ARA", language: "Português" },
         { id: 2, name: "Nova Versão Internacional", short_name: "NVI", language: "Português" },
-        { id: 3, name: "Nova Versão Internacional (Espanhol)", short_name: "NVI-ES", language: "Espanhol" },
-        { id: 4, name: "Nova Versão Internacional (Inglês)", short_name: "NVI-EN", language: "Inglês" },
         { id: 5, name: "Nova Tradução na Linguagem de Hoje", short_name: "NTLH", language: "Português" },
         { id: 6, name: "Bíblia Viva", short_name: "BV", language: "Português" },
-        { id: 7, name: "Almeida Contemporânea", short_name: "AC", language: "Português" },
-        { id: 8, name: "King James Version (Inglês)", short_name: "KJV", language: "Inglês" },
-        { id: 9, name: "Reina Valera 1960 (Espanhol)", short_name: "RVR1960", language: "Espanhol" },
         { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" },
+        { id: 14, name: "King James Atualizada", short_name: "KJA", language: "Português" },
         { id: 11, name: "Almeida Corrigida Fiel", short_name: "ACF", language: "Português" },
-        { id: 12, name: "Nova Vida", short_name: "NV", language: "Português" }
+        { id: 8, name: "King James Version (Inglês)", short_name: "KJV", language: "Inglês" }
       ];
     } catch (error) {
       console.error('Error fetching Bible versions:', error);
