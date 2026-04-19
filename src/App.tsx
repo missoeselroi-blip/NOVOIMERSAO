@@ -42,7 +42,6 @@ import {
   Pencil,
   LogIn,
   Volume2,
-  Music,
   ShieldCheck,
   RefreshCw,
   Medal,
@@ -103,7 +102,6 @@ const OfflinePage = lazyWithRetry(() => import('./pages/OfflinePage'));
 const StoryGame = lazyWithRetry(() => import('./pages/StoryGame'));
 const NewsPage = lazyWithRetry(() => import('./pages/NewsPage'));
 const TruthDetectorPage = lazyWithRetry(() => import('./pages/TruthDetectorPage'));
-const MusicPage = lazyWithRetry(() => import('./pages/MusicPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -224,7 +222,6 @@ function AppContent() {
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
-    { id: 'music', label: 'Músicas', icon: <Music size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
     { id: 'news', label: 'Sinais', icon: <Newspaper size={22} /> },
@@ -242,12 +239,11 @@ function AppContent() {
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
     { id: 'sermons', label: 'Sermões', subtitle: 'Sermões em áudio e vídeo', icon: <PlayCircle size={20} />, component: <SermonsPage /> },
     { id: 'audio-box', label: 'Áudios', subtitle: 'Sua biblioteca de áudios', icon: <Volume2 size={20} />, component: <AudioBoxPage /> },
-    { id: 'music', label: 'Músicas', subtitle: 'Suas composições próprias', icon: <Music size={20} />, component: <MusicPage /> },
     { id: 'forum', label: 'Fórum', subtitle: 'Comunhão e Debate', icon: <MessageSquare size={20} />, component: <ForumPage /> },
     { id: 'credits', label: 'Créditos', subtitle: 'Gerencie seus créditos', icon: <Coins size={20} />, component: <CreditPage /> },
     { id: 'news', label: 'Sinais', subtitle: 'Sinais da Vinda de Cristo', icon: <Newspaper size={20} />, component: <NewsPage /> },
     { id: 'truth-detector', label: 'Fato ou Fake', subtitle: 'Detector de Verdade', icon: <ShieldCheck size={20} />, component: <TruthDetectorPage /> },
-    { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage />, hidden: true },
+    { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage /> },
     { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },

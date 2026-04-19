@@ -1,5 +1,5 @@
 import React from 'react';
-import { Book, BookOpen, FileText, GraduationCap, Newspaper, Mail } from 'lucide-react';
+import { Book, BookOpen, FileText, GraduationCap, Newspaper, Mail, Zap } from 'lucide-react';
 import { cn } from '../types';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -9,6 +9,7 @@ const navItems = [
   { id: 'notebook', label: 'Esboço', icon: <FileText size={20} />, path: '/notebook' },
   { id: 'career', label: 'Treinamentos', icon: <GraduationCap size={20} />, path: '/career' },
   { id: 'posts', label: 'Posts', icon: <Newspaper size={20} />, path: '/posts' },
+  { id: 'quiz', label: 'Jogos', icon: <Zap size={20} />, path: '/quiz' },
   { id: 'contact', label: 'Contato', icon: <Mail size={20} />, path: '/contact' },
 ];
 

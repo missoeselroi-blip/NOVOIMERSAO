@@ -286,7 +286,7 @@ async function startServer() {
     try {
       const response = await axios.get(url, { 
         params: query,
-        timeout: 15000, // 15 seconds timeout
+        timeout: 30000, // Increased to 30 seconds
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
           'Accept': 'application/json, text/plain, */*',

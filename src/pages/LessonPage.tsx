@@ -305,21 +305,10 @@ const LessonPage: React.FC = () => {
       const transcription = await geminiService.transcribeAudio(base64Audio);
       if (!transcription) throw new Error("Não foi possível transcrever o áudio.");
 
-      const response = await geminiService.generateText(transcription, getMentorSystemPrompt());
+      const response = await geminiService.generateText(transcription, getMentorSystemPrompt(), true);
       setMentorResponse(response);
-
-      const audioUrl = await geminiService.generateSpeech(response, 'Charon', 'pastor');
-      setMentorAudioUrl(audioUrl);
       
-      if (audioUrl && mentorAudioRef.current) {
-        mentorAudioRef.current.src = audioUrl;
-        mentorAudioRef.current.onplay = () => setIsMentorPlaying(true);
-        mentorAudioRef.current.onended = () => setIsMentorPlaying(false);
-        mentorAudioRef.current.onpause = () => setIsMentorPlaying(false);
-        mentorAudioRef.current.play();
-      }
-      
-      showToast("Mentor respondeu! 🎙️✨");
+      showToast("Mentor respondeu! ✨");
     } catch (error) {
       console.error("Mentor error:", error);
       showToast("Erro ao falar com o Mentor.", "error");
@@ -336,7 +325,7 @@ Seu objetivo é fornecer dicas práticas, encorajamento e sabedoria para lídere
 Responda de forma pastoral, direta, inspiradora e acolhedora.
 O nome do usuário é ${user?.name || 'amigo'}. 
 Sempre que possível, faça conexões entre a lição "${selectedLesson?.title || 'Bíblica'}" e os princípios de liderança de Abe Huber.
-Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
+Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o pensamento profundo para dar respostas ricas e precisas.`;
   };
 
   const openMentor = async () => {
@@ -359,26 +348,10 @@ Mantenha as respostas conversacionais e curtas para serem ouvidas em áudio.`;
         Mencione que você está aqui para ajudar com a lição "${lessonTitle}". 
         Cite brevemente que seus ensinamentos são baseados em Abe Huber e outros grandes líderes. 
         Termine com uma pergunta convidando o usuário a falar ou perguntar algo sobre a lição. 
-        A resposta deve ser curta, direta e em áudio-friendly (sem markdown complexo).`;
+        A resposta deve ser direta e em texto claro. Utilize o pensamento profundo para ser certeiro.`;
 
-        const response = await geminiService.generateText(prompt, getMentorSystemPrompt());
+        const response = await geminiService.generateText(prompt, getMentorSystemPrompt(), true);
         setMentorResponse(response);
-        
-        try {
-          const audioUrl = await geminiService.generateSpeech(response, 'Charon', 'pastor');
-          setMentorAudioUrl(audioUrl);
-          
-          if (audioUrl && mentorAudioRef.current) {
-            mentorAudioRef.current.src = audioUrl;
-            mentorAudioRef.current.onplay = () => setIsMentorPlaying(true);
-            mentorAudioRef.current.onended = () => setIsMentorPlaying(false);
-            mentorAudioRef.current.onpause = () => setIsMentorPlaying(false);
-            mentorAudioRef.current.play();
-          }
-        } catch (speechError) {
-          console.error("Error generating mentor speech:", speechError);
-          // Don't fail the whole thing if speech fails
-        }
       } catch (error) {
         console.error("Error initializing mentor:", error);
         showToast("O Mentor está um pouco ocupado agora, mas você pode tentar novamente em breve.", "error");

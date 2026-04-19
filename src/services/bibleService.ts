@@ -12,7 +12,7 @@ const fetchWithFallback = async (path: string) => {
   
   for (const url of endpoints) {
     try {
-      const response = await axios.get(url, { timeout: 8000 });
+      const response = await axios.get(url, { timeout: 15000 });
       // Check if response is valid JSON and not HTML (which happens on static hosting 404s)
       if (typeof response.data === 'string' && response.data.trim().startsWith('<')) {
         console.warn(`[BibleService] Endpoint ${url} returned HTML, skipping...`);
