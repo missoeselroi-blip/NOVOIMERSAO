@@ -37,7 +37,8 @@ import {
   Book,
   Brain,
   GraduationCap,
-  Anchor
+  Anchor,
+  Pencil
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
@@ -88,13 +89,14 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   const [showSettings, setShowSettings] = useState<boolean>(false);
   const [history, setHistory] = useState<{book: string, chapter: number, version: string}[]>([]);
   const [showAnnotationMenu, setShowAnnotationMenu] = useState(false);
-  const [showStudyPanel, setShowStudyPanel] = useState<boolean>(true); // Default to open
+  const [showStudyPanel, setShowStudyPanel] = useState<boolean>(false); // Default to closed
   const [studyPanelType, setStudyPanelType] = useState<'shedd' | 'tutor' | 'notes'>('shedd');
   const [sheddCommentary, setSheddCommentary] = useState<string | null>(null);
   const [isGeneratingShedd, setIsGeneratingShedd] = useState<boolean>(false);
   const [annotationNote, setAnnotationNote] = useState('');
   const [annotationColor, setAnnotationColor] = useState('#fbbf24');
   const [isAutoSaving, setIsAutoSaving] = useState(false);
+  const [isEditingCommentary, setIsEditingCommentary] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(true); // Default to fullscreen
 
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -338,6 +340,9 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     setSelectedVerses([verse]);
     setIsGeneratingCommentary(true);
     setCommentary(null);
+    setShowStudyPanel(true);
+    setStudyPanelType('tutor');
+    setIsEditingCommentary(false);
     
     try {
       const bookName = books.find(b => b.pk === selectedBook)?.name || 'Livro';
@@ -1107,9 +1112,32 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                         animate={{ opacity: 1 }}
                         className="prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm"
                       >
-                        <Markdown>{commentary}</Markdown>
+                        <div className="flex justify-between items-center mb-4 pb-2 border-b border-stone-100 dark:border-zinc-900">
+                          <span className="text-[10px] font-black uppercase text-stone-400">Análise do Versículo</span>
+                          <button 
+                            onClick={() => setIsEditingCommentary(!isEditingCommentary)}
+                            className="p-1 px-2 bg-stone-100 dark:bg-zinc-800 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors flex items-center gap-1 text-[10px] font-bold"
+                          >
+                            {isEditingCommentary ? <X size={12} /> : <Pencil size={12} />}
+                            {isEditingCommentary ? 'Cancelar' : 'Editar'}
+                          </button>
+                        </div>
+
+                        {isEditingCommentary ? (
+                          <textarea
+                            value={commentary}
+                            onChange={(e) => setCommentary(e.target.value)}
+                            className="w-full h-96 p-4 bg-stone-50 dark:bg-zinc-900 border border-emerald-500/20 rounded-2xl focus:ring-2 focus:ring-emerald-500 outline-none text-xs font-medium resize-none transition-all scrollbar-thin overflow-y-auto mb-4"
+                          />
+                        ) : (
+                          <Markdown>{commentary}</Markdown>
+                        )}
+                        
                         <button 
-                          onClick={handleSaveStudy}
+                          onClick={async () => {
+                            await handleSaveStudy();
+                            setIsEditingCommentary(false);
+                          }}
                           className="w-full mt-6 py-3 bg-zinc-900 text-white font-bold rounded-xl hover:bg-black transition-all flex items-center justify-center gap-2"
                         >
                           <Bookmark size={18} />
