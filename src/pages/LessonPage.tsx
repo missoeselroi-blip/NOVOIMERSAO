@@ -127,13 +127,25 @@ const LessonPage: React.FC = () => {
 
   const processedContent = React.useMemo(() => {
     if (!selectedLesson || !selectedLesson.content) return "";
-    // Regex to match biblical references like "João 3:16", "1 Coríntios 13:1-8", etc.
-    const bibleRegex = /((?:[123]\s)?[A-Z][a-zà-ÿ]+)\s\d+:\d+(?:-\d+)?/g;
+    // Regex to match biblical references like "João 3:16", "1 Coríntios 13:1-8", "TG 4:8", etc.
+    const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
     return selectedLesson.content.replace(bibleRegex, (match) => `**${match}**`);
   }, [selectedLesson]);
 
+  const processedLeaderGuide = React.useMemo(() => {
+    if (!selectedLesson || !selectedLesson.leaderGuide) return "";
+    const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
+    return selectedLesson.leaderGuide.replace(bibleRegex, (match) => `**${match}**`);
+  }, [selectedLesson]);
+
   const handleShare = () => {
-    showToast("Link da lição copiado para a área de transferência!", "success");
+    const url = window.location.href;
+    navigator.clipboard.writeText(url).then(() => {
+      showToast("Link da lição copiado para a área de transferência!", "success");
+    }).catch(err => {
+      console.error('Could not copy text: ', err);
+      showToast("Não foi possível copiar o link.", "error");
+    });
   };
 
   const handleSave = () => {
@@ -171,45 +183,63 @@ const LessonPage: React.FC = () => {
     showToast("Gerando seu PDF... Quase pronto! 📄💎", 'info');
 
     const element = document.createElement('div');
-    element.className = 'p-8 bg-white text-black font-serif';
+    element.className = 'pdf-container';
     
-    // Basic Markdown to HTML conversion for the PDF
+    // Improved Markdown to HTML conversion for the PDF with better styling
     const htmlContent = (selectedLesson.content || "")
-      .replace(/^# (.*$)/gm, '<h1 style="font-size: 24pt; font-weight: bold; margin-bottom: 16pt; color: #065f46;">$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2 style="font-size: 18pt; font-weight: bold; margin-top: 20pt; margin-bottom: 12pt; color: #047857;">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 style="font-size: 14pt; font-weight: bold; margin-top: 16pt; margin-bottom: 8pt; color: #059669;">$1</h3>')
-      .replace(/^\* (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 4pt;">$1</li>')
-      .replace(/^- (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 4pt;">$1</li>')
-      .replace(/\n\n/g, '</p><p style="margin-bottom: 12pt; line-height: 1.6;">')
+      .replace(/^# (.*$)/gm, '<h1 style="font-size: 28pt; font-weight: 800; margin-bottom: 20pt; color: #065f46; text-align: center; text-transform: uppercase; border-bottom: 3px solid #065f46; padding-bottom: 10pt;">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 style="font-size: 20pt; font-weight: 700; margin-top: 24pt; margin-bottom: 12pt; color: #047857; border-left: 5px solid #059669; padding-left: 10pt;">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 style="font-size: 16pt; font-weight: 600; margin-top: 18pt; margin-bottom: 8pt; color: #059669;">$1</h3>')
+      .replace(/^\* (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 6pt; list-style-type: disc;">$1</li>')
+      .replace(/^- (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 6pt; list-style-type: disc;">$1</li>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong style="color: #064e3b;">$1</strong>')
+      .replace(/\n\n/g, '</p><p style="margin-bottom: 14pt; line-height: 1.7; page-break-inside: avoid;">')
       .replace(/\n/g, '<br/>');
 
     element.innerHTML = `
-      <div style="padding: 40px; font-family: 'Times New Roman', serif; color: #1a1a1a; line-height: 1.6;">
-        <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #065f46; padding-bottom: 10px;">
-          <h1 style="color: #065f46; margin: 0; font-size: 24px;">IMERSÃO BÍBLICA IA</h1>
-          <p style="color: #6b7280; font-size: 12px; margin-top: 5px;">Lição: ${selectedLesson.title || "Sem Título"}</p>
+      <div style="padding: 20mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.7; background-color: #ffffff;">
+        <div style="text-align: center; margin-bottom: 40pt; border-bottom: 2px solid #e5e7eb; padding-bottom: 20pt;">
+          <div style="font-size: 10pt; color: #059669; font-weight: 800; letter-spacing: 2pt; margin-bottom: 5pt; text-transform: uppercase;">Material de Estudo</div>
+          <h1 style="color: #065f46; margin: 0; font-size: 32pt; font-weight: 900; letter-spacing: -1pt;">IMERSÃO BÍBLICA IA</h1>
+          <p style="color: #6b7280; font-size: 14pt; margin-top: 10pt; font-style: italic;">Lição: ${selectedLesson.title || "Sem Título"}</p>
         </div>
-        <div class="content">
-          ${htmlContent}
+        
+        <div class="content" style="font-size: 11pt;">
+          <p style="margin-bottom: 14pt; line-height: 1.7;">${htmlContent}</p>
         </div>
-        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 10px; color: #9ca3af;">
-          Documento gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}<br/>
-          © Imersão Bíblica IA - Todos os direitos reservados
+        
+        <div style="margin-top: 60pt; border-top: 1px solid #e5e7eb; padding-top: 30pt; text-align: center; page-break-inside: avoid;">
+          <p style="font-style: italic; color: #4b5563; font-size: 10pt; margin-bottom: 20pt;">
+            "A palavra de Deus é viva e eficaz..." (Hebreus 4:12)
+          </p>
+          <div style="display: flex; justify-content: center; gap: 40pt; margin-bottom: 30pt;">
+            <div style="text-align: center;">
+              <div style="font-weight: 800; color: #065f46; font-size: 9pt; text-transform: uppercase;">Igreja Betânia</div>
+              <div style="color: #6b7280; font-size: 8pt;">Ipatinga/MG</div>
+            </div>
+          </div>
+          <div style="font-size: 8pt; color: #9ca3af; letter-spacing: 0.5pt; text-transform: uppercase; font-weight: 600;">
+            Gerado em ${new Date().toLocaleDateString('pt-BR')} • © Imersão Bíblica IA
+          </div>
         </div>
       </div>
     `;
     
     const opt = {
-      margin: 10,
-      filename: `Licao_${(selectedLesson.title || "Licao").replace(/\s+/g, '_')}_${new Date().getTime()}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      margin: 0,
+      filename: `Licao_${(selectedLesson.title || "Licao").replace(/\s+/g, '_')}.pdf`,
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
     
     // @ts-ignore
     html2pdf().from(element).set(opt).save().then(() => {
       showToast("Download concluído! 📄✨", "success");
+    }).catch(err => {
+      console.error('PDF error:', err);
+      showToast("Erro ao gerar PDF.", "error");
     });
   };
 
@@ -616,8 +646,8 @@ Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o 
                         components={{
                           strong: ({node, ...props}) => {
                             const content = String(props.children);
-                            // Improved regex for biblical references
-                            const bibleRegex = /((?:[123]\s)?[A-Z][a-zà-ÿ]+)\s\d+:\d+(?:-\d+)?/g;
+                            // Improved regex for biblical references including abbreviations
+                            const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
                             if (content.match(bibleRegex)) {
                               return (
                                 <button 
@@ -801,34 +831,39 @@ Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o 
                       Pontos Chave da Lição
                     </h4>
                     <ul className="space-y-3">
-                      <li className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                        <span className="font-black text-blue-600">01.</span>
-                        <span>**Definição de Ânimo Dobre:** A mente dividida ("dipsychos") que gera inconstância em todas as áreas da vida.</span>
-                      </li>
-                      <li className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                        <span className="font-black text-blue-600">02.</span>
-                        <span>**Impacto da Inconstância:** A oscilação impede o recebimento de bênçãos divinas e destrói a autoconfiança.</span>
-                      </li>
-                      <li className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                        <span className="font-black text-blue-600">03.</span>
-                        <span>**Raízes do Problema:** Falta de fé, escravidão emocional e negligência em pequenas responsabilidades (atrasos, desorganização).</span>
-                      </li>
-                      <li className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                        <span className="font-black text-blue-600">04.</span>
-                        <span>**O Caminho da Vitória:** Vigiar, chegar-se a Deus, purificar as mãos e limpar o coração (Tg 4:8).</span>
-                      </li>
-                      <li className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                        <span className="font-black text-blue-600">05.</span>
-                        <span>**Integridade e Decisão:** O ânimo é uma decisão, não apenas um sentimento passageiro. Requer integridade total.</span>
-                      </li>
-                      <li className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                        <span className="font-black text-blue-600">06.</span>
-                        <span>**A Luta Espiritual:** O conflito entre carne e espírito é real para todos, exigindo vigilância constante (Mt 26:41).</span>
-                      </li>
-                      <li className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                        <span className="font-black text-blue-600">07.</span>
-                        <span>**Promessa de Mudança:** A transformação é possível através da confiança, espera e ação no tempo de Deus.</span>
-                      </li>
+                      {[
+                        `**01.** **Definição de Ânimo Dobre:** A mente dividida ("dipsychos") que gera inconstância em todas as áreas da vida.`,
+                        `**02.** **Impacto da Inconstância:** A oscilação impede o recebimento de bênçãos divinas e destrói a autoconfiança.`,
+                        `**03.** **Raízes do Problema:** Falta de fé, escravidão emocional e negligência em pequenas responsabilidades (atrasos, desorganização).`,
+                        `**04.** **O Caminho da Vitória:** Vigiar, chegar-se a Deus, purificar as mãos e limpar o coração (Tg 4:8).`,
+                        `**05.** **Integridade e Decisão:** O ânimo é uma decisão, não apenas um sentimento passageiro. Requer integridade total.`,
+                        `**06.** **A Luta Espiritual:** O conflito entre carne e espírito é real para todos, exigindo vigilância constante (Mt 26:41).`,
+                        `**07.** **Promessa de Mudança:** A transformação é possível através da confiança, espera e ação no tempo de Deus.`
+                      ].map((item, idx) => (
+                        <li key={idx} className="flex gap-3 text-stone-600 dark:text-zinc-400">
+                          <ReactMarkdown 
+                            components={{
+                              strong: ({node, ...props}) => {
+                                const content = String(props.children);
+                                const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
+                                if (content.match(bibleRegex)) {
+                                  return (
+                                    <button 
+                                      onClick={() => handleBibleRefClick(content)}
+                                      className="bible-ref-link"
+                                    >
+                                      {content}
+                                    </button>
+                                  );
+                                }
+                                return <strong {...props} />;
+                              }
+                            }}
+                          >
+                            {item}
+                          </ReactMarkdown>
+                        </li>
+                      ))}
                     </ul>
                   </section>
                 ) : (
@@ -1050,7 +1085,7 @@ Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o 
                         <h4 className="font-black uppercase tracking-widest text-xs">Narração Emotiva do Guia</h4>
                       </div>
                       <SpeechGenerator 
-                        initialText={leaderGuideContent}
+                        initialText={processedLeaderGuide.replace(/<br\/>/g, '\n').replace(/#|##|###|\*/g, '')}
                         initialTitle={`Narração: Guia do Líder - ${selectedLesson?.title}`}
                         initialSubject="Guia do Líder"
                         initialEmotion="pastor"
@@ -1072,8 +1107,27 @@ Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o 
                     .leader-guide-content li { margin-bottom: 0.5rem; }
                     .leader-guide-content hr { margin: 2rem 0; border-color: #f3f4f6; }
                   `}</style>
-                  <ReactMarkdown rehypePlugins={[rehypeRaw]}>
-                    {leaderGuideContent}
+                  <ReactMarkdown 
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                      strong: ({node, ...props}) => {
+                        const content = String(props.children);
+                        const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
+                        if (content.match(bibleRegex)) {
+                          return (
+                            <button 
+                              onClick={() => handleBibleRefClick(content)}
+                              className="bible-ref-link"
+                            >
+                              {content}
+                            </button>
+                          );
+                        }
+                        return <strong {...props} />;
+                      }
+                    }}
+                  >
+                    {processedLeaderGuide}
                   </ReactMarkdown>
                 </div>
               </div>

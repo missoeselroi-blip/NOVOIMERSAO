@@ -967,7 +967,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                     
                     return (
                       <motion.div 
-                        key={verseId}
+                        key={`verse-${verseId}-${v.pk}`}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         className={cn(
@@ -1175,6 +1175,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                       </div>
                     ) : commentary ? (
                       <motion.div 
+                        key={`commentary-${selectedBook}-${selectedChapter}-${commentary.substring(0, 20)}`}
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         className="prose dark:prose-invert prose-sm max-w-none bg-white dark:bg-zinc-950 p-6 rounded-3xl border border-stone-100 dark:border-zinc-800 shadow-sm"
@@ -1286,7 +1287,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                           .map(id => {
                             const [v, b, c, vr] = id.split('_');
                             return (
-                              <div key={id} className="p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-stone-100 dark:border-zinc-800 shadow-sm space-y-2 group">
+                              <div key={`note-item-${id}`} className="p-4 bg-white dark:bg-zinc-950 rounded-2xl border border-stone-100 dark:border-zinc-800 shadow-sm space-y-2 group">
                                  <div className="flex justify-between items-center">
                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
                                      {books.find(bk => bk.pk === parseInt(b))?.name} {c}:{vr}
@@ -1319,6 +1320,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
       <AnimatePresence>
         {selectedVerses.length > 0 && (
           <motion.div 
+            key="footer-note-area"
             initial={{ y: 100, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: 100, opacity: 0 }}
