@@ -81,6 +81,7 @@ const RedacaoPage = lazyWithRetry(() => import('./pages/RedacaoPage'));
 const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazyWithRetry(() => import('./pages/TheologySearchPage'));
+const LexiconPage = lazyWithRetry(() => import('./pages/LexiconPage'));
 const EvangelismSearchPage = lazyWithRetry(() => import('./pages/EvangelismSearchPage'));
 const CoursesPage = lazyWithRetry(() => import('./pages/CoursesPage'));
 import TheologyPage from './pages/TheologyPage';
@@ -221,6 +222,7 @@ function AppContent() {
   const mainNavItems = [
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
+    { id: 'lexicon', label: 'Dicionário', icon: <Search size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
@@ -234,6 +236,7 @@ function AppContent() {
     { id: 'bible', label: 'Bíblia', subtitle: 'A Palavra de Deus', icon: <Book size={20} />, component: <BiblePage /> },
     { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage />, hidden: true },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
+    { id: 'lexicon', label: 'Dicionário', subtitle: 'Léxico e Comparativo', icon: <Search size={20} />, component: <LexiconPage /> },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'courses', label: 'Cursos', subtitle: 'Jornada de aprendizado', icon: <GraduationCap size={20} />, component: <CoursesPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },

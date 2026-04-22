@@ -52,7 +52,7 @@
             "totalStudies": { "type": "integer" },
             "forumParticipations": { "type": "integer" },
             "shares": { "type": "integer" },
-            "hasContributed": { "type": "boolean" },
+            "gamesPlayed": { "type": "integer" },
             "membershipMonths": { "type": "integer" }
           }
         }
@@ -179,7 +179,7 @@
         "totalTime": { "type": "integer" },
         "forumParticipations": { "type": "integer" },
         "shares": { "type": "integer" },
-        "hasContributed": { "type": "boolean" },
+        "gamesPlayed": { "type": "integer" },
         "membershipMonths": { "type": "integer" },
         "sectionTimes": { 
           "type": "object",

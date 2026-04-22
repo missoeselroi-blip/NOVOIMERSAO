@@ -34,7 +34,7 @@ const MOCK_USER: UserProfile = {
   hoursPerMonth: 4.5,
   shares: 12,
   forumParticipations: 8,
-  contributions: 15,
+  gamesPlayed: 15,
   points: 2450,
   authorized: false,
   trend: 'up'
@@ -103,7 +103,7 @@ export default function CareerPage() {
             hoursPerMonth: progressData.hoursPerMonth || 0,
             shares: progressData.shares || 0,
             forumParticipations: progressData.forumParticipations || 0,
-            contributions: progressData.contributions || 0
+            gamesPlayed: progressData.gamesPlayed || 0
           } as UserProfile;
         });
         setLeaderboard(data);
@@ -488,7 +488,7 @@ export default function CareerPage() {
               <StatCard icon={<Users className="text-emerald-500" />} label="Participação Fórum" value={metrics.forumParticipations} />
               <StatCard icon={<Share2 className="text-pink-500" />} label="Compartilhamentos" value={metrics.shares} />
               <StatCard icon={<Award className="text-amber-500" />} label="Pontos" value={currentCareer.points || 0} />
-              <StatCard icon={<Heart className="text-red-500" />} label="Contribuição" value={metrics.hasContributed ? 'Sim' : 'Não'} />
+              <StatCard icon={<Trophy className="text-emerald-500" />} label="Jogos" value={metrics.gamesPlayed} />
             </div>
 
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">

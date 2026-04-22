@@ -63,7 +63,7 @@ interface Metrics {
   totalStudies?: number;
   forumParticipations: number;
   shares: number;
-  hasContributed: boolean;
+  gamesPlayed: number;
   membershipMonths: number;
   sectionTimes?: Record<string, number>;
 }
@@ -171,7 +171,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     totalTime: 0,
     forumParticipations: 0,
     shares: 0,
-    hasContributed: false,
+    gamesPlayed: 0,
     membershipMonths: 0,
     sectionTimes: {},
   });
@@ -252,7 +252,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             totalTime: 0,
             forumParticipations: 0,
             shares: 0,
-            hasContributed: false,
+            gamesPlayed: 0,
             membershipMonths: 0,
             sectionTimes: {},
           });
@@ -355,7 +355,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           totalTime: 0,
           forumParticipations: 0,
           shares: 0,
-          hasContributed: false,
+          gamesPlayed: 0,
           membershipMonths: 0,
           sectionTimes: {},
         };
