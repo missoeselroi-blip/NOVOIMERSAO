@@ -81,7 +81,6 @@ const RedacaoPage = lazyWithRetry(() => import('./pages/RedacaoPage'));
 const StudentPage = lazyWithRetry(() => import('./pages/StudentPage'));
 const ProfilePage = lazyWithRetry(() => import('./pages/ProfilePage'));
 const TheologySearchPage = lazyWithRetry(() => import('./pages/TheologySearchPage'));
-const LexiconPage = lazyWithRetry(() => import('./pages/LexiconPage'));
 const EvangelismSearchPage = lazyWithRetry(() => import('./pages/EvangelismSearchPage'));
 const CoursesPage = lazyWithRetry(() => import('./pages/CoursesPage'));
 import TheologyPage from './pages/TheologyPage';
@@ -136,6 +135,7 @@ function AppContent() {
   const location = useLocation();
 
   const activeTab = location.pathname.substring(1) || 'home';
+  const effectiveActiveTab = (activeTab === 'study' && location.state?.tab === 'significado') ? 'significado' : activeTab;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [deepThinking, setDeepThinking] = useState(false);
@@ -211,7 +211,13 @@ function AppContent() {
       return;
     }
     setPendingTab(null);
-    navigate(tabId === 'home' ? '/' : `/${tabId}`, { state });
+    
+    if (tabId === 'significado') {
+      navigate('/study', { state: { tab: 'significado', ...state } });
+    } else {
+      navigate(tabId === 'home' ? '/' : `/${tabId}`, { state });
+    }
+    
     setIsMenuOpen(false);
   };
 
@@ -222,7 +228,7 @@ function AppContent() {
   const mainNavItems = [
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
-    { id: 'lexicon', label: 'Dicionário', icon: <Search size={22} /> },
+    { id: 'significado', label: 'Significado', icon: <Search size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
@@ -236,7 +242,7 @@ function AppContent() {
     { id: 'bible', label: 'Bíblia', subtitle: 'A Palavra de Deus', icon: <Book size={20} />, component: <BiblePage /> },
     { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage />, hidden: true },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
-    { id: 'lexicon', label: 'Dicionário', subtitle: 'Léxico e Comparativo', icon: <Search size={20} />, component: <LexiconPage /> },
+    { id: 'significado', label: 'Compare significados e religiões', subtitle: 'Léxico e Comparativo', icon: <Search size={20} />, component: <Navigate to="/study" state={{ tab: 'significado' }} replace />, hidden: true },
     { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'courses', label: 'Cursos', subtitle: 'Jornada de aprendizado', icon: <GraduationCap size={20} />, component: <CoursesPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
@@ -346,7 +352,7 @@ function AppContent() {
                   onClick={() => handleNavigate(item.id)}
                   className={cn(
                     "flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 relative py-2 group",
-                    activeTab === item.id ? "text-emerald-600" : "text-zinc-500"
+                    effectiveActiveTab === item.id ? "text-emerald-600" : "text-zinc-500"
                   )}
                 >
                   <div className="relative">
@@ -358,7 +364,7 @@ function AppContent() {
                     </div>
                   </div>
                   <span className="hidden lg:block">{item.label}</span>
-                  {activeTab === item.id && (
+                  {effectiveActiveTab === item.id && (
                     <motion.div 
                       layoutId="activeTabDesktop"
                       className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full"
@@ -524,12 +530,12 @@ function AppContent() {
               onClick={() => handleNavigate(item.id)}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative",
-                activeTab === item.id 
+                effectiveActiveTab === item.id 
                   ? "text-emerald-600" 
                   : isDark ? "text-zinc-500" : "text-stone-400"
               )}
             >
-              {activeTab === item.id && (
+              {effectiveActiveTab === item.id && (
                 <motion.div 
                   layoutId="activeTab"
                   className="absolute top-0 w-12 h-1 bg-emerald-600 rounded-b-full"
@@ -537,7 +543,7 @@ function AppContent() {
               )}
               <div className={cn(
                 "transition-transform duration-200",
-                activeTab === item.id ? "scale-110" : "scale-100"
+                effectiveActiveTab === item.id ? "scale-110" : "scale-100"
               )}>
                 {item.icon}
               </div>
@@ -613,14 +619,14 @@ function AppContent() {
                     onClick={() => handleNavigate(item.id)}
                     className={cn(
                       "w-full flex items-center gap-4 p-4 rounded-2xl text-sm font-bold transition-all",
-                      activeTab === item.id 
+                      effectiveActiveTab === item.id 
                         ? "bg-[#8A9A5B] text-white shadow-lg shadow-[#8A9A5B]/20" 
                         : isDarkMode ? "hover:bg-zinc-800 text-zinc-300" : "hover:bg-stone-50 text-stone-600"
                     )}
                   >
                     <div className={cn(
                       "p-2 rounded-xl transition-colors",
-                      activeTab === item.id ? "bg-white/20" : isDarkMode ? "bg-zinc-800" : "bg-stone-100"
+                      effectiveActiveTab === item.id ? "bg-white/20" : isDarkMode ? "bg-zinc-800" : "bg-stone-100"
                     )}>
                       {item.icon}
                     </div>

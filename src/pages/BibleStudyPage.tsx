@@ -37,6 +37,7 @@ import {
   Quote,
   ExternalLink,
   Image as ImageIcon,
+  Library,
   GraduationCap,
   Layout,
   Cross,
@@ -492,6 +493,12 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isFavorited, setIsFavorited] = useState(false);
 
   useEffect(() => {
+    if (location.state?.tab) {
+      setActiveTab(location.state.tab);
+      if (location.state.query) {
+        setSearchQuery(location.state.query);
+      }
+    }
     if (location.state?.offlineContent) {
       setResult(location.state.offlineContent);
       setActiveTab('result');
@@ -673,7 +680,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     { id: 'posts', label: 'Post (Artes IA)', icon: <ImageIcon size={18} /> },
     { id: 'compare', label: 'Compare Versões', icon: <Layers size={18} /> },
     { id: 'commentary', label: 'Debate Bíblico', icon: <MessageSquare size={18} /> },
-    { id: 'meaning', label: 'Significado', icon: <HelpCircle size={18} /> },
+    { id: 'significado', label: 'Significados', icon: <HelpCircle size={18} /> },
     { id: 'wiki', label: 'Pesquisa Infinita - Wiki', icon: <Globe size={18} /> },
     { id: 'apocrypha', label: 'Livros Apócrifos', icon: <BookOpen size={18} /> },
     { id: 'resources', label: 'Mapas e Notas', icon: <MapIcon size={18} /> },
@@ -2268,7 +2275,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     }
   };
 
-  const handleMeaningSearch = async (isFollowUp: boolean = false) => {
+  const handleMeaningSearch = async (isFollowUp: boolean = false, forceDeep: boolean = false) => {
     const query = isFollowUp ? followUpQuery : searchQuery;
     if (!query) return;
     
@@ -2284,22 +2291,24 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
       let prompt = "";
 
       const sourcesStr = selectedMeaningSources.length > 0 ? selectedMeaningSources.join(', ') : 'Dicionário Aurélio';
-      const isAI = selectedMeaningSources.some(s => s.includes('Gemini') || s.includes('ChatGPT') || s.includes('IA'));
+      const isAI = forceDeep || selectedMeaningSources.some(s => s.includes('Gemini') || s.includes('ChatGPT') || s.includes('IA'));
 
       if (isAI) {
-        systemInstruction = `Você é uma IA avançada especializada em estudos bíblicos e teologia. 
-        Sua tarefa é fornecer respostas detalhadas, contextuais e profundamente fundamentadas.
+        systemInstruction = "Você é um especialista reconhecido mundialmente em línguas originais bíblicas (Hebraico, Aramaico e Grego) e em Religião Comparada.";
         
-        DIRETRIZES:
-        1. Cite múltiplas fontes bíblicas (versículos específicos) e fontes teológicas (comentários, autores clássicos, léxicos).
-        2. Organize a resposta de forma clara usando títulos e listas.
-        3. Separe opiniões teológicas distintas quando houver divergências (ex: visões arminianas vs calvinistas, ou interpretações literais vs simbólicas).
-        4. Use um tom respeitoso, educativo e espiritual.
-        5. Se for uma palavra em grego ou hebraico, explique a etimologia e o uso cultural na época.`;
-
         prompt = isFollowUp 
-          ? `Pergunta de acompanhamento: "${query}"`
-          : `Explique detalhadamente o significado, contexto e implicações de: "${query}" utilizando as seguintes fontes: ${sourcesStr}`;
+          ? `Pergunta de acompanhamento sobre o estudo léxico/comparativo: "${query}"`
+          : `Forneça um estudo léxico e comparativo profundo para a palavra ou conceito: "${query}".
+
+Estruture sua resposta obrigatoriamente com as seguintes seções (use negrito para os títulos):
+
+1. **Léxico e Etimologia**: Explique o termo na língua original (transliteração e caracteres originais), sua raiz etimológica e como ele se conecta a outras palavras relacionadas.
+2. **Uso e Contexto Bíblico**: Como essa palavra é empregada no Antigo e Novo Testamento. Existe mudança de significado entre os testamentos ou autores? Cite versículos-chave.
+3. **Dicionários e Referências**: O que dizem os léxicos de autoridade (como Strong, Vine, Wycliffe ou TDNT - Dicionário Teológico do Novo Testamento).
+4. **Perspectiva e Comparação Religiosa**: Como este termo ou conceito é visto no Judaísmo Contemporâneo, Islamismo, Catolicismo Romano, Espiritismo ou religiões orientais (se houver paralelo relevante). Destaque semelhanças e divergências fundamentais.
+5. **Aplicação Acadêmica e Devocional**: Uma síntese do valor desse estudo para o entendimento teológico e uma aplicação pastoral prática.
+
+Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown para formatação rica.`;
       } else {
         prompt = `Forneça a definição e o significado de "${query}" de acordo com o padrão das seguintes fontes: ${sourcesStr}. Inclua etimologia e exemplos se possível.`;
       }
@@ -2609,9 +2618,9 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     } else if (activeTab === 'compare') {
       contentToShare = result;
       titleToShare = 'Comparação de Versões';
-    } else if (activeTab === 'meaning') {
+    } else if (activeTab === 'significado') {
       contentToShare = meaningResult;
-      titleToShare = 'Significado';
+      titleToShare = 'Significados';
     } else if (activeTab === 'wiki') {
       contentToShare = wikiResult;
       titleToShare = 'Wiki Bíblica';
@@ -6409,14 +6418,21 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
               </div>
             )}
 
-            {activeTab === 'meaning' && (
+            {activeTab === 'significado' && (
               <div className="space-y-6">
                 <div className="flex flex-col gap-4">
+                  <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-[2rem] border border-stone-200 dark:border-zinc-700 mb-2">
+                    <h3 className="text-xl font-bold font-serif italic text-stone-800 dark:text-stone-200 flex items-center gap-2">
+                      <Library size={20} className="text-emerald-600" />
+                      Compare Significados e Religiões
+                    </h3>
+                    <p className="text-stone-500 text-xs uppercase tracking-widest mt-1">Léxico e Estudo Comparativo Profundo</p>
+                  </div>
                   <div className="relative">
                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" size={20} />
                     <input
                       type="text"
-                      placeholder="⚓ Escreva a palavra, tema ou frase para saber o significado..."
+                      placeholder="⚓ Digite uma palavra ou tema (ex: Agape, Shalom, Justificação...)"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && handleMeaningSearch(false)}
@@ -6461,6 +6477,15 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Search size={20} />}
                     ⚓ Pesquisar
+                  </button>
+
+                  <button
+                    onClick={() => handleMeaningSearch(false, true)}
+                    disabled={isLoading || !searchQuery}
+                    className="w-full py-4 bg-white dark:bg-zinc-900 text-emerald-600 dark:text-emerald-400 font-bold rounded-2xl border-2 border-emerald-600 dark:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin" size={20} /> : <Library size={20} />}
+                    Compare Significados e Religiões
                   </button>
                 </div>
 
