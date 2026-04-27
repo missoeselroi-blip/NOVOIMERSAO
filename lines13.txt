@@ -1,0 +1,5 @@
+342:  "Esdras": 10, "Neemias": 13, "Ester": 10, "Jó": 42, "Salmos": 150,
+349:  "Romanos": 16, "1 Coríntios": 16, "2 Coríntios": 13, "Gálatas": 6,
+352:  "Filemom": 1, "Hebreus": 13, "Tiago": 5, "1 Pedro": 5, "2 Pedro": 3,
+763:  const [storiesTheaterAgeGroup, setStoriesTheaterAgeGroup] = useState('Adolescentes 13 a 17 anos');
+5005:                          { value: 'Adolescentes 13 a 17 anos', label: 'Adolescentes (13-17 anos)' },

@@ -720,7 +720,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       } else {
         const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
         const newNote = {
-          id: Date.now().toString(),
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           title: pendingNote.title,
           content: pendingNote.content,
           category,

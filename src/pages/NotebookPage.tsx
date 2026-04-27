@@ -179,7 +179,7 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
           showToast("Página atualizada localmente! 📝✨");
         } else {
           const newNote = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             title: currentNote.title,
             content: currentNote.content,
             category: currentNote.category,

@@ -242,7 +242,7 @@ export const AudioBoxProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const trackWithId = { 
           ...newTrack, 
           audioUrl: offlineAudioUrl,
-          id: Date.now().toString(), 
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`, 
           createdAt: new Date().toISOString() 
         };
         const updatedTracks = [trackWithId, ...currentTracks];

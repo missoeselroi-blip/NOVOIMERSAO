@@ -135,7 +135,7 @@ export default function PostsPage() {
 
   const handleSaveDraft = () => {
     const draft = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: 'post',
       verse,
       reference,
@@ -190,7 +190,7 @@ export default function PostsPage() {
       } else {
         const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
         const newNote = {
-          id: Date.now().toString(),
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           title: pendingNote.title,
           content: pendingNote.content,
           category,

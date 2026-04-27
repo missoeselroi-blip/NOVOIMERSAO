@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, Sparkles, BookOpen, Globe, MessageSquare, AlertCircle, Github } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '../types';
-import { auth } from '../lib/firebase';
+import { auth, isProjectSuspended } from '../lib/firebase';
 
 export const LoginPage: React.FC = () => {
   const { loginWithGoogle, loginWithGithub, loginWithEmail, registerWithEmail } = useAuth();
@@ -35,6 +35,7 @@ export const LoginPage: React.FC = () => {
       } else if (error && typeof error === 'object' && 'code' in error) {
         errorMessage = error.code;
       }
+      
       alert(isRegistering ? `Erro ao criar conta: ${errorMessage}` : `Erro ao entrar: ${errorMessage}`);
     } finally {
       setIsLoading(false);
@@ -51,6 +52,7 @@ export const LoginPage: React.FC = () => {
         console.log("Login popup closed by user");
         return;
       }
+      
       setError(err.message || "Erro ao fazer login com Google.");
     } finally {
       setIsLoading(false);
@@ -86,7 +88,17 @@ export const LoginPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 md:p-12 shadow-2xl border border-stone-100 dark:border-zinc-800 relative z-10"
       >
-        {!isFirebaseConfigured && (
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl flex items-start gap-3">
+            <AlertCircle className="text-red-600 flex-shrink-0 mt-0.5" size={18} />
+            <div className="text-xs text-red-800 dark:text-red-400 leading-relaxed">
+              <p className="font-bold mb-1">Erro de Acesso</p>
+              <p>{error}</p>
+            </div>
+          </div>
+        )}
+
+        {!isFirebaseConfigured && !error && (
           <div className="mb-6 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl flex items-start gap-3">
             <AlertCircle className="text-amber-600 flex-shrink-0 mt-0.5" size={18} />
             <div className="text-xs text-amber-800 dark:text-amber-400 leading-relaxed">

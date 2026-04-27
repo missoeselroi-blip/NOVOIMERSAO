@@ -119,7 +119,7 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
         const entries = saved ? JSON.parse(saved) : [];
         
         const newEntry = {
-          id: Date.now().toString(),
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           title: pendingNote.title,
           content: pendingNote.content,
           category,

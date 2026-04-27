@@ -105,8 +105,12 @@ import { CreditInfoTip } from '../components/CreditInfoTip';
 import { CreditCostBadge } from '../components/CreditCostBadge';
 
 const handleFirestoreError = (error: unknown, operationType: OperationType, path: string | null) => {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const isSuspendedError = errorMessage.includes('permission-denied') || errorMessage.includes('api-key') || errorMessage.includes('suspended');
+  const isOfflineError = errorMessage.includes('offline') || errorMessage.includes('unavailable');
+
   const errInfo = {
-    error: error instanceof Error ? error.message : String(error),
+    error: errorMessage,
     authInfo: {
       userId: auth.currentUser?.uid,
       email: auth.currentUser?.email,
@@ -121,9 +125,12 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
       })) || []
     },
     operationType,
-    path
+    path,
+    possibleCause: isSuspendedError ? 'PROJETO_RESTRITO' : (isOfflineError ? 'ERRO_DE_CONECTIVIDADE' : 'OPERACAO_FALHOU')
   };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
+
+  console.error('Firestore Error Detailed:', JSON.stringify(errInfo, null, 2));
+
   throw new Error(JSON.stringify(errInfo));
 };
 
@@ -779,7 +786,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const addToHistory = (item: Omit<StudyHistoryItem, 'id' | 'date'>) => {
     const newItem: StudyHistoryItem = {
       ...item,
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       date: new Date().toLocaleString('pt-BR'),
     };
     const updatedHistory = [newItem, ...studyHistory].slice(0, 20);
@@ -1023,7 +1030,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
         const saved = localStorage.getItem('preacher_notes');
         const entries = saved ? JSON.parse(saved) : [];
         const newEntry = {
-          id: Date.now().toString(),
+          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
           title: pendingNote.title,
           content: pendingNote.content,
           category,
@@ -1077,7 +1084,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
           showToast("Página atualizada localmente! 📝✨");
         } else {
           const newNote = {
-            id: Date.now().toString(),
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             title: currentNote.title,
             content: currentNote.content,
             date: new Date().toLocaleDateString('pt-BR')
@@ -2649,7 +2656,7 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
 
   const handleSaveDraft = () => {
     const draft = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type: creationType,
       topic: topic,
       content: result || lessonResult || studyResult || outline || devotionalResult || debateResult || bookletResult,
@@ -3348,9 +3355,9 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {studyHistory.map((item) => (
+                    {studyHistory.map((item, idx) => (
                       <button
-                        key={item.id}
+                        key={`history-item-${item.id}-${idx}`}
                         onClick={() => loadFromHistory(item)}
                         className="w-full p-4 bg-stone-50 dark:bg-zinc-800/50 border border-stone-100 dark:border-zinc-800 rounded-2xl text-left hover:border-emerald-500 hover:bg-emerald-50/30 transition-all group"
                       >
@@ -3790,8 +3797,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                     >
                       <option value="">Selecione Bíblia de Estudo (85)</option>
                       <option value="Todas as Bíblias">Todos(as)...</option>
-                      {biblesList.map(bible => (
-                        <option key={bible} value={bible}>{bible}</option>
+                      {biblesList.map((bible, idx) => (
+                        <option key={`bible-${bible}-${idx}`} value={bible}>{bible}</option>
                       ))}
                     </select>
 
@@ -3802,8 +3809,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                     >
                       <option value="">Selecione o Comentário Bíblico (10)</option>
                       <option value="Todos os Comentários">Todos(as)...</option>
-                      {commentariesList.map(commentary => (
-                        <option key={commentary} value={commentary}>{commentary}</option>
+                      {commentariesList.map((commentary, idx) => (
+                        <option key={`commentary-${commentary}-${idx}`} value={commentary}>{commentary}</option>
                       ))}
                     </select>
 
@@ -3814,8 +3821,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                     >
                       <option value="">Selecione o Dicionário Bíblico (11)</option>
                       <option value="Todos os Dicionários">Todos(as)...</option>
-                      {dictionariesList.map(dictionary => (
-                        <option key={dictionary} value={dictionary}>{dictionary}</option>
+                      {dictionariesList.map((dictionary, idx) => (
+                        <option key={`dictionary-${dictionary}-${idx}`} value={dictionary}>{dictionary}</option>
                       ))}
                     </select>
 
@@ -3826,8 +3833,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                     >
                       <option value="">Selecione a Enciclopédia Bíblica (10)</option>
                       <option value="Todas as Enciclopédias">Todos(as)...</option>
-                      {encyclopediasList.map(encyclopedia => (
-                        <option key={encyclopedia} value={encyclopedia}>{encyclopedia}</option>
+                      {encyclopediasList.map((encyclopedia, idx) => (
+                        <option key={`encyclopedia-${encyclopedia}-${idx}`} value={encyclopedia}>{encyclopedia}</option>
                       ))}
                     </select>
                   </div>
@@ -4010,9 +4017,9 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                     {GOSPEL_AUTHORS.filter(a => 
                       a.name.toLowerCase().includes(authorSearchQuery.toLowerCase()) ||
                       a.works.some(w => w.toLowerCase().includes(authorSearchQuery.toLowerCase()))
-                    ).map(author => (
+                    ).map((author, idx) => (
                       <button
-                        key={author.name}
+                        key={`${author.name}-${idx}`}
                         onClick={() => {
                           setSelectedAuthor(author.name);
                           setAuthorSearchQuery('');
@@ -4039,8 +4046,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                       className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm appearance-none"
                     >
                       <option value="">Selecione um Autor</option>
-                      {GOSPEL_AUTHORS.map(author => (
-                        <option key={author.name} value={author.name}>{author.name}</option>
+                      {GOSPEL_AUTHORS.map((author, idx) => (
+                        <option key={`${author.name}-${idx}`} value={author.name}>{author.name}</option>
                       ))}
                     </select>
                   </div>
@@ -4053,8 +4060,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                       className="w-full pl-12 pr-4 py-4 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm appearance-none disabled:opacity-50"
                     >
                       <option value="">Obras Principais (Opcional)</option>
-                      {selectedAuthor && GOSPEL_AUTHORS.find(a => a.name === selectedAuthor)?.works.map(work => (
-                        <option key={work} value={work}>{work}</option>
+                      {selectedAuthor && GOSPEL_AUTHORS.find(a => a.name === selectedAuthor)?.works.map((work, idx) => (
+                        <option key={`${work}-${idx}`} value={work}>{work}</option>
                       ))}
                     </select>
                   </div>
@@ -5992,7 +5999,7 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                                       list="commentators-list"
                                     />
                                     <datalist id="commentators-list">
-                                      {commentators.map(c => <option key={c.name} value={c.name} />)}
+                                      {commentators.map((c, cIdx) => <option key={`commentator-opt-${c.name}-${cIdx}`} value={c.name} />)}
                                     </datalist>
                                   </div>
                                   {selectedCommentators.length > 1 && (
@@ -6683,8 +6690,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                           <div className="col-span-full mb-1">
                             <h5 className="text-xs font-bold text-amber-600 dark:text-amber-500 uppercase">Católicos</h5>
                           </div>
-                          {CATHOLIC_APOCRYPHA.map(book => (
-                            <label key={book.name} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                          {CATHOLIC_APOCRYPHA.map((book, bIdx) => (
+                            <label key={`apocrypha-catholic-${book.name}-${bIdx}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
                               <input
                                 type="checkbox"
                                 checked={selectedApocryphaBooks.includes(book.name)}
@@ -6703,8 +6710,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                           <div className="col-span-full mt-2 mb-1">
                             <h5 className="text-xs font-bold text-rose-600 dark:text-rose-500 uppercase">Novo Testamento</h5>
                           </div>
-                          {NT_APOCRYPHA.map(book => (
-                            <label key={book.name} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
+                          {NT_APOCRYPHA.map((book, bIdx) => (
+                            <label key={`apocrypha-nt-${book.name}-${bIdx}`} className="flex items-center gap-2 p-2 rounded-lg hover:bg-stone-50 dark:hover:bg-zinc-800 cursor-pointer transition-colors">
                               <input
                                 type="checkbox"
                                 checked={selectedApocryphaBooks.includes(book.name)}
@@ -6806,8 +6813,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
 
             {activeTab === 'resources' && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {resources.map((res) => (
-                  <div key={res.title} className="p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl hover:shadow-md transition-shadow group">
+                {resources.map((res, idx) => (
+                  <div key={`${res.title}-${idx}`} className="p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl hover:shadow-md transition-shadow group">
                     <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center text-emerald-600 mb-4 group-hover:scale-110 transition-transform">
                       <MapIcon size={24} />
                     </div>

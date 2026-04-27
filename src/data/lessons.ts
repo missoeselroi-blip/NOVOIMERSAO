@@ -208,13 +208,6 @@ Para neutralizar esse mal, o mero esforço humano não é suficiente. É necess�
 
 # **CONCLUSÃO**
 A verdadeira libertação da inconstância não provém do esforço exaustivo para provar o seu valor, mas da compreensão profunda da sua identidade como filho amado de Deus. Ao entender que a sua aprovação já foi garantida na cruz, você se liberta do peso da performance e da necessidade de validação humana, deixando de agir como um órfão ou um funcionário focado apenas em bater metas. Quando essa verdade cria raízes no coração, o foco muda do que você "tem que fazer" para quem você "é" no Reino, fazendo com que as emoções oscilantes, o medo e o desânimo percam a sua força. Isso dá lugar a uma paz genuína e a uma convicção que o capacitam a enfrentar tempestades, avançando com integridade, constância e sem olhar para trás.
-
----
-
-# **PERGUNTAS PARA DISCUSSÃO EM GRUPO**
-1. Por que é mais fácil nos vermos como "empregados" de Deus do que como "filhos" amados?
-2. Como a necessidade de aprovação das pessoas afeta a sua constância na igreja e na vida pessoal?
-3. De que maneira a história de Marta e Maria (Lucas 10:38-42) nos ajuda a entender a diferença entre "fazer" e "ser"?
 `;
 
     leaderGuide = `
@@ -267,14 +260,150 @@ Ao terminar a lição, ore especificamente para que o Espírito Santo realize o 
 
 **Frase de Efeito para encerrar:** "Você não trabalha PARA ser aceito; você trabalha PORQUE já foi aceito."
 `;
+  } else if (id === 14) {
+    content = `
+# LIÇÃO DE CÉLULA – Nº 14 ANO 26 – 5ª SEMANA – 29/04 A 05/05 – SÉRIE: COMBUSTÍVEL
+
+<br/>
+
+## **TEMA: 2º ANTÍDOTO = FÉ GENUÍNA**
+
+<br/>
+
+### **TEXTO: HEBREUS 11:1**
+
+---
+
+<br/>
+
+**BATE PAPO INICIAL:**
+“O que a Bíblia revela sobre a fé? Qual a sua importância em nossa vida?”*
+
+<br/>
+
+---
+
+# **INTRODUÇÃO**
+Na nossa jornada para combater o ânimo dobre, já compreendemos que o primeiro passo que é restaurar a nossa identidade. Saber que somos filhos amados de Deus (independente, de qualquer coisa) nos liberta da necessidade de aprovação humana. No entanto, saber quem somos é apenas o começo; precisamos também relembrar em quem devemos crer e como lidamos com o tempo d’Ele (próxima lição). Quando as circunstâncias ao nosso redor parecem desmentir as promessas de Deus, o nosso coração é tentado a duvidar e a se decepcionar e até desesperar. O desânimo ganha uma força terrível quando tentamos controlar os resultados e o relógio de Deus. Na lição de hoje, vamos aprofundar em mais um antídoto que além de combater a inconstância é o passaporte da eternidade: a construção de uma fé que busca a face e não as mãos de Deus.
+
+---
+
+# **DESENVOLVIMENTO**
+## **2º Antídoto: Adquirindo uma Fé Genuína**
+Muitas vezes, a nossa crise de ânimo não é falta de fé, mas sim o resultado de uma fé mal direcionada. Precisamos desconstruir a “fé religiosa ou comercial” para abraçar a “fé relacional”.
+
+**Pergunta 1: Você consegue distinguir entre os três tipos de Fé supracitados: religiosa, comercial e relacional?***
+
+* **O Problema: A Síndrome da "Fé de Troca"**
+Vivemos em uma cultura de imediatismo e consumo, e corremos o grave risco de trazer essa mentalidade para o nosso relacionamento com Deus. O problema surge quando a nossa fé se baseia em "trocas": nós oramos, jejuamos e servimos apenas para que Deus faça o que nós queremos. Tratamos Deus como um gênio da lâmpada. O resultado dessa visão distorcida é inevitável: quando Deus diz "no", quando o milagre não acontece do nosso jeito ou a bênção atrasa, a frustração nos engole e o desânimo domina. A fé baseada em barganhas, em algum momento, terminará em inconstância, decepção e desânimo. Muitas pessoas que foram atraídas por este evangelho fake que prega que Deus resolverá todos os seus problemas de saúde e financeiros por meio de ofertas e campanhas intermináveis tem se decepcionado e desviado da fé. A teologia da prosperidade, em minha visão, é a maior e mais destrutiva heresia que surgiu em nossa geração; produzindo uma grande quantidade de igrejas e crentes rasos, que veem a Deus como um meio e não um fim. Pregações que não combatem a ganância, o egoísmo, o pecado... São cultos centralizados no dinheiro, no bem estar e no sucesso do homem erguendo um altar hedonista “enaltectendo a Mamom – Mt 6:4” no lugar do altar de adoração a Deus.
+
+**Pergunta 2: O que é a teologia da prosperidade e por que ela é uma heresia?***
+
+**Pergunta 3: Quem é MAMOM na Bíblia e como podemos combatê-lo?***
+
+* **A Solução: A Fé como Submissão à Soberania**
+A verdadeira fé bíblica não consiste em dar ordens a Deus ou "determinar" o que Ele tem que fazer (como a teologia da prosperidade erroneamente afirma). Fé genuína é ouvir a Sua voz e obedecer. É a profunda certeza de que Deus está no controle absoluto do universo e da nossa vida, independentemente das circunstâncias adversas que nos cercam. Uma fé autêntica não busca dobrar a vontade de Deus aos nossos desejos naturais e muitos menos de nossos caprichos infantis, mas sim alinhar os nossos desejos (genuínos) ao Plano Eterno d'Ele. Crer de verdade é dizer: "Senhor, eu confio no Teu caráter, mesmo quando não entendo as Tuas mãos".
+
+**Pergunta 4: Em sua visão o que seria um desejo genuíno? Seria apenas natural e fisiológico? E quando os desejos carnais, emocionais, existenciais se tornam pecados?***
+
+* **Ponto Chave: O Grão de Mostarda e o Propósito**
+Jesus disse que uma fé do tamanho de um grão de mostarda é suficiente para mover montanhas. O segredo aqui não é o tamanho ou a quantidade da sua fé, mas sim o foco dela. A fé move montanhas desde que essa montanha esteja no caminho da vontade e do propósito soberano de Deus. O poder não está na sua declaração, mas n'Aquele em quem você decidiu confiar e o centro da Sua vontade para você.
+
+---
+
+# **CONCLUSÃO**
+Quando paramos de tentar manipular Deus com barganhas e entregamos a Ele o controle da nossa vida: a ansiedade e o medo perdem o seu poder. Você não precisa ter todas as respostas hoje. Você só precisa ter a certeza de que a sua vida está nas mãos daquele que escreve com amor a sua História. Descanse. Confie. E avance no ritmo da revelação e da graça.
+
+P.S. *No Guia do líder você vai encontrar um breve estudo respondendo as perguntas da lição para estudo e aprofundamento.
+`;
+
+    leaderGuide = `
+## GUIA DO LÍDER – LIÇÃO 14 – 2º ANTÍDOTO “FÉ RELACIONAL”
+
+Neste GUIA DO LÍDER vamos responder as perguntas com um breve estudo para aprofundamento do líder.
+
+### **PRIMEIRA INTERAÇÃO: BATE PAPO INICIAL**
+Ao citar os versículos facilmente a segunda pergunta é respondida.
+* **Hebreus 11:1:** "Ora, a fé é a certeza daquilo que esperamos e a prova das coisas que não vemos" (Texto base que define a fé).
+* **Romanos 10:17:** "De sorte que a fé é pelo ouvir, e o ouvir pela palavra de Deus" (Origem da fé).
+* **2 Coríntios 5:7:** "Porque vivemos por fé, e não pelo que vemos" (O modo de vida do cristão).
+* **Hebreus 11:6:** "Ora, sem fé é impossível agradar-lhe; porque é necessário que aquele que se aproxima de Deus creia que ele existe..." (A necessidade da fé).
+* **Tiago 2:17:** "Assim também a fé, se não tiver as obras, é morta em si mesma" (A relação entre fé e atitude).
+* **Marcos 11:24:** "...tudo o que pedirdes em oração, crede que o recebereis, e tê-lo-eis" (Fé na oração).
+* **Efésios 2:8-9:** "Porque pela graça sois salvos, por meio da fé; e isto não vem de vós, é dom de Deus" (Fé para salvação).
+* **Mateus 17:20:** "...se tiverdes fé como um grão de mostarda... nada vos será impossível" (O poder da fé).
+
+### **Textos para Fortalecer a Fé e Confiança**
+* **Salmos 37:5:** "Entrega o teu caminho ao Senhor; confia nele, e ele o fará".
+* **Provérbios 3:5:** "Confia no Senhor de todo o teu coração, e não te estribes no teu próprio entendimento".
+* **1 João 5:4:** "Porque todo o que é nascido de Deus vence o mundo; e esta é a vitória que vence o mundo: a nossa fé".
+* **Filipenses 4:13:** "Posso todas as coisas naquele que me fortalece".
+
+---
+
+## **RESPONDENDO AS QUATRO PERGUNTAS DA LIÇÃO 14**
+
+### **Pergunta 1: Você consegue distinguir entre os três tipos de Fé supracitados: religiosa, comercial e relacional?**
+
+**A "FÉ COMERCIAL"** (ou fé transacional) é aquela que transforma o relacionamento com Deus em uma relação de negócios, baseada inteiramente na lógica de troca e de mérito.
+* **A Lógica da Barganha:** A pessoa acredita que pode "comprar" ou "exigir" o favor de Deus por meio de suas ações.
+* **Deus como Meio, não como Fim:** O foco não está em conhecer, amar ou obedecer ao Criador, mas sim no que Ele pode oferecer.
+* **Amor e Serviço Condicionais:** A fidelidade depende exclusivamente dos "resultados".
+* **O Falso Sentimento de Culpa ou Soberba:** Achar que "pagou pouco" ou que o milagre veio por mérito próprio.
+
+**A "FÉ APENAS RELIGIOSA"** (legalista, institucional ou cultural) é aquela que se apoia no estrito cumprimento de regras e rituais externos, vazia de um relacionamento íntimo.
+* **Foco no "Fazer" em vez do "Ser"**: Acredita que agrada a Deus pelo ativismo ou cumprimento mecânico de rituais.
+* **Aparência e Uso de Máscaras**: Vive de aparências, escondendo quem realmente é.
+* **Legalismo e Falta de Amor**: A regra é mais importante do que as pessoas.
+* **Herança Cultural, sem Experiência Pessoal**: Fé herdada dos pais ou do meio social, sem o coração "queimar".
+
+**A "FÉ RELACIONAL"** é o antídoto perfeito. Deus é visto como um Pai amado e um Amigo íntimo.
+* **Busca pela Face, não apenas pelas Mãos**: Busca a Deus pelo que Ele é.
+* **Identidade de Filho (Filiação)**: Age como filho e herdeiro, não como escravo.
+* **Obediência Baseada em Aliança**: Resposta natural de quem ama.
+* **Confiança Inabalável no Silêncio e na Dor**: Confia no caráter de Deus acima das circunstâncias.
+* **Transformação Genuína**: Muda de dentro para fora.
+
+### **Pergunta 2: O que é a teologia da prosperidade e por que ela é uma heresia?**
+É uma heresia porque:
+* **Transforma a fé em comércio**: Trata Deus como um "gênio da lâmpada".
+* **Ignora a cruz e o sofrimento**: Nega o ensinamento de que cristãos passarão por aflições.
+* **Incentiva a idolatria**: Desvia o foco da salvação para a ganância.
+* **Culpabiliza a vítima**: Impõe fardo cruel sobre quem sofre, acusando de "pouca fé".
+* **Distorce a salvação**: Reduz o Evangelho a conquistas materiais passageiras.
+
+### **Pergunta 3: Quem é MAMOM na Bíblia e como podemos combatê-lo?**
+Mamom é a personificação da riqueza como um "senhor" ou força espiritual que exige adoração.
+Para combatê-lo:
+* **Praticar a generosidade**: Ofertar e ajudar o próximo.
+* **Dominar as finanças**: Organizar as contas e fugir das dívidas.
+* **Cultivar o contentamento**: Ser grato pelo que se tem hoje.
+* **Firmar a identidade em Deus**: Valor está em ser filho de Deus.
+* **Priorizar o Reino**: Buscar a Deus em primeiro lugar.
+
+### **Pergunta 4: Em sua visão o que seria um desejo genuíno?**
+1. **Desejos Genuínos (Legítimos e Naturais)**: Fisiológicos (fome, sede, descanso) e Emocionais/Existenciais (pertencimento, propósito).
+2. **Desejos Carnais**: Impureza, sensualidade, cobiça, inveja.
+3. **Desejos Infantis**: Egocentrismo, "fé mimada".
+4. **Desejos de Poder, Fama e Vaidade**: Egocêntricos.
+5. **Desejos Visuais**: Cobiça e consumismo.
+6. **Desejos Espirituais**: Fome de Deus, amor ao próximo.
+
+---
+
+### **DICAS PARA O LÍDER**
+* **Vulnerabilidade**: Compartilhe suas próprias lutas com a inconstância.
+* **Foco no Reino**: Lembre que a fé genuína nos torna "antifrágeis".
+* **Evangelismo**: Use a crise de identidade do século como gancho para apresentar a Cristo.
+`;
   }
 
   return {
     id,
     title: `Lição ${String(id).padStart(2, '0')}`,
-    theme: id === 12 ? "Ânimo Dobre Parte I" : (id === 13 ? "Ânimo Dobre Parte II" : undefined),
+    theme: id === 12 ? "Ânimo Dobre Parte I" : (id === 13 ? "Ânimo Dobre Parte II" : (id === 14 ? "Fé Genuína" : undefined)),
     content,
     leaderGuide,
-    hasAttachment: id === 12 || id === 13
+    hasAttachment: id === 12 || id === 13 || id === 14
   };
 });

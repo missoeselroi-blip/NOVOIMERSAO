@@ -1,0 +1,2 @@
+130:    // Regex to match biblical references like "João 3:16", "1 Coríntios 13:1-8", "TG 4:8", etc.
+1003:            className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"

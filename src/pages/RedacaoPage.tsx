@@ -51,7 +51,7 @@ export default function RedacaoPage() {
     }
 
     const newDraft = {
-      id: Date.now().toString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       text,
       date: new Date().toLocaleString('pt-BR')
     };

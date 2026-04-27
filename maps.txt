@@ -1,0 +1,273 @@
+src/pages/EvangelismSearchPage.tsx:          ].map((item, i) => (
+src/pages/DevotionalPage.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/pages/DevotionalPage.tsx:      const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+src/pages/DevotionalPage.tsx:      const plans = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+src/pages/DevotionalPage.tsx:      setReadingPlans(readingPlans.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+src/pages/DevotionalPage.tsx:      setReadingPlans(readingPlans.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+src/pages/DevotionalPage.tsx:      setReadingPlans(readingPlans.map(p => p.id === updatedPlan.id ? updatedPlan : p));
+src/pages/DevotionalPage.tsx:                    {['Agradecimento', 'Adoração', 'Entrega', 'Cura', 'Libertação', 'Salvação', 'Direção', 'Família', 'Emprego', 'Provisão', 'Proteção', 'Livramento', 'Avivamento', 'Consolo'].map(t => <option key={t} value={t}>{t}</option>)}
+src/pages/DevotionalPage.tsx:        {THEMES.map((theme) => (
+src/pages/DevotionalPage.tsx:              {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(d => (
+src/pages/DevotionalPage.tsx:              {[...Array(firstDayOfMonth)].map((_, i) => (
+src/pages/DevotionalPage.tsx:              {[...Array(daysInMonth)].map((_, i) => {
+src/pages/DevotionalPage.tsx:            {favorites.map((fav) => (
+src/pages/DevotionalPage.tsx:                {['Atendida', 'Pedir mais', 'Agradecer'].map(tag => (
+src/pages/DevotionalPage.tsx:                {journalEntries.filter(entry => !selectedTagFilter || (entry.tags && entry.tags.includes(selectedTagFilter))).map((entry) => (
+src/pages/DevotionalPage.tsx:                  {[...Array(365)].map((_, i) => {
+src/pages/StorytellingPage.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/pages/StorytellingPage.tsx:            ].map((item, i) => (
+src/pages/StorytellingPage.tsx:                  {STORYTELLING_AUTHORS.map(author => (
+src/pages/StorytellingPage.tsx:            {STORYTELLING_SUBJECTS.map((subject, i) => {
+src/pages/StorytellingPage.tsx:                {[1,2,3,4,5].map(i => (
+src/pages/StorytellingPage.tsx:                    {chapterQuiz.map((q, qIdx) => (
+src/pages/StorytellingPage.tsx:                          {q.options.map((opt: string, oIdx: number) => {
+src/pages/StudentPage.tsx:const THEOLOGY_SUBJECTS = THEOLOGY_SUBJECTS_DATA.map(s => s.title);
+src/pages/StudentPage.tsx:const EVANGELISM_SUBJECTS = EVANGELISM_SUBJECTS_DATA.map(s => s.title);
+src/pages/StudentPage.tsx:      const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+src/pages/StudentPage.tsx:  const chartData = THEOLOGY_SUBJECTS.map(subject => {
+src/pages/StudentPage.tsx:  const evangelismChartData = EVANGELISM_SUBJECTS.map(subject => {
+src/pages/StudentPage.tsx:                      {THEOLOGY_SUBJECTS.map((subject, i) => {
+src/pages/StudentPage.tsx:                      certificates.map((cert, i) => (
+src/pages/StudentPage.tsx:                        {recommendations.map((rec, index) => (
+src/pages/StudentPage.tsx:                {EVANGELISM_SUBJECTS.map((subject) => {
+src/pages/StudentPage.tsx:                  {summaries.map((summary) => (
+src/pages/CareerPage.tsx:        const data = snapshot.docs.map(doc => {
+src/pages/CareerPage.tsx:        const updatePromises = querySnapshot.docs.map(doc => 
+src/pages/CareerPage.tsx:                  {[...Array(currentCareer.stars || 0)].map((_, i) => (
+src/pages/CareerPage.tsx:                    {nextRank.requirements.map((req, i) => (
+src/pages/CareerPage.tsx:              {RANKS.map((rank) => (
+src/pages/CareerPage.tsx:                  {[...Array(rank.stars)].map((_, i) => (
+src/pages/CareerPage.tsx:                {rank.requirements.map((req, i) => (
+src/pages/CareerPage.tsx:                  .map((member) => {
+src/pages/CareerPage.tsx:                            {[...Array(member.stars)].map((_, i) => (
+src/pages/ContactPage.tsx:          {contactInfo.map((info) => (
+src/pages/MissionaryPage.tsx:        ].map((item, i) => (
+src/pages/SermonsPage.tsx:      const sermonsData = snapshot.docs.map(doc => ({
+src/pages/SermonsPage.tsx:            {mockSermons.map((sermon, index) => (
+src/pages/SermonsPage.tsx:                {userSermons.map((sermon) => (
+src/pages/SermonsPage.tsx:                                {[...Array(8)].map((_, i) => (
+src/pages/StoryGame.tsx:                      {currentSegment.text.replace(currentSegment.hiddenWord, "_______").split(' ').map((word, idx) => (
+src/pages/StoryGame.tsx:                    {currentSegment.question.options.map((option, idx) => (
+src/pages/CreditPage.tsx:          {purchaseOptions.map((option) => (
+src/pages/CreditPage.tsx:              {displayedHistory.map((item) => (
+src/pages/JournalPage.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/pages/JournalPage.tsx:      const fetchedEntries = snapshot.docs.map(doc => ({
+src/pages/JournalPage.tsx:          filteredEntries.map((entry) => (
+src/pages/StorytellingSearchPage.tsx:          ].map((item, i) => (
+src/pages/LessonPage.tsx:          {filteredLessons.map((lesson) => (
+src/pages/LessonPage.tsx:                      {notesHistory.map((note, idx) => (
+src/pages/LessonPage.tsx:                      ].map((item, idx) => (
+src/pages/LessonPage.tsx:                      {bibleVersions.map(v => (
+src/pages/MissionaryBulkResults.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/pages/MissionaryBulkResults.tsx:    const content = devotionals.map((d, i) => `DIA ${i + 1}\n${d.title}\n${d.verse}\n${d.message}\n\n`).join('---\n\n');
+src/pages/MissionaryBulkResults.tsx:    const content = devotionals.map((d, i) => `DIA ${i + 1}\n${d.title}\n${d.verse}\n${d.message}\n\n`).join('---\n\n');
+src/pages/MissionaryBulkResults.tsx:        {devotionals.map((d, i) => (
+src/pages/HomePage.tsx:                      {searchResults.map((result, idx) => (
+src/pages/HomePage.tsx:        {quickActions.map((action, index) => (
+src/pages/HomePage.tsx:            ].map((social, i) => (
+src/pages/HomePage.tsx:                    {sentiments.map((s, idx) => (
+src/pages/HomePage.tsx:                    ].map((type, idx) => (
+src/pages/HomePage.tsx:                  {predefinedBgs.map((bg, index) => (
+src/pages/HomePage.tsx:                      {DEVOTIONAL_THEMES.map((theme) => (
+src/pages/HomePage.tsx:          {FAQ_ITEMS.map((item, index) => (
+src/pages/ProfilePage.tsx:        {tabs.map(tab => (
+src/pages/ProfilePage.tsx:                {THEOLOGY_SUBJECTS.map((subject) => (
+src/pages/ProfilePage.tsx:                      .map(([section, seconds]) => {
+src/pages/ProfilePage.tsx:                  {user.favorites.map((fav, idx) => (
+src/pages/ProfilePage.tsx:                  {notes.map((note) => (
+src/pages/ProfilePage.tsx:                  {tracks.map((track) => (
+src/pages/ProfilePage.tsx:                    ].map(t => (
+src/pages/ProfilePage.tsx:                    {['xs', 'sm', 'base', 'lg', 'xl'].map(size => (
+src/pages/BibleRacePage.tsx:      const data = snapshot.docs.map(doc => doc.data() as UserProgress);
+src/pages/BibleRacePage.tsx:      setChampions(snapshot.docs.map(doc => doc.data() as BibleRaceChampion));
+src/pages/BibleRacePage.tsx:      setMessages(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+src/pages/BibleRacePage.tsx:        const updatePromises = querySnapshot.docs.map(doc => 
+src/pages/BibleRacePage.tsx:              {progress.medals.map(medal => (
+src/pages/BibleRacePage.tsx:                  {BIBLE_BOOKS.map((book, index) => {
+src/pages/BibleRacePage.tsx:                      {(['monthly', 'annual', 'overall'] as const).map((v) => (
+src/pages/BibleRacePage.tsx:                      return displayList.map((user, index) => {
+src/pages/BibleRacePage.tsx:                          {champions.map((champ, idx) => (
+src/pages/BibleRacePage.tsx:                    messages.map((msg) => (
+src/pages/BibleRacePage.tsx:                      {quizQuestions[currentQuizIndex]?.options.map((option, idx) => (
+src/pages/BibleRacePage.tsx:                  ].map((msg, idx) => (
+src/pages/BibleStudyPage.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/pages/BibleStudyPage.tsx:      const outlines = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+src/pages/BibleStudyPage.tsx:    const customIds = new Set(customOutlines.map(o => o.originalId || o.id));
+src/pages/BibleStudyPage.tsx:    return [...baseOutlines, ...customOutlines.map(o => ({ ...o, isEdited: true }))];
+src/pages/BibleStudyPage.tsx:      const suggested = response.split(',').map(s => s.trim()).filter(s => s.length > 0);
+src/pages/BibleStudyPage.tsx:        const authors = suggestionMatch[1].split(',').map(s => s.trim());
+src/pages/BibleStudyPage.tsx:        debateAuthors = suggestRes.split(',').map(s => s.trim());
+src/pages/BibleStudyPage.tsx:          updatedNotes = localNotes.map(n => n.id === editingNoteId ? { ...n, title: currentNote.title, content: currentNote.content } : n);
+src/pages/BibleStudyPage.tsx:      const authorNames = GOSPEL_AUTHORS.map(a => a.name).join(', ');
+src/pages/BibleStudyPage.tsx:      const selectedAuthors = affinityResponse?.split(',').map(s => s.trim()).filter(s => s) || [];
+src/pages/BibleStudyPage.tsx:        ...selectedBibles.map(name => ({ name, cat: "Bíblia de Estudo" })),
+src/pages/BibleStudyPage.tsx:        ...selectedCommentaries.map(name => ({ name, cat: "Comentário" })),
+src/pages/BibleStudyPage.tsx:        ...selectedDictionaries.map(name => ({ name, cat: "Dicionário" })),
+src/pages/BibleStudyPage.tsx:        ...selectedEncyclopedias.map(name => ({ name, cat: "Enciclopédia" })),
+src/pages/BibleStudyPage.tsx:        ...selectedAuthors.map(name => ({ name, cat: "Visão do Autor" }))
+src/pages/BibleStudyPage.tsx:                    {studyHistory.map((item, idx) => (
+src/pages/BibleStudyPage.tsx:            {tabs.map((tab) => (
+src/pages/BibleStudyPage.tsx:                      {biblesList.map((bible, idx) => (
+src/pages/BibleStudyPage.tsx:                      {commentariesList.map((commentary, idx) => (
+src/pages/BibleStudyPage.tsx:                      {dictionariesList.map((dictionary, idx) => (
+src/pages/BibleStudyPage.tsx:                      {encyclopediasList.map((encyclopedia, idx) => (
+src/pages/BibleStudyPage.tsx:                          {relatedResources.map((resource, idx) => (
+src/pages/BibleStudyPage.tsx:                    ).map((author, idx) => (
+src/pages/BibleStudyPage.tsx:                      {GOSPEL_AUTHORS.map((author, idx) => (
+src/pages/BibleStudyPage.tsx:                      {selectedAuthor && GOSPEL_AUTHORS.find(a => a.name === selectedAuthor)?.works.map((work, idx) => (
+src/pages/BibleStudyPage.tsx:                      {otherReligionsBooks.map(book => (
+src/pages/BibleStudyPage.tsx:                        ].map(type => (
+src/pages/BibleStudyPage.tsx:                            ].map(type => (
+src/pages/BibleStudyPage.tsx:                              {['Toda a Bíblia', 'Velho Testamento', 'Novo Testamento', 'Livro Específico'].map(scope => (
+src/pages/BibleStudyPage.tsx:                              {['Crianças', 'Juniores', 'Adolescentes', 'Jovens', 'Adultos', 'Líderes', 'Teólogos'].map(age => (
+src/pages/BibleStudyPage.tsx:                              {[10, 20, 30, 40, 50].map(count => (
+src/pages/BibleStudyPage.tsx:                        ].map(age => (
+src/pages/BibleStudyPage.tsx:                        ].map(type => (
+src/pages/BibleStudyPage.tsx:                        ].map(age => (
+src/pages/BibleStudyPage.tsx:                        ].map(type => (
+src/pages/BibleStudyPage.tsx:                        .map((note) => (
+src/pages/BibleStudyPage.tsx:                          ].map(version => (
+src/pages/BibleStudyPage.tsx:                              {selectedCommentators.map((name, index) => (
+src/pages/BibleStudyPage.tsx:                                      {commentators.map((c, cIdx) => <option key={`commentator-opt-${c.name}-${cIdx}`} value={c.name} />)}
+src/pages/BibleStudyPage.tsx:                            {suggestedDebaters.map((author, idx) => (
+src/pages/BibleStudyPage.tsx:                        .map((note, idx) => (
+src/pages/BibleStudyPage.tsx:                            {[...Array(20)].map((_, i) => (
+src/pages/BibleStudyPage.tsx:                      ].map(source => (
+src/pages/BibleStudyPage.tsx:                                  setSelectedApocryphaBooks([...CATHOLIC_APOCRYPHA.map(b => b.name), ...NT_APOCRYPHA.map(b => b.name)]);
+src/pages/BibleStudyPage.tsx:                          {CATHOLIC_APOCRYPHA.map((book, bIdx) => (
+src/pages/BibleStudyPage.tsx:                          {NT_APOCRYPHA.map((book, bIdx) => (
+src/pages/BibleStudyPage.tsx:                            {CATHOLIC_APOCRYPHA.map((book) => (
+src/pages/BibleStudyPage.tsx:                            {NT_APOCRYPHA.map((book) => (
+src/pages/BibleStudyPage.tsx:                {resources.map((res, idx) => (
+src/pages/BibleStudyPage.tsx:                    {Array.from(new Set(sermonOutlines.map(o => o.category))).map(cat => (
+src/pages/BibleStudyPage.tsx:                  {filteredLibraryOutlines.map((outline) => (
+src/pages/BibleStudyPage.tsx:                        {selectedLibraryOutline.development.map((point: string, index: number) => (
+src/pages/BibleStudyPage.tsx:${selectedLibraryOutline.development.map((p: string) => `- ${p}`).join('\n')}
+src/pages/TutorialsPage.tsx:            {tutorialSteps.map((_, idx) => (
+src/pages/GamesPage.tsx:      const entries = snapshot.docs.map(doc => ({
+src/pages/GamesPage.tsx:      const entries = snapshot.docs.map(doc => ({
+src/pages/GamesPage.tsx:      let entries = snapshot.docs.map(doc => ({
+src/pages/GamesPage.tsx:    const newSeenQuestions = [...seenQuestions, ...selected.map(q => q.id)];
+src/pages/GamesPage.tsx:      const players = roomData.players.map((p: any) => 
+src/pages/GamesPage.tsx:      const matches = currentRound.matches.map((m: any) => {
+src/pages/GamesPage.tsx:      const players = roomData.players.map((p: any) => 
+src/pages/GamesPage.tsx:      const matches = currentRound.matches.map((m: any) => {
+src/pages/GamesPage.tsx:        const winners = matches.map((m: any) => cupData.players.find((p: any) => p.userId === m.winnerId));
+src/pages/GamesPage.tsx:              ].map((story) => (
+src/pages/GamesPage.tsx:                    {leaderboard.map((entry, index) => {
+src/pages/GamesPage.tsx:                      {roomData.players.map((p: any, index: number) => (
+src/pages/GamesPage.tsx:                  {currentQuestions[currentQuestionIndex].options.map((option, idx) => (
+src/pages/GamesPage.tsx:                          {[...roomData.players].sort((a: any, b: any) => b.score - a.score).map((p: any, index: number) => (
+src/pages/GamesPage.tsx:                        {roomData?.players?.map((p: any, index: number) => (
+src/pages/GamesPage.tsx:                          {cupData.rounds[cupData.currentRound]?.matches.map((match: any, index: number) => (
+src/pages/GamesPage.tsx:                            {cupData?.players?.map((p: any, index: number) => (
+src/pages/GamesPage.tsx:                      {leaderboard.map((entry, index) => {
+src/pages/BiblePage.tsx:                  const text = selectedVerses.map(v => `[${v.verse}] ${v.text}`).join('\n');
+src/pages/BiblePage.tsx:                  const text = selectedVerses.map(v => `[${v.verse}] ${v.text}`).join('\n');
+src/pages/BiblePage.tsx:              {versions.map(v => (
+src/pages/BiblePage.tsx:                {books.map((b, idx) => (
+src/pages/BiblePage.tsx:                    {Array.from({ length: books.find(b => b.pk === selectedBook)?.chapters || 0 }, (_, i) => i + 1).map(c => (
+src/pages/BiblePage.tsx:                {searchResults.map((res, idx) => (
+src/pages/BiblePage.tsx:                  {verses.map((v) => {
+src/pages/BiblePage.tsx:                          .map(id => {
+src/pages/BiblePage.tsx:                    {colors.map(color => (
+src/pages/BiblePage.tsx:                    {history.length > 0 ? history.map((h, idx) => (
+src/pages/CoursesPage.tsx:        {courses.map((course, index) => (
+src/pages/TheologySearchPage.tsx:          ].map((item, i) => (
+src/pages/OfflinePage.tsx:              {(['all', 'bible', 'study', 'outline', 'lesson'] as const).map((f) => (
+src/pages/OfflinePage.tsx:                filteredContents.map((item) => (
+src/pages/EvangelismPage.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/pages/EvangelismPage.tsx:            ].map((item, i) => (
+src/pages/EvangelismPage.tsx:            {EVANGELISM_SUBJECTS.map((subject, i) => {
+src/pages/EvangelismPage.tsx:                  {[1, 2, 3, 4, 5].map(cap => (
+src/pages/EvangelismPage.tsx:                    {chapterQuiz.map((q, i) => (
+src/pages/EvangelismPage.tsx:                          {q.options.map((opt: string, idx: number) => (
+src/pages/EvangelismPage.tsx:                        {assessmentQuestions[currentQuestionIndex].options.map((opt: string, idx: number) => (
+src/pages/DonatePage.tsx:              {PRESET_VALUES.map((val) => (
+src/pages/DonatePage.tsx:              {FREQUENCIES.map((freq) => (
+src/pages/AdminPage.tsx:    const allEmails = users.map(u => u.email).filter(Boolean).join(',');
+src/pages/AdminPage.tsx:            {getMostAccessedPages().map(([page, time], index) => (
+src/pages/AdminPage.tsx:            {getCreditPurchases().map((tx) => {
+src/pages/AdminPage.tsx:                filteredUsers.map((user) => (
+src/pages/AdminPage.tsx:                    {Object.entries(selectedUser.metrics?.sectionMetrics || {}).map(([section, time]: [string, any]) => (
+src/pages/TheologyPage.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/pages/TheologyPage.tsx:      const subjects = THEOLOGY_SUBJECTS.map(s => s.title).join(', ');
+src/pages/TheologyPage.tsx:            {THEOLOGY_SUBJECTS.map((subject, idx) => {
+src/pages/TheologyPage.tsx:                    {subject.topics.map((topic, tIdx) => (
+src/pages/TheologyPage.tsx:                    {(selectedSubject === 'Bibliologia' ? BIBLIOLOGIA_SLIDES : TEONTOLOGIA_SLIDES).map((_, idx) => (
+src/pages/TheologyPage.tsx:                            {summaryEvaluation.criteria.map((c, i) => (
+src/pages/TheologyPage.tsx:                {Array.from({ length: getMaxChapters(selectedSubject || '') }, (_, i) => i + 1).map(i => (
+src/pages/TheologyPage.tsx:                  {chapterQuiz.map((q, qIdx) => (
+src/pages/TheologyPage.tsx:                        {q.options.map((option: string, oIdx: number) => (
+src/pages/TheologyPage.tsx:                      {assessmentQuestions[currentQuestionIndex].options.map((option: string, idx: number) => (
+src/pages/PostsPage.tsx:                {aspectRatios.map((ratio) => (
+src/pages/PostsPage.tsx:                {(['gemini', 'openai', 'stability'] as const).map((provider) => (
+src/pages/ForumPage.tsx:                {RULES.map((rule, i) => (
+src/pages/ForumPage.tsx:        {posts.map((post) => (
+src/pages/ForumPage.tsx:                  const updatedPosts = posts.map(p => {
+src/pages/ForumPage.tsx:                {post.replies.map((reply) => (
+src/pages/NotebookPage.tsx:          updatedNotes = localNotes.map(n => n.id === editingNoteId ? { 
+src/pages/NotebookPage.tsx:          {['Todos', 'Anotações', 'Esboços', 'Estudos', 'Histórias', 'Teatro', 'Teologia', 'Diário', 'Outros'].map((cat) => (
+src/pages/NotebookPage.tsx:                  {preachingSections.map((_, idx) => (
+src/pages/NotebookPage.tsx:            {filteredNotes.map((note) => (
+src/pages/NotebookPage.tsx:                  {[...Array(15)].map((_, i) => (
+src/pages/RedacaoPage.tsx:              {evaluation.criteria.map((c, i) => (
+src/pages/RedacaoPage.tsx:            {drafts.map((draft) => (
+src/pages/AudioBoxPage.tsx:              {filteredTracks.map((track) => (
+src/contexts/AudioBoxContext.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/contexts/AudioBoxContext.tsx:          const tracksWithData = await Promise.all(offlineTracks.map(async (track: any) => {
+src/contexts/AudioBoxContext.tsx:      const tracksData = await Promise.all(snapshot.docs.map(async (doc) => {
+src/contexts/AuthContext.tsx:      providerInfo: auth.currentUser?.providerData.map(provider => ({
+src/contexts/AuthContext.tsx:      const notesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+src/contexts/AuthContext.tsx:      const certsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+src/contexts/AuthContext.tsx:        const updatePromises = querySnapshot.docs.map(doc => 
+src/components/SearchLoadingOverlay.tsx:              {[0, 1, 2].map((i) => (
+src/components/AccessibilityControls.tsx:                {fontFamilies.map((font) => (
+src/components/PrayerRequestsSection.tsx:      const requestsData = snapshot.docs.map(doc => ({
+src/components/PrayerRequestsSection.tsx:              {requests.map((request) => (
+src/components/PrayerRequestsSection.tsx:        const commentsData = snapshot.docs.map(doc => ({
+src/components/PrayerRequestsSection.tsx:              {comments.map((comment) => (
+src/components/NavigationMenu.tsx:      {navItems.map((item) => (
+src/components/games/WordSearchGame.tsx:    const newGrid = Array(GRID_SIZE).fill(null).map(() => 
+src/components/games/WordSearchGame.tsx:      const word = newSelected.map(cell => grid[cell.r][cell.c]).join("");
+src/components/games/WordSearchGame.tsx:                {grid.map((row, r) => (
+src/components/games/WordSearchGame.tsx:                  row.map((char, c) => {
+src/components/games/WordSearchGame.tsx:            {WORDS_TO_FIND.map(word => (
+src/components/games/WhoAmIGame.tsx:          {currentItem.hints.slice(0, revealedHints).map((hint, idx) => (
+src/components/games/WhoAmIGame.tsx:        {currentItem.options.map((option, idx) => {
+src/components/games/TimelineGame.tsx:        {items.map((item, index) => (
+src/components/games/CrosswordGame.tsx:                  {grid.map((row, r) => row.map((cell, c) => {
+src/components/games/CrosswordGame.tsx:                {crosswordData?.words.filter(w => w.direction === 'across').map(w => (
+src/components/games/CrosswordGame.tsx:                {crosswordData?.words.filter(w => w.direction === 'down').map(w => (
+src/components/games/RiddlesGame.tsx:              {[0, 1, 2].map((i) => (
+src/components/games/AnagramGame.tsx:        {words.map((word) => (
+src/components/games/HangmanGame.tsx:        {target.word.split('').map((letter, idx) => (
+src/components/games/HangmanGame.tsx:        {alphabet.map(letter => (
+src/components/games/CryptogramGame.tsx:                {gameData.phrase.split(" ").map((word, wIdx) => (
+src/components/games/CryptogramGame.tsx:                    {word.split("").map((char, cIdx) => {
+src/components/games/CryptogramGame.tsx:              {Object.entries(userGuesses).filter(([_, val]) => val !== "").map(([num, val]) => (
+src/components/GeneratedQuizPlayer.tsx:        {currentQuestion.options.map((option, index) => {
+src/components/SpeechGenerator.tsx:              {voices.map(v => (
+src/components/SpeechGenerator.tsx:              {emotions.map(e => (
+src/components/PanoramaBiblico.tsx:      const entries = snapshot.docs.map(doc => ({
+src/components/PanoramaBiblico.tsx:            {booksList.map((book, idx) => (
+src/components/PanoramaBiblico.tsx:                    {leaderboard.filter(e => e.panoramaScore && e.panoramaScore > 0).map((entry, index) => (
+src/components/PanoramaBiblico.tsx:                    {currentQuestion.options.map((option, idx) => (
+src/components/SpiritualTutor.tsx:      const history = messages.map(m => ({
+src/components/SpiritualTutor.tsx:        .map((result: any) => result[0])
+src/components/SpiritualTutor.tsx:        .map((result: any) => result.transcript)
+src/components/SpiritualTutor.tsx:                            {appResources.map((resource, idx) => (
+src/components/SpiritualTutor.tsx:                      [...messages].reverse().map((msg, i) => {
+src/components/SpiritualTutor.tsx:                                  {msg.suggestions.map((suggestion, idx) => (
+src/components/Toast.tsx:          {toasts.map((toast) => (
+src/services/offlineService.ts:    const convertedChapters = chapters.map(c => ({
+src/services/offlineService.ts:    const convertedMaterials = materials.map(m => ({
+src/services/bibleService.ts:            return response.data.map((v: any, index: number) => ({
+src/services/bibleService.ts:              return values.map((v: any, index: number) => ({
+src/services/bibleService.ts:        return response.data.map((b: any, index: number) => ({
+src/services/bibleService.ts:        return response.data.map((v: any, index: number) => ({
+src/services/bibleService.ts:        return response.data.map((res: any, index: number) => ({
+src/App.tsx:            {navItems.filter(item => !item.hidden).map((item) => {
+src/App.tsx:          {mainNavItems.map((item) => (
+src/App.tsx:                {navItems.filter(item => !item.hidden).map((item) => (
+src/App.tsx:              {navItems.map((item) => (

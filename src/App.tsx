@@ -124,6 +124,7 @@ import { LoginPage } from './pages/LoginPage';
 
 import { notificationService } from './services/notificationService';
 import { verses } from './constants/verses';
+import { isProjectSuspended } from './lib/firebase';
 
 function AppContent() {
   const { user, logout, isInitialLoading } = useAuth();
@@ -142,6 +143,12 @@ function AppContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isProjectSuspended.value) {
+      showToast("Conexão com o servidor restabelecida!", "success");
+    }
+  }, [isProjectSuspended.value, showToast]);
 
   useEffect(() => {
     if (user && pendingTab) {
