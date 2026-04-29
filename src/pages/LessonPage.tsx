@@ -1232,6 +1232,21 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+                    className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                    title="Diminuir Zoom"
+                  >
+                    <ZoomOut size={20} />
+                  </button>
+                  <button 
+                    onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
+                    className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                    title="Aumentar Zoom"
+                  >
+                    <ZoomIn size={20} />
+                  </button>
+
                   {autorResponse && (
                     <>
                       <button 
@@ -1257,6 +1272,15 @@ O nome do usuário é ${user?.name || 'amigo'}.
                         title="Salvar no Caderno"
                       >
                         <StickyNote size={20} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(autorResponse).then(() => showToast("Copiado!"));
+                        }}
+                        className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                        title="Compartilhar"
+                      >
+                        <Share2 size={20} />
                       </button>
                       {autorAudioUrl && (
                         <button 
@@ -1286,7 +1310,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 </div>
               </div>
 
-              <div className="p-8 space-y-6">
+              <div className="p-8 space-y-6" style={{ fontSize: `${zoom * 100}%` }}>
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-[2rem] min-h-[150px] flex flex-col items-center justify-center text-center">
                   {isAutorLoading ? (
                     <div className="space-y-4">
@@ -1391,6 +1415,16 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     <p className="text-[9px] text-stone-500 leading-tight">Discipulado, Consolidação e Liderança de Célula.</p>
                   </div>
                 </div>
+                <button 
+                  onClick={() => {
+                    setShowAutor(false);
+                    openDicaDeLideranca();
+                  }}
+                  className="w-full mt-6 py-4 bg-purple-600 text-white rounded-2xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
+                >
+                  <UserCheck size={20} />
+                  DÍCAS DE LIDERANÇA (MENTOR)
+                </button>
               </div>
             </motion.div>
           </motion.div>
