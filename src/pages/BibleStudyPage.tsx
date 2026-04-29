@@ -6766,8 +6766,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                             Apócrifos Católicos
                           </h4>
                           <div className="space-y-4">
-                            {CATHOLIC_APOCRYPHA.map((book) => (
-                              <div key={book.name} className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-stone-100 dark:border-zinc-800">
+                            {CATHOLIC_APOCRYPHA.map((book, idx) => (
+                              <div key={`catholic-${idx}`} className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-stone-100 dark:border-zinc-800">
                                 <h5 className="text-sm font-bold m-0 mb-1 text-amber-700 dark:text-amber-500">{book.name}</h5>
                                 <p className="text-xs text-stone-600 dark:text-zinc-400 m-0 leading-relaxed">{book.description}</p>
                               </div>
@@ -6781,8 +6781,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                             Apócrifos NT
                           </h4>
                           <div className="space-y-4">
-                            {NT_APOCRYPHA.map((book) => (
-                              <div key={book.name} className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-stone-100 dark:border-zinc-800">
+                            {NT_APOCRYPHA.map((book, idx) => (
+                              <div key={`nt-${idx}`} className="p-4 bg-white dark:bg-zinc-900 rounded-xl border border-stone-100 dark:border-zinc-800">
                                 <h5 className="text-sm font-bold m-0 mb-1 text-rose-700 dark:text-rose-500">{book.name}</h5>
                                 <p className="text-xs text-stone-600 dark:text-zinc-400 m-0 leading-relaxed">{book.description}</p>
                               </div>

@@ -40,7 +40,7 @@ import { SpeechGenerator } from '../components/SpeechGenerator';
 import { useAuth } from '../contexts/AuthContext';
 import { useOffline } from '../contexts/OfflineContext';
 import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
-import { lessons, Lesson } from '../data/lessons';
+import { lessons, Lesson } from '../data/lessons_static';
 import html2pdf from 'html2pdf.js';
 
 const LessonPage: React.FC = () => {
@@ -457,9 +457,9 @@ O nome do usuário é ${user?.name || 'amigo'}.
   );
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 pb-20">
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <header className="mb-16 text-center">
+    <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 pb-20 pt-8 sm:pt-0">
+      <div className="max-w-7xl mx-auto px-4 py-8 sm:py-12">
+        <header className="mb-12 md:mb-16 text-center">
           <h1 className="text-5xl md:text-7xl font-display font-black text-stone-900 dark:text-white tracking-tighter mb-6 bg-clip-text text-transparent bg-gradient-to-b from-stone-900 to-stone-600 dark:from-white dark:to-zinc-500">
             Lições de Célula
           </h1>
@@ -1217,69 +1217,69 @@ O nome do usuário é ${user?.name || 'amigo'}.
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
               animate={{ scale: 1, y: 0 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden flex flex-col"
+              className="bg-white dark:bg-zinc-900 w-full max-w-lg max-h-[95vh] rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col m-4"
             >
               <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-purple-50/50 dark:bg-purple-900/10">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/20">
                     <UserCheck size={24} />
                   </div>
-                  <div>
-                    <h3 className="text-xl font-black tracking-tight">AUTOR</h3>
-                    <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dicas de Liderança e Vida cristã</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
-                    className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
-                    title="Diminuir Zoom"
-                  >
-                    <ZoomOut size={20} />
-                  </button>
-                  <button 
-                    onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
-                    className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
-                    title="Aumentar Zoom"
-                  >
-                    <ZoomIn size={20} />
-                  </button>
+          <div>
+            <h3 className="text-xl font-black tracking-tight">AUTOR</h3>
+            <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest leading-tight">Dicas de Liderança e Vida cristã</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
+          <button 
+            onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+            className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+            title="Diminuir Zoom"
+          >
+            <ZoomOut size={18} />
+          </button>
+          <button 
+            onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
+            className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+            title="Aumentar Zoom"
+          >
+            <ZoomIn size={18} />
+          </button>
 
-                  {autorResponse && (
-                    <>
-                      <button 
-                        onClick={() => {
-                          const blob = new Blob([autorResponse], { type: 'text/plain' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = `autor-resposta-${new Date().getTime()}.txt`;
-                          a.click();
-                        }}
-                        className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
-                        title="Baixar Resposta"
-                      >
-                        <Download size={20} />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          setContentToSave({ title: "Resposta do Autor", content: autorResponse });
-                          setIsNotebookModalOpen(true);
-                        }}
-                        className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
-                        title="Salvar no Caderno"
-                      >
-                        <StickyNote size={20} />
-                      </button>
-                      <button 
-                        onClick={() => {
-                          navigator.clipboard.writeText(autorResponse).then(() => showToast("Copiado!"));
-                        }}
-                        className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
-                        title="Compartilhar"
-                      >
-                        <Share2 size={20} />
-                      </button>
+          {autorResponse && (
+            <>
+              <button 
+                onClick={() => {
+                  const blob = new Blob([autorResponse], { type: 'text/plain' });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `autor-resposta-${new Date().getTime()}.txt`;
+                  a.click();
+                }}
+                className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                title="Baixar Resposta"
+              >
+                <Download size={18} />
+              </button>
+              <button 
+                onClick={() => {
+                  setContentToSave({ title: "Resposta do Autor", content: autorResponse });
+                  setIsNotebookModalOpen(true);
+                }}
+                className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                title="Salvar no Caderno"
+              >
+                <StickyNote size={18} />
+              </button>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(autorResponse).then(() => showToast("Copiado!"));
+                }}
+                className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                title="Compartilhar"
+              >
+                <Share2 size={18} />
+              </button>
                       {autorAudioUrl && (
                         <button 
                           onClick={() => {
@@ -1308,7 +1308,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 </div>
               </div>
 
-              <div className="p-8 space-y-6" style={{ fontSize: `${zoom * 100}%` }}>
+              <div className="p-6 md:p-8 space-y-6 flex-1 overflow-y-auto" style={{ fontSize: `${zoom * 100}%` }}>
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-[2rem] min-h-[150px] flex flex-col items-center justify-center text-center">
                   {isAutorLoading ? (
                     <div className="space-y-4">
@@ -1429,12 +1429,6 @@ O nome do usuário é ${user?.name || 'amigo'}.
         )}
       </AnimatePresence>
 
-      <SaveToNotebookModal 
-        isOpen={isNotebookModalOpen}
-        isLoading={isSavingToNotebook}
-        onClose={() => setIsNotebookModalOpen(false)}
-        onConfirm={confirmSaveToNotebook}
-      />
     </div>
   );
 };
