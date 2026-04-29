@@ -15,11 +15,13 @@ import {
   Download,
   Filter,
   Loader2,
-  X
+  X,
+  Folder
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { db } from '../lib/firebase';
+import { db, storage } from '../lib/firebase';
 import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { ref, listAll } from 'firebase/storage';
 import { cn } from '../types';
 import { useToast } from '../components/Toast';
 import { useAuth } from '../contexts/AuthContext';
@@ -89,11 +91,59 @@ export default function AdminPage() {
   };
 
   const [creditTransactions, setCreditTransactions] = useState<any[]>([]);
+  const [storageStats, setStorageStats] = useState({ licões: 0, devocionais: 0, pregacoes: 0 });
+
+  const fetchStorageStats = async () => {
+    try {
+      const rootRef = ref(storage, '/');
+      const res = await listAll(rootRef);
+      console.log("Storage listAll root (prefixes):", res.prefixes.map(p => p.fullPath));
+      console.log("Storage listAll root (items):", res.items.map(i => i.fullPath));
+      
+      const stats = { licões: 0, devocionais: 0, pregacoes: 0 };
+      
+      // Look for the "Centro de Conhecimento" folder
+      const centroRefPrefix = res.prefixes.find(p => p.name === 'Centro de Conhecimento');
+      if (centroRefPrefix) {
+        console.log("Found Centro de Conhecimento folder, listing content...");
+        const centroRes = await listAll(centroRefPrefix);
+        
+        for (const subPrefix of centroRes.prefixes) {
+            const subRes = await listAll(subPrefix);
+            const count = subRes.items.length;
+            console.log(`Folder ${subPrefix.name} has ${count} items.`);
+            
+            if (subPrefix.name.toLowerCase().includes('lição')) stats.licões = count;
+            else if (subPrefix.name.toLowerCase().includes('devocional')) stats.devocionais = count;
+            else if (subPrefix.name.toLowerCase().includes('pregação')) stats.pregacoes = count;
+        }
+      } else {
+        console.warn("Folder 'Centro de Conhecimento' not found in root.");
+      }
+      
+      setStorageStats(stats);
+    } catch (e) {
+      console.error("Erro ao buscar stats do Storage:", e);
+    }
+  };
 
   const fetchAllData = async () => {
     setIsLoading(true);
     try {
-      const [usersSnap, careerSnap, theologySnap, metricsSnap, creditsSnap] = await Promise.all([
+      await Promise.all([
+        fetchAllFirestoreData(),
+        fetchStorageStats()
+      ]);
+    } catch (error) {
+      console.error("Error fetching admin data:", error);
+      showToast("Erro ao carregar dados.", "error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchAllFirestoreData = async () => {
+    const [usersSnap, careerSnap, theologySnap, metricsSnap, creditsSnap] = await Promise.all([
         getDocs(collection(db, 'users')),
         getDocs(collection(db, 'careerProgress')),
         getDocs(collection(db, 'theologyProgress')),
@@ -135,12 +185,6 @@ export default function AdminPage() {
 
       setUsers(allUsers);
       setCreditTransactions(allCredits);
-    } catch (error) {
-      console.error("Error fetching admin data:", error);
-      showToast("Erro ao carregar dados dos usuários.", "error");
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const filteredUsers = users.filter(u => 
@@ -305,6 +349,30 @@ export default function AdminPage() {
           <h3 className="text-2xl font-bold mt-1">
             {formatTime(users.reduce((acc, u) => acc + (u.metrics?.totalTime || 0), 0))}
           </h3>
+        </div>
+
+        <div className="bg-white dark:bg-zinc-900 p-6 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-sm col-span-1 md:col-span-5 flex flex-wrap gap-4">
+          <div className="flex items-center gap-4 bg-stone-50 dark:bg-zinc-800/50 p-4 rounded-2xl flex-1 min-w-[200px]">
+            <Folder className="text-emerald-500" />
+            <div>
+              <p className="text-stone-500 text-xs font-bold uppercase">Lições</p>
+              <h4 className="text-xl font-bold">{storageStats.licões}</h4>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 bg-stone-50 dark:bg-zinc-800/50 p-4 rounded-2xl flex-1 min-w-[200px]">
+            <Folder className="text-amber-500" />
+            <div>
+              <p className="text-stone-500 text-xs font-bold uppercase">Devocionais</p>
+              <h4 className="text-xl font-bold">{storageStats.devocionais}</h4>
+            </div>
+          </div>
+          <div className="flex items-center gap-4 bg-stone-50 dark:bg-zinc-800/50 p-4 rounded-2xl flex-1 min-w-[200px]">
+             <Folder className="text-blue-500" />
+            <div>
+              <p className="text-stone-500 text-xs font-bold uppercase">Pregações</p>
+              <h4 className="text-xl font-bold">{storageStats.pregacoes}</h4>
+            </div>
+          </div>
         </div>
       </div>
 

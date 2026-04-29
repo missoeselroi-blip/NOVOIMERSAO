@@ -795,10 +795,8 @@ O nome do usuário é ${user?.name || 'amigo'}.
           <SaveToNotebookModal
             isOpen={isNotebookModalOpen}
             onClose={() => setIsNotebookModalOpen(false)}
-            onSave={confirmSaveToNotebook}
-            isSaving={isSavingToNotebook}
-            title={contentToSave.title}
-            content={contentToSave.content}
+            onConfirm={confirmSaveToNotebook}
+            isLoading={isSavingToNotebook}
           />
         )}
       </AnimatePresence>
@@ -1228,7 +1226,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   </div>
                   <div>
                     <h3 className="text-xl font-black tracking-tight">AUTOR</h3>
-                    <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dicas de Liderança e Discipulado</p>
+                    <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dicas de Liderança e Vida cristã</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1362,7 +1360,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                         }}
                         className="text-xs font-bold text-purple-600 uppercase tracking-widest hover:underline"
                       >
-                        Fazer outra pergunta
+                        Faça <span className="font-bold underline text-purple-700">uma Pergunta</span>
                       </button>
                     </div>
                   ) : (
@@ -1408,11 +1406,11 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30">
                     <h5 className="text-[10px] font-black text-purple-600 uppercase mb-1">Base de Conhecimento</h5>
-                    <p className="text-[9px] text-stone-500 leading-tight">Abe Huber, John Maxwell, Rick Warren e Princípios do NT.</p>
+                    <p className="text-[9px] text-stone-500 leading-tight">Ao perguntar ao Autor você terá acesso a mais de 300 lições de células. Mais de 200 devocionais. Mais de 100 pregações e estudos bíblicos. 5 livros e muitas apostilas e artigos.</p>
                   </div>
                   <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
                     <h5 className="text-[10px] font-black text-emerald-600 uppercase mb-1">Foco</h5>
-                    <p className="text-[9px] text-stone-500 leading-tight">Discipulado, Consolidação e Liderança de Célula.</p>
+                    <p className="text-[9px] text-stone-500 leading-tight">Missões e Evangelismo. Adoração. Vida cristã.</p>
                   </div>
                 </div>
                 <button 
@@ -1423,7 +1421,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   className="w-full mt-6 py-4 bg-purple-600 text-white rounded-2xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
                 >
                   <UserCheck size={20} />
-                  DÍCAS DE LIDERANÇA (MENTOR)
+                  Dicas de Outros Autores
                 </button>
               </div>
             </motion.div>
