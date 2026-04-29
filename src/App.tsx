@@ -235,7 +235,7 @@ function AppContent() {
 
   const mainNavItems = [
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
-    { id: 'audio-bible', label: 'Bíblia Falada', icon: <Volume2 size={22} /> },
+    { id: 'audio-bible', label: 'Bíblia Áudio', icon: <Volume2 size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
     { id: 'significado', label: 'Significado', icon: <Search size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
@@ -249,7 +249,7 @@ function AppContent() {
   const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'bible', label: 'Bíblia', subtitle: 'A Palavra de Deus', icon: <Book size={20} />, component: <BiblePage /> },
-    { id: 'audio-bible', label: 'Bíblia Falada', subtitle: 'Ouça a Palavra', icon: <Volume2 size={20} />, component: <SpokenBiblePage /> },
+    { id: 'audio-bible', label: 'Bíblia Áudio', subtitle: 'Ouça a Palavra', icon: <Volume2 size={20} />, component: <SpokenBiblePage /> },
     { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage />, hidden: true },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
     { id: 'significado', label: 'Compare significados e religiões', subtitle: 'Léxico e Comparativo', icon: <Search size={20} />, component: <Navigate to="/study" state={{ tab: 'significado' }} replace />, hidden: true },

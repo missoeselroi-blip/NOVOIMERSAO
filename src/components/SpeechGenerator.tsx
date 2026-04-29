@@ -117,14 +117,22 @@ export const SpeechGenerator: React.FC<SpeechGeneratorProps> = ({
     }
   };
 
-  const handlePlayPause = () => {
+  const handlePlayPause = async () => {
     if (audioRef.current) {
       if (isPlaying) {
         audioRef.current.pause();
+        setIsPlaying(false);
       } else {
-        audioRef.current.play();
+        try {
+          await audioRef.current.play();
+          setIsPlaying(true);
+        } catch (error: any) {
+          if (error.name !== 'AbortError') {
+             console.error("Audio play failed:", error);
+             setIsPlaying(false);
+          }
+        }
       }
-      setIsPlaying(!isPlaying);
     }
   };
 

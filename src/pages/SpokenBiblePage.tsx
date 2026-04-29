@@ -346,7 +346,7 @@ export default function SpokenBiblePage() {
                 <div className="p-2 bg-amber-600 text-white rounded-xl">
                   <Volume2 size={24} />
                 </div>
-                Bíblia Falada
+                Bíblia Áudio
               </h1>
             </div>
             <p className="text-stone-500 dark:text-zinc-400 font-medium">
@@ -355,13 +355,6 @@ export default function SpokenBiblePage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button 
-              onClick={() => setShowConfigInfo(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-bold border border-blue-100 dark:border-blue-800"
-            >
-              <Info size={16} />
-              Como anexar áudios?
-            </button>
           </div>
         </div>
 

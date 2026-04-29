@@ -69,19 +69,21 @@ const LessonPage: React.FC = () => {
   const [showLeaderGuide, setShowLeaderGuide] = useState(false);
   const [showLeaderAudio, setShowLeaderAudio] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [showMentor, setShowMentor] = useState(false);
+  const [showAutor, setShowAutor] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
-  const [mentorGreeting, setMentorGreeting] = useState<string | null>(null);
-  const [mentorResponse, setMentorResponse] = useState("");
-  const [isMentorLoading, setIsMentorLoading] = useState(false);
-  const [isMentorPlaying, setIsMentorPlaying] = useState(false);
-  const [mentorAudioUrl, setMentorAudioUrl] = useState<string | null>(null);
+  const [autorGreeting, setAutorGreeting] = useState<string | null>(null);
+  const [autorResponse, setAutorResponse] = useState("");
+  const [isAutorLoading, setIsAutorLoading] = useState(false);
+  const [isAutorPlaying, setIsAutorPlaying] = useState(false);
+  const [autorAudioUrl, setAutorAudioUrl] = useState<string | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
-  const [contentToSave, setContentToSave] = useState({ title: '', content: '' });
+  const [showDicaDeLideranca, setShowDicaDeLideranca] = useState(false);
+  const [isDicaDeLiderancaLoading, setIsDicaDeLiderancaLoading] = useState(false);
+  const [dicaDeLiderancaResponse, setDicaDeLiderancaResponse] = useState("");
+  const [dicaDeLiderancaGreeting, setDicaDeLiderancaGreeting] = useState<string | null>(null);
+  const [dicaDeLiderancaAudioUrl, setDicaDeLiderancaAudioUrl] = useState<string | null>(null);
   const [bibleModal, setBibleModal] = useState<{
     isOpen: boolean;
     reference: string;
@@ -327,41 +329,39 @@ const LessonPage: React.FC = () => {
     }
   };
 
-  const handleMentorQuery = async (base64Audio: string) => {
-    setIsMentorLoading(true);
-    setMentorResponse("");
-    setMentorAudioUrl(null);
+  const handleAutorQuery = async (base64Audio: string) => {
+    setIsAutorLoading(true);
+    setAutorResponse("");
+    setAutorAudioUrl(null);
     try {
       const transcription = await geminiService.transcribeAudio(base64Audio);
       if (!transcription) throw new Error("Não foi possível transcrever o áudio.");
 
-      const response = await geminiService.generateText(transcription, getMentorSystemPrompt(), true);
-      setMentorResponse(response);
+      const response = await geminiService.generateText(transcription, getAutorSystemPrompt(), true);
+      setAutorResponse(response);
       
-      showToast("Mentor respondeu! ✨");
+      showToast("Autor respondeu! ✨");
     } catch (error) {
-      console.error("Mentor error:", error);
-      showToast("Erro ao falar com o Mentor.", "error");
+      console.error("Autor error:", error);
+      showToast("Erro ao falar com o Autor.", "error");
     } finally {
-      setIsMentorLoading(false);
+      setIsAutorLoading(false);
     }
   };
 
-  const getMentorSystemPrompt = () => {
-    return `Você é um Mentor espiritual e de liderança cristã altamente experiente. 
-Seus princípios são baseados nos valores bíblicos do Novo Testamento e, de forma central, nos ensinamentos de Abe Huber sobre o MDA (Modelo de Discipulado Apostólico), discipulado um a um, consolidação, evangelismo, reuniões de célula, liderança e supervisão. 
-Você também integra conhecimentos profundos de outros grandes autores referência em liderança e crescimento (como John Maxwell, Rick Warren, Billy Graham, e outros escritores de liderança contemporâneos). 
-Seu objetivo é fornecer dicas práticas, encorajamento e sabedoria para líderes e membros de células, sempre focando na aplicação prática da lição atual.
-Responda de forma pastoral, direta, inspiradora e acolhedora.
+  const getAutorSystemPrompt = () => {
+    return `Você é um Autor espiritual e de liderança cristã altamente experiente. 
+Seus princípios são baseados nos valores bíblicos e profundidade teológica.
+Você pesquisará na Central de Conhecimento e fornecerá sínteses diretas e profundas sobre o assunto solicitado, aprofundando-se em lições, apostilas, devocionais, livros e artigos do autor Pr. Wesley Reis.
 O nome do usuário é ${user?.name || 'amigo'}. 
-Sempre que possível, faça conexões entre a lição "${selectedLesson?.title || 'Bíblica'}" e os princípios de liderança de Abe Huber.
-Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o pensamento profundo para dar respostas ricas e precisas.`;
+Sempre que possível, faça conexões entre a lição "${selectedLesson?.title || 'Bíblica'}" e os princípios de Pr. Wesley Reis.
+Mantenha as respostas conversacionais, profundas e bem fundamentadas.`;
   };
 
-  const openMentor = async () => {
-    setShowMentor(true);
-    if (!mentorResponse) {
-      setIsMentorLoading(true);
+  const openAutor = async () => {
+    setShowAutor(true);
+    if (!autorResponse) {
+      setIsAutorLoading(true);
       try {
         const hour = new Date().getHours();
         let greetingText = "Bom dia";
@@ -369,27 +369,83 @@ Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o 
         else if (hour >= 18) greetingText = "Boa noite";
         
         const userName = user?.name ? user.name.split(' ')[0] : 'amigo';
-        setMentorGreeting(`${greetingText}, ${userName}! Que alegria ter você aqui.`);
+        setAutorGreeting(`${greetingText}, ${userName}! Que alegria ter você aqui.`);
         
         const lessonTitle = selectedLesson?.title || 'nossa lição';
         
-        const prompt = `Gere uma saudação inicial curta e calorosa como um Mentor de liderança cristã. 
+        const prompt = `Gere uma saudação inicial curta e calorosa como Autor cristão. 
         Cumprimente o usuário pelo nome (${userName}) com um "${greetingText}". 
-        Mencione que você está aqui para ajudar com a lição "${lessonTitle}". 
-        Cite brevemente que seus ensinamentos são baseados em Abe Huber e outros grandes líderes. 
+        Mencione que você está aqui para ajudar com a lição "${lessonTitle}" aprofundando-se na obra do Pr. Wesley Reis.
         Termine com uma pergunta convidando o usuário a falar ou perguntar algo sobre a lição. 
-        A resposta deve ser direta e em texto claro. Utilize o pensamento profundo para ser certeiro.`;
+        A resposta deve ser direta e em texto claro.`;
 
-        const response = await geminiService.generateText(prompt, getMentorSystemPrompt(), true);
-        setMentorResponse(response);
+        const response = await geminiService.generateText(prompt, getAutorSystemPrompt(), true);
+        setAutorResponse(response);
       } catch (error) {
-        console.error("Error initializing mentor:", error);
-        showToast("O Mentor está um pouco ocupado agora, mas você pode tentar novamente em breve.", "error");
+        console.error("Error initializing autor:", error);
+        showToast("O Autor está um pouco ocupado agora, mas você pode tentar novamente em breve.", "error");
       } finally {
-        setIsMentorLoading(false);
+        setIsAutorLoading(false);
       }
     }
   };
+
+  const handleDicaDeLiderancaQuery = async (base64Audio: string) => {
+    setIsDicaDeLiderancaLoading(true);
+    setDicaDeLiderancaResponse("");
+    setDicaDeLiderancaAudioUrl(null);
+    try {
+      const transcription = await geminiService.transcribeAudio(base64Audio);
+      if (!transcription) throw new Error("Não foi possível transcrever o áudio.");
+
+      const response = await geminiService.generateText(transcription, getDicaDeLiderancaSystemPrompt(), true);
+      setDicaDeLiderancaResponse(response);
+      
+      showToast("Dica enviada! ✨");
+    } catch (error) {
+      console.error("Dica error:", error);
+      showToast("Erro ao processar dica.", "error");
+    } finally {
+      setIsDicaDeLiderancaLoading(false);
+    }
+  };
+
+  const getDicaDeLiderancaSystemPrompt = () => {
+    return `Você é um Mentor espiritual e de liderança cristã altamente experiente. 
+Seus princípios são baseados nos valores bíblicos do Novo Testamento e, de forma central, nos ensinamentos de Abe Huber, Joel Comiskey, Ralph W. Neighbour Jr., David Yonggi Cho, Larry Kreider, Rick Warren, David Kornfield, Andre Henrique Torres Ribeiro, Evandro Sivieri. 
+Seu objetivo é fornecer dicas práticas, encorajamento e sabedoria para líderes.
+O nome do usuário é ${user?.name || 'amigo'}. 
+`;
+  };
+
+  const openDicaDeLideranca = async () => {
+    setShowDicaDeLideranca(true);
+    if (!dicaDeLiderancaResponse) {
+      setIsDicaDeLiderancaLoading(true);
+      try {
+        const hour = new Date().getHours();
+        let greetingText = "Bom dia";
+        if (hour >= 12 && hour < 18) greetingText = "Boa tarde";
+        else if (hour >= 18) greetingText = "Boa noite";
+        
+        const userName = user?.name ? user.name.split(' ')[0] : 'amigo';
+        setDicaDeLiderancaGreeting(`${greetingText}, ${userName}! Que alegria ter você aqui.`);
+        
+        const prompt = `Gere uma saudação inicial curta e calorosa como Mentor de liderança cristã. 
+        Cumprimente o usuário pelo nome (${userName}) com um "${greetingText}". 
+        Mencione que você está aqui para ajudar com dicas de liderança baseadas em renomados autores.`;
+
+        const response = await geminiService.generateText(prompt, getDicaDeLiderancaSystemPrompt(), true);
+        setDicaDeLiderancaResponse(response);
+      } catch (error) {
+        console.error("Error initializing dica:", error);
+        showToast("O mentor de liderança está ocupado.", "error");
+      } finally {
+        setIsDicaDeLiderancaLoading(false);
+      }
+    }
+  };
+
 
   const filteredLessons = lessons.filter(lesson => 
     lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -523,9 +579,9 @@ Mantenha as respostas conversacionais e bem fundamentadas teologicamente. Use o 
                   <button onClick={handleListen} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
                     <Volume2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
-                  <button onClick={openMentor} className="p-1.5 md:p-2 bg-[#BC6C25] text-white hover:bg-[#A15B1F] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Mentor">
+                  <button onClick={openAutor} className="p-1.5 md:p-2 bg-[#BC6C25] text-white hover:bg-[#A15B1F] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Autor">
                     <UserCheck className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-                    <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Mentor</span>
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Autor</span>
                   </button>
                   <button onClick={handleWiki} className="p-1.5 md:p-2 bg-[#8A9A5B] text-white hover:bg-[#7A8A4B] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Wiki">
                     <Globe className="w-4 h-4 md:w-[18px] md:h-[18px]" />

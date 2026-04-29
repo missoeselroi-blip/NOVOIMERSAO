@@ -161,8 +161,32 @@ export const GOSPEL_AUTHORS = [
     works: ["O Livro de Atos", "Outra Espiritualidade", "Talmidim"]
   },
   {
-    name: "Edir Macedo",
-    works: ["Nada a Perder", "Nos Passos de Jesus", "O Despertar da Fé"]
+    name: "Joel Comiskey",
+    works: ["Grupos Familiares", "Crescimento da Igreja"]
+  },
+  {
+    name: "Ralph W. Neighbour Jr.",
+    works: ["O Grupo Celular", "Liderança de Célula"]
+  },
+  {
+    name: "David Yonggi Cho",
+    works: ["A Quarta Dimensão", "Oração", "Crescimento da Igreja"]
+  },
+  {
+    name: "Larry Kreider",
+    works: ["Células Irresistíveis", "Liderança de Célula"]
+  },
+  {
+    name: "David Kornfield",
+    works: ["Discipulado", "Grupos de Oração"]
+  },
+  {
+    name: "Andre Henrique Torres Ribeiro",
+    works: ["Liderança Cristã", "Discipulado"]
+  },
+  {
+    name: "Evandro Sivieri",
+    works: ["Liderança de Célula", "Discipulado"]
   },
   {
     name: "Ellen White",

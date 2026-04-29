@@ -936,7 +936,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
             <Volume2 size={24} className="text-white" />
           </div>
-          <span className="text-xs md:text-sm">Bíblia Falada</span>
+          <span className="text-xs md:text-sm">Bíblia Áudio</span>
         </motion.button>
       </div>
 
