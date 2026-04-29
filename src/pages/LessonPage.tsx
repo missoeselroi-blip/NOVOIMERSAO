@@ -76,6 +76,9 @@ const LessonPage: React.FC = () => {
   const [isAutorLoading, setIsAutorLoading] = useState(false);
   const [isAutorPlaying, setIsAutorPlaying] = useState(false);
   const [autorAudioUrl, setAutorAudioUrl] = useState<string | null>(null);
+  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
+  const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
+  const [contentToSave, setContentToSave] = useState({ title: '', content: '' });
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -98,7 +101,7 @@ const LessonPage: React.FC = () => {
     loading: false
   });
   const { user } = useAuth();
-  const mentorAudioRef = useRef<HTMLAudioElement | null>(null);
+  const autorAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const bibleVersions = ["NVI", "ACF", "ARA", "KJV", "NTLH"];
 
@@ -308,7 +311,7 @@ const LessonPage: React.FC = () => {
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
           const base64Audio = (reader.result as string).split(',')[1];
-          handleMentorQuery(base64Audio);
+          handleAutorQuery(base64Audio);
         };
       };
 
@@ -787,6 +790,19 @@ O nome do usuário é ${user?.name || 'amigo'}.
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {isNotebookModalOpen && (
+          <SaveToNotebookModal
+            isOpen={isNotebookModalOpen}
+            onClose={() => setIsNotebookModalOpen(false)}
+            onSave={confirmSaveToNotebook}
+            isSaving={isSavingToNotebook}
+            title={contentToSave.title}
+            content={contentToSave.content}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Annotations Modal */}
       <AnimatePresence>
         {showNotes && (
@@ -1097,9 +1113,9 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   <button onClick={handleShare} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Compartilhar">
                     <Share2 size={18} />
                   </button>
-                  <button onClick={openMentor} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Mentor">
+                  <button onClick={openAutor} className="p-2 bg-purple-600 text-white hover:bg-purple-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Autor">
                     <UserCheck size={18} />
-                    <span className="text-[10px] font-bold uppercase">Mentor</span>
+                    <span className="text-[10px] font-bold uppercase">Autor</span>
                   </button>
                   <button onClick={handleWiki} className="p-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-2 px-3 shrink-0" title="Wiki">
                     <Globe size={18} />
@@ -1192,8 +1208,8 @@ O nome do usuário é ${user?.name || 'amigo'}.
         )}
       </AnimatePresence>
       <AnimatePresence>
-        <audio ref={mentorAudioRef} className="hidden" />
-      {showMentor && (
+          <audio ref={autorAudioRef} className="hidden" />
+      {showAutor && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -1211,20 +1227,20 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     <UserCheck size={24} />
                   </div>
                   <div>
-                    <h3 className="text-xl font-black tracking-tight">MENTOR</h3>
+                    <h3 className="text-xl font-black tracking-tight">AUTOR</h3>
                     <p className="text-[10px] font-bold text-purple-400 uppercase tracking-widest">Dicas de Liderança e Discipulado</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  {mentorResponse && (
+                  {autorResponse && (
                     <>
                       <button 
                         onClick={() => {
-                          const blob = new Blob([mentorResponse], { type: 'text/plain' });
+                          const blob = new Blob([autorResponse], { type: 'text/plain' });
                           const url = URL.createObjectURL(blob);
                           const a = document.createElement('a');
                           a.href = url;
-                          a.download = `mentor-resposta-${new Date().getTime()}.txt`;
+                          a.download = `autor-resposta-${new Date().getTime()}.txt`;
                           a.click();
                         }}
                         className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
@@ -1234,7 +1250,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       </button>
                       <button 
                         onClick={() => {
-                          setContentToSave({ title: "Resposta do Mentor", content: mentorResponse });
+                          setContentToSave({ title: "Resposta do Autor", content: autorResponse });
                           setIsNotebookModalOpen(true);
                         }}
                         className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
@@ -1242,12 +1258,12 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       >
                         <StickyNote size={20} />
                       </button>
-                      {mentorAudioUrl && (
+                      {autorAudioUrl && (
                         <button 
                           onClick={() => {
                             const a = document.createElement('a');
-                            a.href = mentorAudioUrl;
-                            a.download = `mentor-audio-${new Date().getTime()}.mp3`;
+                            a.href = autorAudioUrl;
+                            a.download = `autor-audio-${new Date().getTime()}.mp3`;
                             a.click();
                           }}
                           className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
@@ -1259,11 +1275,11 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     </>
                   )}
                   <button onClick={() => {
-                    if (mentorAudioRef.current) {
-                      mentorAudioRef.current.pause();
-                      mentorAudioRef.current.currentTime = 0;
+                    if (autorAudioRef.current) {
+                      autorAudioRef.current.pause();
+                      autorAudioRef.current.currentTime = 0;
                     }
-                    setShowMentor(false);
+                    setShowAutor(false);
                   }} className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full transition-colors">
                     <X size={24} />
                   </button>
@@ -1272,15 +1288,15 @@ O nome do usuário é ${user?.name || 'amigo'}.
 
               <div className="p-8 space-y-6">
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-[2rem] min-h-[150px] flex flex-col items-center justify-center text-center">
-                  {isMentorLoading ? (
+                  {isAutorLoading ? (
                     <div className="space-y-4">
-                      {mentorGreeting && (
+                      {autorGreeting && (
                         <motion.p 
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="text-lg font-bold text-purple-600 mb-4"
                         >
-                          {mentorGreeting}
+                          {autorGreeting}
                         </motion.p>
                       )}
                       <motion.div
@@ -1290,19 +1306,19 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       >
                         <Loader2 className="text-purple-600" size={32} />
                       </motion.div>
-                      <p className="text-sm font-bold text-stone-400 animate-pulse">O Mentor está processando sua sabedoria...</p>
+                      <p className="text-sm font-bold text-stone-400 animate-pulse">O Autor está processando sua sabedoria...</p>
                     </div>
-                  ) : mentorResponse ? (
+                  ) : autorResponse ? (
                     <div className="space-y-4 w-full">
                       <p className="text-sm leading-relaxed text-stone-700 dark:text-zinc-300 italic font-serif">
-                        "{mentorResponse}"
+                        "{autorResponse}"
                       </p>
-                      {isMentorPlaying && (
+                      {isAutorPlaying && (
                         <button 
                           onClick={() => {
-                            if (mentorAudioRef.current) {
-                              mentorAudioRef.current.pause();
-                              mentorAudioRef.current.currentTime = 0;
+                            if (autorAudioRef.current) {
+                              autorAudioRef.current.pause();
+                              autorAudioRef.current.currentTime = 0;
                             }
                           }}
                           className="flex items-center gap-2 mx-auto px-4 py-2 bg-stone-100 dark:bg-zinc-800 rounded-full text-xs font-bold text-stone-600 dark:text-stone-400 hover:bg-stone-200 transition-colors"
@@ -1313,12 +1329,12 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       )}
                       <button 
                         onClick={() => {
-                          if (mentorAudioRef.current) {
-                            mentorAudioRef.current.pause();
-                            mentorAudioRef.current.currentTime = 0;
+                          if (autorAudioRef.current) {
+                            autorAudioRef.current.pause();
+                            autorAudioRef.current.currentTime = 0;
                           }
-                          setMentorResponse("");
-                          setMentorAudioUrl(null);
+                          setAutorResponse("");
+                          setAutorAudioUrl(null);
                         }}
                         className="text-xs font-bold text-purple-600 uppercase tracking-widest hover:underline"
                       >
@@ -1327,14 +1343,14 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      <p className="text-sm text-stone-500">Pressione o botão abaixo e fale sua dúvida sobre liderança, discipulado ou célula.</p>
+                      <p className="text-sm text-stone-500">Pressione o botão abaixo e fale sua dúvida sobre o tema.</p>
                       <div className="flex justify-center items-center gap-6">
-                        {isMentorPlaying && (
+                        {isAutorPlaying && (
                           <button
                             onClick={() => {
-                              if (mentorAudioRef.current) {
-                                mentorAudioRef.current.pause();
-                                mentorAudioRef.current.currentTime = 0;
+                              if (autorAudioRef.current) {
+                                autorAudioRef.current.pause();
+                                autorAudioRef.current.currentTime = 0;
                               }
                             }}
                             className="p-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 rounded-full hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
