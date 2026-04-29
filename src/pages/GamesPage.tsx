@@ -28,6 +28,7 @@ import {
   Clock,
   Type,
   UserX,
+  Target,
   Lock as LockIcon,
   Sparkles
 } from 'lucide-react';
@@ -46,6 +47,8 @@ import WordSearchGame from '../components/games/WordSearchGame';
 import CryptogramGame from '../components/games/CryptogramGame';
 import AnagramGame from '../components/games/AnagramGame';
 import RiddlesGame from '../components/games/RiddlesGame';
+import MemoryGame from '../components/games/MemoryGame';
+import { ACHIEVEMENTS, Achievement } from '../data/achievements';
 import { 
   collection, 
   query, 
@@ -100,7 +103,25 @@ const GamesPage: React.FC = () => {
   const [showPanorama, setShowPanorama] = useState(false);
   const [showStorySelection, setShowStorySelection] = useState(false);
   const [activeGame, setActiveGame] = useState<string | null>(null);
+  const [showAchievements, setShowAchievements] = useState(false);
   const [credits, setCredits] = useState(50);
+  const [playerTitle, setPlayerTitle] = useState('Novato');
+  const [dailyMissions, setDailyMissions] = useState([
+    { id: 1, title: "Oração Matinal", description: "Jogue o Panorama Bíblico hoje", completed: false, reward: 20 },
+    { id: 2, title: "Estudo Profundo", description: "Acerte 5 questões seguidas no Quiz", completed: false, reward: 30 },
+    { id: 3, title: "Comunhão", description: "Participe de uma Batalha Mano a Mano", completed: false, reward: 50 },
+  ]);
+
+  useEffect(() => {
+    if (userRank) {
+      const score = userRank.totalScore || 0;
+      if (score > 2000) setPlayerTitle('Líder Espiritual');
+      else if (score > 1000) setPlayerTitle('Anunciador do Reino');
+      else if (score > 500) setPlayerTitle('Pregador');
+      else if (score > 200) setPlayerTitle('Estudioso');
+      else setPlayerTitle('Discípulo');
+    }
+  }, [userRank]);
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinRoomIdInput, setJoinRoomIdInput] = useState('');
@@ -987,6 +1008,68 @@ const GamesPage: React.FC = () => {
 
         {activeGame === null ? (
           <div className="space-y-8">
+            {/* Player Status & Daily Missions */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="md:col-span-1 bg-white dark:bg-zinc-900 rounded-[2.5rem] p-6 shadow-xl border border-stone-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center">
+                <div className="relative mb-4">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 p-1">
+                    <img 
+                      src={user?.photoURL || user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`} 
+                      className="w-full h-full rounded-full bg-white dark:bg-zinc-800 object-cover"
+                      alt="Avatar"
+                    />
+                  </div>
+                  <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-2 rounded-xl shadow-lg">
+                    <Crown size={16} />
+                  </div>
+                </div>
+                <h3 className="text-xl font-bold text-stone-900 dark:text-white">{user?.name || 'Viajante'}</h3>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600 mb-2">{playerTitle}</p>
+                <div className="px-4 py-1 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold">
+                  {userRank?.totalScore || 0} PONTOS TOTAIS
+                </div>
+              </div>
+
+              <div className="md:col-span-2 bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 shadow-xl border border-stone-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 rounded-xl">
+                      <Target size={20} />
+                    </div>
+                    <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Missões Diárias</h2>
+                  </div>
+                  <div className="text-[10px] font-black text-stone-400 uppercase tracking-widest bg-stone-100 dark:bg-zinc-800 px-3 py-1 rounded-lg">
+                    Reseta em 14h
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {dailyMissions.map(mission => (
+                    <div key={mission.id} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 transition-all hover:border-emerald-200 group">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm",
+                          mission.completed ? "bg-emerald-500 text-white" : "bg-white dark:bg-zinc-800 text-stone-400 group-hover:text-emerald-500"
+                        )}>
+                          <CheckCircle2 size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-stone-800 dark:text-stone-200">{mission.title}</p>
+                          <p className="text-xs text-stone-400">{mission.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-emerald-600">+{mission.reward} Cr</span>
+                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
+                          <Zap size={14} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* Game Menu */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <button onClick={() => setActiveGame('quiz')} className="p-6 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl text-white text-left hover:scale-105 transition-transform shadow-lg">
@@ -1141,6 +1224,7 @@ const GamesPage: React.FC = () => {
             {activeGame === 'cryptogram' && <CryptogramGame onFinish={(score) => handleOtherGameFinish('cryptogram', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'anagram' && <AnagramGame onFinish={(score) => handleOtherGameFinish('anagram', score)} onClose={() => setActiveGame(null)} credits={credits} onSpendCredits={handleSpendCredits} />}
             {activeGame === 'riddles' && <RiddlesGame onFinish={(score) => handleOtherGameFinish('riddles', score)} onClose={() => setActiveGame(null)} />}
+            {activeGame === 'memory' && <MemoryGame onFinish={(score) => handleOtherGameFinish('memory', score)} />}
             {activeGame === 'quiz' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-4">

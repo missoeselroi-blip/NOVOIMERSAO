@@ -930,13 +930,13 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          onClick={() => setIsNotificationModalOpen(true)}
-          className="flex-1 py-5 bg-[#5B8A9A] text-white rounded-[2rem] flex flex-col items-center justify-center gap-2 font-bold hover:bg-[#4B7A8A] transition-all shadow-lg shadow-[#5B8A9A]/20 group"
+          onClick={() => onNavigate('audio-bible')}
+          className="flex-1 py-5 bg-[#BC6C25] text-white rounded-[2rem] flex flex-col items-center justify-center gap-2 font-bold hover:bg-[#A65B1C] transition-all shadow-lg shadow-[#BC6C25]/20 group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Bell size={20} className="text-white" />
+            <Volume2 size={24} className="text-white" />
           </div>
-          <span className="text-xs md:text-sm">Lembre-me</span>
+          <span className="text-xs md:text-sm">Bíblia Falada</span>
         </motion.button>
       </div>
 
@@ -2140,6 +2140,33 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         onClose={() => setIsNotificationModalOpen(false)}
       />
       
+      {/* Notification Section - Moved from top */}
+      <div className="grid grid-cols-1 gap-6 mb-10">
+        <motion.button 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          onClick={() => setIsNotificationModalOpen(true)}
+          className="w-full relative overflow-hidden rounded-[2.5rem] p-8 group transition-all hover:scale-[1.01] active:scale-95 shadow-xl bg-gradient-to-br from-white to-stone-50 dark:from-zinc-900 dark:to-zinc-800 border border-stone-200 dark:border-zinc-700 flex flex-col md:flex-row items-center justify-between gap-6"
+        >
+          <div className="flex items-center gap-6">
+            <div className="w-16 h-16 rounded-[1.5rem] bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-inner group-hover:rotate-12 transition-transform duration-300">
+              <Bell size={32} />
+            </div>
+            <div className="text-left space-y-1">
+              <h4 className="text-xl md:text-2xl font-display font-bold">Lembre-me</h4>
+              <p className="text-stone-500 dark:text-zinc-400 text-sm md:text-base">
+                Receba notificações diárias com versículos, estudos e encorajamento.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 px-6 py-3 bg-emerald-600 text-white rounded-2xl font-bold hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-600/20">
+            Ativar Notificações
+            <ArrowRight size={18} />
+          </div>
+        </motion.button>
+      </div>
+
       {/* FAQ Section */}
       <div className="max-w-4xl mx-auto px-4 py-16 border-t border-stone-100 dark:border-zinc-800">
         <div className="text-center mb-12">

@@ -11,7 +11,7 @@
     "build": "npm run clean && vite build && esbuild server.ts --bundle --platform=node --format=esm --outfile=dist/server.js --packages=external",
     "start": "node dist/server.js",
     "preview": "NODE_ENV=production node dist/server.js",
-    "clean": "rimraf dist",
+    "clean": "npx rimraf dist",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
