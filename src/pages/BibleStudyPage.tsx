@@ -6872,8 +6872,8 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredLibraryOutlines.map((outline) => (
-                    <div key={outline.id} className="p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl hover:shadow-md transition-shadow flex flex-col h-full">
+                  {filteredLibraryOutlines.map((outline, index) => (
+                    <div key={`outline-${outline.id}-${index}`} className="p-6 bg-white dark:bg-zinc-900 border border-stone-200 dark:border-zinc-800 rounded-2xl hover:shadow-md transition-shadow flex flex-col h-full">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="px-3 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 text-[10px] font-bold uppercase tracking-wider rounded-lg">
                           {outline.category}
@@ -7007,7 +7007,7 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                       <h2 className="text-emerald-600">Desenvolvimento</h2>
                       <ul>
                         {selectedLibraryOutline.development.map((point: string, index: number) => (
-                          <li key={index}>{point}</li>
+                          <li key={`point-${selectedLibraryOutline.id}-${index}-${point.substring(0, 10)}`}>{point}</li>
                         ))}
                       </ul>
 

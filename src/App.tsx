@@ -778,9 +778,9 @@ function AppContent() {
         }>
           <ErrorBoundary>
             <Routes>
-              {navItems.map((item) => (
+              {navItems.map((item, index) => (
                 <Route 
-                  key={item.id} 
+                  key={`route-${item.id}-${index}`} 
                   path={item.id === 'home' ? '/' : `/${item.id}`} 
                   element={
                     <motion.div

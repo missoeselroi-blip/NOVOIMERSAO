@@ -340,7 +340,33 @@ const LessonPage: React.FC = () => {
       const transcription = await geminiService.transcribeAudio(base64Audio);
       if (!transcription) throw new Error("Não foi possível transcrever o áudio.");
 
-      const response = await geminiService.generateText(transcription, getAutorSystemPrompt(), true);
+      // RAG implementation: find relevant lesson content
+      const searchTerms = transcription.toLowerCase().split(' ').filter(t => t.length > 3);
+      
+      const scoredLessons = lessons.map(l => {
+        let score = 0;
+        const textToSearch = `${l.title} ${l.theme || ""} ${l.content} ${l.leaderGuide || ""}`.toLowerCase();
+        searchTerms.forEach(term => {
+          if (textToSearch.includes(term)) score++;
+        });
+        return { lesson: l, score };
+      });
+      
+      const relevantLessons = scoredLessons
+        .filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 5) // Increase context window
+        .map(item => item.lesson);
+        
+      const finalContextLessons = relevantLessons.length > 0 ? relevantLessons : lessons.slice(-3);
+      const context = finalContextLessons.map(l => `Lição: ${l.title} - ${l.theme || ""}\nConteúdo: ${l.content}\nGuia do Líder: ${l.leaderGuide || ""}`).join('\n\n');
+
+      const prompt = `CONTEXTO DA BASE DE CONHECIMENTO (Use para aprofundar a resposta):
+${context}
+
+PERGUNTA DO USUÁRIO: ${transcription}`;
+
+      const response = await geminiService.generateText(prompt, getAutorSystemPrompt(), true);
       setAutorResponse(response);
       
       showToast("Autor respondeu! ✨");
@@ -355,7 +381,8 @@ const LessonPage: React.FC = () => {
   const getAutorSystemPrompt = () => {
     return `Você é um Autor espiritual e de liderança cristã altamente experiente. 
 Seus princípios são baseados nos valores bíblicos e profundidade teológica.
-Você pesquisará na Central de Conhecimento e fornecerá sínteses diretas e profundas sobre o assunto solicitado, aprofundando-se em lições, apostilas, devocionais, livros e artigos do autor Pr. Wesley Reis.
+Sua resposta DEVE ser baseada principalmente no CONTEXTO DA BASE DE CONHECIMENTO fornecido na mensagem. Caso a pergunta não esteja lá, use seu conhecimento bíblico profundo.
+
 O nome do usuário é ${user?.name || 'amigo'}. 
 Sempre que possível, faça conexões entre a lição "${selectedLesson?.title || 'Bíblica'}" e os princípios de Pr. Wesley Reis.
 Mantenha as respostas conversacionais, profundas e bem fundamentadas.`;

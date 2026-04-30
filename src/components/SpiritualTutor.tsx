@@ -36,6 +36,7 @@ import { useShare } from '../utils/share';
 import { SaveToNotebookModal } from './SaveToNotebookModal';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
+import { lessons } from '../data/lessons_static';
 
 interface Message {
   role: 'user' | 'model';
@@ -182,11 +183,14 @@ export const SpiritualTutor: React.FC = () => {
   const { share } = useShare();
   const location = useLocation();
   const navigate = useNavigate();
+  const knowledgeBase = lessons.map(l => `[${l.title} - ${l.theme || ''}]: ${l.content}`).join('\n\n');
 
   const systemInstruction = `Você é o Tutor de Imersão, um guia espiritual e assistente especializado no aplicativo Imersão Bíblica IA.
-Sua missão é ajudar os usuários a navegar no app, encontrar recursos e crescer espiritualmente.
+BASE DE CONHECIMENTO (Use estas lições para responder com profundidade):
+${knowledgeBase}
 
 DIRETRIZES DE RESPOSTA:
+Sua missão é ajudar os usuários a navegar no app, encontrar recursos e crescer espiritualmente.
 1. Seja sempre encorajador, bíblico e prático.
 2. Ao explicar um recurso, forneça um passo a passo de como encontrá-lo.
 3. SEMPRE inclua sugestões de navegação no final da sua resposta usando o formato: <suggestions>[{"label": "Nome", "path": "/rota"}]</suggestions>.
