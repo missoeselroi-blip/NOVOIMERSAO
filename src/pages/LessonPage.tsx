@@ -73,12 +73,14 @@ const LessonPage: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [autorGreeting, setAutorGreeting] = useState<string | null>(null);
   const [autorResponse, setAutorResponse] = useState("");
+  const [lastQuestion, setLastQuestion] = useState("");
   const [isAutorLoading, setIsAutorLoading] = useState(false);
   const [isAutorPlaying, setIsAutorPlaying] = useState(false);
   const [autorAudioUrl, setAutorAudioUrl] = useState<string | null>(null);
   const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [contentToSave, setContentToSave] = useState({ title: '', content: '' });
+  const [textQuery, setTextQuery] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -332,13 +334,20 @@ const LessonPage: React.FC = () => {
     }
   };
 
-  const handleAutorQuery = async (base64Audio: string) => {
+  const handleAutorQuery = async (base64Audio: string | null, textQuery: string | null = null) => {
     setIsAutorLoading(true);
     setAutorResponse("");
     setAutorAudioUrl(null);
     try {
-      const transcription = await geminiService.transcribeAudio(base64Audio);
-      if (!transcription) throw new Error("Não foi possível transcrever o áudio.");
+      let transcription = "";
+      if (textQuery) {
+        transcription = textQuery;
+      } else if (base64Audio) {
+        transcription = await geminiService.transcribeAudio(base64Audio) || "";
+      }
+      
+      if (!transcription) throw new Error("Não foi possível processar sua pergunta.");
+      setLastQuestion(transcription);
 
       // RAG implementation: find relevant lesson content
       const searchTerms = transcription.toLowerCase().split(' ').filter(t => t.length > 3);
@@ -375,6 +384,7 @@ PERGUNTA DO USUÁRIO: ${transcription}`;
       showToast("Erro ao falar com o Autor.", "error");
     } finally {
       setIsAutorLoading(false);
+      setTextQuery("");
     }
   };
 
@@ -476,6 +486,27 @@ O nome do usuário é ${user?.name || 'amigo'}.
     }
   };
 
+  const runDicaDeLideranca = async (query: string) => {
+    setShowDicaDeLideranca(true);
+    setIsDicaDeLiderancaLoading(true);
+    setDicaDeLiderancaResponse("");
+    try {
+      const synthesisedPrompt = `Como um mentor de liderança cristã, sintetize as opiniões dos seguintes autores sobre a pergunta do usuário: Abe Huber, Joel Comiskey, Ralph W. Neighbour Jr., David Yonggi Cho, Larry Kreider, Rick Warren, David Kornfield, Andre Henrique Torres Ribeiro, Evandro Sivieri.
+      
+      Pergunta do usuário: ${query}
+      
+      Forneça uma síntese direta, prática e profunda.`;
+      
+      const response = await geminiService.generateText(synthesisedPrompt, getDicaDeLiderancaSystemPrompt(), true);
+      setDicaDeLiderancaResponse(response);
+    } catch (error) {
+      console.error("Error running synthesis:", error);
+      showToast("Erro ao processar síntese de autores.", "error");
+    } finally {
+      setIsDicaDeLiderancaLoading(false);
+    }
+  };
+
 
   const filteredLessons = lessons.filter(lesson => 
     lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -545,9 +576,6 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   {lesson.theme}
                 </span>
               )}
-              {lesson.hasAttachment && lesson.id !== 12 && (
-                <span className="text-[10px] font-black uppercase tracking-widest text-amber-600 mt-2">Anexo</span>
-              )}
             </motion.button>
           ))}
         </div>
@@ -614,7 +642,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Autor</span>
                   </button>
                   <button onClick={handleWiki} className="p-1.5 md:p-2 bg-[#8A9A5B] text-white hover:bg-[#7A8A4B] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Wiki">
-                    <Globe className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <FileSearch className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Wiki</span>
                   </button>
                   <button 
@@ -630,7 +658,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     className="p-1.5 md:p-2 bg-[#5B8A9A] text-white hover:bg-[#4B7A8A] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" 
                     title="Resumo"
                   >
-                    <FileSearch className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <FileText className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Resumo</span>
                   </button>
                 </div>
@@ -769,22 +797,6 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       )}
                     </div>
                     
-                    {selectedLesson.hasAttachment && (
-                      <div className="mt-12 p-8 bg-amber-50 dark:bg-amber-900/20 rounded-[2rem] border-2 border-dashed border-amber-200 dark:border-amber-800 flex flex-col items-center text-center">
-                        <div className="w-16 h-16 bg-amber-100 dark:bg-amber-800 rounded-2xl flex items-center justify-center mb-4 text-amber-600 dark:text-amber-400">
-                          <FileText size={32} />
-                        </div>
-                        <h4 className="text-xl font-bold mb-2">Arquivo em Anexo</h4>
-                        <p className="text-sm text-stone-500 dark:text-zinc-400 mb-6">
-                          Esta lição contém um material complementar importante para o seu estudo.
-                        </p>
-                        <button className="flex items-center gap-2 px-6 py-3 bg-amber-600 text-white rounded-full font-bold hover:bg-amber-700 transition-all shadow-lg shadow-amber-600/20">
-                          <Download size={20} />
-                          Baixar PDF da {selectedLesson.title}
-                        </button>
-                      </div>
-                    )}
-
                     {/* Footer removed */}
                   </div>
                 </div>
@@ -1348,19 +1360,23 @@ O nome do usuário é ${user?.name || 'amigo'}.
                           {autorGreeting}
                         </motion.p>
                       )}
+                      
                       <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                        className="mx-auto"
-                      >
-                        <Loader2 className="text-purple-600" size={32} />
-                      </motion.div>
-                      <p className="text-sm font-bold text-stone-400 animate-pulse">O Autor está processando sua sabedoria...</p>
+                        animate={{ scale: [1, 1.2, 1] }}
+                        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                        className="mx-auto w-12 h-12 rounded-full border-4 border-purple-200 border-t-purple-600"
+                      />
+                      <p className="text-sm font-bold text-stone-400">O Autor está processando sua sabedoria...</p>
                     </div>
                   ) : autorResponse ? (
                     <div className="space-y-4 w-full">
                       <p className="text-sm leading-relaxed text-stone-700 dark:text-zinc-300 italic font-serif">
-                        "{autorResponse}"
+                        {autorResponse.startsWith(autorGreeting || "") ? autorResponse : (
+                          <>
+                            <span className="block mb-2 font-bold text-purple-600">{autorGreeting}</span>
+                           {autorResponse}
+                          </>
+                        )}
                       </p>
                       {isAutorPlaying && (
                         <button 
@@ -1387,27 +1403,35 @@ O nome do usuário é ${user?.name || 'amigo'}.
                         }}
                         className="text-xs font-bold text-purple-600 uppercase tracking-widest hover:underline"
                       >
-                        Faça <span className="font-bold underline text-purple-700">uma Pergunta</span>
+                        Faça <span className="font-bold underline text-purple-700">outra Pergunta</span>
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4">
-                      <p className="text-sm text-stone-500">Pressione o botão abaixo e fale sua dúvida sobre o tema.</p>
+                    <div className="space-y-4 w-full">
+                      {autorGreeting && <p className="text-lg font-bold text-purple-600 mb-4">{autorGreeting}</p>}
+                      <p className="text-sm text-stone-500">Pergunte ou fale sua dúvida sobre o tema.</p>
+                      
+                      {/* Text Input area */}
+                      <input 
+                        type="text"
+                        value={textQuery}
+                        onChange={(e) => setTextQuery(e.target.value)}
+                        placeholder="Digite sua dúvida aqui..."
+                        className="w-full p-4 rounded-2xl border border-stone-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 focus:ring-2 focus:ring-purple-500 transition-all text-sm mb-4"
+                      />
+                      
                       <div className="flex justify-center items-center gap-6">
-                        {isAutorPlaying && (
-                          <button
-                            onClick={() => {
-                              if (autorAudioRef.current) {
-                                autorAudioRef.current.pause();
-                                autorAudioRef.current.currentTime = 0;
-                              }
-                            }}
-                            className="p-4 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-stone-300 rounded-full hover:bg-stone-200 dark:hover:bg-zinc-700 transition-colors"
-                            title="Parar Áudio"
-                          >
-                            <Square size={24} />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => handleAutorQuery(null, textQuery)}
+                          disabled={!textQuery.trim()}
+                          className={cn(
+                            "w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all",
+                            textQuery.trim() ? "bg-purple-600 text-white" : "bg-stone-300 text-stone-500 cursor-not-allowed"
+                          )}
+                        >
+                          Enviar
+                        </button>
+                        <span className="text-stone-400 text-xs font-bold uppercase">ou</span>
                         <button
                           onMouseDown={startRecording}
                           onMouseUp={stopRecording}
@@ -1424,7 +1448,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                         </button>
                       </div>
                       <p className="text-[10px] font-bold text-stone-400 uppercase tracking-widest">
-                        {isRecording ? "Solte para enviar" : "Segure para falar"}
+                        {isRecording ? "Solte para enviar" : "Ou segure para falar"}
                       </p>
                     </div>
                   )}
@@ -1443,13 +1467,60 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 <button 
                   onClick={() => {
                     setShowAutor(false);
-                    openDicaDeLideranca();
+                    if (lastQuestion) {
+                      runDicaDeLideranca(lastQuestion);
+                    } else {
+                      openDicaDeLideranca();
+                    }
                   }}
                   className="w-full mt-6 py-4 bg-purple-600 text-white rounded-2xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
                 >
                   <UserCheck size={20} />
                   Dicas de Outros Autores
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Dica de Liderança Modal */}
+      <AnimatePresence>
+        {showDicaDeLideranca && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              className="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+            >
+              <div className="p-6 border-b border-stone-200 dark:border-zinc-800 flex justify-between items-center">
+                <h2 className="text-xl font-black tracking-tight">Dicas de Outros Autores</h2>
+                <button 
+                  onClick={() => setShowDicaDeLideranca(false)}
+                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {isDicaDeLiderancaLoading ? (
+                  <div className="flex h-32 items-center justify-center">
+                    <div className="w-8 h-8 rounded-full border-4 border-purple-600 border-t-transparent animate-spin" />
+                  </div>
+                ) : (
+                  <>
+                    {dicaDeLiderancaGreeting && <p className="font-bold text-purple-600 mb-4">{dicaDeLiderancaGreeting}</p>}
+                    <div className="prose dark:prose-invert">
+                      <ReactMarkdown>{dicaDeLiderancaResponse}</ReactMarkdown>
+                    </div>
+                  </>
+                )}
               </div>
             </motion.div>
           </motion.div>

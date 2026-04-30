@@ -1,0 +1,29 @@
+87:  const [showDicaDeLideranca, setShowDicaDeLideranca] = useState(false);
+88:  const [isDicaDeLiderancaLoading, setIsDicaDeLiderancaLoading] = useState(false);
+89:  const [dicaDeLiderancaResponse, setDicaDeLiderancaResponse] = useState("");
+90:  const [dicaDeLiderancaGreeting, setDicaDeLiderancaGreeting] = useState<string | null>(null);
+91:  const [dicaDeLiderancaAudioUrl, setDicaDeLiderancaAudioUrl] = useState<string | null>(null);
+433:  const handleDicaDeLiderancaQuery = async (base64Audio: string) => {
+434:    setIsDicaDeLiderancaLoading(true);
+435:    setDicaDeLiderancaResponse("");
+436:    setDicaDeLiderancaAudioUrl(null);
+441:      const response = await geminiService.generateText(transcription, getDicaDeLiderancaSystemPrompt(), true);
+442:      setDicaDeLiderancaResponse(response);
+449:      setIsDicaDeLiderancaLoading(false);
+453:  const getDicaDeLiderancaSystemPrompt = () => {
+461:  const openDicaDeLideranca = async () => {
+462:    setShowDicaDeLideranca(true);
+464:      setIsDicaDeLiderancaLoading(true);
+472:        setDicaDeLiderancaGreeting(`${greetingText}, ${userName}! Que alegria ter você aqui.`);
+478:        const response = await geminiService.generateText(prompt, getDicaDeLiderancaSystemPrompt(), true);
+479:        setDicaDeLiderancaResponse(response);
+484:        setIsDicaDeLiderancaLoading(false);
+489:  const runDicaDeLideranca = async (query: string) => {
+490:    setShowDicaDeLideranca(true);
+491:    setIsDicaDeLiderancaLoading(true);
+492:    setDicaDeLiderancaResponse("");
+500:      const response = await geminiService.generateText(synthesisedPrompt, getDicaDeLiderancaSystemPrompt(), true);
+501:      setDicaDeLiderancaResponse(response);
+506:      setIsDicaDeLiderancaLoading(false);
+1490:                      runDicaDeLideranca(lastQuestion);
+1492:                      openDicaDeLideranca();

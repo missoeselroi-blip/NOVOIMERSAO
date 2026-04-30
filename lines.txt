@@ -1,0 +1,4 @@
+89:  const [dicaDeLiderancaResponse, setDicaDeLiderancaResponse] = useState("");
+90:  const [dicaDeLiderancaGreeting, setDicaDeLiderancaGreeting] = useState<string | null>(null);
+91:  const [dicaDeLiderancaAudioUrl, setDicaDeLiderancaAudioUrl] = useState<string | null>(null);
+463:    if (!dicaDeLiderancaResponse) {
