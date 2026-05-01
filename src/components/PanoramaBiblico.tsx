@@ -15,7 +15,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
   const { user, updateUser } = useAuth();
   const [currentBookIndex, setCurrentBookIndex] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(5);
+  const [timeLeft, setTimeLeft] = useState(9);
   const [gameState, setGameState] = useState<'intro' | 'playing' | 'correct' | 'wrong' | 'timeout' | 'finished' | 'division_completed'>('intro');
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -57,7 +57,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
   useEffect(() => {
     if (gameState === 'playing') {
-      setTimeLeft(5);
+      setTimeLeft(9);
       const q = getRandomQuestionForBook(currentBook);
       setCurrentQuestion(q);
       setSelectedAnswer(null);
@@ -369,14 +369,14 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
                 </div>
                 <h2 className="text-3xl font-display font-bold mb-4">Panorama Bíblico</h2>
                 <p className="text-stone-600 dark:text-zinc-400 mb-8 leading-relaxed">
-                  Viaje por todos os 66 livros da Bíblia! Você tem apenas <strong>5 segundos</strong> para responder cada pergunta.
+                  Viaje por todos os 66 livros da Bíblia! Você tem agora <strong>9 segundos</strong> para responder a cada desafio bíblico.
                   <br/><br/>
                   Acertou? Avança um livro.<br/>
                   Tempo esgotou? Volta um livro e perde 1 ponto.<br/>
                   Errou? Volta para o início da divisão atual e perde 2 pontos!<br/>
                   Completou a divisão? Ganha 10 pontos!
                   <br/><br/>
-                  <strong>Atenção:</strong> Seu progresso na divisão atual é salvo automaticamente para você continuar de onde parou.
+                  <strong>Atenção:</strong> Seu progresso é salvo automaticamente. Boa sorte nessa jornada!
                 </p>
                 <button 
                   onClick={startGame}
