@@ -50,7 +50,9 @@ import {
   Briefcase,
   RotateCcw,
   UserPlus,
-  Glasses
+  Glasses,
+  Headphones,
+  Anchor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
@@ -350,7 +352,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
 
   const quickActions = [
     { id: 'devotional', label: 'Devocional', desc: 'Sua palavra diária.', icon: <Heart size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1499209974431-9dac3adaf471?auto=format&fit=crop&q=80&w=400&h=300', onClick: () => setIsDevotionalModalOpen(true) },
-    { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <BookOpen size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
+    { id: 'study', label: 'Imersão', desc: 'Estudo bíblico profundo.', icon: <Anchor size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1504052434569-70ad5836ab65?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'games', label: 'Jogos', desc: 'Desafios e Histórias.', icon: <Trophy size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://images.unsplash.com/photo-1511512578047-dfb367046420?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'courses', label: 'Cursos', desc: 'Jornada de aprendizado.', icon: <GraduationCap size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'audio-box', label: 'Áudios', desc: 'Sua biblioteca de áudios.', icon: <Volume2 size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', image: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -358,7 +360,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     { id: 'truth-detector', label: 'Fato ou Fake', desc: 'Detector de Verdade.', icon: <ShieldCheck size={20} className="text-[#3B82F6]" />, color: 'bg-[#3B82F6]/10 shadow-[#3B82F6]/5', image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'bible-race', label: 'Corrida Bíblica', desc: 'A Jornada da Palavra.', icon: <Trophy size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1552674605-171ff3ea36f0?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'notebook', label: 'Meu Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'forum', label: 'Fórum', desc: 'Comunidade de fé.', icon: <MessageSquare size={20} className="text-[#BC6C25]" />, color: 'bg-[#BC6C25]/10 shadow-[#BC6C25]/5', image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
     { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -934,7 +935,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           className="flex-1 py-5 bg-[#BC6C25] text-white rounded-[2rem] flex flex-col items-center justify-center gap-2 font-bold hover:bg-[#A65B1C] transition-all shadow-lg shadow-[#BC6C25]/20 group"
         >
           <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-            <Volume2 size={24} className="text-white" />
+            <Headphones size={24} className="text-white" />
           </div>
           <span className="text-xs md:text-sm">Bíblia Áudio</span>
         </motion.button>

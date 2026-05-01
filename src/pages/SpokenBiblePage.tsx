@@ -17,7 +17,8 @@ import {
   RotateCcw,
   SkipForward,
   SkipBack,
-  Clock
+  Clock,
+  Headphones
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../types';
@@ -344,7 +345,7 @@ export default function SpokenBiblePage() {
               </button>
               <h1 className="text-3xl font-black text-stone-900 dark:text-white tracking-tighter uppercase flex items-center gap-3">
                 <div className="p-2 bg-amber-600 text-white rounded-xl">
-                  <Volume2 size={24} />
+                  <Headphones size={24} />
                 </div>
                 Bíblia Áudio
               </h1>
@@ -533,7 +534,7 @@ export default function SpokenBiblePage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-amber-600 flex items-center justify-center text-white shadow-lg shadow-amber-600/20">
-                      <Volume2 size={24} />
+                      <Headphones size={24} />
                     </div>
                     <div>
                       <h4 className="font-bold text-lg">{selectedBook.name}</h4>

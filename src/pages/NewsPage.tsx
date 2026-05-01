@@ -57,15 +57,44 @@ export default function NewsPage() {
           </div>
           <p className="text-stone-500 dark:text-zinc-400">Acompanhe os sinais proféticos: guerras, fome, epidemias e desastres naturais.</p>
         </div>
-        <button 
-          onClick={fetchNews}
-          disabled={isLoadingNews}
-          className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-50"
-        >
-          {isLoadingNews ? <Loader2 className="animate-spin" size={20} /> : <Globe size={20} />}
-          Atualizar Notícias
-        </button>
+        <div className="flex flex-col gap-2">
+          <button 
+            onClick={fetchNews}
+            disabled={isLoadingNews}
+            className="px-6 py-3 bg-emerald-600 text-white font-bold rounded-2xl hover:bg-emerald-700 transition-all flex items-center gap-2 disabled:opacity-50"
+          >
+            {isLoadingNews ? <Loader2 className="animate-spin" size={20} /> : <Globe size={20} />}
+            Atualizar Notícias
+          </button>
+        </div>
       </header>
+
+      {/* Button for Progress News */}
+      <div className="flex gap-4 flex-col">
+        <p className="text-stone-500 dark:text-zinc-400 font-medium">Conheça também as notícias de Missões</p>
+        <button 
+          onClick={async () => {
+              setIsLoadingNews(true);
+              showToast("Buscando sinais de avanço do Evangelho... 🌍🙏", 'info');
+              try {
+                const query = "avanço do cristianismo no mundo 2026, crescimento igrejas lugares hostis";
+                const result = await geminiService.searchNews(query);
+                setNews(result);
+              } catch (error) {
+                console.error(error);
+                showToast("Erro ao buscar notícias.", 'error');
+              } finally {
+                setIsLoadingNews(false);
+              }
+            }
+          }
+          disabled={isLoadingNews}
+          className="px-6 py-3 bg-purple-600 text-white font-bold rounded-2xl hover:bg-purple-700 transition-all flex items-center gap-2 disabled:opacity-50"
+        >
+          <Sparkles size={20} />
+          Notícias de Avanço do Evangelho
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 gap-12">
         {/* News Feed */}

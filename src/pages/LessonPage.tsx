@@ -26,7 +26,8 @@ import {
   Mic,
   Square,
   UserCheck,
-  Loader2
+  Loader2,
+  Headphones
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -635,7 +636,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     <StickyNote className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
                   <button onClick={handleListen} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
-                    <Volume2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <Headphones className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
                   <button onClick={openAutor} className="p-1.5 md:p-2 bg-[#BC6C25] text-white hover:bg-[#A15B1F] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Autor">
                     <UserCheck className="w-4 h-4 md:w-[18px] md:h-[18px]" />
@@ -1360,7 +1361,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     </div>
                   ) : autorResponse ? (
                     <div className="space-y-4 w-full">
-                      <p className="text-sm leading-relaxed text-stone-700 dark:text-zinc-300 italic font-serif">
+                      <p className="text-sm leading-relaxed text-stone-700 dark:text-zinc-300" style={{ fontFamily: 'Arial' }}>
                         {autorResponse}
                       </p>
                       {isAutorPlaying && (

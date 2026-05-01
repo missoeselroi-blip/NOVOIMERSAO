@@ -48,7 +48,9 @@ import {
   Flame,
   PlayCircle,
   Glasses,
-  Sparkles
+  Sparkles,
+  Headphones,
+  Anchor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -235,7 +237,8 @@ function AppContent() {
 
   const mainNavItems = [
     { id: 'home', label: 'Início', icon: <Home size={22} /> },
-    { id: 'audio-bible', label: 'Bíblia Áudio', icon: <Volume2 size={22} /> },
+    { id: 'audio-bible', label: 'Bíblia Áudio', icon: <Headphones size={22} /> },
+    { id: 'lesson', label: 'Lições', icon: <BookOpen size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
     { id: 'significado', label: 'Significado', icon: <Search size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
@@ -243,17 +246,17 @@ function AppContent() {
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
     { id: 'news', label: 'Sinais', icon: <Newspaper size={22} /> },
     { id: 'truth-detector', label: 'Fato ou Fake', icon: <ShieldCheck size={22} /> },
-    { id: 'study', label: 'Imersão', icon: <BookOpen size={22} /> },
+    { id: 'study', label: 'Imersão', icon: <Anchor size={22} /> },
     { id: 'notebook', label: 'Caderno', icon: <StickyNote size={22} /> },
   ];
   const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'bible', label: 'Bíblia', subtitle: 'A Palavra de Deus', icon: <Book size={20} />, component: <BiblePage /> },
     { id: 'audio-bible', label: 'Bíblia Áudio', subtitle: 'Ouça a Palavra', icon: <Volume2 size={20} />, component: <SpokenBiblePage /> },
-    { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage />, hidden: true },
+    { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage /> },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
     { id: 'significado', label: 'Compare significados e religiões', subtitle: 'Léxico e Comparativo', icon: <Search size={20} />, component: <Navigate to="/study" state={{ tab: 'significado' }} replace />, hidden: true },
-    { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <BookOpen size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
+    { id: 'study', label: 'Imersão', subtitle: 'Mergulhando na Palavra Viva', icon: <Anchor size={20} />, component: <BibleStudyPage deepThinking={deepThinking} setDeepThinking={setDeepThinking} onNavigate={handleNavigate} /> },
     { id: 'courses', label: 'Cursos', subtitle: 'Jornada de aprendizado', icon: <GraduationCap size={20} />, component: <CoursesPage onNavigate={handleNavigate} /> },
     { id: 'notebook', label: 'Caderno', subtitle: 'Suas anotações e estudos', icon: <StickyNote size={20} />, component: <NotebookPage onSearchWiki={(query) => { handleNavigate('study'); }} /> },
     { id: 'sermons', label: 'Sermões', subtitle: 'Sermões em áudio e vídeo', icon: <PlayCircle size={20} />, component: <SermonsPage /> },
