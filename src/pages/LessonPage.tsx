@@ -1351,16 +1351,6 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 <div className="bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-[2rem] min-h-[150px] flex flex-col items-center justify-center text-center">
                   {isAutorLoading ? (
                     <div className="space-y-4">
-                      {autorGreeting && (
-                        <motion.p 
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="text-lg font-bold text-purple-600 mb-4"
-                        >
-                          {autorGreeting}
-                        </motion.p>
-                      )}
-                      
                       <motion.div
                         animate={{ scale: [1, 1.2, 1] }}
                         transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
@@ -1371,12 +1361,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   ) : autorResponse ? (
                     <div className="space-y-4 w-full">
                       <p className="text-sm leading-relaxed text-stone-700 dark:text-zinc-300 italic font-serif">
-                        {autorResponse.startsWith(autorGreeting || "") ? autorResponse : (
-                          <>
-                            <span className="block mb-2 font-bold text-purple-600">{autorGreeting}</span>
-                           {autorResponse}
-                          </>
-                        )}
+                        {autorResponse}
                       </p>
                       {isAutorPlaying && (
                         <button 
@@ -1392,23 +1377,25 @@ O nome do usuário é ${user?.name || 'amigo'}.
                           PARAR ÁUDIO
                         </button>
                       )}
-                      <button 
-                        onClick={() => {
-                          if (autorAudioRef.current) {
-                            autorAudioRef.current.pause();
-                            autorAudioRef.current.currentTime = 0;
-                          }
-                          setAutorResponse("");
-                          setAutorAudioUrl(null);
-                        }}
-                        className="text-xs font-bold text-purple-600 uppercase tracking-widest hover:underline"
-                      >
-                        Faça <span className="font-bold underline text-purple-700">outra Pergunta</span>
-                      </button>
+                      
+                      <div className="pt-2">
+                        <button 
+                          onClick={() => {
+                            if (autorAudioRef.current) {
+                              autorAudioRef.current.pause();
+                              autorAudioRef.current.currentTime = 0;
+                            }
+                            setAutorResponse("");
+                            setAutorAudioUrl(null);
+                          }}
+                          className="px-6 py-2.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-black uppercase tracking-widest hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all shadow-sm"
+                        >
+                          Fazer outra Pergunta
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-4 w-full">
-                      {autorGreeting && <p className="text-lg font-bold text-purple-600 mb-4">{autorGreeting}</p>}
                       <p className="text-sm text-stone-500">Pergunte ou fale sua dúvida sobre o tema.</p>
                       
                       {/* Text Input area */}
@@ -1498,17 +1485,78 @@ O nome do usuário é ${user?.name || 'amigo'}.
               animate={{ scale: 1, y: 0 }}
               className="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
             >
-              <div className="p-6 border-b border-stone-200 dark:border-zinc-800 flex justify-between items-center">
-                <h2 className="text-xl font-black tracking-tight">Dicas de Outros Autores</h2>
-                <button 
-                  onClick={() => setShowDicaDeLideranca(false)}
-                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full"
-                >
-                  <X size={20} />
-                </button>
+              <div className="p-6 border-b border-stone-200 dark:border-zinc-800 flex justify-between items-center bg-purple-50/50 dark:bg-purple-900/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-purple-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-purple-600/20">
+                    <UserCheck size={20} />
+                  </div>
+                  <h2 className="text-xl font-black tracking-tight">Dicas de Outros Autores</h2>
+                </div>
+                
+                <div className="flex items-center gap-1 md:gap-2">
+                  <button 
+                    onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+                    className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                    title="Diminuir Zoom"
+                  >
+                    <ZoomOut size={18} />
+                  </button>
+                  <button 
+                    onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
+                    className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                    title="Aumentar Zoom"
+                  >
+                    <ZoomIn size={18} />
+                  </button>
+
+                  {!isDicaDeLiderancaLoading && dicaDeLiderancaResponse && (
+                    <>
+                      <button 
+                        onClick={() => {
+                          const blob = new Blob([dicaDeLiderancaResponse], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = `dicas-autores-${new Date().getTime()}.txt`;
+                          a.click();
+                        }}
+                        className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                        title="Baixar Dicas"
+                      >
+                        <Download size={18} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setContentToSave({ title: "Dicas de Outros Autores", content: dicaDeLiderancaResponse });
+                          setIsNotebookModalOpen(true);
+                        }}
+                        className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                        title="Salvar no Caderno"
+                      >
+                        <StickyNote size={18} />
+                      </button>
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(dicaDeLiderancaResponse).then(() => showToast("Copiado!"));
+                        }}
+                        className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
+                        title="Compartilhar"
+                      >
+                        <Share2 size={18} />
+                      </button>
+                    </>
+                  )}
+                  
+                  <button 
+                    onClick={() => setShowDicaDeLideranca(false)}
+                    className="p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-full transition-colors text-purple-600"
+                  >
+                    <X size={24} />
+                  </button>
+                </div>
               </div>
               
-              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              <div className="flex-1 overflow-y-auto p-8 md:p-12" style={{ fontSize: `${zoom * 100}%` }}>
                 {isDicaDeLiderancaLoading ? (
                   <div className="flex h-32 items-center justify-center">
                     <div className="w-8 h-8 rounded-full border-4 border-purple-600 border-t-transparent animate-spin" />
