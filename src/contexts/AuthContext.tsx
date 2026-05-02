@@ -34,6 +34,7 @@ interface UserSettings {
   theme: 'light' | 'dark' | 'system';
   preferredBible: string;
   fontSize: string;
+  layout?: 'devotional' | string;
 }
 
 interface User {
@@ -319,7 +320,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     const careerUnsub = onSnapshot(doc(db, 'careerProgress', user.id), (doc) => {
-      if (doc.exists()) setCareerProgress(doc.data());
+      if (doc.exists()) {
+        const data = doc.data();
+        let rankId = data.rankId || 1;
+        const points = data.points || 0;
+        
+        // Promotion logic: Marinheiro (1) to Cabo (2)
+        // Let's assume Cabo requires 500 points.
+        if (rankId === 1 && points >= 500) {
+          rankId = 2;
+          updateDoc(doc.ref, { rankId });
+        }
+        
+        setCareerProgress({ ...data, rankId });
+      }
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, `careerProgress/${user.id}`);
     });
@@ -454,7 +468,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: email,
         photoURL: `https://api.dicebear.com/7.x/avataaars/svg?seed=${name}`,
         joinDate: new Date().toISOString(),
-        role: 'user'
+        role: 'user',
+        settings: {
+          theme: 'light',
+          preferredBible: 'almeida',
+          fontSize: '18',
+          layout: 'devotional'
+        }
       };
       await setDoc(userDocRef, userData);
       setUser(userData);

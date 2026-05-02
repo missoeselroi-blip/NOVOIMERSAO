@@ -766,8 +766,7 @@ const BibleRacePage: React.FC = () => {
         </div>
         <div className="space-y-4">
           <p><strong>4. Desempate:</strong> Em caso de empate, o critério é quem se tornou membro do App por último.</p>
-          <p><strong>5. Premiação:</strong> Medalhas digitais e físicas conforme o desempenho mensal, trimestral, semestral e final.</p>
-          <p><strong>6. Conduta:</strong> O uso de bots ou trapaças resultará em desclassificação imediata.</p>
+          <p><strong>5. Conduta:</strong> O uso de bots ou trapaças resultará em desclassificação imediata.</p>
         </div>
       </div>
     </div>
@@ -1134,43 +1133,6 @@ const BibleRacePage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Rewards Section */}
-              <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] shadow-xl border border-stone-100 dark:border-zinc-800">
-                <div className="flex items-center gap-3 mb-6">
-                  <Gift className="text-purple-500" />
-                  <h2 className="text-xl font-black uppercase tracking-tighter">Recompensas</h2>
-                </div>
-                <div className="space-y-4">
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-2xl border border-purple-100 dark:border-purple-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-purple-600 uppercase tracking-widest mb-2">Mensal (1º Lugar)</p>
-                      <p className="text-xs font-bold">Medalha Digital</p>
-                    </div>
-                    <MedalIcon type="monthly" />
-                  </div>
-                  <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">Trimestral (1º Lugar)</p>
-                      <p className="text-xs font-bold">Medalha Digital + Certificado Digital</p>
-                    </div>
-                    <MedalIcon type="quarterly" />
-                  </div>
-                  <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-amber-600 uppercase tracking-widest mb-2">Semestral (1º Lugar)</p>
-                      <p className="text-xs font-bold">Medalha Digital e Física + Certificado Digital + Chaveiro</p>
-                    </div>
-                    <MedalIcon type="semiannual" />
-                  </div>
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl border border-emerald-100 dark:border-emerald-800 flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mb-2">Grande Campeão da Corrida</p>
-                      <p className="text-xs font-bold">Medalha Digital e Física + Certificado Digital + Chaveiro + Placa</p>
-                    </div>
-                    <MedalIcon type="grand" />
-                  </div>
-                </div>
-              </div>
             </div>
           </motion.div>
         )}

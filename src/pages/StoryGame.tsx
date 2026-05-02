@@ -271,7 +271,7 @@ const StoryGame: React.FC = () => {
         <AnimatePresence mode="wait">
           {gameState === 'intro' && (
             <motion.div
-              key="intro"
+              key="story_intro"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
@@ -326,7 +326,7 @@ const StoryGame: React.FC = () => {
 
           {(gameState === 'playing' || gameState === 'question') && (
             <motion.div
-              key="playing"
+              key="story_playing"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
@@ -430,7 +430,7 @@ const StoryGame: React.FC = () => {
 
           {gameState === 'finished' && (
             <motion.div
-              key="finished"
+              key="story_finished"
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               className="bg-white dark:bg-zinc-900 rounded-[3rem] p-12 shadow-2xl border border-stone-100 dark:border-zinc-800 text-center"

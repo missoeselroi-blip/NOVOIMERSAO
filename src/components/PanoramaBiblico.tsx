@@ -358,7 +358,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
             <AnimatePresence mode="wait">
               {gameState === 'intro' && (
               <motion.div 
-                key="intro"
+                key="panorama_intro"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
@@ -389,7 +389,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
             {gameState === 'playing' && currentQuestion && (
               <motion.div 
-                key="playing"
+                key="panorama_playing"
                 initial={{ opacity: 0, x: 50 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
@@ -436,7 +436,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
             {gameState === 'correct' && (
               <motion.div 
-                key="correct"
+                key="panorama_correct"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center max-w-md"
@@ -459,7 +459,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
             {gameState === 'division_completed' && (
               <motion.div 
-                key="division_completed"
+                key="panorama_division_completed"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center max-w-md"
@@ -485,7 +485,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
             {gameState === 'wrong' && (
               <motion.div 
-                key="wrong"
+                key="panorama_wrong"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center max-w-md"
@@ -510,7 +510,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
             {gameState === 'timeout' && (
               <motion.div 
-                key="timeout"
+                key="panorama_timeout"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center max-w-md"
@@ -535,7 +535,7 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
 
             {gameState === 'finished' && (
               <motion.div 
-                key="finished"
+                key="panorama_finished"
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="text-center max-w-md"

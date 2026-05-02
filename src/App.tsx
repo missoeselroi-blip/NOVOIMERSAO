@@ -240,7 +240,6 @@ function AppContent() {
     { id: 'audio-bible', label: 'Bíblia Áudio', icon: <Headphones size={22} /> },
     { id: 'lesson', label: 'Lições', icon: <BookOpen size={22} /> },
     { id: 'devotional', label: 'Devocional', icon: <Heart size={22} /> },
-    { id: 'significado', label: 'Significado', icon: <Search size={22} /> },
     { id: 'audio-box', label: 'Áudios', icon: <Volume2 size={22} /> },
     { id: 'courses', label: 'Cursos', icon: <GraduationCap size={22} /> },
     { id: 'bible', label: 'Bíblia', icon: <Book size={22} /> },
