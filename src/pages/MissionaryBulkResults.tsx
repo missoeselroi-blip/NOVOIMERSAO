@@ -19,6 +19,7 @@ import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { geminiService } from '../services/geminiService';
 
+import { useNotebook } from '../contexts/NotebookContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
 import { db, auth } from '../lib/firebase';
@@ -64,12 +65,10 @@ interface Devotional {
 
 export default function MissionaryBulkResults({ onBack }: { onBack: () => void }) {
   const { user } = useAuth();
+  const { saveToNotebook: saveToNotebookGlobal } = useNotebook();
   const { showToast } = useToast();
   const { saveTrack } = useAudioBox();
   const [devotionals, setDevotionals] = useState<Devotional[]>([]);
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [isSavingNote, setIsSavingNote] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [pendingSpeechText, setPendingSpeechText] = useState('');
@@ -94,50 +93,7 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
 
   const handleSaveAll = () => {
     const content = devotionals.map((d, i) => `DIA ${i + 1}\n${d.title}\n${d.verse}\n${d.message}\n\n`).join('---\n\n');
-    setPendingNote({
-      title: "Série Devocional Missionária (Mês)",
-      content: content
-    });
-    setIsNotebookModalOpen(true);
-  };
-
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
-    if (!pendingNote) return;
-    
-    setIsSavingNote(true);
-    try {
-      if (user) {
-        await addDoc(collection(db, 'notes'), {
-          userId: user.id,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          createdAt: new Date().toISOString()
-        }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'notes'));
-      } else {
-        const saved = localStorage.getItem('preacher_notes');
-        const entries = saved ? JSON.parse(saved) : [];
-        
-        const newEntry = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          date: new Date().toLocaleDateString('pt-BR'),
-          createdAt: new Date().toISOString()
-        };
-
-        localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
-      }
-      showToast(`Todos os devocionais foram salvos em ${category}! 📖✅`, 'success');
-      setIsNotebookModalOpen(false);
-      setPendingNote(null);
-    } catch (error) {
-      console.error("Error saving to notebook:", error);
-      showToast("Erro ao salvar no caderno.", 'error');
-    } finally {
-      setIsSavingNote(false);
-    }
+    saveToNotebookGlobal("Série Devocional Missionária (Mês)", content);
   };
 
   const handleListen = (text: string) => {
@@ -278,12 +234,7 @@ export default function MissionaryBulkResults({ onBack }: { onBack: () => void }
           </motion.div>
         ))}
       </div>
-      <SaveToNotebookModal
-        isOpen={isNotebookModalOpen}
-        isLoading={isSavingNote}
-        onClose={() => setIsNotebookModalOpen(false)}
-        onConfirm={confirmSaveToNotebook}
-      />
+      {/* Removed Internal SaveToNotebookModal */}
       <AudioConfirmationModal
         isOpen={isAudioConfirmModalOpen}
         isLoading={isGeneratingSpeech}

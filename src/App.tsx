@@ -114,6 +114,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { AudioBoxProvider } from './contexts/AudioBoxContext';
 import { BibleProvider } from './contexts/BibleContext';
+import { NotebookProvider } from './contexts/NotebookContext';
 import { AccessibilityControls } from './components/AccessibilityControls';
 import { VoiceCommandCenter } from './components/VoiceCommandCenter';
 import { SpiritualTutor } from './components/SpiritualTutor';
@@ -251,7 +252,7 @@ function AppContent() {
   const navItems = [
     { id: 'home', label: 'Início', icon: <Home size={20} />, component: <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} /> },
     { id: 'bible', label: 'Bíblia', subtitle: 'A Palavra de Deus', icon: <Book size={20} />, component: <BiblePage /> },
-    { id: 'audio-bible', label: 'Bíblia Áudio', subtitle: 'Ouça a Palavra', icon: <Volume2 size={20} />, component: <SpokenBiblePage /> },
+    { id: 'audio-bible', label: 'Bíblia Áudio', subtitle: 'Ouça a Palavra', icon: <Headphones size={20} />, component: <SpokenBiblePage /> },
     { id: 'lesson', label: 'Lições', subtitle: '50 Lições Bíblicas', icon: <Glasses size={20} />, component: <LessonPage /> },
     { id: 'devotional', label: 'Devocional', subtitle: 'Alimento para a sua alma', icon: <Heart size={20} />, component: <DevotionalPage onNavigate={handleNavigate} /> },
     { id: 'significado', label: 'Compare significados e religiões', subtitle: 'Léxico e Comparativo', icon: <Search size={20} />, component: <Navigate to="/study" state={{ tab: 'significado' }} replace />, hidden: true },
@@ -917,7 +918,9 @@ export default function App() {
                   <CreditProvider>
                     <AudioBoxProvider>
                       <BibleProvider>
-                        <AppContent />
+                        <NotebookProvider>
+                          <AppContent />
+                        </NotebookProvider>
                       </BibleProvider>
                     </AudioBoxProvider>
                   </CreditProvider>

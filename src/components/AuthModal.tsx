@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, Lock, User, LogIn, Github, Chrome, Loader2, AlertCircle } from 'lucide-react';
+import { X, Mail, Lock, User, LogIn, Chrome, Loader2, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from './Toast';
 
@@ -10,7 +10,7 @@ interface AuthModalProps {
 }
 
 export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
-  const { loginWithGoogle, loginWithGithub, loginWithEmail, registerWithEmail } = useAuth();
+  const { loginWithGoogle, loginWithEmail, registerWithEmail } = useAuth();
   const { showToast } = useToast();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -54,24 +54,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
         return;
       }
       setError(err.message || "Erro ao fazer login com Google.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleGithubLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      await loginWithGithub();
-      showToast("Login com GitHub realizado com sucesso! 🚀✨");
-      onClose();
-    } catch (err: any) {
-      if (err.code === 'auth/popup-closed-by-user') {
-        console.log("Login popup closed by user");
-        return;
-      }
-      setError(err.message || "Erro ao fazer login com GitHub.");
     } finally {
       setLoading(false);
     }
@@ -121,6 +103,26 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
               </motion.div>
             )}
 
+            <div className="flex flex-col gap-4">
+              <button
+                onClick={handleGoogleLogin}
+                disabled={loading}
+                className="w-full py-4 bg-white dark:bg-zinc-800 border-2 border-emerald-500 dark:border-emerald-500/50 text-stone-900 dark:text-white font-black rounded-2xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all shadow-xl shadow-emerald-500/10 flex items-center justify-center gap-3 active:scale-95 group"
+              >
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-6 h-6 group-hover:scale-110 transition-transform" referrerPolicy="no-referrer" />
+                <span>Continuar com o Google</span>
+              </button>
+            </div>
+
+            <div className="relative my-8">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-stone-200 dark:border-zinc-800" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white dark:bg-zinc-900 px-4 text-stone-400 font-bold tracking-widest">Ou use seu e-mail</span>
+              </div>
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
                 <div className="relative">
@@ -168,34 +170,6 @@ export default function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 {loading ? <Loader2 className="animate-spin" size={20} /> : (isLogin ? 'Entrar' : 'Criar Conta')}
               </button>
             </form>
-
-            <div className="relative my-8">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-stone-200 dark:border-zinc-800" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white dark:bg-zinc-900 px-4 text-stone-400 font-bold tracking-widest">Ou continue com</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={handleGoogleLogin}
-                disabled={loading}
-                className="py-3 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 text-stone-700 dark:text-zinc-200 font-bold rounded-2xl hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all flex items-center justify-center gap-2"
-              >
-                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
-                Google
-              </button>
-              <button
-                onClick={handleGithubLogin}
-                disabled={loading}
-                className="py-3 bg-zinc-900 dark:bg-zinc-700 text-white font-bold rounded-2xl hover:bg-zinc-800 dark:hover:bg-zinc-600 transition-all flex items-center justify-center gap-2"
-              >
-                <Github size={20} />
-                GitHub
-              </button>
-            </div>
 
             <div className="mt-8 text-center flex flex-col gap-3">
               <button

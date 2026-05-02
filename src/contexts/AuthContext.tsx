@@ -3,7 +3,6 @@ import {
   onAuthStateChanged, 
   signInWithPopup, 
   GoogleAuthProvider, 
-  GithubAuthProvider,
   signOut,
   User as FirebaseUser,
   signInWithEmailAndPassword,
@@ -78,7 +77,6 @@ interface AuthContextType {
   notes: any[];
   certificates: any[];
   loginWithGoogle: () => Promise<void>;
-  loginWithGithub: () => Promise<void>;
   loginWithEmail: (email: string, password: string) => Promise<void>;
   registerWithEmail: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
@@ -430,19 +428,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const loginWithGithub = async () => {
-    if (!auth) return;
-    try {
-      const provider = new GithubAuthProvider();
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
-        console.error("Error logging in with GitHub:", error);
-      }
-      throw error;
-    }
-  };
-
   const loginWithEmail = async (email: string, password: string) => {
     if (!auth) return;
     try {
@@ -606,7 +591,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     notes,
     certificates,
     loginWithGoogle, 
-    loginWithGithub,
     loginWithEmail, 
     registerWithEmail, 
     logout, 
@@ -625,7 +609,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     notes,
     certificates,
     loginWithGoogle,
-    loginWithGithub,
     loginWithEmail,
     registerWithEmail,
     logout,

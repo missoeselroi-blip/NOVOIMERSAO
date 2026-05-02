@@ -46,7 +46,7 @@ import { Type } from "@google/genai";
 import { geminiService } from '../services/geminiService';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { useToast } from '../components/Toast';
-import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { useNotebook } from '../contexts/NotebookContext';
 import { useOffline } from '../contexts/OfflineContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -183,6 +183,7 @@ const THEMES: ThemeConfig[] = [
 ];
 
 export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: string, state?: any) => void }) {
+  const { saveToNotebook: saveToNotebookGlobal } = useNotebook();
   const location = useLocation();
   const { showToast } = useToast();
   const { share } = useShare();
@@ -225,9 +226,6 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const [seriesResult, setSeriesResult] = useState<string | null>(null);
   const [isGeneratingSeries, setIsGeneratingSeries] = useState(false);
   const [seriesSelectedMonth, setSeriesSelectedMonth] = useState<number>(new Date().getMonth());
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [isSavingNote, setIsSavingNote] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [isGeneratingPrayer, setIsGeneratingPrayer] = useState(false);
   const [isPrayerConfirmOpen, setIsPrayerConfirmOpen] = useState(false);
   const [prayerType, setPrayerType] = useState('Agradecimento');
@@ -716,12 +714,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
 
   const saveToNotebook = () => {
     if (!devotionalResult) return;
-    
-    setPendingNote({
-      title: `Devocional: ${selectedTheme} - ${new Date().toLocaleDateString('pt-BR')}`,
-      content: devotionalResult
-    });
-    setIsNotebookModalOpen(true);
+    saveToNotebookGlobal(`Devocional: ${selectedTheme} - ${new Date().toLocaleDateString('pt-BR')}`, devotionalResult);
   };
 
   const handleSaveToAudioBox = async () => {
@@ -795,47 +788,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   const saveSeriesToNotebook = () => {
     if (!seriesResult) return;
     const targetDate = new Date(currentDate.getFullYear(), seriesSelectedMonth, 1);
-    setPendingNote({
-      title: `Série Devocional: ${selectedTheme} - ${targetDate.toLocaleString('pt-BR', { month: 'long' })}`,
-      content: seriesResult
-    });
-    setIsNotebookModalOpen(true);
-  };
-
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
-    if (!pendingNote) return;
-    
-    setIsSavingNote(true);
-    try {
-      if (user) {
-        await addDoc(collection(db, 'notes'), {
-          userId: user.id,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          createdAt: new Date().toISOString()
-        }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'notes'));
-      } else {
-        const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
-        const newNote = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          date: new Date().toLocaleDateString('pt-BR'),
-          createdAt: new Date().toISOString()
-        };
-        localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
-      }
-      showToast(`Salvo em ${category}! 📓✨`);
-      setIsNotebookModalOpen(false);
-      setPendingNote(null);
-    } catch (error) {
-      console.error("Error saving to notebook:", error);
-      showToast("Erro ao salvar no caderno.", 'error');
-    } finally {
-      setIsSavingNote(false);
-    }
+    saveToNotebookGlobal(`Série Devocional: ${selectedTheme} - ${targetDate.toLocaleString('pt-BR', { month: 'long' })}`, seriesResult);
   };
 
   return (
@@ -2044,12 +1997,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
         )}
       </AnimatePresence>
 
-      <SaveToNotebookModal
-        isOpen={isNotebookModalOpen}
-        isLoading={isSavingNote}
-        onClose={() => setIsNotebookModalOpen(false)}
-        onConfirm={confirmSaveToNotebook}
-      />
+      {/* Removed Internal SaveToNotebookModal */}
 
       <AudioConfirmationModal
         isOpen={isAudioConfirmModalOpen}

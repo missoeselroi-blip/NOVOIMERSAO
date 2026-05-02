@@ -59,7 +59,7 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import TheologySearchPage from './TheologySearchPage';
-import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { useNotebook } from '../contexts/NotebookContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { SearchLoadingOverlay } from '../components/SearchLoadingOverlay';
@@ -207,8 +207,6 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     aiFeedback?: string;
   } | null>(null);
 
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
   // Debate State
@@ -221,6 +219,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [showInfographicModal, setShowInfographicModal] = useState(false);
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isZoomed, setIsZoomed] = useState(false);
+  const { saveToNotebook: saveToNotebookGlobal } = useNotebook();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [rotation, setRotation] = useState(0);
 
@@ -831,37 +830,10 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   };
 
   const saveToNotebook = () => {
-    setPendingNote({
-      title: `Teologia: ${selectedSubject} - Cap ${currentChapter}`,
-      content: chapterContent[currentChapter]
-    });
-    setIsNotebookModalOpen(true);
-  };
-
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
-    if (!pendingNote || !user) return;
-    
-    if (!pendingNote.content) {
-      showToast("Conteúdo não disponível para salvar.", "error");
-      return;
-    }
-
-    try {
-      const notesCollectionRef = collection(db, 'notes');
-      await addDoc(notesCollectionRef, {
-        userId: user.id,
-        title: pendingNote.title,
-        content: pendingNote.content,
-        category,
-        createdAt: new Date().toISOString()
-      });
-      
-      showToast(`Salvo em ${category}! 📖✅`, 'success');
-      setIsNotebookModalOpen(false);
-      setPendingNote(null);
-    } catch (error) {
-      console.error("Error saving note:", error);
-      showToast("Erro ao salvar no caderno.", 'error');
+    const title = `Teologia: ${selectedSubject} - Cap ${currentChapter}`;
+    const content = chapterContent[currentChapter];
+    if (content) {
+      saveToNotebookGlobal(title, content);
     }
   };
 
@@ -1702,10 +1674,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
                       FECHAR
                     </button>
                     <button 
-                      onClick={() => {
-                        setPendingNote({ title: `Debate: ${selectedSubject}`, content: debateContent });
-                        setIsNotebookModalOpen(true);
-                      }}
+                      onClick={() => saveToNotebookGlobal(`Debate: ${selectedSubject}`, debateContent)}
                       disabled={!debateContent}
                       className="px-8 py-3 bg-amber-500 text-white font-bold rounded-xl hover:bg-amber-600 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                     >
@@ -2523,11 +2492,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         </div>
       )}
 
-      <SaveToNotebookModal
-        isOpen={isNotebookModalOpen}
-        onClose={() => setIsNotebookModalOpen(false)}
-        onConfirm={confirmSaveToNotebook}
-      />
+      {/* Removed Internal SaveToNotebookModal */}
 
       {/* Assessment Modal */}
       <AnimatePresence>

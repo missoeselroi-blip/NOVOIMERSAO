@@ -10,7 +10,9 @@ import {
   Sparkles,
   Volume2,
   Loader2,
-  Pencil
+  Pencil,
+  Save,
+  Coins
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAccessibility } from '../contexts/AccessibilityContext';
@@ -18,8 +20,7 @@ import { geminiService } from '../services/geminiService';
 import { useToast } from '../components/Toast';
 import { cn } from '../types';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
-import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
-import { Save, Coins } from 'lucide-react';
+import { useNotebook } from '../contexts/NotebookContext';
 import { useAuth } from '../contexts/AuthContext';
 import { compressImage } from '../utils/imageUtils';
 import { db } from '../lib/firebase';
@@ -31,15 +32,13 @@ import { multiAiService } from '../services/multiAiService';
 import { useLocation } from 'react-router-dom';
 
 export default function PostsPage() {
+  const { saveToNotebook: saveToNotebookGlobal } = useNotebook();
   const location = useLocation();
   const { fontFamily: accFontFamily, fontSize: accFontSize, lineHeight: accLineHeight } = useAccessibility();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { balance, consumeCredits, estimateCredits } = useCredits();
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   
   const initialVerse = location.state?.verse || "Pois eu bem sei os planos que tenho para vocês...";
   const initialReference = location.state?.reference || "Jeremias 29:11";
@@ -155,58 +154,9 @@ export default function PostsPage() {
   };
 
   const handleSaveToNotebook = async () => {
-    let finalBgImage = bgImage;
-    
-    // If it's a base64 string, compress it before saving to notebook
-    if (bgImage.startsWith('data:image')) {
-      showToast("Otimizando imagem para o caderno... ⏳", 'info');
-      try {
-        finalBgImage = await compressImage(bgImage, 800, 800, 0.6);
-      } catch (e) {
-        console.error("Error compressing image:", e);
-      }
-    }
-
-    setPendingNote({
-      title: `Post: ${reference}`,
-      content: `Versículo: ${verse}\nReferência: ${reference}\nImagem: ${finalBgImage}`
-    });
-    setIsNotebookModalOpen(true);
-  };
-
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
-    if (!pendingNote) return;
-    
-    setIsSavingToNotebook(true);
-    try {
-      if (user) {
-        await addDoc(collection(db, 'notes'), {
-          userId: user.id,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          createdAt: new Date().toISOString()
-        });
-      } else {
-        const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
-        const newNote = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          date: new Date().toLocaleDateString('pt-BR')
-        };
-        localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
-      }
-      showToast(`Salvo em ${category}! 📓✨`);
-      setIsNotebookModalOpen(false);
-      setPendingNote(null);
-    } catch (error) {
-      console.error("Error saving to notebook:", error);
-      showToast("Erro ao salvar no caderno.", 'error');
-    } finally {
-      setIsSavingToNotebook(false);
-    }
+    const title = `Post: ${reference}`;
+    const content = `Versículo: ${verse}\nReferência: ${reference}\nImagem: ${bgImage}`;
+    saveToNotebookGlobal(title, content);
   };
 
   return (
@@ -435,12 +385,7 @@ export default function PostsPage() {
           </div>
         </div>
       </div>
-      <SaveToNotebookModal
-        isOpen={isNotebookModalOpen}
-        isLoading={isSavingToNotebook}
-        onClose={() => setIsNotebookModalOpen(false)}
-        onConfirm={confirmSaveToNotebook}
-      />
+      {/* Removed Internal SaveToNotebookModal */}
     </div>
   );
 }

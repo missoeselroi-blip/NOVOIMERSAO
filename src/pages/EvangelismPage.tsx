@@ -60,7 +60,7 @@ import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import EvangelismSearchPage from './EvangelismSearchPage';
-import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { useNotebook } from '../contexts/NotebookContext';
 import { useAuth } from '../contexts/AuthContext';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { SearchLoadingOverlay } from '../components/SearchLoadingOverlay';
@@ -119,6 +119,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const [readingFontSize, setReadingFontSize] = useState(18);
   const [readingLineHeight, setReadingLineHeight] = useState(1.6);
   const { user, isInitialLoading } = useAuth();
+  const { saveToNotebook: saveToNotebookGlobal } = useNotebook();
   const { share } = useShare();
   const { showToast } = useToast();
   const { balance, consumeCredits } = useCredits();
@@ -174,8 +175,6 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     aiFeedback?: string;
   } | null>(null);
 
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
   // Debate State

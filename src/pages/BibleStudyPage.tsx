@@ -79,7 +79,7 @@ import { useToast } from '../components/Toast';
 import PostsPage from './PostsPage';
 import { useOffline } from '../contexts/OfflineContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
-import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { useNotebook } from '../contexts/NotebookContext';
 import { WifiOff } from 'lucide-react';
 import { getRandomWaitingMessage } from '../constants/waitingMessages';
 import { useAuth } from '../contexts/AuthContext';
@@ -365,6 +365,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<string>('menu');
+  const { saveToNotebook } = useNotebook();
   const [isFullscreen, setIsFullscreen] = useState(false);
   const processedParams = useRef({ search: null, outline: null, tab: null });
   const [searchQuery, setSearchQuery] = useState('');
@@ -725,10 +726,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const fontSizeMap: Record<string, number> = { 'xs': 12, 'sm': 14, 'base': 16, 'lg': 18, 'xl': 20, '2xl': 24, '3xl': 30 };
   const [readingFontSize, setReadingFontSize] = useState(fontSizeMap[fontSize] || 16);
   const [readingLineHeight, setReadingLineHeight] = useState(lineHeight);
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
   const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [narrationText, setNarrationText] = useState('');
   const [narrationAudioData, setNarrationAudioData] = useState<{
     text: string;
@@ -991,63 +989,8 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     scrollToSearch();
   };
 
-  const handleSaveToNotebook = async (title: string, content: string) => {
-    let finalContent = content;
-    
-    // If content is a base64 image string, compress it
-    if (content.startsWith('data:image')) {
-      showToast("Otimizando imagem para o caderno... ⏳", 'info');
-      try {
-        finalContent = await compressImage(content, 800, 800, 0.6);
-      } catch (e) {
-        console.error("Error compressing image:", e);
-      }
-    }
-
-    setPendingNote({ title, content: finalContent });
-    setIsNotebookModalOpen(true);
-  };
-
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos' | 'Histórias' | 'Teatro' | 'Outros') => {
-    if (!pendingNote) return;
-    
-    if (!pendingNote.content) {
-      showToast("Conteúdo não disponível para salvar.", "error");
-      return;
-    }
-
-    setIsSavingToNotebook(true);
-    try {
-      if (user) {
-        await addDoc(collection(db, 'notes'), {
-          userId: user.id,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          createdAt: new Date().toISOString()
-        }).catch(err => handleFirestoreError(err, OperationType.CREATE, 'notes'));
-      } else {
-        const saved = localStorage.getItem('preacher_notes');
-        const entries = saved ? JSON.parse(saved) : [];
-        const newEntry = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          date: new Date().toLocaleDateString('pt-BR'),
-          createdAt: new Date().toISOString()
-        };
-        localStorage.setItem('preacher_notes', JSON.stringify([newEntry, ...entries]));
-      }
-      showToast(`Salvo em ${category}! 📖✅`, 'success');
-      setIsNotebookModalOpen(false);
-      setPendingNote(null);
-    } catch (error) {
-      console.error("Error saving to notebook:", error);
-      showToast("Erro ao salvar no caderno.", 'error');
-    } finally {
-      setIsSavingToNotebook(false);
-    }
+  const handleSaveToNotebook = (title: string, content: string) => {
+    saveToNotebook(title, content);
   };
 
   const saveNote = async () => {
@@ -5221,11 +5164,7 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                                    storiesTheaterActiveTab === 'stories' ? storiesTheaterResult.stories :
                                    storiesTheaterResult.bibleStory);
                               if (content) {
-                                setPendingNote({ 
-                                  title: `${storiesTheaterActiveTab === 'theater' ? 'Roteiro' : 'História'}: ${storiesTheaterTopic}`, 
-                                  content 
-                                });
-                                setIsNotebookModalOpen(true);
+                                saveToNotebook(`${storiesTheaterActiveTab === 'theater' ? 'Roteiro' : 'História'}: ${storiesTheaterTopic}`, content);
                               }
                             }}
                             className="flex items-center gap-2 px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all font-bold text-sm ml-auto"
@@ -7473,12 +7412,7 @@ ${selectedLibraryOutline.appeal}
         )}
       </AnimatePresence>
 
-      <SaveToNotebookModal
-        isOpen={isNotebookModalOpen}
-        isLoading={isSavingToNotebook}
-        onClose={() => setIsNotebookModalOpen(false)}
-        onConfirm={confirmSaveToNotebook}
-      />
+      {/* Removed Internal SaveToNotebookModal */}
 
       <AudioConfirmationModal
         isOpen={isAudioConfirmModalOpen}
@@ -7515,8 +7449,7 @@ ${selectedLibraryOutline.appeal}
               <SpeechGenerator 
                 initialText={speechModalContent} 
                 onSaveToNotebook={(title, content) => {
-                  setPendingNote({ title, content });
-                  setIsNotebookModalOpen(true);
+                  saveToNotebook(title, content);
                 }}
               />
             </motion.div>

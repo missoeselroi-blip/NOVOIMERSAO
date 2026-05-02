@@ -40,7 +40,7 @@ import { SpeechGenerator } from '../components/SpeechGenerator';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useOffline } from '../contexts/OfflineContext';
-import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
+import { useNotebook } from '../contexts/NotebookContext';
 import { lessons, Lesson } from '../data/lessons_static';
 import html2pdf from 'html2pdf.js';
 
@@ -78,9 +78,7 @@ const LessonPage: React.FC = () => {
   const [isAutorLoading, setIsAutorLoading] = useState(false);
   const [isAutorPlaying, setIsAutorPlaying] = useState(false);
   const [autorAudioUrl, setAutorAudioUrl] = useState<string | null>(null);
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
-  const [isSavingToNotebook, setIsSavingToNotebook] = useState(false);
-  const [contentToSave, setContentToSave] = useState({ title: '', content: '' });
+  const { saveToNotebook } = useNotebook();
   const [textQuery, setTextQuery] = useState('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -158,21 +156,8 @@ const LessonPage: React.FC = () => {
 
   const handleSave = () => {
     if (selectedLesson) {
-      setContentToSave({
-        title: selectedLesson.title,
-        content: selectedLesson.content
-      });
-      setIsNotebookModalOpen(true);
+      saveToNotebook(selectedLesson.title, selectedLesson.content);
     }
-  };
-
-  const confirmSaveToNotebook = async (category: string) => {
-    setIsSavingToNotebook(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setIsSavingToNotebook(false);
-    setIsNotebookModalOpen(false);
-    showToast(`Lição salva com sucesso em ${category}!`, "success");
   };
 
   const handleListen = () => {
@@ -509,7 +494,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
   };
 
 
-  const filteredLessons = lessons.filter(lesson => 
+  const filteredLessons = [...lessons].sort((a, b) => b.id - a.id).filter(lesson => 
     lesson.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (lesson.theme && lesson.theme.toLowerCase().includes(searchQuery.toLowerCase())) ||
     lesson.content.toLowerCase().includes(searchQuery.toLowerCase())
@@ -712,10 +697,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                           initialSubject="Lição Bíblica"
                           initialEmotion="inspirador"
                           initialVoice="homem"
-                          onSaveToNotebook={(title, content) => {
-                            setContentToSave({ title, content });
-                            setIsNotebookModalOpen(true);
-                          }}
+                          onSaveToNotebook={(title, content) => saveToNotebook(title, content)}
                         />
                       </motion.div>
                     )}
@@ -827,17 +809,6 @@ O nome do usuário é ${user?.name || 'amigo'}.
               </motion.div>
             </motion.div>
           </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {isNotebookModalOpen && (
-          <SaveToNotebookModal
-            isOpen={isNotebookModalOpen}
-            onClose={() => setIsNotebookModalOpen(false)}
-            onConfirm={confirmSaveToNotebook}
-            isLoading={isSavingToNotebook}
-          />
         )}
       </AnimatePresence>
 
@@ -1200,10 +1171,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                         initialSubject="Guia do Líder"
                         initialEmotion="pastor"
                         initialVoice="homem"
-                        onSaveToNotebook={(title, content) => {
-                          setContentToSave({ title, content });
-                          setIsNotebookModalOpen(true);
-                        }}
+                        onSaveToNotebook={(title, content) => saveToNotebook(title, content)}
                       />
                     </motion.div>
                   )}
@@ -1303,8 +1271,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
               </button>
               <button 
                 onClick={() => {
-                  setContentToSave({ title: "Resposta do Autor", content: autorResponse });
-                  setIsNotebookModalOpen(true);
+                  saveToNotebook("Resposta do Autor", autorResponse);
                 }}
                 className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
                 title="Salvar no Caderno"
@@ -1521,8 +1488,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       </button>
                       <button 
                         onClick={() => {
-                          setContentToSave({ title: "Dicas de Outros Autores", content: dicaDeLiderancaResponse });
-                          setIsNotebookModalOpen(true);
+                          saveToNotebook("Dicas de Outros Autores", dicaDeLiderancaResponse);
                         }}
                         className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
                         title="Salvar no Caderno"

@@ -75,6 +75,7 @@ import { ShareButtons } from '../components/ShareButtons';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { useCredits } from '../contexts/CreditContext';
 import { useShare } from '../utils/share';
+import { useNotebook } from '../contexts/NotebookContext';
 import { notificationService } from '../services/notificationService';
 import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
 import { Bell, Quote, Send, History } from 'lucide-react';
@@ -246,6 +247,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const { user, toggleFavorite } = useAuth();
   const { share } = useShare();
   const { balance, consumeCredits } = useCredits();
+  const { saveToNotebook } = useNotebook();
   const [appSearchQuery, setAppSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<{ title: string, description: string, tab: string, type: 'page' | 'note' }[]>([]);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -610,9 +612,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [isAudioLoading, setIsAudioLoading] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [pendingAudioText, setPendingAudioText] = useState<string | null>(null);
-  const [isNotebookModalOpen, setIsNotebookModalOpen] = useState(false);
   const [showQuickTips, setShowQuickTips] = useState(false);
-  const [pendingNote, setPendingNote] = useState<{ title: string, content: string } | null>(null);
   const [isExplanationModalOpen, setIsExplanationModalOpen] = useState(false);
   const [isDevotionalModalOpen, setIsDevotionalModalOpen] = useState(false);
   const [selectedDevotionalTheme, setSelectedDevotionalTheme] = useState<DevotionalTheme | null>(null);
@@ -647,8 +647,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   };
 
   const handleSaveToNotebook = (title: string, content: string) => {
-    setPendingNote({ title, content });
-    setIsNotebookModalOpen(true);
+    saveToNotebook(title, content);
   };
 
   const handleExplainVerse = async () => {
@@ -703,38 +702,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       showToast(error.message || "Erro ao gerar devocional.", "error");
     } finally {
       setIsGeneratingDevotional(false);
-    }
-  };
-
-  const confirmSaveToNotebook = async (category: 'Anotações' | 'Esboços' | 'Estudos') => {
-    if (!pendingNote) return;
-    
-    try {
-      if (user) {
-        await addDoc(collection(db, 'notes'), {
-          userId: user.id,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          createdAt: new Date().toISOString()
-        });
-      } else {
-        const savedNotes = JSON.parse(localStorage.getItem('preacher_notes') || '[]');
-        const newNote = {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          title: pendingNote.title,
-          content: pendingNote.content,
-          category,
-          date: new Date().toLocaleDateString('pt-BR')
-        };
-        localStorage.setItem('preacher_notes', JSON.stringify([newNote, ...savedNotes]));
-      }
-      showToast(`Salvo em ${category}! 📓✨`);
-      setIsNotebookModalOpen(false);
-      setPendingNote(null);
-    } catch (error) {
-      console.error("Error saving to notebook:", error);
-      showToast("Erro ao salvar no caderno.", 'error');
     }
   };
 
@@ -2037,11 +2004,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
         )}
       </AnimatePresence>
 
-      <SaveToNotebookModal
-        isOpen={isNotebookModalOpen}
-        onClose={() => setIsNotebookModalOpen(false)}
-        onConfirm={confirmSaveToNotebook}
-      />
+      {/* Removed Internal SaveToNotebookModal */}
 
       <AnimatePresence>
         {isExplanationModalOpen && (
