@@ -1391,7 +1391,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                           }}
                           className="px-6 py-2.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-xs font-black uppercase tracking-widest hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-all shadow-sm"
                         >
-                          Fazer outra Pergunta
+                          Faça uma Pergunta
                         </button>
                       </div>
                     </div>
@@ -1442,15 +1442,8 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="p-4 bg-purple-50 dark:bg-purple-900/10 rounded-2xl border border-purple-100 dark:border-purple-800/30">
-                    <h5 className="text-[10px] font-black text-purple-600 uppercase mb-1">Base de Conhecimento</h5>
-                    <p className="text-[9px] text-stone-500 leading-tight">Ao perguntar ao Autor você terá acesso a mais de 300 lições de células. Mais de 200 devocionais. Mais de 100 pregações e estudos bíblicos. 5 livros e muitas apostilas e artigos.</p>
-                  </div>
-                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800/30">
-                    <h5 className="text-[10px] font-black text-emerald-600 uppercase mb-1">Foco</h5>
-                    <p className="text-[9px] text-stone-500 leading-tight">Missões e Evangelismo. Adoração. Vida cristã.</p>
-                  </div>
+                <div className="p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-700/50">
+                  <p className="text-xs text-stone-600 dark:text-stone-400 font-medium italic text-center">A resposta do Autor busca pontes em todas as lições do ano</p>
                 </div>
                 <button 
                   onClick={() => {
@@ -1461,7 +1454,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       openDicaDeLideranca();
                     }
                   }}
-                  className="w-full mt-6 py-4 bg-purple-600 text-white rounded-2xl font-bold hover:bg-purple-700 transition-all shadow-lg shadow-purple-600/20 flex items-center justify-center gap-2"
+                  className="w-full mt-6 py-3 border border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300 rounded-2xl font-bold hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all flex items-center justify-center gap-2"
                 >
                   <UserCheck size={20} />
                   Dicas de Outros Autores

@@ -361,7 +361,7 @@ function AppContent() {
             {navItems.filter(item => !item.hidden).map((item) => {
               return (
                 <button
-                  key={item.id}
+                  key={`desktop-${item.id}`}
                   onClick={() => handleNavigate(item.id)}
                   className={cn(
                     "flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 relative py-2 group",
@@ -539,7 +539,7 @@ function AppContent() {
         )}>
           {mainNavItems.map((item) => (
             <button
-              key={item.id}
+              key={`mobile-${item.id}`}
               onClick={() => handleNavigate(item.id)}
               className={cn(
                 "flex flex-col items-center justify-center gap-1 flex-1 h-full transition-all relative",
@@ -628,7 +628,7 @@ function AppContent() {
                 </div>
                 {navItems.filter(item => !item.hidden).map((item) => (
                   <button
-                    key={item.id}
+                    key={`drawer-${item.id}`}
                     onClick={() => handleNavigate(item.id)}
                     className={cn(
                       "w-full flex items-center gap-4 p-4 rounded-2xl text-sm font-bold transition-all",
