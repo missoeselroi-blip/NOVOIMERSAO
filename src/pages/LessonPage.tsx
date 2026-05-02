@@ -64,9 +64,50 @@ const LessonPage: React.FC = () => {
       setSelectedLesson(location.state.offlineContent);
     }
   }, [location.state]);
+  
+  useEffect(() => {
+    setSummary(null);
+  }, [selectedLesson]);
+
+  const [summary, setSummary] = useState<string | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   const [notes, setNotes] = useState<string>("");
   const [notesHistory, setNotesHistory] = useState<string[]>([]);
   const [showSummary, setShowSummary] = useState(false);
+
+  const fetchLessonSummary = async (lesson: Lesson) => {
+    setIsSummaryLoading(true);
+    setSummary(null);
+    try {
+      const prompt = `Analise o seguinte conteúdo da lição bíblica e crie um resumo executivo estilo esboço, focado apenas nos temas centrais para discussão e lembrete.
+Regras:
+1. Não inclua introdução.
+2. Não inclua conclusão.
+3. Apresente apenas uma lista de pontos centrais.
+4. Cada ponto deve ter um título em negrito seguido por uma explicação curta (máximo 2 frases).
+
+Siga exatamente este formato Markdown para cada item:
+
+* **Título do Tema Central:** Explicação curta para lembrete e discussão.
+
+Lição: ${lesson.title} - ${lesson.theme || ""}
+Conteúdo: ${lesson.content}`;
+      const response = await geminiService.generateText(prompt, "Você é um assistente teológico especialista em criar guias de estudo aprofundados.", true);
+      setSummary(response);
+    } catch (error) {
+      console.error("Error generating summary:", error);
+      showToast("Erro ao gerar resumo.", "error");
+    } finally {
+      setIsSummaryLoading(false);
+    }
+  };
+
+  const handleOpenSummary = () => {
+    setShowSummary(true);
+    if (selectedLesson && !summary) {
+      fetchLessonSummary(selectedLesson);
+    }
+  };
   const [showLeaderGuide, setShowLeaderGuide] = useState(false);
   const [showLeaderAudio, setShowLeaderAudio] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -628,7 +669,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Autor</span>
                   </button>
                   <button onClick={handleWiki} className="p-1.5 md:p-2 bg-[#8A9A5B] text-white hover:bg-[#7A8A4B] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Wiki">
-                    <FileSearch className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <Globe className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Wiki</span>
                   </button>
                   <button 
@@ -640,7 +681,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Anotar</span>
                   </button>
                   <button 
-                    onClick={() => setShowSummary(true)} 
+                    onClick={handleOpenSummary} 
                     className="p-1.5 md:p-2 bg-[#5B8A9A] text-white hover:bg-[#4B7A8A] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" 
                     title="Resumo"
                   >
@@ -905,59 +946,17 @@ O nome do usuário é ${user?.name || 'amigo'}.
               </div>
               
               <div className="flex-1 overflow-y-auto p-8 space-y-8">
-                {selectedLesson.id === 12 ? (
-                  <section className="space-y-4">
-                    <h4 className="text-lg font-black text-stone-900 dark:text-white flex items-center gap-2">
-                      <div className="w-2 h-6 bg-blue-600 rounded-full" />
-                      Pontos Chave da Lição
-                    </h4>
-                    <ul className="space-y-3">
-                      {[
-                        `**01.** **Definição de Ânimo Dobre:** A mente dividida ("dipsychos") que gera inconstância em todas as áreas da vida.`,
-                        `**02.** **Impacto da Inconstância:** A oscilação impede o recebimento de bênçãos divinas e destrói a autoconfiança.`,
-                        `**03.** **Raízes do Problema:** Falta de fé, escravidão emocional e negligência em pequenas responsabilidades (atrasos, desorganização).`,
-                        `**04.** **O Caminho da Vitória:** Vigiar, chegar-se a Deus, purificar as mãos e limpar o coração (Tg 4:8).`,
-                        `**05.** **Integridade e Decisão:** O ânimo é uma decisão, não apenas um sentimento passageiro. Requer integridade total.`,
-                        `**06.** **A Luta Espiritual:** O conflito entre carne e espírito é real para todos, exigindo vigilância constante (Mt 26:41).`,
-                        `**07.** **Promessa de Mudança:** A transformação é possível através da confiança, espera e ação no tempo de Deus.`
-                      ].map((item, idx) => (
-                        <li key={idx} className="flex gap-3 text-stone-600 dark:text-zinc-400">
-                          <ReactMarkdown 
-                            components={{
-                              strong: ({node, ...props}) => {
-                                const content = String(props.children);
-                                const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
-                                if (content.match(bibleRegex)) {
-                                  return (
-                                    <button 
-                                      onClick={() => handleBibleRefClick(content)}
-                                      className="bible-ref-link"
-                                    >
-                                      {content}
-                                    </button>
-                                  );
-                                }
-                                return <strong {...props} />;
-                              }
-                            }}
-                          >
-                            {item}
-                          </ReactMarkdown>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
+                {isSummaryLoading ? (
+                  <div className="flex flex-col items-center justify-center p-12 gap-4">
+                    <Loader2 className="w-8 h-8 text-[#5B8A9A] animate-spin" />
+                    <p className="text-sm font-bold text-stone-500">Gerando resumo profundo...</p>
+                  </div>
+                ) : summary ? (
+                  <div className="prose dark:prose-invert max-w-none">
+                    <ReactMarkdown rehypePlugins={[rehypeRaw]}>{summary}</ReactMarkdown>
+                  </div>
                 ) : (
-                  <section className="space-y-4">
-                    <h4 className="text-lg font-black text-stone-900 dark:text-white flex items-center gap-2">
-                      <div className="w-2 h-6 bg-blue-600 rounded-full" />
-                      Resumo da Lição
-                    </h4>
-                    <p className="text-stone-600 dark:text-zinc-400 leading-relaxed">
-                      Esta lição explora fundamentos bíblicos essenciais para o crescimento espiritual. 
-                      Recomendamos a leitura atenta do texto e a utilização das ferramentas de anotação para registrar seus insights.
-                    </p>
-                  </section>
+                  <p className="text-stone-500 text-center">Nenhum resumo disponível.</p>
                 )}
 
                 <section className="space-y-4">
@@ -1002,7 +1001,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
