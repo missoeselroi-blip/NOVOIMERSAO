@@ -115,6 +115,8 @@ import { AccessibilityProvider } from './contexts/AccessibilityContext';
 import { AudioBoxProvider } from './contexts/AudioBoxContext';
 import { BibleProvider } from './contexts/BibleContext';
 import { NotebookProvider } from './contexts/NotebookContext';
+import { AudioBibleProvider } from './contexts/AudioBibleContext';
+import { DraggableAudioPlayer } from './components/DraggableAudioPlayer';
 import { AccessibilityControls } from './components/AccessibilityControls';
 import { VoiceCommandCenter } from './components/VoiceCommandCenter';
 import { SpiritualTutor } from './components/SpiritualTutor';
@@ -874,6 +876,7 @@ function AppContent() {
       <AccessibilityControls />
       <VoiceCommandCenter />
       <SpiritualTutor />
+      <DraggableAudioPlayer />
       <VoiceChat />
       <FloatingBible />
       <MicrophonePermissionModal />
@@ -919,7 +922,9 @@ export default function App() {
                     <AudioBoxProvider>
                       <BibleProvider>
                         <NotebookProvider>
-                          <AppContent />
+                          <AudioBibleProvider>
+                            <AppContent />
+                          </AudioBibleProvider>
                         </NotebookProvider>
                       </BibleProvider>
                     </AudioBoxProvider>
