@@ -119,56 +119,53 @@ export function DraggableAudioPlayer() {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-between" onMouseDown={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-center gap-2 md:gap-6" onMouseDown={(e) => e.stopPropagation()}>
               <button 
                 onClick={handleRateChange}
-                className="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] font-bold transition-colors"
+                className="px-2 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] font-bold transition-colors"
                 title="Velocidade"
               >
                 {playbackRate}x
               </button>
 
-              <div className="flex items-center gap-6">
+              <button 
+                  onClick={prevChapter}
+                  className="p-2 text-stone-400 hover:text-white transition-colors"
+                  title="Capítulo Anterior"
+                >
+                  <ChevronLeft size={20} />
+                </button>
+
                 <button 
                   onClick={() => skipSeconds(-15)}
-                  className="p-3 text-stone-400 hover:text-white transition-colors"
+                  className="p-2 text-stone-400 hover:text-white transition-colors"
                   title="Voltar 15s"
                 >
-                  <SkipBack size={24} />
+                  <SkipBack size={20} />
                 </button>
                 
                 <button 
                   onClick={togglePlayPause}
-                  className="w-20 h-20 flex items-center justify-center bg-white text-stone-900 rounded-[2rem] hover:scale-105 transition-all shadow-xl active:scale-95"
+                  className="w-16 h-16 flex items-center justify-center bg-white text-stone-900 rounded-[2rem] hover:scale-105 transition-all shadow-xl active:scale-95"
                 >
-                  {isPlaying ? <Pause size={32} /> : <Play size={32} className="ml-1" />}
+                  {isPlaying ? <Pause size={28} /> : <Play size={28} className="ml-0.5" />}
                 </button>
 
                 <button 
                   onClick={() => skipSeconds(15)}
-                  className="p-3 text-stone-400 hover:text-white transition-colors"
+                  className="p-2 text-stone-400 hover:text-white transition-colors"
                   title="Avançar 15s"
                 >
-                  <SkipForward size={24} />
+                  <SkipForward size={20} />
                 </button>
-              </div>
 
-              <div className="flex items-center gap-3">
-                <button 
-                  onClick={prevChapter}
-                  className="p-3 text-stone-400 hover:text-white transition-colors"
-                  title="Capítulo Anterior"
-                >
-                  <ChevronLeft size={24} />
-                </button>
                 <button 
                   onClick={nextChapter}
-                  className="p-3 text-stone-400 hover:text-white transition-colors"
+                  className="p-2 text-stone-400 hover:text-white transition-colors"
                   title="Próximo Capítulo"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={20} />
                 </button>
-              </div>
             </div>
           </div>
         </div>
