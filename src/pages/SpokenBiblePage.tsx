@@ -210,27 +210,52 @@ export default function SpokenBiblePage() {
         const formattedBookIndex = bookIndex.toString().padStart(2, '0');
         const formattedChapter = selectedChapter.toString().padStart(2, '0');
         
-        // Get slug and pad with underscores to 12 characters
-        const slug = BOOK_SLUGS[selectedBook.pk] || selectedBook.name;
-        const paddedSlug = slug.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s/g, "").padEnd(12, '_');
+        // Get base slug: normalize and remove spaces
+        const baseSlug = BOOK_SLUGS[selectedBook.pk] || selectedBook.name;
+        const cleanSlug = baseSlug.normalize('NFD').replace(/[\u0300-\u036f]/g, "").replace(/\s/g, "");
         
         // Suffix depends on testament section
         const suffix = isVT ? 'PO1NLHO1DA' : 'PO1NLHN1DA';
         
-        const filename = `${prefix}${formattedBookIndex}___${formattedChapter}_${paddedSlug}${suffix}.mp3`;
+        // Basic filename: adjust padding as needed
+        const getFilenames = (slug: string, chapter: number, padding: number): string[] => {
+            const chap2 = chapter.toString().padStart(2, '0');
+            const chap3 = chapter.toString().padStart(3, '0');
+            const paddedSlug = slug.padEnd(padding, '_');
+            
+            const files = [];
+            [chap2, chap3].forEach(c => {
+                files.push(`${prefix}${formattedBookIndex}__${c}_${paddedSlug}${suffix}.mp3`);
+            });
+            return files;
+        };
         
-        // Try paths
-        const paths = [
-            `audio/${filename}`,
-            `public/audio/${filename}`,
-            `Portuguese_por_NLH_OT_Non-Drama/${filename}`,
-            `Portuguese_por_NLH_NT_Non-Drama/${filename}`,
-            `public/Portuguese_por_NLH_OT_Non-Drama/${filename}`,
-            `public/Portuguese_por_NLH_NT_Non-Drama/${filename}`,
-            `${filename}`
-        ];
+        let filenames: string[] = [];
         
-        console.log("Tentando carregar arquivo:", filename);
+        // Special cases
+        if (selectedBook.pk === 18) { // Jó
+            filenames = [...getFilenames("Jo", selectedChapter, 12), ...getFilenames("Jo", selectedChapter, 10)];
+        } else if (selectedBook.pk === 19) { // Salmos
+            filenames = [...getFilenames("Salmos", selectedChapter, 12), ...getFilenames("Salmos", selectedChapter, 10)];
+        } else if (selectedBook.pk === 22) { // Cânticos
+            filenames = [...getFilenames("Canticos", selectedChapter, 12), ...getFilenames("Canticos", selectedChapter, 10)];
+        } else {
+            // Default: use cleanSlug and try common padding lengths
+            filenames = [...getFilenames(cleanSlug, selectedChapter, 12), ...getFilenames(cleanSlug, selectedChapter, 10)];
+        }
+        
+        const paths: string[] = [];
+        filenames.forEach(filename => {
+            paths.push(`audio/${filename}`);
+            paths.push(`public/audio/${filename}`);
+            // ... add other locations as before ...
+            paths.push(`Portuguese_por_NLH_OT_Non-Drama/${filename}`);
+            paths.push(`Portuguese_por_NLH_NT_Non-Drama/${filename}`);
+            paths.push(`public/Portuguese_por_NLH_OT_Non-Drama/${filename}`);
+            paths.push(`public/Portuguese_por_NLH_NT_Non-Drama/${filename}`);
+            paths.push(`${filename}`);
+        });
+        
         console.log("Caminhos tentados:", paths);
         
         for (const path of paths) {
@@ -241,12 +266,12 @@ export default function SpokenBiblePage() {
                 console.log("Arquivo carregado com sucesso:", url);
                 return;
             } catch (e) {
-                console.warn(`Falha ao carregar ${path}:`, e);
+                // Ignore errors for individual paths
             }
         }
         
         setAudioUrl(null);
-        showToast("Áudio não encontrado no Firebase Storage.", "error");
+        showToast(`Áudio não encontrado.`, "error");
       };
       
       fetchAudioUrl();
