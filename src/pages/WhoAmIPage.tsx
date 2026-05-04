@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Mail, 
   MessageCircle, 
@@ -8,8 +8,25 @@ import {
   Heart
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { ref, getDownloadURL } from 'firebase/storage';
+import { storage } from '../lib/firebase';
 
 export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string, state?: any) => void }) {
+  const [imageUrl, setImageUrl] = useState<string>('/wesley.jpg');
+
+  useEffect(() => {
+    const fetchImage = async () => {
+      try {
+        const imageRef = ref(storage, 'Foto/1777479638006.png');
+        const url = await getDownloadURL(imageRef);
+        setImageUrl(url);
+      } catch (error) {
+        console.error('Error fetching image from Firebase Storage:', error);
+      }
+    };
+    fetchImage();
+  }, []);
+
   return (
     <div className="max-w-4xl mx-auto space-y-12 pb-20">
       <header className="text-center space-y-4">
@@ -34,7 +51,7 @@ export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string, 
         >
           <div className="absolute -inset-4 bg-emerald-600/10 rounded-[3rem] blur-3xl" />
           <img 
-            src="/wesley.jpg" 
+            src={imageUrl}
             alt="Wesley Reis" 
             className="relative w-full h-auto rounded-[3rem] shadow-2xl border-8 border-white dark:border-zinc-800"
             referrerPolicy="no-referrer"
