@@ -15,7 +15,10 @@ import {
   Award,
   Camera,
   UserCheck,
-  Loader2
+  Loader2,
+  CheckCircle2,
+  Zap,
+  Target
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -60,6 +63,11 @@ export default function CareerPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(true);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
+  const [dailyMissions, setDailyMissions] = useState([
+    { id: 1, title: "Oração Matinal", description: "Jogue o Panorama Bíblico hoje", completed: false, reward: 20 },
+    { id: 2, title: "Estudo Profundo", description: "Acerte 5 questões seguidas no Quiz", completed: false, reward: 30 },
+    { id: 3, title: "Comunhão", description: "Participe de uma Batalha Mano a Mano", completed: false, reward: 50 },
+  ]);
 
   // Initialize career progress if it doesn't exist
   useEffect(() => {
@@ -522,6 +530,42 @@ export default function CareerPage() {
                   Alcance os postos mais elevados e ajude o App a alcançar suas metas, assim você se qualifica para ganhar prêmios exclusivos como medalhas de honra, livros e certificados!
                 </p>
               </div>
+            </div>
+
+            <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 shadow-sm border border-stone-200 dark:border-zinc-800">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-bold flex items-center gap-2">
+                      <Target className="text-emerald-600" size={24} />
+                      Missões Diárias
+                    </h3>
+                  <div className="text-[10px] font-black text-stone-400 uppercase tracking-widest bg-stone-100 dark:bg-zinc-800 px-3 py-1 rounded-lg">
+                    Reseta em 14h
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {dailyMissions.map(mission => (
+                    <div key={mission.id} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 transition-all hover:border-emerald-200 group">
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm",
+                          mission.completed ? "bg-emerald-500 text-white" : "bg-white dark:bg-zinc-800 text-stone-400 group-hover:text-emerald-500"
+                        )}>
+                          <CheckCircle2 size={20} />
+                        </div>
+                        <div>
+                          <p className="font-bold text-sm text-stone-800 dark:text-stone-200">{mission.title}</p>
+                          <p className="text-xs text-stone-400">{mission.description}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-black text-emerald-600">+{mission.reward} Cr</span>
+                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
+                          <Zap size={14} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
             </div>
           </div>
         </div>

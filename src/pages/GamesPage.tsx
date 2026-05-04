@@ -105,23 +105,24 @@ const GamesPage: React.FC = () => {
   const [activeGame, setActiveGame] = useState<string | null>(null);
   const [showAchievements, setShowAchievements] = useState(false);
   const [credits, setCredits] = useState(50);
-  const [playerTitle, setPlayerTitle] = useState('Novato');
-  const [dailyMissions, setDailyMissions] = useState([
-    { id: 1, title: "Oração Matinal", description: "Jogue o Panorama Bíblico hoje", completed: false, reward: 20 },
-    { id: 2, title: "Estudo Profundo", description: "Acerte 5 questões seguidas no Quiz", completed: false, reward: 30 },
-    { id: 3, title: "Comunhão", description: "Participe de uma Batalha Mano a Mano", completed: false, reward: 50 },
-  ]);
+  const [playerTitle, setPlayerTitle] = useState('Novo Convertido');
 
   useEffect(() => {
     if (userRank) {
       const score = userRank.totalScore || 0;
-      if (score > 2000) setPlayerTitle('Líder Espiritual');
-      else if (score > 1000) setPlayerTitle('Anunciador do Reino');
-      else if (score > 500) setPlayerTitle('Pregador');
-      else if (score > 200) setPlayerTitle('Estudioso');
-      else setPlayerTitle('Discípulo');
+      setPlayerTitle(getRankTitle(score));
     }
   }, [userRank]);
+
+  const getRankTitle = (score: number) => {
+    if (score <= 100) return 'Novo Convertido';
+    if (score <= 300) return 'Discípulo';
+    if (score <= 500) return 'Evangelista';
+    if (score <= 700) return 'Mestre';
+    if (score <= 1000) return 'Profeta';
+    if (score <= 1300) return 'Pastor';
+    return 'Apóstolo';
+  };
 
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joinRoomIdInput, setJoinRoomIdInput] = useState('');
@@ -486,7 +487,7 @@ const GamesPage: React.FC = () => {
         player1: { ...shuffledPlayers[i], score: 0, finished: false },
         player2: { ...shuffledPlayers[i+1], score: 0, finished: false },
         winnerId: null,
-        questions: shuffleQuestions().slice(0, 5) // 5 questions per match
+        questions: shuffleQuestions() // 10 questions per match
       });
     }
     
@@ -1036,36 +1037,28 @@ const GamesPage: React.FC = () => {
                     <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 rounded-xl">
                       <Target size={20} />
                     </div>
-                    <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Missões Diárias</h2>
-                  </div>
-                  <div className="text-[10px] font-black text-stone-400 uppercase tracking-widest bg-stone-100 dark:bg-zinc-800 px-3 py-1 rounded-lg">
-                    Reseta em 14h
+                    <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Regras de Pontuação</h2>
                   </div>
                 </div>
 
                 <div className="space-y-4">
-                  {dailyMissions.map(mission => (
-                    <div key={mission.id} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 transition-all hover:border-emerald-200 group">
-                      <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm",
-                          mission.completed ? "bg-emerald-500 text-white" : "bg-white dark:bg-zinc-800 text-stone-400 group-hover:text-emerald-500"
-                        )}>
-                          <CheckCircle2 size={20} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-sm text-stone-800 dark:text-stone-200">{mission.title}</p>
-                          <p className="text-xs text-stone-400">{mission.description}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-emerald-600">+{mission.reward} Cr</span>
-                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
-                          <Zap size={14} />
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="text-stone-500">
+                        <th className="text-left py-2">Título</th>
+                        <th className="text-right py-2">Intervalo de Pontos</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      <tr><td className="py-2">Novo Convertido</td><td className="py-2 text-right">Até 100</td></tr>
+                      <tr><td className="py-2">Discípulo</td><td className="py-2 text-right">101 a 300</td></tr>
+                      <tr><td className="py-2">Evangelista</td><td className="py-2 text-right">301 a 500</td></tr>
+                      <tr><td className="py-2">Mestre</td><td className="py-2 text-right">501 a 700</td></tr>
+                      <tr><td className="py-2">Profeta</td><td className="py-2 text-right">701 a 1000</td></tr>
+                      <tr><td className="py-2">Pastor</td><td className="py-2 text-right">1001 a 1300</td></tr>
+                      <tr><td className="py-2">Apóstolo</td><td className="py-2 text-right">Acima de 1300</td></tr>
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
@@ -1188,7 +1181,10 @@ const GamesPage: React.FC = () => {
                           <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
                           <td className="px-3 py-3 flex items-center gap-2">
                             <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
-                            <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[150px]">{entry.name}</span>
+                            <div>
+                              <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[150px] block">{entry.name}</span>
+                              <span className="text-xs text-stone-400 block">{getRankTitle(total)}</span>
+                            </div>
                           </td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.score || 0}</td>
                           <td className="px-3 py-3 text-center text-stone-600 dark:text-stone-400">{entry.sonOfManScore || 0}</td>

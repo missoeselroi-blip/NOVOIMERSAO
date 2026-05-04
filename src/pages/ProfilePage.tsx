@@ -42,6 +42,16 @@ export default function ProfilePage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [theologyProgress, setTheologyProgress] = useState<any>(null);
 
+  const getRankTitle = (score: number) => {
+    if (score <= 100) return 'Novo Convertido';
+    if (score <= 300) return 'Discípulo';
+    if (score <= 500) return 'Evangelista';
+    if (score <= 700) return 'Mestre';
+    if (score <= 1000) return 'Profeta';
+    if (score <= 1300) return 'Pastor';
+    return 'Apóstolo';
+  };
+
   useEffect(() => {
     if (user) {
       const fetchProgress = async () => {
@@ -139,6 +149,7 @@ export default function ProfilePage() {
 
         <div className="text-center md:text-left space-y-2 flex-1">
           <h2 className="text-4xl font-bold font-display">{user.name}</h2>
+          <p className="text-emerald-600 font-bold uppercase tracking-widest text-sm">{getRankTitle(user.metrics?.totalStudies || 0)}</p>
           <p className="text-stone-500 font-medium">{user.email}</p>
           <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
             <div className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 rounded-full text-sm font-bold flex items-center gap-2">
