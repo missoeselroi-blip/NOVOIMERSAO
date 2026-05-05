@@ -984,14 +984,26 @@ const GamesPage: React.FC = () => {
         {/* Header / User Profile */}
         {user && (
           <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800 mb-8 flex flex-col md:flex-row items-center gap-6">
-            <img 
-              src={user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
-              alt="Avatar" 
-              className="w-24 h-24 rounded-full border-4 border-emerald-500"
-              referrerPolicy="no-referrer"
-            />
+            <div className="relative">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 p-1">
+                <img 
+                  src={user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
+                  alt="Avatar" 
+                  className="w-full h-full rounded-full bg-white dark:bg-zinc-800 object-cover"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-2 rounded-xl shadow-lg border-2 border-white dark:border-zinc-900">
+                <Crown size={16} />
+              </div>
+            </div>
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-display font-bold text-stone-800 dark:text-stone-200">{user.name || 'Usuário'}</h1>
+              <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+                <h1 className="text-3xl font-display font-bold text-stone-800 dark:text-stone-200">{user.name || 'Usuário'}</h1>
+                <span className="inline-block px-3 py-1 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-black uppercase tracking-widest w-fit mx-auto md:mx-0">
+                  {playerTitle}
+                </span>
+              </div>
               <p className="text-stone-500 mb-4">Classificação: #{userRank?.rank || '?'}</p>
               <div className="flex flex-wrap justify-center md:justify-start gap-4">
                 <div className="bg-emerald-50 dark:bg-emerald-900/20 px-4 py-2 rounded-xl border border-emerald-100 dark:border-emerald-800">
@@ -1007,61 +1019,8 @@ const GamesPage: React.FC = () => {
           </div>
         )}
 
-        {activeGame === null ? (
+        {activeGame === null &&
           <div className="space-y-8">
-            {/* Player Status & Daily Missions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="md:col-span-1 bg-white dark:bg-zinc-900 rounded-[2.5rem] p-6 shadow-xl border border-stone-200 dark:border-zinc-800 flex flex-col items-center justify-center text-center">
-                <div className="relative mb-4">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 p-1">
-                    <img 
-                      src={user?.photoURL || user?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.id}`} 
-                      className="w-full h-full rounded-full bg-white dark:bg-zinc-800 object-cover"
-                      alt="Avatar"
-                    />
-                  </div>
-                  <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-2 rounded-xl shadow-lg">
-                    <Crown size={16} />
-                  </div>
-                </div>
-                <h3 className="text-xl font-bold text-stone-900 dark:text-white">{user?.name || 'Viajante'}</h3>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-amber-600 mb-2">{playerTitle}</p>
-                <div className="px-4 py-1 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-bold">
-                  {userRank?.totalScore || 0} PONTOS TOTAIS
-                </div>
-              </div>
-
-              <div className="md:col-span-2 bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 shadow-xl border border-stone-200 dark:border-zinc-800">
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 rounded-xl">
-                      <Target size={20} />
-                    </div>
-                    <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Regras de Pontuação</h2>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="text-stone-500">
-                        <th className="text-left py-2">Título</th>
-                        <th className="text-right py-2">Intervalo de Pontos</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-stone-100">
-                      <tr><td className="py-2">Novo Convertido</td><td className="py-2 text-right">Até 100</td></tr>
-                      <tr><td className="py-2">Discípulo</td><td className="py-2 text-right">101 a 300</td></tr>
-                      <tr><td className="py-2">Evangelista</td><td className="py-2 text-right">301 a 500</td></tr>
-                      <tr><td className="py-2">Mestre</td><td className="py-2 text-right">501 a 700</td></tr>
-                      <tr><td className="py-2">Profeta</td><td className="py-2 text-right">701 a 1000</td></tr>
-                      <tr><td className="py-2">Pastor</td><td className="py-2 text-right">1001 a 1300</td></tr>
-                      <tr><td className="py-2">Apóstolo</td><td className="py-2 text-right">Acima de 1300</td></tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
 
             {/* Game Menu */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1208,9 +1167,42 @@ const GamesPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+            {/* Scoring Rules Moved to Bottom */}
+            <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-600 rounded-xl">
+                    <Target size={20} />
+                  </div>
+                  <h2 className="text-xl font-bold text-stone-800 dark:text-stone-100">Regras de Pontuação</h2>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-stone-500">
+                      <th className="text-left py-2">Título</th>
+                      <th className="text-right py-2">Intervalo de Pontos</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100 dark:divide-zinc-800">
+                    <tr><td className="py-2 text-stone-700 dark:text-stone-300">Novo Convertido</td><td className="py-2 text-right text-stone-700 dark:text-stone-300">Até 100</td></tr>
+                    <tr><td className="py-2 text-stone-700 dark:text-stone-300">Discípulo</td><td className="py-2 text-right text-stone-700 dark:text-stone-300">101 a 300</td></tr>
+                    <tr><td className="py-2 text-stone-700 dark:text-stone-300">Evangelista</td><td className="py-2 text-right text-stone-700 dark:text-stone-300">301 a 500</td></tr>
+                    <tr><td className="py-2 text-stone-700 dark:text-stone-300">Mestre</td><td className="py-2 text-right text-stone-700 dark:text-stone-300">501 a 700</td></tr>
+                    <tr><td className="py-2 text-stone-700 dark:text-stone-300">Profeta</td><td className="py-2 text-right text-stone-700 dark:text-stone-300">701 a 1000</td></tr>
+                    <tr><td className="py-2 text-stone-700 dark:text-stone-300">Pastor</td><td className="py-2 text-right text-stone-700 dark:text-stone-300">1001 a 1300</td></tr>
+                    <tr><td className="py-2 text-stone-700 dark:text-stone-300">Apóstolo</td><td className="py-2 text-right text-stone-700 dark:text-stone-300">Acima de 1300</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        ) : (
+        </div>
+      }
+
+        {activeGame !== null &&
           <div>
             {activeGame === 'whoami' && <WhoAmIGame onFinish={(score) => handleOtherGameFinish('whoami', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'timeline' && <TimelineGame onFinish={(score) => handleOtherGameFinish('timeline', score)} onClose={() => setActiveGame(null)} />}
@@ -1221,7 +1213,7 @@ const GamesPage: React.FC = () => {
             {activeGame === 'anagram' && <AnagramGame onFinish={(score) => handleOtherGameFinish('anagram', score)} onClose={() => setActiveGame(null)} credits={credits} onSpendCredits={handleSpendCredits} />}
             {activeGame === 'riddles' && <RiddlesGame onFinish={(score) => handleOtherGameFinish('riddles', score)} onClose={() => setActiveGame(null)} />}
             {activeGame === 'memory' && <MemoryGame onFinish={(score) => handleOtherGameFinish('memory', score)} />}
-            {activeGame === 'quiz' && (
+            {activeGame === 'quiz' &&
               <div className="space-y-6">
                 <div className="flex justify-between items-center mb-4">
                   <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Quiz Bíblico</h2>
@@ -1230,7 +1222,7 @@ const GamesPage: React.FC = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   <div className="lg:col-span-2 space-y-6">
             
-            {isQuizStarted ? (
+            {isQuizStarted && (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 relative overflow-hidden">
                 {/* Progress Bar */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-stone-100 dark:bg-zinc-800">
@@ -1309,14 +1301,15 @@ const GamesPage: React.FC = () => {
                   ))}
                 </div>
               </div>
-            ) : isQuizFinished ? (
+            )}
+            {isQuizFinished && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center"
                 id="quiz-result-card"
               >
-                {isBattleMode && roomData ? (
+                {isBattleMode && roomData && (
                   <>
                     {roomData.status !== 'finished' ? (
                       <div className="py-12">
@@ -1418,7 +1411,9 @@ const GamesPage: React.FC = () => {
                       </>
                     )}
                   </>
-                ) : isCupMode && cupData ? (
+                )}
+
+                {isCupMode && cupData && (
                   <div className="py-12">
                     <Loader2 className="w-12 h-12 text-emerald-500 animate-spin mx-auto mb-4" />
                     <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200 mb-2">Aguardando Fim da Rodada</h2>
@@ -1433,7 +1428,9 @@ const GamesPage: React.FC = () => {
                       Ver Chaveamento
                     </button>
                   </div>
-                ) : (
+                )}
+
+                {!isBattleMode && !isCupMode && (
                   <>
                     <div className="mb-6">
                       <div className="w-24 h-24 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -1479,7 +1476,8 @@ const GamesPage: React.FC = () => {
                   </>
                 )}
               </motion.div>
-            ) : isBattleMode ? (
+            )}
+            {isBattleMode && (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
                 {roomId ? (
                   <>
@@ -1591,7 +1589,8 @@ const GamesPage: React.FC = () => {
                   </>
                 )}
               </div>
-            ) : isCupMode ? (
+            )}
+            {isCupMode && (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 text-center">
                 {cupId ? (
                   <>
@@ -1786,7 +1785,9 @@ const GamesPage: React.FC = () => {
                   </>
                 )}
               </div>
-            ) : (
+            )}
+
+            {!isQuizStarted && !isQuizFinished && !isBattleMode && !isCupMode && (
               <motion.div 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -1936,7 +1937,7 @@ const GamesPage: React.FC = () => {
                             entry.userId === user?.id ? "bg-emerald-50 dark:bg-emerald-900/20" : ""
                           )}
                         >
-                          <td className="px-3 py-3 font-bold text-stone-50">{index + 1}</td>
+                          <td className="px-3 py-3 font-bold text-stone-500">{index + 1}</td>
                           <td className="px-3 py-3 flex items-center gap-2">
                             <img src={entry.avatar} alt={entry.name} className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
                             <span className="font-medium text-stone-700 dark:text-stone-300 truncate max-w-[80px]">{entry.name}</span>
@@ -1952,15 +1953,16 @@ const GamesPage: React.FC = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
-    )}
+    }
     </div>
-    )}
-      </div>
+  }
+    </div>
     </div>
   );
 };
+
+
 
 export default GamesPage;
