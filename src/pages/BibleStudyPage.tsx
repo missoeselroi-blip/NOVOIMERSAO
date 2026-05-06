@@ -367,6 +367,11 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [activeTab, setActiveTab] = useState<string>('menu');
   const { saveToNotebook } = useNotebook();
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isReadingMode, setIsReadingMode] = useState(false);
+  const fontSizeMap: Record<string, number> = { 'xs': 12, 'sm': 14, 'base': 16, 'lg': 18, 'xl': 20, '2xl': 24, '3xl': 30 };
+  const [readingFontSize, setReadingFontSize] = useState(fontSizeMap[fontSize] || 16);
+  const [readingLineHeight, setReadingLineHeight] = useState(lineHeight);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const processedParams = useRef({ search: null, outline: null, tab: null });
   const [searchQuery, setSearchQuery] = useState('');
   const [result, setResult] = useState('');
@@ -430,6 +435,14 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
     });
     return () => unsubscribe();
   }, [user]);
+
+  useEffect(() => {
+    if (activeTab !== 'menu' && !isReadingMode) {
+      setIsFullscreen(true);
+    } else {
+      setIsFullscreen(false);
+    }
+  }, [activeTab, isReadingMode]);
 
   const allLibraryOutlines = useMemo(() => {
     const customIds = new Set(customOutlines.map(o => o.originalId || o.id));
@@ -722,11 +735,6 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const [isGeneratingSlides, setIsGeneratingSlides] = useState(false);
   const [creationPopup, setCreationPopup] = useState<{ show: boolean, title: string, content: string } | null>(null);
 
-  const [isReadingMode, setIsReadingMode] = useState(false);
-  const fontSizeMap: Record<string, number> = { 'xs': 12, 'sm': 14, 'base': 16, 'lg': 18, 'xl': 20, '2xl': 24, '3xl': 30 };
-  const [readingFontSize, setReadingFontSize] = useState(fontSizeMap[fontSize] || 16);
-  const [readingLineHeight, setReadingLineHeight] = useState(lineHeight);
-  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
   const [narrationText, setNarrationText] = useState('');
   const [narrationAudioData, setNarrationAudioData] = useState<{
     text: string;
@@ -3463,39 +3471,41 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
         )}
       </AnimatePresence>
 
-      {/* Header - Sophisticated & Modern */}
-      <div className="flex flex-col md:flex-row items-center justify-end gap-6 mb-10">
-        <div className="flex items-center gap-3 bg-stone-100 dark:bg-zinc-800/50 p-2 rounded-3xl border border-stone-200 dark:border-zinc-800">
-          <button
-            onClick={() => onNavigate?.('credits')}
-            className="px-4 py-2 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-stone-200 dark:border-zinc-800 flex items-center gap-2 group"
-          >
-            <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
-              <Sparkles size={16} />
-            </div>
-            <span className="text-sm font-bold">{balance} <span className="text-[10px] text-stone-400 font-medium">CRÉDITOS</span></span>
-          </button>
+      {/* Header - Sophisticated & Modern (Only in Menu) */}
+      {activeTab === 'menu' && !isReadingMode && (
+        <div className="flex flex-col md:flex-row items-center justify-end gap-6 mb-10">
+          <div className="flex items-center gap-3 bg-stone-100 dark:bg-zinc-800/50 p-2 rounded-3xl border border-stone-200 dark:border-zinc-800">
+            <button
+              onClick={() => onNavigate?.('credits')}
+              className="px-4 py-2 bg-white dark:bg-zinc-900 rounded-2xl shadow-sm border border-stone-200 dark:border-zinc-800 flex items-center gap-2 group"
+            >
+              <div className="w-8 h-8 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center text-amber-600 group-hover:scale-110 transition-transform">
+                <Sparkles size={16} />
+              </div>
+              <span className="text-sm font-bold">{balance} <span className="text-[10px] text-stone-400 font-medium">CRÉDITOS</span></span>
+            </button>
 
-          <button
-            onClick={() => {
-              if (setDeepThinking) {
-                setDeepThinking(!deepThinking);
-                showToast(`Pensamento Profundo: ${!deepThinking ? "Ativado" : "Desativado"}`, 'info');
-              }
-            }}
-            className={cn(
-              "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[10px] font-bold transition-all border",
-              deepThinking 
-                ? "bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/20" 
-                : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-50"
-            )}
-            title="Ativar raciocínio avançado da IA"
-          >
-            <Brain size={16} />
-            {deepThinking ? "PROFUNDO: ON" : "PROFUNDO: OFF"}
-          </button>
+            <button
+              onClick={() => {
+                if (setDeepThinking) {
+                  setDeepThinking(!deepThinking);
+                  showToast(`Pensamento Profundo: ${!deepThinking ? "Ativado" : "Desativado"}`, 'info');
+                }
+              }}
+              className={cn(
+                "flex items-center gap-2 px-5 py-2.5 rounded-2xl text-[10px] font-bold transition-all border",
+                deepThinking 
+                  ? "bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-600/20" 
+                  : "bg-white dark:bg-zinc-900 border-stone-200 dark:border-zinc-800 text-stone-600 dark:text-zinc-400 hover:bg-stone-50"
+              )}
+              title="Ativar raciocínio avançado da IA"
+            >
+              <Brain size={16} />
+              {deepThinking ? "PROFUNDO: ON" : "PROFUNDO: OFF"}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Tabs - Creative Button Grid */}
       {!isReadingMode && (
@@ -3570,29 +3580,32 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
       )}
 
       {activeTab !== 'menu' && !isReadingMode && (
-        <div className="flex items-center justify-between mb-6 pb-4 border-b border-stone-100 dark:border-zinc-800">
+        <div className="bg-white dark:bg-zinc-900 border-b border-stone-200 dark:border-zinc-800 p-4 flex items-center justify-between shadow-sm shrink-0 sticky top-0 z-50 mb-6 -mx-4 md:-mx-8">
           <button
             onClick={() => {
               setActiveTab('menu');
               setIsFullscreen(false);
             }}
-            className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
+            className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all font-black text-[10px] uppercase tracking-widest"
           >
-            <ArrowLeft size={18} />
-            Voltar ao Menu
+            <ArrowLeft size={14} />
+            VOLTAR AO MENU
           </button>
-          <div className="flex items-center gap-2">
-            <h2 className="text-lg font-bold text-stone-800 dark:text-stone-200 hidden sm:block">
+          <div className="text-center">
+            <h2 className="text-sm font-black text-stone-800 dark:text-white uppercase tracking-tight flex items-center gap-2">
+              {tabs.find(t => t.id === activeTab)?.icon && <span className="text-emerald-600">{tabs.find(t => t.id === activeTab)?.icon}</span>}
               {tabs.find(t => t.id === activeTab)?.label}
             </h2>
           </div>
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all"
-          >
-            <Layout size={18} />
-            <span className="hidden sm:inline">{isFullscreen ? 'Minimizar' : 'Maximizar'}</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-2 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 rounded-xl hover:bg-stone-200 transition-all shadow-sm"
+              title={isFullscreen ? 'Minimizar' : 'Maximizar'}
+            >
+              <Layout size={18} />
+            </button>
+          </div>
         </div>
       )}
 

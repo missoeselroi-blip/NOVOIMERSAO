@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Skull, Lightbulb, RefreshCw, Clock } from 'lucide-react';
+import { cn } from '../../types';
 import { useToast } from '../../components/Toast';
 import { useAuth } from '../../contexts/AuthContext';
 import { doc, getDoc, updateDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -185,21 +186,38 @@ export default function HangmanGame({ onFinish, onClose }: HangmanGameProps) {
   const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Skull className="text-red-500" /> Forca Bíblica
-        </h2>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8 bg-stone-50 dark:bg-zinc-800/50 p-6 rounded-2xl border border-stone-100 dark:border-zinc-800">
         <div className="flex items-center gap-4">
-          <div className="text-lg font-bold text-blue-600 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl flex items-center gap-2">
-            <Clock size={20} /> {score} pts
+          <div className="p-3 bg-red-100 dark:bg-red-900/20 rounded-2xl">
+            <Skull className="text-red-500 w-8 h-8" />
           </div>
-          <span className="font-bold text-stone-500">Erros: {wrongGuesses}/6</span>
+          <div>
+            <h2 className="text-2xl font-black text-stone-800 dark:text-white uppercase tracking-tight">Forca Bíblica</h2>
+            <p className="text-xs text-stone-500 font-bold uppercase tracking-widest">Descubra a palavra</p>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap items-center gap-4 w-full md:w-auto">
+          <div className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-blue-600/20">
+            <Clock size={20} />
+            <span className="text-xl">{score}</span>
+            <span className="text-[10px] uppercase font-black tracking-tighter opacity-70">pts</span>
+          </div>
+          
+          <div className="flex-1 md:flex-none flex items-center justify-center gap-4 bg-white dark:bg-zinc-800 px-6 py-3 rounded-xl border border-stone-200 dark:border-zinc-700 font-bold">
+            <span className="text-stone-400 text-xs uppercase tracking-widest">Erros</span>
+            <span className={cn("text-xl", wrongGuesses >= 4 ? "text-red-500" : "text-stone-700 dark:text-stone-200")}>
+              {wrongGuesses}/6
+            </span>
+          </div>
+
           <button 
             onClick={handleHint}
-            className="flex items-center gap-1 bg-amber-100 text-amber-700 px-3 py-1 rounded-full text-sm font-bold hover:bg-amber-200"
+            className="w-full md:w-auto flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-amber-500/20 transition-all active:scale-95 group"
           >
-            <Lightbulb size={16} />
-            Dica (-5 créditos)
+            <Lightbulb size={20} className="group-hover:animate-pulse" />
+            <span>Dica</span>
+            <span className="text-[10px] bg-amber-600 px-1.5 py-0.5 rounded ml-1">-5 Créditos</span>
           </button>
         </div>
       </div>

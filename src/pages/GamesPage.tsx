@@ -979,10 +979,10 @@ const GamesPage: React.FC = () => {
         </div>
       )}
 
-      <div className="max-w-4xl mx-auto">
+      <div className={cn("mx-auto transition-all duration-500", activeGame !== null ? "max-w-full px-0" : "max-w-4xl px-4")}>
         
         {/* Header / User Profile */}
-        {user && (
+        {user && activeGame === null && (
           <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800 mb-8 flex flex-col md:flex-row items-center gap-6">
             <div className="relative">
               <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 p-1">
@@ -1202,27 +1202,50 @@ const GamesPage: React.FC = () => {
         </div>
       }
 
-        {activeGame !== null &&
-          <div>
-            {activeGame === 'whoami' && <WhoAmIGame onFinish={(score) => handleOtherGameFinish('whoami', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'timeline' && <TimelineGame onFinish={(score) => handleOtherGameFinish('timeline', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'crossword' && <CrosswordGame onFinish={(score) => handleOtherGameFinish('crossword', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'hangman' && <HangmanGame onFinish={(score) => handleOtherGameFinish('hangman', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'wordsearch' && <WordSearchGame onFinish={(score) => handleOtherGameFinish('wordsearch', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'cryptogram' && <CryptogramGame onFinish={(score) => handleOtherGameFinish('cryptogram', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'anagram' && <AnagramGame onFinish={(score) => handleOtherGameFinish('anagram', score)} onClose={() => setActiveGame(null)} credits={credits} onSpendCredits={handleSpendCredits} />}
-            {activeGame === 'riddles' && <RiddlesGame onFinish={(score) => handleOtherGameFinish('riddles', score)} onClose={() => setActiveGame(null)} />}
-            {activeGame === 'memory' && <MemoryGame onFinish={(score) => handleOtherGameFinish('memory', score)} />}
-            {activeGame === 'quiz' &&
-              <div className="space-y-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Quiz Bíblico</h2>
-                  <button onClick={() => setActiveGame(null)} className="text-stone-500 hover:text-stone-700">Voltar aos Jogos</button>
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-2 space-y-6">
+        {activeGame !== null && (
+          <div className="fixed inset-0 z-[60] bg-stone-50 dark:bg-zinc-950 overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-zinc-900 border-b border-stone-200 dark:border-zinc-800 p-4 flex items-center justify-between shadow-sm shrink-0">
+              <button 
+                onClick={() => setActiveGame(null)}
+                className="flex items-center gap-2 px-4 py-2 bg-stone-100 dark:bg-zinc-800 rounded-xl text-stone-600 dark:text-stone-400 hover:bg-stone-200 dark:hover:bg-zinc-700 transition-all font-black text-[10px] uppercase tracking-widest"
+              >
+                <RotateCcw size={14} />
+                Sair
+              </button>
+              <div className="text-center">
+                <h2 className="text-sm font-black text-stone-800 dark:text-white uppercase tracking-tight">
+                  {activeGame === 'whoami' && 'Quem Sou Eu?'}
+                  {activeGame === 'timeline' && 'Linha do Tempo'}
+                  {activeGame === 'crossword' && 'Palavras Cruzadas'}
+                  {activeGame === 'hangman' && 'Jogo da Forca'}
+                  {activeGame === 'wordsearch' && 'Caça Palavras'}
+                  {activeGame === 'cryptogram' && 'Criptograma'}
+                  {activeGame === 'anagram' && 'Anagrama'}
+                  {activeGame === 'riddles' && 'Enigmas Bíblicos'}
+                  {activeGame === 'quiz' && 'Quiz Bíblico'}
+                </h2>
+              </div>
+              <div className="w-20" /> {/* Spacer */}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 md:p-8">
+              <div className="max-w-7xl mx-auto">
+                {activeGame === 'whoami' && <WhoAmIGame onFinish={(score) => handleOtherGameFinish('whoami', score)} onClose={() => setActiveGame(null)} />}
+                {activeGame === 'timeline' && <TimelineGame onFinish={(score) => handleOtherGameFinish('timeline', score)} onClose={() => setActiveGame(null)} />}
+                {activeGame === 'crossword' && <CrosswordGame onFinish={(score) => handleOtherGameFinish('crossword', score)} onClose={() => setActiveGame(null)} />}
+                {activeGame === 'hangman' && <HangmanGame onFinish={(score) => handleOtherGameFinish('hangman', score)} onClose={() => setActiveGame(null)} />}
+                {activeGame === 'wordsearch' && <WordSearchGame onFinish={(score) => handleOtherGameFinish('wordsearch', score)} onClose={() => setActiveGame(null)} />}
+                {activeGame === 'cryptogram' && <CryptogramGame onFinish={(score) => handleOtherGameFinish('cryptogram', score)} onClose={() => setActiveGame(null)} />}
+                {activeGame === 'anagram' && <AnagramGame onFinish={(score) => handleOtherGameFinish('anagram', score)} onClose={() => setActiveGame(null)} credits={credits} onSpendCredits={handleSpendCredits} />}
+                {activeGame === 'riddles' && <RiddlesGame onFinish={(score) => handleOtherGameFinish('riddles', score)} onClose={() => setActiveGame(null)} />}
+                {activeGame === 'memory' && <MemoryGame onFinish={(score) => handleOtherGameFinish('memory', score)} />}
+                {activeGame === 'quiz' && (
+                  <div className="space-y-6">
+                    <div className="flex justify-between items-center mb-4">
+                      <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Quiz Bíblico</h2>
+                    </div>
             
-            {isQuizStarted && (
+                    {isQuizStarted && (
               <div className="bg-white dark:bg-zinc-900 rounded-3xl p-8 shadow-xl border border-stone-200 dark:border-zinc-800 relative overflow-hidden">
                 {/* Progress Bar */}
                 <div className="absolute top-0 left-0 w-full h-1.5 bg-stone-100 dark:bg-zinc-800">
@@ -1865,9 +1888,10 @@ const GamesPage: React.FC = () => {
               </motion.div>
             )}
           </div>
+        )}
 
-          {/* Sidebar - Leaderboard */}
-          <div className="space-y-6">
+          {activeGame === 'quiz' && isQuizFinished && (
+            <div className="space-y-6">
             <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800">
               {/* Stats */}
               <div className="grid grid-cols-2 gap-4 mb-8">
@@ -1946,20 +1970,21 @@ const GamesPage: React.FC = () => {
                           <td className="px-3 py-3 text-stone-900 dark:text-stone-100">{otherGamesScore}</td>
                           <td className="px-3 py-3 font-bold text-emerald-600 dark:text-emerald-400">{entry.score + otherGamesScore}</td>
                         </tr>
-                      )})}
-                    </tbody>
+                      );
+                    })}
+                  </tbody>
                   </table>
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
-    }
     </div>
-  }
+  </div>
+  )}
     </div>
-    </div>
+  </div>
   );
 };
 

@@ -25,7 +25,7 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
   const [isFinished, setIsFinished] = useState(false);
   const [userInput, setUserInput] = useState("");
   const [showCorrection, setShowCorrection] = useState(false);
-  const [zoom, setZoom] = useState(1);
+  const [zoom, setZoom] = useState(1.0);
 
   const generateGrid = useCallback(() => {
     const newGrid = Array(GRID_SIZE).fill(null).map(() => 
@@ -134,29 +134,40 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
           <h2 className="text-2xl font-bold text-stone-800 dark:text-stone-200">Caça Palavras</h2>
           <p className="text-stone-500 text-sm">Encontre as palavras e forme a verdade bíblica</p>
         </div>
-        <div className="flex flex-wrap gap-4">
-          <div className="flex items-center gap-2 bg-stone-100 dark:bg-zinc-800 p-1 rounded-lg border border-stone-200 dark:border-zinc-700">
-            <button 
-              onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
-              className="p-1 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded transition-colors"
-              title="Reduzir zoom"
-            >
-              <ZoomOut size={16} />
-            </button>
-            <span className="text-[10px] font-bold w-8 text-center">{Math.round(zoom * 100)}%</span>
-            <button 
-              onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
-              className="p-1 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded transition-colors"
-              title="Aumentar zoom"
-            >
-              <ZoomIn size={16} />
-            </button>
+        <div className="flex flex-wrap gap-4 items-center">
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-black text-stone-400 uppercase tracking-widest ml-1">Tamanho da Grade</span>
+            <div className="flex items-center gap-2 bg-stone-100 dark:bg-zinc-800 p-1.5 rounded-xl border border-stone-200 dark:border-zinc-700 shadow-sm">
+              <button 
+                onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+                className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-lg transition-colors text-stone-600 dark:text-stone-400"
+                title="Diminuir letras"
+              >
+                <ZoomOut size={18} />
+              </button>
+              <div className="px-3 flex flex-col items-center justify-center border-x border-stone-200 dark:border-zinc-700">
+                <span className="text-[10px] font-black text-stone-800 dark:text-white leading-none mb-0.5">{Math.round(zoom * 100)}%</span>
+                <button 
+                  onClick={() => setZoom(1.0)}
+                  className="text-[8px] font-black text-emerald-600 uppercase hover:underline"
+                >
+                  Reset
+                </button>
+              </div>
+              <button 
+                onClick={() => setZoom(prev => Math.min(2.0, prev + 0.1))}
+                className="p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-lg transition-colors text-stone-600 dark:text-stone-400"
+                title="Aumentar letras"
+              >
+                <ZoomIn size={18} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 px-4 py-2 rounded-xl border border-amber-100 dark:border-amber-800">
+          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-900/20 px-4 py-2.5 rounded-2xl border border-amber-100 dark:border-amber-800 shadow-sm">
             <Trophy className="text-amber-500" size={20} />
             <span className="font-bold text-amber-700">{score} pts</span>
           </div>
-          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2 rounded-xl border border-blue-100 dark:border-blue-800">
+          <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 px-4 py-2.5 rounded-2xl border border-blue-100 dark:border-blue-800 shadow-sm">
             <Timer className="text-blue-500" size={20} />
             <span className="font-bold text-blue-700">{timeLeft}s</span>
           </div>
@@ -165,21 +176,30 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
 
       {!showCorrection ? (
         <div className="space-y-6">
-          <div className="flex justify-between items-center">
-            <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
-              Palavras encontradas: <span className="text-emerald-600 font-bold">{foundWords.length} / {WORDS_TO_FIND.length}</span>
-            </p>
-            <p className="text-sm font-medium text-stone-600 dark:text-stone-400">
-              Total de palavras na frase: <span className="font-bold">{TOTAL_WORDS_IN_PHRASE}</span>
-            </p>
+          <div className="sticky top-0 z-20 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-sm p-4 rounded-2xl border border-stone-200 dark:border-zinc-800 shadow-sm flex flex-wrap gap-2 items-center justify-center">
+            <span className="text-xs font-bold text-stone-500 uppercase tracking-widest mr-2">Encontrar:</span>
+            {WORDS_TO_FIND.map(word => (
+              <span 
+                key={word} 
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1.5",
+                  foundWords.includes(word) 
+                    ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm opacity-60" 
+                    : "bg-stone-100 text-stone-600 border-stone-200 dark:bg-zinc-800 dark:text-stone-300 dark:border-zinc-700 shadow-sm"
+                )}
+              >
+                {foundWords.includes(word) && <CheckCircle2 size={12} />}
+                {word}
+              </span>
+            ))}
           </div>
 
-          <div className="relative border-2 border-stone-200 dark:border-zinc-700 rounded-2xl overflow-hidden bg-stone-50 dark:bg-zinc-900/50">
-            <div className="overflow-auto max-h-[600px] p-8 custom-scrollbar">
+          <div className="relative border-4 border-stone-200 dark:border-zinc-700 rounded-3xl overflow-hidden bg-stone-50 dark:bg-zinc-950 shadow-inner">
+            <div className="overflow-auto max-h-[70vh] cursor-grab active:cursor-grabbing p-4 md:p-12 touch-pan-x touch-pan-y" id="grid-container">
               <div 
-                className="grid gap-1 mx-auto"
+                className="grid gap-1.5 transition-all duration-200"
                 style={{ 
-                  gridTemplateColumns: `repeat(${GRID_SIZE}, ${36 * zoom}px)`,
+                  gridTemplateColumns: `repeat(${GRID_SIZE}, ${40 * zoom}px)`,
                   width: 'fit-content'
                 }}
               >
@@ -193,15 +213,15 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
                         key={`${r}-${c}`}
                         onClick={() => handleCellClick(r, c)}
                         style={{ 
-                          width: 36 * zoom, 
-                          height: 36 * zoom, 
-                          fontSize: 16 * zoom 
+                          width: 40 * zoom, 
+                          height: 40 * zoom, 
+                          fontSize: Math.max(8, 18 * zoom)
                         }}
                         className={cn(
-                          "flex items-center justify-center font-bold rounded-lg transition-all shadow-sm",
-                          isSelected ? "bg-blue-500 text-white scale-110 z-10" : 
-                          isFound ? "bg-emerald-500 text-white" :
-                          "bg-white dark:bg-zinc-800 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-700"
+                          "flex items-center justify-center font-bold rounded-xl transition-all shadow-sm select-none",
+                          isSelected ? "bg-blue-500 text-white scale-110 z-10 shadow-lg ring-4 ring-blue-500/30" : 
+                          isFound ? "bg-emerald-500 text-white shadow-md" :
+                          "bg-white dark:bg-zinc-800 text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-zinc-700 border border-stone-100 dark:border-zinc-700"
                         )}
                       >
                         {char}
@@ -211,23 +231,13 @@ const WordSearchGame: React.FC<WordSearchGameProps> = ({ onFinish, onClose }) =>
                 ))}
               </div>
             </div>
+            {/* Visual Guide for Scroll */}
+            <div className="absolute bottom-2 right-2 text-[10px] text-stone-400 font-bold bg-white/80 dark:bg-zinc-900/80 px-2 py-1 rounded-full pointer-events-none">
+              Role para navegar no grid
+            </div>
           </div>
 
-          <div className="flex flex-wrap gap-3">
-            {WORDS_TO_FIND.map(word => (
-              <span 
-                key={word} 
-                className={cn(
-                  "px-4 py-2 rounded-xl text-xs font-bold border transition-all",
-                  foundWords.includes(word) 
-                    ? "bg-emerald-100 text-emerald-700 border-emerald-200 shadow-sm" 
-                    : "bg-stone-100 text-stone-600 border-stone-200 dark:bg-zinc-800 dark:text-stone-300 dark:border-zinc-700"
-                )}
-              >
-                {word}
-              </span>
-            ))}
-          </div>
+
 
           <div className="flex flex-col sm:flex-row gap-4">
             {foundWords.length === WORDS_TO_FIND.length && (

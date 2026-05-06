@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Type, CheckCircle2, Trophy, ArrowRight, RotateCcw, ChevronRight, ChevronDown, ZoomIn, ZoomOut } from 'lucide-react';
 import { useToast } from '../../components/Toast';
+import { cn } from '../../types';
 
 type BibleDivision = 
   | 'Pentateuco' 
@@ -153,6 +154,7 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
   const [selectedTheme, setSelectedTheme] = useState<BibleDivision | null>(null);
   const [grid, setGrid] = useState<string[][]>([]);
   const [focusedCell, setFocusedCell] = useState<{ r: number; c: number } | null>(null);
+  const [focusedDirection, setFocusedDirection] = useState<'across' | 'down'>('across');
   const [isGameOver, setIsGameOver] = useState(false);
   const [score, setScore] = useState(100);
   const [shake, setShake] = useState(false);
@@ -200,10 +202,54 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
     });
   };
 
+  const getActiveWord = () => {
+    if (!crosswordData || !focusedCell) return null;
+    return crosswordData.words.find(w => {
+      const isIn = w.direction === 'across' 
+        ? focusedCell.r === w.row && focusedCell.c >= w.col && focusedCell.c < w.col + w.word.length
+        : focusedCell.c === w.col && focusedCell.r >= w.row && focusedCell.r < w.row + w.word.length;
+      return isIn && w.direction === focusedDirection;
+    }) || crosswordData.words.find(w => {
+      return w.direction === 'across' 
+        ? focusedCell.r === w.row && focusedCell.c >= w.col && focusedCell.c < w.col + w.word.length
+        : focusedCell.c === w.col && focusedCell.r >= w.row && focusedCell.r < w.row + w.word.length;
+    });
+  };
+
+  const isCellInActiveWord = (r: number, c: number) => {
+    const activeWord = getActiveWord();
+    if (!activeWord) return false;
+    if (activeWord.direction === 'across') {
+      return r === activeWord.row && c >= activeWord.col && c < activeWord.col + activeWord.word.length;
+    } else {
+      return c === activeWord.col && r >= activeWord.row && r < activeWord.row + activeWord.word.length;
+    }
+  };
+
   const getCellNumber = (r: number, c: number) => {
     if (!crosswordData) return null;
     const word = crosswordData.words.find(w => w.row === r && w.col === c);
     return word ? word.number : null;
+  };
+
+  const handleCellClick = (r: number, c: number) => {
+    if (focusedCell?.r === r && focusedCell?.c === c) {
+      setFocusedDirection(prev => prev === 'across' ? 'down' : 'across');
+    } else {
+      setFocusedCell({ r, c });
+      // Determine if this cell is part of multiple words to decide initial direction
+      const words = crosswordData!.words.filter(w => {
+        if (w.direction === 'across') return r === w.row && c >= w.col && c < w.col + w.word.length;
+        return c === w.col && r >= w.row && r < w.row + w.word.length;
+      });
+      if (words.length > 0) {
+        if (words.some(w => w.direction === focusedDirection)) {
+          // Keep current direction if possible
+        } else {
+          setFocusedDirection(words[0].direction);
+        }
+      }
+    }
   };
 
   const handleCellChange = (r: number, c: number, val: string) => {
@@ -214,16 +260,13 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
 
     // Auto-advance
     if (val && crosswordData) {
-      // Find current word direction to advance
-      const word = crosswordData.words.find(w => {
-        if (w.direction === 'across') return r === w.row && c >= w.col && c < w.col + w.word.length;
-        return c === w.col && r >= w.row && r < w.row + w.word.length;
-      });
-      
-      if (word?.direction === 'across' && c < crosswordData.width - 1) {
-        setFocusedCell({ r, c: c + 1 });
-      } else if (word?.direction === 'down' && r < crosswordData.height - 1) {
-        setFocusedCell({ r: r + 1, c });
+      const activeWord = getActiveWord();
+      if (activeWord) {
+        if (activeWord.direction === 'across' && c < activeWord.col + activeWord.word.length - 1) {
+          setFocusedCell({ r, c: c + 1 });
+        } else if (activeWord.direction === 'down' && r < activeWord.row + activeWord.word.length - 1) {
+          setFocusedCell({ r: r + 1, c });
+        }
       }
     }
   };
@@ -321,8 +364,8 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-stone-50 dark:bg-zinc-950 overflow-y-auto">
-      <div className="min-h-screen p-4 md:p-8 flex flex-col">
+    <div className="h-full flex flex-col bg-stone-50 dark:bg-zinc-950">
+      <div className="flex-1 p-4 md:p-8 flex flex-col">
         {/* Header */}
         <div className="flex justify-between items-center mb-8 bg-white dark:bg-zinc-900 p-4 rounded-2xl shadow-sm border border-stone-200 dark:border-zinc-800">
           <div className="flex items-center gap-4">
@@ -337,13 +380,20 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 bg-stone-100 dark:bg-zinc-800 p-1 rounded-lg border border-stone-200 dark:border-zinc-700">
               <button 
-                onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
+                onClick={() => setZoom(prev => Math.max(0.3, prev - 0.1))}
                 className="p-1 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded transition-colors"
                 title="Reduzir zoom"
               >
                 <ZoomOut size={16} />
               </button>
-              <span className="text-[10px] font-bold w-8 text-center">{Math.round(zoom * 100)}%</span>
+              <button 
+                onClick={() => setZoom(1)}
+                className="px-2 py-1 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded text-[10px] font-black uppercase tracking-widest transition-colors"
+                title="Resetar zoom"
+              >
+                Reset
+              </button>
+              <span className="text-[10px] font-bold w-12 text-center border-x border-stone-200 dark:border-zinc-700">{Math.round(zoom * 100)}%</span>
               <button 
                 onClick={() => setZoom(prev => Math.min(2, prev + 0.1))}
                 className="p-1 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded transition-colors"
@@ -361,10 +411,10 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
         <div className="flex flex-col lg:flex-row gap-8 flex-1">
           {/* Grid Section */}
           <div className="flex-1 bg-white dark:bg-zinc-900 rounded-[2rem] p-6 shadow-xl border border-stone-200 dark:border-zinc-800 overflow-hidden flex flex-col">
-            <div className="flex-1 relative border-2 border-stone-200 dark:border-zinc-700 rounded-2xl overflow-hidden bg-stone-50 dark:bg-zinc-900/50">
-              <div className="overflow-auto w-full h-full p-8 custom-scrollbar flex items-center justify-center">
+            <div className="flex-1 relative border-2 border-stone-200 dark:border-zinc-700 rounded-2xl overflow-hidden bg-stone-50 dark:bg-zinc-900/50 cursor-grab active:cursor-grabbing">
+              <div className="overflow-auto w-full h-full p-8 custom-scrollbar flex items-center justify-center touch-pan-x touch-pan-y">
                 <div 
-                  className={`grid gap-2 mx-auto ${shake ? 'animate-shake' : ''}`}
+                  className={`grid gap-2 mx-auto ${shake ? 'animate-shake' : ''} transition-all duration-200`}
                   style={{ 
                     gridTemplateColumns: `repeat(${crosswordData?.width}, ${52 * zoom}px)`,
                     width: 'fit-content'
@@ -374,6 +424,7 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
                     const inWord = isCellInWord(r, c);
                     const number = getCellNumber(r, c);
                     const isFocused = focusedCell?.r === r && focusedCell?.c === c;
+                    const isInActiveWord = isCellInActiveWord(r, c);
 
                     return (
                       <div 
@@ -381,10 +432,14 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
                         style={{ width: 52 * zoom, height: 52 * zoom }}
                         className={`relative flex items-center justify-center rounded-xl transition-all shadow-sm ${
                           inWord 
-                            ? 'bg-white dark:bg-zinc-900 cursor-pointer' 
+                            ? isFocused
+                              ? 'bg-orange-500 text-white z-10 scale-105 shadow-lg'
+                              : isInActiveWord
+                                ? 'bg-orange-100 dark:bg-orange-950/30 cursor-pointer lg:hover:bg-orange-200 dark:lg:hover:bg-orange-900/40'
+                                : 'bg-white dark:bg-zinc-900 cursor-pointer lg:hover:bg-stone-50 dark:lg:hover:bg-zinc-800'
                             : 'bg-stone-200 dark:bg-zinc-800/20 opacity-50'
-                        } ${isFocused ? 'ring-2 ring-orange-500 z-10 scale-105 shadow-lg' : ''}`}
-                        onClick={() => inWord && setFocusedCell({ r, c })}
+                        }`}
+                        onClick={() => inWord && handleCellClick(r, c)}
                       >
                         {number && (
                           <span 
@@ -402,9 +457,16 @@ export default function CrosswordGame({ onFinish, onClose }: CrosswordGameProps)
                             value={cell}
                             onChange={(e) => handleCellChange(r, c, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(r, c, e)}
-                            onFocus={() => setFocusedCell({ r, c })}
+                            onFocus={() => {
+                              if (focusedCell?.r !== r || focusedCell?.c !== c) {
+                                setFocusedCell({ r, c });
+                              }
+                            }}
                             style={{ fontSize: 22 * zoom }}
-                            className="w-full h-full text-center font-black bg-transparent outline-none text-stone-800 dark:text-white uppercase"
+                            className={cn(
+                              "w-full h-full text-center font-black bg-transparent outline-none uppercase",
+                              isFocused ? "text-white" : "text-stone-800 dark:text-white"
+                            )}
                             autoComplete="off"
                           />
                         )}
