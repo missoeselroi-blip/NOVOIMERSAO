@@ -16,9 +16,8 @@ import {
   Camera,
   UserCheck,
   Loader2,
-  CheckCircle2,
   Zap,
-  Target
+  History as HistoryIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '../components/Toast';
@@ -63,11 +62,6 @@ export default function CareerPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showAuthModal, setShowAuthModal] = useState(true);
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false);
-  const [dailyMissions, setDailyMissions] = useState([
-    { id: 1, title: "Oração Matinal", description: "Jogue o Panorama Bíblico hoje", completed: false, reward: 20 },
-    { id: 2, title: "Estudo Profundo", description: "Acerte 5 questões seguidas no Quiz", completed: false, reward: 30 },
-    { id: 3, title: "Comunhão", description: "Participe de uma Batalha Mano a Mano", completed: false, reward: 50 },
-  ]);
 
   // Initialize career progress if it doesn't exist
   useEffect(() => {
@@ -199,18 +193,29 @@ export default function CareerPage() {
       }
 
       if (shared) {
-        await addPoints(30, 'share_promotion');
+        await addPoints(5, 'share_promotion');
         const metricsDocRef = doc(db, 'metrics', user.id);
         await updateDoc(metricsDocRef, {
           shares: increment(1)
         });
-        showToast("Obrigado por compartilhar seu progresso! +30 pontos 🙌✨");
+        showToast("Obrigado por compartilhar seu progresso! +5 pontos 🙌✨");
       }
     } catch (error) {
       console.error("Error sharing rank:", error);
       showToast("Erro ao compartilhar patente.", "error");
       element.style.display = 'none';
     }
+  };
+
+  const getGameTitle = (score: number) => {
+    if (score <= 100) return 'Novo Convertido';
+    if (score <= 300) return 'Discípulo';
+    if (score <= 600) return 'Evangelista';
+    if (score <= 1000) return 'Missionário';
+    if (score <= 2000) return 'Mestre';
+    if (score <= 4000) return 'Teólogo';
+    if (score <= 7000) return 'Doutor';
+    return 'Lenda da Fé';
   };
 
   const handleGenerateAvatar = async () => {
@@ -327,11 +332,8 @@ export default function CareerPage() {
                 <p className="text-xl font-black">{careerProgress?.points || 0}</p>
               </div>
               <div className="bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/10">
-                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Estrelas</p>
-                <div className="flex items-center justify-center gap-1">
-                  <Star size={14} className="text-amber-400 fill-amber-400" />
-                  <p className="text-xl font-black">{careerProgress?.stars || 0}</p>
-                </div>
+                <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Pontos Semanais</p>
+                <p className="text-xl font-black">{careerProgress?.weeklyPoints || 0}</p>
               </div>
               <div className="bg-white/5 backdrop-blur-md p-4 rounded-3xl border border-white/10">
                 <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest mb-1">Status</p>
@@ -414,14 +416,6 @@ export default function CareerPage() {
           {/* User Card */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-6">
-                <div className="flex gap-1">
-                  {[...Array(currentCareer.stars || 0)].map((_, i) => (
-                    <Star key={i} size={20} className="fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-              </div>
-              
               <div className="flex flex-col items-center text-center space-y-4">
                   <div className="w-32 h-32 rounded-full border-4 border-emerald-700 p-1 bg-emerald-50 dark:bg-emerald-900/20 relative group">
                     <img 
@@ -442,8 +436,13 @@ export default function CareerPage() {
                   <p className="text-stone-500 dark:text-zinc-400 text-sm">{user.email}</p>
                 </div>
 
-                <div className="px-6 py-2 bg-emerald-800 text-white rounded-full font-bold text-sm uppercase tracking-widest">
-                  {currentRank.name}
+                <div className="flex flex-col items-center gap-1">
+                  <div className="px-6 py-2 bg-emerald-800 text-white rounded-full font-bold text-sm uppercase tracking-widest">
+                    {currentRank.name}
+                  </div>
+                  <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest mt-1">
+                    Título: {getGameTitle(careerProgress.points || 0)}
+                  </p>
                 </div>
 
                 <div className="w-full pt-4 space-y-3">
@@ -486,14 +485,6 @@ export default function CareerPage() {
                       <p className="text-xs text-amber-700/70 dark:text-amber-400/70">{nextRank.category}</p>
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    {nextRank.requirements.map((req, i) => (
-                      <div key={i} className="flex items-center gap-2 text-xs text-amber-800 dark:text-amber-400">
-                        <div className="w-1 h-1 rounded-full bg-amber-400" />
-                        {req}
-                      </div>
-                    ))}
-                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-amber-800 dark:text-amber-400">Você alcançou a patente máxima! Glória a Deus! 🙌</p>
@@ -506,78 +497,113 @@ export default function CareerPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <StatCard icon={<Calendar className="text-blue-500" />} label="Acessos" value={metrics.accesses} />
               <StatCard icon={<Clock className="text-purple-500" />} label="Tempo de Uso" value={`${(metrics.totalTime / 3600).toFixed(1)}h`} />
+              <StatCard icon={<Award className="text-amber-500" />} label="Pontos Totais" value={currentCareer.points || 0} />
+              <StatCard 
+                icon={<Zap className="text-emerald-500" />} 
+                label="Pontos da Semana" 
+                value={currentCareer.weeklyPoints || 0} 
+                subValue="Meta: 300 pts"
+              />
               <StatCard icon={<Users className="text-emerald-500" />} label="Participação Fórum" value={metrics.forumParticipations} />
               <StatCard icon={<Share2 className="text-pink-500" />} label="Compartilhamentos" value={metrics.shares} />
-              <StatCard icon={<Award className="text-amber-500" />} label="Pontos" value={currentCareer.points || 0} />
-              <StatCard icon={<Trophy className="text-emerald-500" />} label="Jogos" value={metrics.gamesPlayed} />
             </div>
 
             <div className="bg-white dark:bg-zinc-900 p-8 rounded-[2.5rem] border border-stone-200 dark:border-zinc-800 shadow-sm">
-              <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+              <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
                 <ShieldCheck className="text-emerald-600" size={24} />
-                Progresso da Carreira
+                Regras de Carreira (Semanal)
               </h3>
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-900/10 rounded-2xl border border-emerald-100 dark:border-emerald-800">
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm mb-1">
+                    <TrendingUp size={16} /> Promoção
+                  </div>
+                  <p className="text-xs text-stone-500">Alcance 300 pontos ou mais na semana.</p>
+                </div>
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/10 rounded-2xl border border-blue-100 dark:border-blue-800">
+                  <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-bold text-sm mb-1">
+                    <HistoryIcon size={16} /> Manutenção
+                  </div>
+                  <p className="text-xs text-stone-500">Entre 200 e 299 pontos para manter patente.</p>
+                </div>
+                <div className="p-4 bg-red-50 dark:bg-red-900/10 rounded-2xl border border-red-100 dark:border-red-800">
+                  <div className="flex items-center gap-2 text-red-700 dark:text-red-400 font-bold text-sm mb-1">
+                    <TrendingDown size={16} /> Regressão
+                  </div>
+                  <p className="text-xs text-stone-500">Abaixo de 200 pontos você perde patente.</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex justify-between items-end mb-2">
+                  <p className="text-sm font-bold">Progresso para Promoção</p>
+                  <p className="text-xs font-black text-emerald-600">{currentCareer.weeklyPoints || 0} / 300</p>
+                </div>
                 <div className="relative h-4 bg-stone-100 dark:bg-zinc-800 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${(currentCareer.rankId / 12) * 100}%` }}
-                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-blue-500"
+                    animate={{ width: `${Math.min(((currentCareer.weeklyPoints || 0) / 300) * 100, 100)}%` }}
+                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-emerald-500 to-emerald-400"
                   />
+                  {(currentCareer.weeklyPoints || 0) >= 200 && (
+                     <div className="absolute top-0 left-[66%] w-1 h-full bg-white/50 z-10" title="Limite de Manutenção" />
+                  )}
                 </div>
-                <div className="flex justify-between text-xs font-bold text-stone-400 uppercase tracking-widest">
-                  <span>Marinheiro</span>
-                  <span>Aspirante</span>
-                  <span>Almirante</span>
+                <div className="flex flex-col gap-4">
+                  <p className="text-[10px] text-stone-400 text-center uppercase tracking-widest">
+                    Toda atividade no app (Estudo, Quiz, Jogos) vale 5 pontos.
+                  </p>
+                  <button 
+                    onClick={() => {
+                      showToast("Sincronizando seu desempenho com os céus... ✨", "info");
+                      // The onSnapshot in AuthContext already handles the weekly check
+                      // if the week ID changes. We just trigger a small update to fire the snapshot.
+                      if (user) {
+                        const ref = doc(db, 'careerProgress', user.id);
+                        updateDoc(ref, { updatedAt: new Date().toISOString() })
+                          .then(() => showToast("Desempenho atualizado com sucesso! ⚓", "success"))
+                          .catch(() => showToast("Erro ao sincronizar.", "error"));
+                      }
+                    }}
+                    className="w-full py-2 bg-emerald-100 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-emerald-200 dark:hover:bg-emerald-900/40 transition-all active:scale-95 border border-emerald-200 dark:border-emerald-800"
+                  >
+                    Verificar Desempenho
+                  </button>
                 </div>
-              </div>
-            </div>
-
-            <div className="bg-emerald-600 p-8 rounded-[2.5rem] text-white shadow-xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 p-8 opacity-10">
-                <Trophy size={120} />
-              </div>
-              <div className="relative z-10 space-y-4">
-                <h3 className="text-2xl font-bold">Premiações Especiais</h3>
-                <p className="text-emerald-100 max-w-md">
-                  Alcance os postos mais elevados e ajude o App a alcançar suas metas, assim você se qualifica para ganhar prêmios exclusivos como medalhas de honra, livros e certificados!
-                </p>
               </div>
             </div>
 
             <div className="bg-white dark:bg-zinc-900 rounded-[2.5rem] p-8 shadow-sm border border-stone-200 dark:border-zinc-800">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="text-xl font-bold flex items-center gap-2">
-                      <Target className="text-emerald-600" size={24} />
-                      Missões Diárias
+                      <Users className="text-emerald-600" size={24} />
+                      Placar de Líderes
                     </h3>
-                  <div className="text-[10px] font-black text-stone-400 uppercase tracking-widest bg-stone-100 dark:bg-zinc-800 px-3 py-1 rounded-lg">
-                    Reseta em 14h
-                  </div>
                 </div>
                 <div className="space-y-4">
-                  {dailyMissions.map(mission => (
-                    <div key={mission.id} className="flex items-center justify-between p-4 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 transition-all hover:border-emerald-200 group">
-                      <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "w-10 h-10 rounded-xl flex items-center justify-center transition-colors shadow-sm",
-                          mission.completed ? "bg-emerald-500 text-white" : "bg-white dark:bg-zinc-800 text-stone-400 group-hover:text-emerald-500"
-                        )}>
-                          <CheckCircle2 size={20} />
+                  {leaderboard.slice(0, 5).map((member, idx) => (
+                    <div key={member.id} className="flex items-center justify-between p-3 bg-stone-50 dark:bg-zinc-800/50 rounded-2xl border border-stone-100 dark:border-zinc-800 transition-all">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center text-xs font-black text-emerald-700">
+                          {idx + 1}
                         </div>
+                        <img src={member.avatar} alt="" className="w-8 h-8 rounded-full bg-stone-200 object-cover" />
                         <div>
-                          <p className="font-bold text-sm text-stone-800 dark:text-stone-200">{mission.title}</p>
-                          <p className="text-xs text-stone-400">{mission.description}</p>
+                          <p className="text-xs font-bold">{member.name}</p>
+                          <p className="text-[10px] text-stone-400 capitalize">{RANKS.find(r => r.id === member.rankId)?.name}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-black text-emerald-600">+{mission.reward} Cr</span>
-                        <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/20 flex items-center justify-center text-amber-600">
-                          <Zap size={14} />
-                        </div>
+                      <div className="text-xs font-black text-emerald-600">
+                        {member.points} pts
                       </div>
                     </div>
                   ))}
+                  <button 
+                    onClick={() => setActiveTab('leaderboard')}
+                    className="w-full py-2 text-[10px] font-black text-stone-400 uppercase tracking-widest hover:text-emerald-600 transition-all"
+                  >
+                    Ver Ranking Completo
+                  </button>
                 </div>
             </div>
           </div>
@@ -598,22 +624,9 @@ export default function CareerPage() {
                 <div className="w-16 h-16 rounded-2xl bg-stone-100 dark:bg-zinc-800 p-1">
                   <img src={rank.image} alt={rank.name} className="w-full h-full rounded-xl" referrerPolicy="no-referrer" />
                 </div>
-                <div className="flex gap-0.5">
-                  {[...Array(rank.stars)].map((_, i) => (
-                    <Star key={i} size={14} className="fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
               </div>
               <h4 className="font-bold text-lg mb-1">{rank.name}</h4>
               <p className="text-[10px] font-bold uppercase tracking-widest text-stone-400 mb-4">{rank.category}</p>
-              <div className="space-y-2">
-                {rank.requirements.map((req, i) => (
-                  <div key={i} className="flex items-start gap-2 text-xs text-stone-500 dark:text-zinc-400">
-                    <div className="w-1 h-1 rounded-full bg-stone-300 mt-1.5" />
-                    {req}
-                  </div>
-                ))}
-              </div>
               {currentCareer.rankId >= rank.id && (
                 <div className="mt-4 pt-4 border-t border-stone-100 dark:border-zinc-800 flex items-center gap-2 text-emerald-600 font-bold text-xs">
                   <ShieldCheck size={14} />
@@ -666,7 +679,6 @@ export default function CareerPage() {
                   <th className="px-8 py-4">Membro</th>
                   <th className="px-8 py-4">Patente</th>
                   <th className="px-8 py-4">Pontos</th>
-                  <th className="px-8 py-4">Estrelas</th>
                   <th className="px-8 py-4">Tendência</th>
                 </tr>
               </thead>
@@ -717,13 +729,6 @@ export default function CareerPage() {
                         </td>
                         <td className="px-8 py-4">
                           <p className="font-black text-emerald-600 dark:text-emerald-400">{member.points}</p>
-                        </td>
-                        <td className="px-8 py-4">
-                          <div className="flex gap-0.5">
-                            {[...Array(member.stars)].map((_, i) => (
-                              <Star key={i} size={12} className="fill-amber-400 text-amber-400" />
-                            ))}
-                          </div>
                         </td>
                         <td className="px-8 py-4">
                           {(member.trend || 'stable') === 'up' && <TrendingUp className="text-emerald-500" size={20} />}
@@ -785,7 +790,7 @@ export default function CareerPage() {
   );
 }
 
-function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string, value: string | number }) {
+function StatCard({ icon, label, value, subValue }: { icon: React.ReactNode, label: string, value: string | number, subValue?: string }) {
   return (
     <div className="bg-white dark:bg-zinc-900 p-6 rounded-[2rem] border border-stone-200 dark:border-zinc-800 shadow-sm flex items-center gap-4">
       <div className="w-12 h-12 rounded-2xl bg-stone-50 dark:bg-zinc-800 flex items-center justify-center">
@@ -793,7 +798,10 @@ function StatCard({ icon, label, value }: { icon: React.ReactNode, label: string
       </div>
       <div>
         <p className="text-[10px] uppercase font-bold text-stone-400 tracking-widest">{label}</p>
-        <p className="text-lg font-bold">{value}</p>
+        <div className="flex items-baseline gap-2">
+          <p className="text-lg font-bold">{value}</p>
+          {subValue && <span className="text-[10px] text-emerald-600 font-bold">{subValue}</span>}
+        </div>
       </div>
     </div>
   );

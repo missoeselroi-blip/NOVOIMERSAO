@@ -76,6 +76,7 @@ import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
 import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { RANKS } from '../types/forum';
 
 import { ShareButtons } from '../components/ShareButtons';
 import { AudioSearchButton } from '../components/AudioSearchButton';
@@ -249,7 +250,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
-  const { user, toggleFavorite, addPoints } = useAuth();
+  const { user, toggleFavorite, addPoints, careerProgress } = useAuth();
   const { share } = useShare();
   const { balance, consumeCredits } = useCredits();
   const { saveToNotebook } = useNotebook();
@@ -295,7 +296,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       url: 'https://imersaobiblicaia.com',
     });
     // Award points for sharing
-    await addPoints(20, 'share_app');
+    await addPoints(5, 'share_app');
     
     // Increment metrics.shares
     try {
@@ -307,7 +308,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       console.error("Error updating share metrics:", e);
     }
     
-    showToast("Obrigado por compartilhar! +20 pontos 🙌✨");
+    showToast("Obrigado por compartilhar! +5 pontos 🙌✨");
   };
 
   const handleFetchCustomVerse = async () => {
@@ -359,6 +360,17 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     }
 
     showToast("Versículo compartilhado! +5 pontos 🙌✨");
+  };
+
+  const getGameTitle = (score: number) => {
+    if (score <= 100) return 'Novo Convertido';
+    if (score <= 300) return 'Discípulo';
+    if (score <= 600) return 'Evangelista';
+    if (score <= 1000) return 'Missionário';
+    if (score <= 2000) return 'Mestre';
+    if (score <= 4000) return 'Teólogo';
+    if (score <= 7000) return 'Doutor';
+    return 'Lenda da Fé';
   };
 
   const getGreeting = () => {
@@ -943,6 +955,43 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
           <span className="text-xs md:text-sm">Bíblia Áudio</span>
         </motion.button>
       </div>
+
+      {/* Rank Congratulation */}
+      {user && careerProgress && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="mb-12 p-8 rounded-[2.5rem] bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 right-0 p-8 opacity-10">
+            <Trophy size={100} />
+          </div>
+          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
+            <div className="w-24 h-24 rounded-full border-4 border-white/20 p-1 bg-white/10">
+               <img 
+                 src={user.avatar || RANKS.find(r => r.id === careerProgress.rankId)?.image} 
+                 alt="" 
+                 className="w-full h-full rounded-full object-cover" 
+                 referrerPolicy="no-referrer"
+               />
+            </div>
+            <div className="text-center md:text-left space-y-2">
+              <h3 className="text-2xl font-black tracking-tight">Parabéns, {user.name.split(' ')[0]}! 🎉</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-center md:justify-start gap-3">
+                  <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Título</span>
+                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{getGameTitle(careerProgress.points || 0)}</span>
+                </div>
+                <div className="flex items-center justify-center md:justify-start gap-3">
+                  <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Patente</span>
+                  <span className="text-white font-black uppercase tracking-wider text-sm">{RANKS.find(r => r.id === careerProgress.rankId)?.name} — {RANKS.find(r => r.id === careerProgress.rankId)?.category}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {/* Daily Verse Section */}
       <motion.div 

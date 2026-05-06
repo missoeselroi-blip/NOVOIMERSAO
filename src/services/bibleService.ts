@@ -70,37 +70,56 @@ export const bibleService = {
       for (const path of endpoints) {
         try {
           const response = await fetchWithFallback(path);
+          let apiVersions: BibleVersion[] = [];
           if (Array.isArray(response.data) && response.data.length > 0) {
-            return response.data.map((v: any, index: number) => ({
+            apiVersions = response.data.map((v: any, index: number) => ({
               id: v.id || v.pk || (index + 1),
               name: v.name || v.title || `Versão ${index + 1}`,
-              short_name: v.short_name || v.abbreviation || v.id || `V${index + 1}`,
+              short_name: (v.short_name || v.abbreviation || v.id || `V${index + 1}`).toString().toUpperCase(),
               language: v.language || "Unknown"
             }));
-          }
-          if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+          } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
             const values = Object.values(response.data).flat() as any[];
             if (values.length > 0) {
-              return values.map((v: any, index: number) => ({
+              apiVersions = values.map((v: any, index: number) => ({
                 id: v.id || v.pk || (index + 1),
                 name: v.name || v.title || `Versão ${index + 1}`,
-                short_name: v.short_name || v.abbreviation || v.id || `V${index + 1}`,
+                short_name: (v.short_name || v.abbreviation || v.id || `V${index + 1}`).toString().toUpperCase(),
                 language: v.language || "Unknown"
               }));
             }
+          }
+
+          if (apiVersions.length > 0) {
+            // Ensure ARC and BV are in the list if it's a Portuguese list
+            const requestedShortNames = ['ARA', 'ARC', 'NVIPT', 'NTLH', 'BV', 'KJA', 'ACF'];
+            const fallbackPortuguese = [
+              { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" },
+              { id: 6, name: "Bíblia Viva", short_name: "BV", language: "Português" },
+              { id: 2, name: "Nova Versão Internacional (PT)", short_name: "NVIPT", language: "Português" }
+            ];
+
+            // If some of our favorites are missing, inject them
+            fallbackPortuguese.forEach(fb => {
+              if (!apiVersions.find(v => v.short_name === fb.short_name)) {
+                apiVersions.push(fb);
+              }
+            });
+
+            return apiVersions;
           }
         } catch (e) {
           console.warn(`Failed to fetch translations from ${path}`);
         }
       }
       
-      // Fallback to common versions if API fails
+      // Fallback to common versions if API fails entirely
       return [
         { id: 1, name: "Almeida Revista e Atualizada", short_name: "ARA", language: "Português" },
-        { id: 2, name: "Nova Versão Internacional", short_name: "NVI", language: "Português" },
+        { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" },
+        { id: 2, name: "Nova Versão Internacional (PT)", short_name: "NVIPT", language: "Português" },
         { id: 5, name: "Nova Tradução na Linguagem de Hoje", short_name: "NTLH", language: "Português" },
         { id: 6, name: "Bíblia Viva", short_name: "BV", language: "Português" },
-        { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" },
         { id: 14, name: "King James Atualizada", short_name: "KJA", language: "Português" },
         { id: 11, name: "Almeida Corrigida Fiel", short_name: "ACF", language: "Português" },
         { id: 8, name: "King James Version (Inglês)", short_name: "KJV", language: "Inglês" }
@@ -112,6 +131,80 @@ export const bibleService = {
   },
 
   shortenBookName: (name: string): string => {
+    if (!name) return "";
+    
+    // Normalize string: remove accents, extra spaces, and convert to lowercase for comparison
+    const normalize = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const normalizedName = normalize(name);
+
+    // List of common patterns to simplify
+    if (normalizedName.includes("genesis")) return "Gênesis";
+    if (normalizedName.includes("exodo")) return "Êxodo";
+    if (normalizedName.includes("levitico")) return "Levítico";
+    if (normalizedName.includes("numeros")) return "Números";
+    if (normalizedName.includes("deuteronomio")) return "Deuteronômio";
+    if (normalizedName.includes("josue")) return "Josué";
+    if (normalizedName.includes("juizes")) return "Juízes";
+    if (normalizedName.includes("rute")) return "Rute";
+    if (normalizedName.includes("1 samuel") || normalizedName.includes("primeiro livro de samuel")) return "1 Samuel";
+    if (normalizedName.includes("2 samuel") || normalizedName.includes("segundo livro de samuel")) return "2 Samuel";
+    if (normalizedName.includes("1 reis") || normalizedName.includes("primeiro livro dos reis")) return "1 Reis";
+    if (normalizedName.includes("2 reis") || normalizedName.includes("segundo livro dos reis")) return "2 Reis";
+    if (normalizedName.includes("1 cronicas") || normalizedName.includes("primeiro livro das cronicas")) return "1 Crônicas";
+    if (normalizedName.includes("2 cronicas") || normalizedName.includes("segundo livro das cronicas")) return "2 Crônicas";
+    if (normalizedName.includes("esdras")) return "Esdras";
+    if (normalizedName.includes("neemias")) return "Neemias";
+    if (normalizedName.includes("ester")) return "Ester";
+    if (normalizedName.includes("jo")) return "Jó";
+    if (normalizedName.includes("salmos")) return "Salmos";
+    if (normalizedName.includes("proverbios")) return "Provérbios";
+    if (normalizedName.includes("eclesiastes")) return "Eclesiastes";
+    if (normalizedName.includes("canticos") || normalizedName.includes("cantico dos canticos")) return "Cânticos";
+    if (normalizedName.includes("isaias")) return "Isaías";
+    if (normalizedName.includes("jeremias") && !normalizedName.includes("lamentacoes")) return "Jeremias";
+    if (normalizedName.includes("lamentacoes")) return "Lamentações";
+    if (normalizedName.includes("ezequiel")) return "Ezequiel";
+    if (normalizedName.includes("daniel")) return "Daniel";
+    if (normalizedName.includes("oseias")) return "Oseias";
+    if (normalizedName.includes("joel")) return "Joel";
+    if (normalizedName.includes("amos")) return "Amós";
+    if (normalizedName.includes("obadias")) return "Obadias";
+    if (normalizedName.includes("jonas")) return "Jonas";
+    if (normalizedName.includes("miqueias")) return "Miqueias";
+    if (normalizedName.includes("naum")) return "Naum";
+    if (normalizedName.includes("habacuque")) return "Habacuque";
+    if (normalizedName.includes("sofonia")) return "Sofonias";
+    if (normalizedName.includes("ageu")) return "Ageu";
+    if (normalizedName.includes("zacaria")) return "Zacarias";
+    if (normalizedName.includes("malaquia")) return "Malaquias";
+    if (normalizedName.includes("mateus")) return "Mateus";
+    if (normalizedName.includes("marcos")) return "Marcos";
+    if (normalizedName.includes("lucas")) return "Lucas";
+    if (normalizedName.includes("joao") && !normalizedName.includes("epistola")) return "João";
+    if (normalizedName.includes("atos")) return "Atos";
+    if (normalizedName.includes("romanos")) return "Romanos";
+    if (normalizedName.includes("1 corintios") || normalizedName.includes("primeira epistola") && normalizedName.includes("corintios")) return "1 Coríntios";
+    if (normalizedName.includes("2 corintios") || normalizedName.includes("segunda epistola") && normalizedName.includes("corintios")) return "2 Coríntios";
+    if (normalizedName.includes("galatas")) return "Gálatas";
+    if (normalizedName.includes("efesios")) return "Efésios";
+    if (normalizedName.includes("filipense")) return "Filipenses";
+    if (normalizedName.includes("colossense")) return "Colossenses";
+    if (normalizedName.includes("1 tessalonicense") || normalizedName.includes("primeira epistola") && normalizedName.includes("tessalonicenses")) return "1 Tessalonicenses";
+    if (normalizedName.includes("2 tessalonicense") || normalizedName.includes("segunda epistola") && normalizedName.includes("tessalonicenses")) return "2 Tessalonicenses";
+    if (normalizedName.includes("1 timoteo") || normalizedName.includes("primeira epistola") && normalizedName.includes("timoteo")) return "1 Timóteo";
+    if (normalizedName.includes("2 timoteo") || normalizedName.includes("segunda epistola") && normalizedName.includes("timoteo")) return "2 Timóteo";
+    if (normalizedName.includes("tito")) return "Tito";
+    if (normalizedName.includes("filemom")) return "Filemom";
+    if (normalizedName.includes("hebreus")) return "Hebreus";
+    if (normalizedName.includes("tiago")) return "Tiago";
+    if (normalizedName.includes("1 pedro") || normalizedName.includes("primeira epistola") && normalizedName.includes("pedro")) return "1 Pedro";
+    if (normalizedName.includes("2 pedro") || normalizedName.includes("segunda epistola") && normalizedName.includes("pedro")) return "2 Pedro";
+    if (normalizedName.includes("1 joao") || normalizedName.includes("primeira epistola") && normalizedName.includes("joao")) return "1 João";
+    if (normalizedName.includes("2 joao") || normalizedName.includes("segunda epistola") && normalizedName.includes("joao")) return "2 João";
+    if (normalizedName.includes("3 joao") || normalizedName.includes("terceira epistola") && normalizedName.includes("joao")) return "3 João";
+    if (normalizedName.includes("judas")) return "Judas";
+    if (normalizedName.includes("apocalipse")) return "Apocalipse";
+
     const longNames: { [key: string]: string } = {
       "O Primeiro livro de Moisés chamado Gênesis": "Gênesis",
       "O Segundo livro de Moisés chamado Êxodo": "Êxodo",

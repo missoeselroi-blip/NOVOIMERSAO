@@ -118,7 +118,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
   const [isReadingMode, setIsReadingMode] = useState(false);
   const [readingFontSize, setReadingFontSize] = useState(18);
   const [readingLineHeight, setReadingLineHeight] = useState(1.6);
-  const { user, isInitialLoading } = useAuth();
+  const { user, isInitialLoading, addPoints } = useAuth();
   const { saveToNotebook: saveToNotebookGlobal } = useNotebook();
   const { share } = useShare();
   const { showToast } = useToast();
@@ -251,19 +251,10 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
         const subjectData = currentData[subject] || {};
         const totalSeconds = (subjectData.studyTime || 0) + seconds;
         
-        let studyPoints = 0;
-        const minutes = totalSeconds / 60;
-        if (minutes > 0 && minutes <= 60) studyPoints = 5;
-        else if (minutes > 60 && minutes <= 120) studyPoints = 10;
-        else if (minutes > 120) studyPoints = 15;
-
         updates[subject] = {
           ...subjectData,
-          studyTime: totalSeconds,
-          studyPoints: studyPoints
+          studyTime: totalSeconds
         };
-        
-        setTimeout(() => syncPointsToCareer(subject, updates[subject]), 1000);
       }
 
       await setDoc(progressDocRef, updates, { merge: true });
@@ -301,49 +292,6 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     });
     return () => unsubscribe();
   }, [user]);
-
-  const syncPointsToCareer = async (subject: string, updatedProgress: any) => {
-    if (!user) return;
-    try {
-      const progressDoc = await getDoc(doc(db, 'evangelismProgress', user.id));
-      if (progressDoc.exists()) {
-        const allProgress = progressDoc.data();
-        allProgress[subject] = updatedProgress;
-        
-        const grandTotal = Object.keys(allProgress).reduce((acc, key) => {
-          if (key === 'userId' || key === 'enrolled') return acc;
-          const data = allProgress[key] || {};
-          const sTotal = (data.evaluation || 0) + 
-                         (data.redacaoMateria || 0) + 
-                         (data.redacaoAprofundamento || 0) + 
-                         (data.redacaoSlide || 0) + 
-                         (data.redacaoVideo || 0) + 
-                         (data.redacaoPodcast || 0) + 
-                         (data.quizPoints || 0) + 
-                         (data.studyPoints || 0) +
-                         (data.readingPoints || 0);
-          return acc + sTotal;
-        }, 0);
-
-        const careerDocRef = doc(db, 'careerProgress', user.id);
-        const careerDoc = await getDoc(careerDocRef);
-        
-        if (careerDoc.exists()) {
-          const careerData = careerDoc.data();
-          const currentTheologyPoints = careerData.theologyPoints || 0;
-          const bibleRacePoints = careerData.bibleRacePoints || 0;
-          const storytellingPoints = careerData.storytellingPoints || 0;
-          await updateDoc(careerDocRef, { 
-            evangelismPoints: grandTotal,
-            points: grandTotal + currentTheologyPoints + bibleRacePoints + storytellingPoints,
-            updatedAt: new Date().toISOString()
-          });
-        }
-      }
-    } catch (error) {
-      console.error("Error syncing points to career:", error);
-    }
-  };
 
   const loadChapter = async (subject: string, chapter: number) => {
     if (chapterContent[chapter]) return;
@@ -426,7 +374,7 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     
     const newProgress = { ...current, [chapterKey]: newChapterPoints, quizPoints: totalQuizPoints, [`chapter${currentChapter}Completed`]: true };
     await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
-    await syncPointsToCareer(selectedSubject, newProgress);
+    await addPoints(5, 'evangelism_chapter');
   };
 
   const calculateQuizScore = () => {
@@ -464,9 +412,9 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
     };
     
     await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
-    await syncPointsToCareer(selectedSubject, newProgress);
+    await addPoints(5, 'evangelism_reading');
     
-    showToast("Capítulo concluído! +10 pontos 🔥", 'success');
+    showToast("Capítulo concluído! +5 pontos 🔥", 'success');
     triggerFeedback();
   };
 
@@ -479,8 +427,9 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       const progressDocRef = doc(db, 'evangelismProgress', user.id);
       const progressDoc = await getDoc(progressDocRef);
       if (!progressDoc.exists()) await setDoc(progressDocRef, { userId: user.id, enrolled: true });
+      await addPoints(5, 'evangelism_enroll');
       setShowSummary(false);
-      showToast("Inscrição no Curso de Evangelismo realizada! 🔥", 'success');
+      showToast("Inscrição realizada! +5 pontos 🔥", 'success');
     } catch (error) {
       console.error(error);
       showToast("Erro ao realizar inscrição.", 'error');
@@ -585,7 +534,8 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       const current = evangelismProgress[selectedSubject] || {};
       const newProgress = { ...current, evaluation: normalizedScore, completed: true };
       await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
-      await syncPointsToCareer(selectedSubject, newProgress);
+      await addPoints(5, 'evangelism_assessment');
+      showToast("Avaliação concluída! +5 pontos ganhos. 🔥", 'success');
     }
   };
 
@@ -603,7 +553,8 @@ export default function EvangelismPage({ onNavigate }: EvangelismPageProps) {
       const current = evangelismProgress[selectedSubject] || {};
       const newProgress = { ...current, [field]: evaluation.score };
       await updateDoc(doc(db, 'evangelismProgress', user.id), { [selectedSubject]: newProgress });
-      await syncPointsToCareer(selectedSubject, newProgress);
+      await addPoints(5, 'evangelism_summary');
+      showToast("Resumo avaliado! +5 pontos ganhos. ✨", 'success');
       triggerFeedback();
     } catch (error) {
       console.error(error);

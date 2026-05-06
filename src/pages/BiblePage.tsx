@@ -129,9 +129,9 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         const v = await bibleService.getVersions();
         // Filter for requested versions
         const requestedVersions = [
-          'ARA', 'NTLH', 'NVI', 'ARC', 'BV', 'KJA'
+          'ARA', 'NTLH', 'NVIPT', 'ARC', 'BV', 'KJA', 'ACF'
         ];
-        const filteredVersions = v.filter(ver => requestedVersions.includes(ver.short_name));
+        const filteredVersions = v.filter(ver => requestedVersions.includes(ver.short_name.toUpperCase()));
         setVersions(filteredVersions.length > 0 ? filteredVersions : v);
         
         let defaultVer = lastState?.version || 'ARA';
@@ -447,7 +447,8 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
       const result = await geminiService.generateText(prompt, "Você é um pastor e teólogo bíblico altamente qualificado.");
       setCommentary(result || "Não foi possível gerar o comentário.");
       if (result) {
-        await addPoints(10, 'ia_commentary');
+        await addPoints(5, 'ia_commentary');
+        showToast("Comentário gerado! +5 pontos", "success");
       }
     } catch (error) {
       console.error("Error generating commentary:", error);
@@ -476,8 +477,8 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         verseReference: reference,
         bibleVersion: selectedVersion
       });
-      await addPoints(15, 'save_study');
-      showToast("Estudo salvo com sucesso! +15 pontos", "success");
+      await addPoints(5, 'save_study');
+      showToast("Estudo salvo com sucesso! +5 pontos", "success");
     } catch (error) {
       console.error("Error saving study:", error);
       showToast("Erro ao salvar estudo.", "error");

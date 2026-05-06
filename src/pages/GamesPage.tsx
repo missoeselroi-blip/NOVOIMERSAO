@@ -713,7 +713,7 @@ const GamesPage: React.FC = () => {
     }
 
     if (user) {
-      await addPoints(30, 'quiz_finish');
+      await addPoints(5, 'quiz_finish');
       const userRef = doc(db, 'quizLeaderboard', user.id);
       const userSnap = await getDoc(userRef);
       
@@ -766,7 +766,7 @@ const GamesPage: React.FC = () => {
     setActiveGame(null);
     if (!user) return;
     
-    await addPoints(15, `game_${gameName}`);
+    await addPoints(5, `game_${gameName}`);
     
     const userRef = doc(db, 'quizLeaderboard', user.id);
     const userSnap = await getDoc(userRef);

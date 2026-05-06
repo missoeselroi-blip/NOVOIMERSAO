@@ -119,7 +119,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
   const [isReadingMode, setIsReadingMode] = useState(false);
   const [readingFontSize, setReadingFontSize] = useState(18);
   const [readingLineHeight, setReadingLineHeight] = useState(1.6);
-  const { user, isInitialLoading } = useAuth();
+  const { user, isInitialLoading, addPoints } = useAuth();
   const { share } = useShare();
   const { showToast } = useToast();
   const { balance, consumeCredits } = useCredits();
@@ -289,29 +289,18 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         lastActive: new Date().toISOString()
       };
 
-      // If it's a study section, also update the main study time for points
+      // Se for uma seção de estudo, rastreia o tempo
       if (section.startsWith('STUDY_')) {
         const subject = section.replace('STUDY_', '');
-        // Fetch latest data to ensure points are calculated correctly
         const docSnap = await getDoc(progressDocRef);
         const currentData = docSnap.exists() ? docSnap.data() : {};
         const subjectData = currentData[subject] || {};
         const totalSeconds = (subjectData.studyTime || 0) + seconds;
         
-        let studyPoints = 0;
-        const minutes = totalSeconds / 60;
-        if (minutes > 0 && minutes <= 60) studyPoints = 5;
-        else if (minutes > 60 && minutes <= 120) studyPoints = 10;
-        else if (minutes > 120) studyPoints = 15;
-
         updates[subject] = {
           ...subjectData,
-          studyTime: totalSeconds,
-          studyPoints: studyPoints
+          studyTime: totalSeconds
         };
-        
-        // Sync to career will happen after update
-        setTimeout(() => syncPointsToCareer(subject, updates[subject]), 1000);
       }
 
       await setDoc(progressDocRef, updates, { merge: true });
@@ -424,108 +413,20 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
     return () => unsubscribe();
   }, [user]);
 
-  const syncPointsToCareer = async (subject: string, updatedProgress: any) => {
-    if (!user) return;
-    
-    // Calculate total points for this subject
-    const evalScore = updatedProgress.evaluation || 0;
-    const redMateria = updatedProgress.redacaoMateria || 0;
-    const redAprofundamento = updatedProgress.redacaoAprofundamento || 0;
-    const redSlide = updatedProgress.redacaoSlide || 0;
-    const redVideo = updatedProgress.redacaoVideo || 0;
-    const redPodcast = updatedProgress.redacaoPodcast || 0;
-    const quizPoints = updatedProgress.quizPoints || 0;
-    const studyPoints = updatedProgress.studyPoints || 0;
-    const subjectTotal = evalScore + redMateria + redAprofundamento + redSlide + redVideo + redPodcast + quizPoints + studyPoints;
-
-    // We need to calculate the grand total across all subjects
-    // Since theologyProgress might be stale in the state, we fetch the latest
-    try {
-      const progressDoc = await getDoc(doc(db, 'theologyProgress', user.id));
-      if (progressDoc.exists()) {
-        const allProgress = progressDoc.data();
-        // Merge the current update
-        allProgress[subject] = updatedProgress;
-        
-        const grandTotal = Object.keys(allProgress).reduce((acc, key) => {
-          if (key === 'userId' || key === 'enrolled') return acc;
-          const data = allProgress[key] || {};
-          const sTotal = (data.evaluation || 0) + 
-                         (data.redacaoMateria || 0) + 
-                         (data.redacaoAprofundamento || 0) + 
-                         (data.redacaoSlide || 0) + 
-                         (data.redacaoVideo || 0) + 
-                         (data.redacaoPodcast || 0) + 
-                         (data.quizPoints || 0) + 
-                         (data.studyPoints || 0);
-          return acc + sTotal;
-        }, 0);
-
-        // Update careerProgress points
-        const careerDocRef = doc(db, 'careerProgress', user.id);
-        const careerDoc = await getDoc(careerDocRef);
-        
-        if (careerDoc.exists()) {
-          const careerData = careerDoc.data();
-          // Calculate theology points diff
-          const oldTheologyPoints = careerData.theologyPoints || 0;
-        const theologyDiff = grandTotal - oldTheologyPoints;
-
-        await updateDoc(careerDocRef, { 
-          theologyPoints: grandTotal,
-          points: increment(theologyDiff),
-          name: user.name,
-          avatar: user.photoURL,
-          updatedAt: new Date().toISOString()
-        });
-      } else {
-        await setDoc(careerDocRef, {
-          userId: user.id,
-          name: user.name,
-          avatar: user.photoURL,
-          theologyPoints: grandTotal,
-          activityPoints: 0,
-          bibleRacePoints: 0,
-          evangelismPoints: 0,
-          storytellingPoints: 0,
-          points: grandTotal,
-          rankId: 1,
-          stars: 0,
-          authorized: false,
-          updatedAt: new Date().toISOString()
-        });
-      }
-      }
-    } catch (error) {
-      console.error("Error syncing points to career:", error);
-    }
-  };
-
   const updateStudyTime = async (subject: string, seconds: number) => {
     if (!user) return;
     const current = theologyProgress[subject] || {};
     const totalSeconds = (current.studyTime || 0) + seconds;
     
-    // Calculate study points
-    // Até uma hora de estudo: 5 pontos. De 61 minutos até 120 minutos: 10 pontos. Acima de 121 minutos: 15 pontos.
-    let studyPoints = 0;
-    const minutes = totalSeconds / 60;
-    if (minutes > 0 && minutes <= 60) studyPoints = 5;
-    else if (minutes > 60 && minutes <= 120) studyPoints = 10;
-    else if (minutes > 120) studyPoints = 15;
-
     const newSubjectProgress = {
       ...current,
-      studyTime: totalSeconds,
-      studyPoints: studyPoints
+      studyTime: totalSeconds
     };
 
     const progressDocRef = doc(db, 'theologyProgress', user.id);
     await updateDoc(progressDocRef, {
       [subject]: newSubjectProgress
     });
-    
-    await syncPointsToCareer(subject, newSubjectProgress);
   };
 
   const generateChapterQuiz = async (content: string) => {
@@ -567,15 +468,15 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       setIsEnrolled(true);
       localStorage.setItem('theology_enrolled', 'true');
       
-      // Initialize progress in Firestore if it doesn't exist
       const progressDocRef = doc(db, 'theologyProgress', user.id);
       const progressDoc = await getDoc(progressDocRef);
       if (!progressDoc.exists()) {
         await setDoc(progressDocRef, { userId: user.id, enrolled: true });
       }
 
+      await addPoints(5, 'theology_enroll');
       setShowSummary(false);
-      showToast("Inscrição realizada com sucesso! Bem-vindo ao curso. 🎓", 'success');
+      showToast("Inscrição realizada! +5 pontos. Bem-vindo ao curso. 🎓", 'success');
       onNavigate('student-profile');
     } catch (error) {
       console.error("Error enrolling:", error);
@@ -757,35 +658,13 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       return;
     }
 
-    showToast("Parabéns! Você acertou todas as questões e pode avançar! 🎉", 'success');
+    showToast("Parabéns! Você acertou todas as questões e ganhou 5 pontos! 🎉", 'success');
     triggerFeedback();
 
-    // Update points in profile
-    // Cada resposta certa vale um ponto
     const current = theologyProgress[selectedSubject] || {};
-    
-    // Track points per chapter to avoid farming
-    const chapterKey = `chapter${currentChapter}QuizPoints`;
-    const oldChapterPoints = current[chapterKey] || 0;
-    
-    // Only update if the new score is higher
-    const newChapterPoints = Math.max(oldChapterPoints, score);
-    
-    // Calculate total quiz points for the subject
-    let totalQuizPoints = 0;
-    const maxChapters = getMaxChapters(selectedSubject);
-    for (let i = 1; i <= maxChapters; i++) {
-      if (i === currentChapter) {
-        totalQuizPoints += newChapterPoints;
-      } else {
-        totalQuizPoints += (current[`chapter${i}QuizPoints`] || 0);
-      }
-    }
     
     const newSubjectProgress = {
       ...current,
-      [chapterKey]: newChapterPoints,
-      quizPoints: totalQuizPoints,
       [`chapter${currentChapter}Completed`]: true
     };
 
@@ -794,7 +673,7 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       [selectedSubject]: newSubjectProgress
     });
     
-    await syncPointsToCareer(selectedSubject, newSubjectProgress);
+    await addPoints(5, 'theology_chapter');
   };
 
   const handleNextChapter = () => {
@@ -1173,7 +1052,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
           const progressDocRef = doc(db, 'theologyProgress', user.id);
           updateDoc(progressDocRef, {
             [selectedSubject]: newSubjectProgress
-          }).then(() => syncPointsToCareer(selectedSubject, newSubjectProgress)).catch(console.error);
+          }).then(() => addPoints(5, 'theology_summary')).catch(console.error);
+          showToast("Resumo avaliado! +5 pontos ganhos. ✨", 'success');
         }
       }
     }
@@ -1303,7 +1183,8 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
       [selectedSubject!]: newSubjectProgress
     });
     
-    showToast(`Avaliação concluída! Nota: ${score}/40`, 'success');
+    await addPoints(5, 'theology_assessment');
+    showToast(`Avaliação concluída! +5 pontos. Nota: ${score}/40`, 'success');
   };
 
   if (showSummary) {

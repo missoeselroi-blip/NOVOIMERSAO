@@ -88,7 +88,7 @@ export default function ForumPage() {
       });
 
       // Award points for participation
-      await addPoints(10, 'forum_post');
+      await addPoints(5, 'forum_post');
       
       // Update metrics
       const metricsDocRef = doc(db, 'metrics', user.id);
@@ -97,7 +97,7 @@ export default function ForumPage() {
       });
 
       setNewPost('');
-      showToast("Mensagem enviada com sucesso! +10 pontos 🙌✨");
+      showToast("Mensagem enviada com sucesso! +5 pontos 🙌✨");
     } catch (error) {
       console.error("Error creating post:", error);
       showToast("Erro ao enviar mensagem.", "error");

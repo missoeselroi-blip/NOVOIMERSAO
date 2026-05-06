@@ -155,21 +155,21 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
     let nextState: 'intro' | 'playing' | 'correct' | 'wrong' | 'timeout' | 'finished' | 'division_completed' = gameState;
     let isFinished = false;
 
-    if (answer === currentQuestion.correctAnswer) {
-      const isLastBookOfDivision = currentBookIndex === currentDivision.endIndex;
-      if (isLastBookOfDivision && currentBookIndex < booksList.length - 1) {
-         nextState = 'division_completed';
-         newScore += 10;
-         await addPoints(50, 'panorama_division');
-      } else if (currentBookIndex === booksList.length - 1) {
-         nextState = 'finished';
-         newScore += 10;
-         isFinished = true;
-         await addPoints(200, 'panorama_finished');
-      } else {
-         nextState = 'correct';
-         await addPoints(2, 'panorama_correct');
-      }
+      if (answer === currentQuestion.correctAnswer) {
+        const isLastBookOfDivision = currentBookIndex === currentDivision.endIndex;
+        if (isLastBookOfDivision && currentBookIndex < booksList.length - 1) {
+           nextState = 'division_completed';
+           newScore += 10;
+           await addPoints(5, 'panorama_division');
+        } else if (currentBookIndex === booksList.length - 1) {
+           nextState = 'finished';
+           newScore += 10;
+           isFinished = true;
+           await addPoints(5, 'panorama_finished');
+        } else {
+           nextState = 'correct';
+           await addPoints(5, 'panorama_correct');
+        }
       const newConsecutive = consecutiveCorrect + 1;
       setConsecutiveCorrect(newConsecutive);
       checkMedals(newConsecutive);

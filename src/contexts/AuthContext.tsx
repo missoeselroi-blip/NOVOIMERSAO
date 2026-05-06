@@ -166,7 +166,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [theologyProgress, setTheologyProgress] = useState<any>(null);
   const [evangelismProgress, setEvangelismProgress] = useState<any>(null);
   const [careerProgress, setCareerProgress] = useState<any>(null);
+  const [lastCheck, setLastCheck] = useState<string | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
+
+  const getWeekId = (d: Date) => {
+    const date = new Date(d);
+    const day = date.getDay();
+    const diff = date.getDate() - day; 
+    const sunday = new Date(date.setDate(diff));
+    sunday.setHours(0, 0, 0, 0);
+    return sunday.toISOString().split('T')[0];
+  };
   const [certificates, setCertificates] = useState<any[]>([]);
   const [metrics, setMetrics] = useState<Metrics>({
     accesses: 0,
@@ -326,7 +336,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           await setDoc(historyDocRef, {
             points: data.points || 0,
             rankId: data.rankId || 1,
-            stars: data.stars || 0,
             savedAt: new Date().toISOString()
           });
           
@@ -353,31 +362,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       handleFirestoreError(error, OperationType.GET, `evangelismProgress/${user.id}`);
     });
 
-    const careerUnsub = onSnapshot(doc(db, 'careerProgress', user.id), (doc) => {
-      if (doc.exists()) {
-        const data = doc.data();
+    const careerUnsub = onSnapshot(doc(db, 'careerProgress', user.id), async (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data();
         let rankId = data.rankId || 1;
-        const points = data.points || 0;
-        
-        // Comprehensive Promotion Logic (Point-based for all 12 ranks)
-        // This ensures users are promoted as they earn points from any source
-        let newRankId = 1;
-        if (points >= 20000) newRankId = 12;
-        else if (points >= 15000) newRankId = 11;
-        else if (points >= 10000) newRankId = 10;
-        else if (points >= 7500) newRankId = 9;
-        else if (points >= 5000) newRankId = 8;
-        else if (points >= 4000) newRankId = 7;
-        else if (points >= 3000) newRankId = 6;
-        else if (points >= 2000) newRankId = 5;
-        else if (points >= 1500) newRankId = 4;
-        else if (points >= 1000) newRankId = 3;
-        else if (points >= 500) newRankId = 2;
-        
-        // Only update if it's a promotion (newRankId > current rankId)
-        if (newRankId > rankId) {
-          updateDoc(doc.ref, { 
+        const weeklyPoints = data.weeklyPoints || 0;
+        const currentWeekId = getWeekId(new Date());
+        const lastPromotionCheck = data.lastPromotionCheck || getWeekId(new Date());
+
+        // Se mudou a semana, processa promoção/regressão
+        if (lastPromotionCheck !== currentWeekId) {
+          let newRankId = rankId;
+          
+          if (weeklyPoints >= 300) {
+            // PROMOÇÃO
+            newRankId = Math.min(rankId + 1, 12);
+          } else if (weeklyPoints < 200) {
+            // REGRESSÃO
+            newRankId = Math.max(rankId - 1, 1);
+          }
+          // Caso entre 200 e 299, newRankId continua sendo rankId (MANUTENÇÃO)
+
+          await updateDoc(snapshot.ref, {
             rankId: newRankId,
+            weeklyPoints: 0,
+            lastPromotionCheck: currentWeekId,
             updatedAt: new Date().toISOString()
           });
           rankId = newRankId;
@@ -601,12 +610,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const addPoints = async (points: number, activity?: string) => {
     if (!user || !db) return;
     const careerDocRef = doc(db, 'careerProgress', user.id);
+    // As per user request: "5 pontos para todas as atividades realizadas no App"
+    const fixedPoints = 5;
+    
     try {
       const careerDoc = await getDoc(careerDocRef);
       if (careerDoc.exists()) {
         await updateDoc(careerDocRef, { 
-          points: increment(points),
-          activityPoints: increment(points),
+          points: increment(fixedPoints),
+          weeklyPoints: increment(fixedPoints),
+          activityPoints: increment(fixedPoints),
           lastActivity: activity || 'general',
           updatedAt: new Date().toISOString()
         });
@@ -615,11 +628,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userId: user.id,
           name: user.name || 'Membro',
           avatar: user.avatar || user.photoURL || '',
-          points: points,
-          activityPoints: points,
+          points: fixedPoints,
+          weeklyPoints: fixedPoints,
+          activityPoints: fixedPoints,
           rankId: 1,
-          stars: 0,
           authorized: false,
+          lastPromotionCheck: getWeekId(new Date()),
           lastActivity: activity || 'general',
           updatedAt: new Date().toISOString()
         });
