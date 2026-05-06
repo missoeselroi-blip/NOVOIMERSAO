@@ -403,8 +403,14 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     }
   };
 
-  const generateCommentary = async (verse: BibleVerse) => {
-    setSelectedVerses([verse]);
+  const generateCommentary = async (targetVerses?: BibleVerse | BibleVerse[]) => {
+    const versesToComent = targetVerses 
+      ? (Array.isArray(targetVerses) ? targetVerses : [targetVerses])
+      : selectedVerses;
+
+    if (versesToComent.length === 0) return;
+
+    setSelectedVerses(versesToComent);
     setIsGeneratingCommentary(true);
     setCommentary(null);
     setShowStudyPanel(true);
@@ -413,15 +419,20 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     
     try {
       const bookName = books.find(b => b.pk === selectedBook)?.name || 'Livro';
+      const firstVerse = versesToComent[0].verse;
+      const lastVerse = versesToComent[versesToComent.length - 1].verse;
+      const reference = `${bookName} ${selectedChapter}:${firstVerse}${versesToComent.length > 1 ? `-${lastVerse}` : ''}`;
+      const fullText = versesToComent.map(v => `[${v.verse}] ${v.text}`).join('\n');
       
-      const prompt = `Você é um tutor teológico experiente. Forneça um comentário bíblico profundo e uma nota de estudo para o seguinte versículo:
-      ${bookName} ${selectedChapter}:${verse.verse} (${selectedVersion})
-      Texto: "${verse.text}"
+      const prompt = `Você é um tutor teológico experiente. Forneça um comentário bíblico profundo e uma nota de estudo para o seguinte trecho:
+      REFERÊNCIA: ${reference} (${selectedVersion})
+      TEXTO: 
+      ${fullText}
       
       O comentário deve incluir:
-      1. Contexto histórico e literário.
-      2. Significado teológico.
-      3. Aplicação prática para a vida cristã hoje.
+      1. Contexto histórico e literário do trecho.
+      2. Significado teológico profundo.
+      3. Aplicação prática para a vida cristã hoje (contexto, significado e aplicação).
       4. Referências cruzadas interessantes.
       
       Use uma linguagem clara, inspiradora e acadêmica, mas acessível. Formate em Markdown.`;
@@ -777,6 +788,14 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
               </button>
               <div className="w-px h-6 bg-emerald-200 dark:bg-emerald-800 mx-1" />
               <button 
+                onClick={() => generateCommentary()}
+                className="p-2 bg-emerald-600 text-white rounded-lg transition-all hover:scale-110 shadow-lg shadow-emerald-600/20"
+                title="Comentário IA"
+              >
+                <Anchor size={20} />
+              </button>
+              <div className="w-px h-6 bg-emerald-200 dark:bg-emerald-800 mx-1" />
+              <button 
                 onClick={() => {
                   setSelectedVerses([]);
                   setAnnotationNote('');
@@ -1015,7 +1034,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                             className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-stone-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 transition-colors"
                             title="Estudo IA"
                           >
-                            <Sparkles size={14} />
+                            <Anchor size={14} />
                           </button>
                           <button 
                             onClick={(e) => { e.stopPropagation(); copyVerse(v); }}
