@@ -5,7 +5,9 @@ import {
   ImageIcon,
   CheckCircle2,
   AlertTriangle,
-  Sparkles
+  Sparkles,
+  Maximize2,
+  Minimize2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
@@ -23,6 +25,7 @@ export default function TruthDetectorPage() {
   const [isChecking, setIsChecking] = useState(false);
   const [isImageCheck, setIsImageCheck] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const handleFactCheck = async () => {
     if (!factCheckInput && !previewImage) return;
@@ -53,8 +56,20 @@ export default function TruthDetectorPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <header className="text-center space-y-4">
+    <div className={cn(
+      "mx-auto space-y-8 transition-all duration-500",
+      isFullscreen ? "fixed inset-0 z-[100] bg-white dark:bg-zinc-950 p-6 md:p-12 overflow-y-auto max-w-none" : "max-w-4xl"
+    )}>
+      <header className="text-center space-y-4 relative">
+        <div className="absolute right-0 top-0">
+          <button 
+            onClick={() => setIsFullscreen(!isFullscreen)}
+            className="p-3 bg-stone-100 dark:bg-zinc-800 rounded-2xl hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600 transition-all shadow-sm"
+            title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+          >
+            {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+          </button>
+        </div>
         <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-600 text-white rounded-[2rem] shadow-xl mb-4">
           <ShieldCheck size={40} />
         </div>

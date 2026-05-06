@@ -22,7 +22,7 @@ export const STORIES: Story[] = [
     id: 'son-of-man',
     title: 'O Filho do Homem',
     description: 'Uma jornada imersiva pela vida de Jesus.',
-    image: 'https://images.unsplash.com/photo-1544197150-b99a580bb7a8?auto=format&fit=crop&q=80&w=800&h=600',
+    image: 'https://images.unsplash.com/photo-1501705388883-4ed8a543392c?auto=format&fit=crop&q=80&w=800&h=600',
     segments: [
       {
         id: 1,
@@ -230,7 +230,7 @@ export const STORIES: Story[] = [
     id: 'david',
     title: 'Um Homem Segundo o Coração de Deus',
     description: 'A história de Davi, do curral ao trono, suas lutas e restauração.',
-    image: 'https://images.unsplash.com/photo-1601933470484-7823b195743a?auto=format&fit=crop&q=80&w=800&h=600',
+    image: 'https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?auto=format&fit=crop&q=80&w=800&h=600', // Sheep
     segments: [
       {
         id: 1,
@@ -438,7 +438,7 @@ export const STORIES: Story[] = [
     id: 'abraham',
     title: 'O Pai da fé',
     description: 'A história de Abraão, o homem que creu contra a esperança.',
-    image: 'https://images.unsplash.com/photo-1507692049790-de58290a4334?auto=format&fit=crop&q=80&w=800&h=600',
+    image: 'https://images.unsplash.com/photo-1506318137071-a8e063b4975d?auto=format&fit=crop&q=80&w=800&h=600', // Stars
     segments: [
       {
         id: 1,
@@ -646,7 +646,7 @@ export const STORIES: Story[] = [
     id: 'moses',
     title: 'O Homem Mais Manso da Terra',
     description: 'A história de Moisés, do nascimento à morte, o libertador de Israel.',
-    image: 'https://images.unsplash.com/photo-1590076175582-40940b43f021?auto=format&fit=crop&q=80&w=800&h=600',
+    image: 'https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&q=80&w=800&h=600', // Desert
     segments: [
       {
         id: 1,

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, X, Loader2, User, RefreshCw, Volume2, Square } from 'lucide-react';
+import { Mic, X, Loader2, User, RefreshCw, Volume2, Square, Maximize2, Minimize2 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { geminiService, ThinkingLevel } from '../services/geminiService';
 import { useToast } from './Toast';
@@ -8,6 +8,7 @@ import { cn } from '../types';
 
 export const VoiceChat: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -69,6 +70,9 @@ O nome do usuário é ${user?.name || 'amigo'}.`;
 
   const startChat = async () => {
     setIsOpen(true);
+    if (window.innerWidth < 768) {
+      setIsMaximized(true);
+    }
     const greeting = `Olá ${user?.name || 'amigo'}, ${getGreeting()}! Como posso te ajudar hoje?`;
     
     // Add to history
@@ -211,7 +215,10 @@ O nome do usuário é ${user?.name || 'amigo'}.`;
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className="fixed bottom-0 left-0 right-0 md:left-auto md:right-6 md:bottom-24 md:w-96 bg-white dark:bg-zinc-900 rounded-t-3xl md:rounded-3xl shadow-2xl border border-stone-200 dark:border-zinc-800 z-50 overflow-hidden"
+            className={cn(
+              "fixed bottom-0 left-0 right-0 md:left-auto md:right-6 md:bottom-24 bg-white dark:bg-zinc-900 shadow-2xl border border-stone-200 dark:border-zinc-800 z-50 overflow-hidden transition-all duration-300",
+              isMaximized ? "inset-0 md:w-full md:h-full md:right-0 md:bottom-0 rounded-none" : "md:w-96 rounded-t-3xl md:rounded-3xl"
+            )}
           >
             {/* Header */}
             <div className="bg-blue-600 p-4 flex items-center justify-between text-white">
@@ -219,19 +226,31 @@ O nome do usuário é ${user?.name || 'amigo'}.`;
                 <Volume2 size={20} />
                 <h3 className="font-bold">Bate Papo Cristão</h3>
               </div>
-              <button 
-                onClick={() => {
-                  setIsOpen(false);
-                  stopAudio();
-                }} 
-                className="p-1 hover:bg-white/20 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsMaximized(!isMaximized)}
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  {isMaximized ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                </button>
+                <button 
+                  onClick={() => {
+                    setIsOpen(false);
+                    setIsMaximized(false);
+                    stopAudio();
+                  }} 
+                  className="p-1 hover:bg-white/20 rounded-full transition-colors"
+                >
+                  <X size={20} />
+                </button>
+              </div>
             </div>
 
             {/* Content */}
-            <div className="p-8 flex flex-col items-center justify-center gap-8">
+            <div className={cn(
+              "p-8 flex flex-col items-center justify-center gap-8",
+              isMaximized ? "h-[calc(100vh-64px)]" : ""
+            )}>
               {/* Avatar */}
               <div className="relative">
                 <div className={cn(

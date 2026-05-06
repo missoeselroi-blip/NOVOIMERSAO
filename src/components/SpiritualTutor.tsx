@@ -539,7 +539,12 @@ Atualmente o usuário está na página: ${location.pathname}.
         animate={{ scale: 1, opacity: 1 }}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9, cursor: 'grabbing' }}
-        onClick={() => setIsOpen(true)}
+        onClick={() => {
+          setIsOpen(true);
+          if (window.innerWidth < 768) {
+            setIsMaximized(true);
+          }
+        }}
         className="fixed bottom-[19.5rem] right-6 md:bottom-[15.5rem] md:right-8 z-[60] w-14 h-14 bg-emerald-600 text-white rounded-full shadow-2xl flex flex-col items-center justify-center gap-0.5 group overflow-hidden border-2 border-white dark:border-zinc-900 cursor-grab active:cursor-grabbing"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-500 to-teal-700 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -600,7 +605,7 @@ Atualmente o usuário está na página: ${location.pathname}.
                   </button>
                   <button 
                     onClick={() => setIsMaximized(!isMaximized)}
-                    className="p-2 hover:bg-white/20 rounded-full transition-colors hidden md:block"
+                    className="p-2 hover:bg-white/20 rounded-full transition-colors"
                     title={isMaximized ? "Restaurar" : "Maximizar"}
                   >
                     {isMaximized ? <Minimize2 size={16} /> : <Maximize2 size={16} />}

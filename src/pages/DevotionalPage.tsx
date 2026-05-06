@@ -31,6 +31,8 @@ import {
   RotateCw,
   Play,
   Pause,
+  Maximize2,
+  Minimize2,
   Zap as ChallengeIcon,
   FileText,
   Plus,
@@ -200,6 +202,7 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
     }
   }, [location.state]);
   const [isReadingMode, setIsReadingMode] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [readingFontSize, setReadingFontSize] = useState(18);
   const [readingLineHeight, setReadingLineHeight] = useState(1.6);
   const [showMissionary, setShowMissionary] = useState(false);
@@ -792,7 +795,19 @@ export default function DevotionalPage({ onNavigate }: { onNavigate: (tab: strin
   };
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 pb-20">
+    <div className={cn(
+      "mx-auto space-y-8 pb-20 transition-all duration-500",
+      isFullscreen ? "fixed inset-0 z-[100] bg-white dark:bg-zinc-950 p-6 md:p-12 overflow-y-auto max-w-none" : "max-w-6xl"
+    )}>
+      <div className="flex justify-end mb-4">
+        <button 
+          onClick={() => setIsFullscreen(!isFullscreen)}
+          className="p-3 bg-stone-100 dark:bg-zinc-800 rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 transition-all shadow-sm"
+          title={isFullscreen ? "Sair da Tela Cheia" : "Tela Cheia"}
+        >
+          {isFullscreen ? <Minimize2 size={24} /> : <Maximize2 size={24} />}
+        </button>
+      </div>
       {showMissionary ? (
         <div className="space-y-6">
           <button 

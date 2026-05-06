@@ -924,10 +924,10 @@ const GamesPage: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {[
-                { id: 'son-of-man', title: 'O Filho do Homem', desc: 'A vida de Jesus Cristo', img: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800&h=600' },
-                { id: 'david', title: 'Um Homem Segundo o Coração de Deus', desc: 'A jornada de Davi, do curral ao trono', img: 'https://images.unsplash.com/photo-1590076175582-40940b43f021?auto=format&fit=crop&q=80&w=800&h=600' },
-                { id: 'abraham', title: 'O Pai da Fé', desc: 'A história de Abraão e as promessas de Deus', img: 'https://images.unsplash.com/photo-1544427920-c49ccfb85579?auto=format&fit=crop&q=80&w=800&h=600' },
-                { id: 'moses', title: 'O Homem Mais Manso da Terra', desc: 'Moisés e a libertação do Egito', img: 'https://images.unsplash.com/photo-1590076175582-40940b43f021?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'son-of-man', title: 'O Filho do Homem', desc: 'A vida de Jesus Cristo', img: 'https://images.unsplash.com/photo-1501705388883-4ed8a543392c?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'david', title: 'Um Homem Segundo o Coração de Deus', desc: 'A jornada de Davi, do curral ao trono', img: 'https://images.unsplash.com/photo-1511216335778-7cb8f49fa7a3?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'abraham', title: 'O Pai da Fé', desc: 'A história de Abraão e as promessas de Deus', img: 'https://images.unsplash.com/photo-1506318137071-a8e063b4975d?auto=format&fit=crop&q=80&w=800&h=600' },
+                { id: 'moses', title: 'O Homem Mais Manso da Terra', desc: 'Moisés e a libertação do Egito', img: 'https://images.unsplash.com/photo-1508672019048-805c876b67e2?auto=format&fit=crop&q=80&w=800&h=600' },
                 { id: 'paul', title: 'O Apóstolo dos Gentios', desc: 'A transformação e viagens de Paulo', img: 'https://images.unsplash.com/photo-1447069387593-a5de0862481e?auto=format&fit=crop&q=80&w=800&h=600' }
               ].map((story) => (
                 <button

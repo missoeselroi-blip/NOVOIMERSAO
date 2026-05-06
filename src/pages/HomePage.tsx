@@ -52,6 +52,8 @@ import {
   UserPlus,
   Glasses,
   Headphones,
+  Maximize2,
+  Minimize2,
   Anchor
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -621,6 +623,8 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const [explanationText, setExplanationText] = useState('');
   const [explanationThought, setExplanationThought] = useState('');
   const [isExplaining, setIsExplaining] = useState(false);
+  const [isDevotionalMaximized, setIsDevotionalMaximized] = useState(false);
+  const [isExplanationMaximized, setIsExplanationMaximized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -1875,12 +1879,27 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1, 
+                y: 0,
+                width: isDevotionalMaximized ? '100%' : '100%',
+                height: isDevotionalMaximized ? '100%' : 'auto',
+                maxWidth: isDevotionalMaximized ? '100%' : '1024px',
+                maxHeight: isDevotionalMaximized ? '100vh' : '95vh',
+                borderRadius: isDevotionalMaximized ? '0' : '2.5rem'
+              }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full h-full sm:max-w-5xl sm:h-[95vh] bg-amber-50 dark:bg-stone-900 sm:rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col"
+              className={cn(
+                "relative bg-amber-50 dark:bg-stone-900 shadow-2xl overflow-hidden flex flex-col transition-all duration-300",
+                isDevotionalMaximized ? "fixed inset-0 m-0 rounded-none w-full h-full" : "w-full h-full sm:max-w-5xl sm:h-[95vh] sm:rounded-[2.5rem]"
+              )}
             >
               {/* Modal Header */}
-              <div className="p-6 border-b border-amber-200/50 dark:border-stone-800 flex items-center justify-between bg-amber-100/50 dark:bg-stone-800/50 sticky top-0 z-10">
+              <div className={cn(
+                "p-6 border-b border-amber-200/50 dark:border-stone-800 flex items-center justify-between bg-amber-100/50 dark:bg-stone-800/50 sticky top-0 z-10",
+                isDevotionalMaximized ? "pt-10" : ""
+              )}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center text-rose-600">
                     <Heart size={20} />
@@ -1890,16 +1909,25 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
                     <p className="text-xs text-stone-500">Sua palavra de fé e esperança</p>
                   </div>
                 </div>
-                <button 
-                  onClick={() => {
-                    setIsDevotionalModalOpen(false);
-                    setDevotionalContent(null);
-                    setSelectedDevotionalTheme(null);
-                  }}
-                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-                >
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsDevotionalMaximized(!isDevotionalMaximized)}
+                    className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors hidden sm:block"
+                  >
+                    {isDevotionalMaximized ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsDevotionalModalOpen(false);
+                      setDevotionalContent(null);
+                      setSelectedDevotionalTheme(null);
+                      setIsDevotionalMaximized(false);
+                    }}
+                    className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
               
               {/* Modal Content */}
@@ -2018,23 +2046,49 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             />
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              animate={{ 
+                opacity: 1, 
+                scale: 1, 
+                y: 0,
+                width: isExplanationMaximized ? '100%' : '100%',
+                height: isExplanationMaximized ? '100%' : 'auto',
+                maxWidth: isExplanationMaximized ? '100%' : '672px',
+                maxHeight: isExplanationMaximized ? '100vh' : '90vh',
+                borderRadius: isExplanationMaximized ? '0' : '2rem'
+              }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-2xl max-h-[90vh] bg-white dark:bg-zinc-900 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col"
+              className={cn(
+                "relative bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden flex flex-col transition-all duration-300",
+                isExplanationMaximized ? "fixed inset-0 m-0 rounded-none w-full h-full" : "w-full max-w-2xl max-h-[90vh] rounded-[2rem]"
+              )}
             >
-              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 sticky top-0 z-10">
+              <div className={cn(
+                "p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-white dark:bg-zinc-900 sticky top-0 z-10",
+                isExplanationMaximized ? "pt-10" : ""
+              )}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-blue-600">
                     <Sparkles size={20} />
                   </div>
                   <h3 className="text-xl font-bold">Explicação do Versículo</h3>
                 </div>
-                <button 
-                  onClick={() => setIsExplanationModalOpen(false)}
-                  className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
-                >
-                  <X size={20} />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setIsExplanationMaximized(!isExplanationMaximized)}
+                    className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors hidden sm:block"
+                  >
+                    {isExplanationMaximized ? <Minimize2 size={20} /> : <Maximize2 size={20} />}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setIsExplanationModalOpen(false);
+                      setIsExplanationMaximized(false);
+                    }}
+                    className="p-2 hover:bg-stone-100 dark:hover:bg-zinc-800 rounded-full transition-colors"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
               </div>
               
               <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">

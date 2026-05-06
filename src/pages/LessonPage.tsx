@@ -117,6 +117,7 @@ Conteúdo: ${lesson.content}`;
   const [autorResponse, setAutorResponse] = useState("");
   const [lastQuestion, setLastQuestion] = useState("");
   const [isAutorLoading, setIsAutorLoading] = useState(false);
+  const [isAutorFullScreen, setIsAutorFullScreen] = useState(false);
   const [isAutorPlaying, setIsAutorPlaying] = useState(false);
   const [autorAudioUrl, setAutorAudioUrl] = useState<string | null>(null);
   const { saveToNotebook } = useNotebook();
@@ -126,6 +127,7 @@ Conteúdo: ${lesson.content}`;
 
   const [showDicaDeLideranca, setShowDicaDeLideranca] = useState(false);
   const [isDicaDeLiderancaLoading, setIsDicaDeLiderancaLoading] = useState(false);
+  const [isDicaDeLiderancaFullScreen, setIsDicaDeLiderancaFullScreen] = useState(false);
   const [dicaDeLiderancaResponse, setDicaDeLiderancaResponse] = useState("");
   const [dicaDeLiderancaGreeting, setDicaDeLiderancaGreeting] = useState<string | null>(null);
   const [dicaDeLiderancaAudioUrl, setDicaDeLiderancaAudioUrl] = useState<string | null>(null);
@@ -427,6 +429,9 @@ Mantenha as respostas conversacionais, profundas e bem fundamentadas.`;
 
   const openAutor = async () => {
     setShowAutor(true);
+    if (window.innerWidth < 768) {
+      setIsAutorFullScreen(true);
+    }
     if (!autorResponse) {
       setIsAutorLoading(true);
       try {
@@ -487,6 +492,9 @@ O nome do usuário é ${user?.name || 'amigo'}.
 
   const openDicaDeLideranca = async () => {
     setShowDicaDeLideranca(true);
+    if (window.innerWidth < 768) {
+      setIsDicaDeLiderancaFullScreen(true);
+    }
     if (!dicaDeLiderancaResponse) {
       setIsDicaDeLiderancaLoading(true);
       try {
@@ -515,6 +523,9 @@ O nome do usuário é ${user?.name || 'amigo'}.
 
   const runDicaDeLideranca = async (query: string) => {
     setShowDicaDeLideranca(true);
+    if (window.innerWidth < 768) {
+      setIsDicaDeLiderancaFullScreen(true);
+    }
     setIsDicaDeLiderancaLoading(true);
     setDicaDeLiderancaResponse("");
     try {
@@ -1223,10 +1234,24 @@ O nome do usuário é ${user?.name || 'amigo'}.
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-lg max-h-[95vh] rounded-[2rem] md:rounded-[3rem] shadow-2xl overflow-hidden flex flex-col m-4"
+              animate={{ 
+                scale: 1, 
+                y: 0,
+                width: isAutorFullScreen ? '100%' : '100%',
+                height: isAutorFullScreen ? '100%' : 'auto',
+                maxWidth: isAutorFullScreen ? '100%' : '512px',
+                maxHeight: isAutorFullScreen ? '100vh' : '95vh',
+                borderRadius: isAutorFullScreen ? 0 : '2rem'
+              }}
+              className={cn(
+                "bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden flex flex-col transition-all duration-300",
+                isAutorFullScreen ? "fixed inset-0 m-0" : "w-full max-w-lg rounded-[2rem] md:rounded-[3rem] m-4"
+              )}
             >
-              <div className="p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-purple-50/50 dark:bg-purple-900/10">
+              <div className={cn(
+                "p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-purple-50/50 dark:bg-purple-900/10",
+                isAutorFullScreen ? "pt-12" : ""
+              )}>
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 bg-purple-600 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-purple-600/20">
                     <UserCheck size={24} />
@@ -1237,6 +1262,13 @@ O nome do usuário é ${user?.name || 'amigo'}.
           </div>
         </div>
         <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
+          <button 
+            onClick={() => setIsAutorFullScreen(!isAutorFullScreen)}
+            className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600 hidden md:block"
+            title={isAutorFullScreen ? "Minimizar" : "Maximizar"}
+          >
+            {isAutorFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+          </button>
           <button 
             onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
             className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
@@ -1442,10 +1474,24 @@ O nome do usuário é ${user?.name || 'amigo'}.
           >
             <motion.div
               initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh]"
+              animate={{ 
+                scale: 1, 
+                y: 0,
+                width: isDicaDeLiderancaFullScreen ? '100%' : '100%',
+                height: isDicaDeLiderancaFullScreen ? '100%' : 'auto',
+                maxWidth: isDicaDeLiderancaFullScreen ? '100%' : '672px',
+                maxHeight: isDicaDeLiderancaFullScreen ? '100vh' : '85vh',
+                borderRadius: isDicaDeLiderancaFullScreen ? 0 : '3rem'
+              }}
+              className={cn(
+                "bg-white dark:bg-zinc-900 shadow-2xl overflow-hidden flex flex-col transition-all duration-300",
+                isDicaDeLiderancaFullScreen ? "fixed inset-0 m-0" : "w-full max-w-2xl rounded-[3rem] shadow-2xl m-4"
+              )}
             >
-              <div className="p-6 border-b border-stone-200 dark:border-zinc-800 flex justify-between items-center bg-purple-50/50 dark:bg-purple-900/10">
+              <div className={cn(
+                "p-6 border-b border-stone-200 dark:border-zinc-800 flex justify-between items-center bg-purple-50/50 dark:bg-purple-900/10",
+                isDicaDeLiderancaFullScreen ? "pt-10" : ""
+              )}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-purple-600 text-white rounded-xl flex items-center justify-center shadow-lg shadow-purple-600/20">
                     <UserCheck size={20} />
@@ -1454,6 +1500,13 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 </div>
                 
                 <div className="flex items-center gap-1 md:gap-2">
+                  <button 
+                    onClick={() => setIsDicaDeLiderancaFullScreen(!isDicaDeLiderancaFullScreen)}
+                    className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600 hidden md:block"
+                    title={isDicaDeLiderancaFullScreen ? "Minimizar" : "Maximizar"}
+                  >
+                    {isDicaDeLiderancaFullScreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                  </button>
                   <button 
                     onClick={() => setZoom(prev => Math.max(0.5, prev - 0.1))}
                     className="p-1.5 md:p-2 hover:bg-purple-100 dark:hover:bg-purple-900/30 rounded-xl transition-colors text-purple-600"
