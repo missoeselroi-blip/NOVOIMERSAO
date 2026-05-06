@@ -12,7 +12,7 @@ interface PanoramaBiblicoProps {
 }
 
 export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => {
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, addPoints } = useAuth();
   const [currentBookIndex, setCurrentBookIndex] = useState(0);
   const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [timeLeft, setTimeLeft] = useState(9);
@@ -160,12 +160,15 @@ export const PanoramaBiblico: React.FC<PanoramaBiblicoProps> = ({ onClose }) => 
       if (isLastBookOfDivision && currentBookIndex < booksList.length - 1) {
          nextState = 'division_completed';
          newScore += 10;
+         await addPoints(50, 'panorama_division');
       } else if (currentBookIndex === booksList.length - 1) {
          nextState = 'finished';
          newScore += 10;
          isFinished = true;
+         await addPoints(200, 'panorama_finished');
       } else {
          nextState = 'correct';
+         await addPoints(2, 'panorama_correct');
       }
       const newConsecutive = consecutiveCorrect + 1;
       setConsecutiveCorrect(newConsecutive);

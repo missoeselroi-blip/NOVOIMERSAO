@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   MessageSquare, 
   ShieldAlert, 
@@ -21,6 +21,9 @@ import { ForumPost, RANKS } from '../types/forum';
 import { cn } from '../types';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import { useAudioBox } from '../contexts/AudioBoxContext';
+import { useAuth } from '../contexts/AuthContext';
+import { db } from '../lib/firebase';
+import { collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 
 const RULES = [
   "Proibido palavrões e linguagem ofensiva.",
@@ -31,21 +34,38 @@ const RULES = [
   "Pena para violação: Exclusão imediata do fórum e perda de patente."
 ];
 
-const MOCK_POSTS: ForumPost[] = [];
-
 export default function ForumPage() {
+  const { user, addPoints, careerProgress } = useAuth();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
-  const [posts, setPosts] = useState<ForumPost[]>(MOCK_POSTS);
+  const [posts, setPosts] = useState<ForumPost[]>([]);
   const [newPost, setNewPost] = useState('');
   const [showRules, setShowRules] = useState(true);
   const [isGeneratingSpeech, setIsGeneratingSpeech] = useState(false);
   const [isAudioConfirmModalOpen, setIsAudioConfirmModalOpen] = useState(false);
   const [pendingSpeechText, setPendingSpeechText] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
-  const handlePost = () => {
-    if (!newPost.trim()) return;
+  // Fetch real posts from Firestore
+  useEffect(() => {
+    const q = query(collection(db, 'forumPosts'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const postsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        timestamp: doc.data().createdAt?.toDate() 
+          ? new Intl.DateTimeFormat('pt-BR', { dateStyle: 'short', timeStyle: 'short' }).format(doc.data().createdAt.toDate())
+          : 'Agora'
+      })) as ForumPost[];
+      setPosts(postsData);
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const handlePost = async () => {
+    if (!newPost.trim() || !user) return;
     
     // Simple profanity check (demo only)
     const forbidden = ['palavrao1', 'palavrao2']; // Add real ones if needed
@@ -54,19 +74,34 @@ export default function ForumPage() {
       return;
     }
 
-    const post: ForumPost = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      author: 'Você',
-      authorRank: 'Marinheiro', // Default for demo
-      content: newPost,
-      timestamp: 'Agora',
-      likes: 0,
-      replies: []
-    };
+    try {
+      const currentRank = RANKS.find(r => r.id === (careerProgress?.rankId || 1))?.name || 'Recruta';
+      
+      await addDoc(collection(db, 'forumPosts'), {
+        author: user.name,
+        authorId: user.id,
+        authorRank: currentRank,
+        content: newPost,
+        createdAt: serverTimestamp(),
+        likes: 0,
+        replies: []
+      });
 
-    setPosts([post, ...posts]);
-    setNewPost('');
-    showToast("Mensagem enviada com sucesso! 🙌✨");
+      // Award points for participation
+      await addPoints(10, 'forum_post');
+      
+      // Update metrics
+      const metricsDocRef = doc(db, 'metrics', user.id);
+      await updateDoc(metricsDocRef, {
+        forumParticipations: increment(1)
+      });
+
+      setNewPost('');
+      showToast("Mensagem enviada com sucesso! +10 pontos 🙌✨");
+    } catch (error) {
+      console.error("Error creating post:", error);
+      showToast("Erro ao enviar mensagem.", "error");
+    }
   };
 
   const handleListen = (text: string) => {

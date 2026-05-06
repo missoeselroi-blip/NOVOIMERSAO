@@ -50,11 +50,11 @@ import { compressImage } from '../utils/imageUtils';
 import { useCredits } from '../contexts/CreditContext';
 import { geminiService } from '../services/geminiService';
 import { db } from '../lib/firebase';
-import { doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, where, getDocs } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, collection, query, orderBy, limit, onSnapshot, where, getDocs, increment } from 'firebase/firestore';
 import html2canvas from 'html2canvas';
 
 export default function CareerPage() {
-  const { user, careerProgress, metrics, isInitialLoading, updateUser } = useAuth();
+  const { user, careerProgress, metrics, isInitialLoading, updateUser, addPoints } = useAuth();
   const { consumeCredits, estimateCredits } = useCredits();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'profile' | 'ranks' | 'leaderboard'>('profile');
@@ -172,6 +172,7 @@ export default function CareerPage() {
 
       const image = canvas.toDataURL('image/png');
       
+      let shared = false;
       // Try to share as file if supported
       if (navigator.share && navigator.canShare) {
         const blob = await (await fetch(image)).blob();
@@ -183,16 +184,28 @@ export default function CareerPage() {
             title: 'Minha Patente na Marinha Celestial',
             text: `Acabei de alcançar a patente de ${currentRank.name} na Marinha Celestial! Venha navegar conosco no Imersão Bíblica IA. ⚓✨`
           });
-          return;
+          shared = true;
         }
       }
 
-      // Fallback: Download image
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = `patente-${currentRank.name.toLowerCase().replace(/\s+/g, '-')}.png`;
-      link.click();
-      showToast("Patente salva como imagem! Agora você pode compartilhar.", "success");
+      if (!shared) {
+        // Fallback: Download image
+        const link = document.createElement('a');
+        link.href = image;
+        link.download = `patente-${currentRank.name.toLowerCase().replace(/\s+/g, '-')}.png`;
+        link.click();
+        showToast("Patente salva como imagem! Agora você pode compartilhar.", "success");
+        shared = true; // Count download as intent to share
+      }
+
+      if (shared) {
+        await addPoints(30, 'share_promotion');
+        const metricsDocRef = doc(db, 'metrics', user.id);
+        await updateDoc(metricsDocRef, {
+          shares: increment(1)
+        });
+        showToast("Obrigado por compartilhar seu progresso! +30 pontos 🙌✨");
+      }
     } catch (error) {
       console.error("Error sharing rank:", error);
       showToast("Erro ao compartilhar patente.", "error");

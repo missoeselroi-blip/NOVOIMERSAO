@@ -54,7 +54,11 @@ import {
   Headphones,
   Maximize2,
   Minimize2,
-  Anchor
+  Anchor,
+  Bell, 
+  Quote, 
+  Send, 
+  History
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
@@ -71,7 +75,7 @@ import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
 
 import { ShareButtons } from '../components/ShareButtons';
 import { AudioSearchButton } from '../components/AudioSearchButton';
@@ -80,7 +84,6 @@ import { useShare } from '../utils/share';
 import { useNotebook } from '../contexts/NotebookContext';
 import { notificationService } from '../services/notificationService';
 import { NotificationSettingsModal } from '../components/NotificationSettingsModal';
-import { Bell, Quote, Send, History } from 'lucide-react';
 import { verses } from '../constants/verses';
 
 interface HomePageProps {
@@ -246,7 +249,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
-  const { user, toggleFavorite } = useAuth();
+  const { user, toggleFavorite, addPoints } = useAuth();
   const { share } = useShare();
   const { balance, consumeCredits } = useCredits();
   const { saveToNotebook } = useNotebook();
@@ -285,11 +288,26 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   };
 
   const handleShareApp = async () => {
+    if (!user) return;
     await share({
       title: 'Imersão Bíblica',
       text: 'Confira este aplicativo incrível para estudo bíblico e devocional!',
       url: 'https://imersaobiblicaia.com',
     });
+    // Award points for sharing
+    await addPoints(20, 'share_app');
+    
+    // Increment metrics.shares
+    try {
+      const metricsDocRef = doc(db, 'metrics', user.id);
+      await updateDoc(metricsDocRef, {
+        shares: increment(1)
+      });
+    } catch (e) {
+      console.error("Error updating share metrics:", e);
+    }
+    
+    showToast("Obrigado por compartilhar! +20 pontos 🙌✨");
   };
 
   const handleFetchCustomVerse = async () => {
@@ -321,12 +339,26 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   };
 
   const handleShareCustomVerse = async () => {
-    if (!customVerseResult) return;
+    if (!customVerseResult || !user) return;
     await share({
       title: 'Versículo do Dia',
       text: `"${customVerseResult.text}" — ${customVerseResult.reference} (${customVerseVersion})`,
       url: 'https://imersaobiblicaia.com',
     });
+    // Award points for sharing
+    await addPoints(5, 'share_verse');
+    
+    // Increment metrics.shares
+    try {
+      const metricsDocRef = doc(db, 'metrics', user.id);
+      await updateDoc(metricsDocRef, {
+        shares: increment(1)
+      });
+    } catch (e) {
+      console.error("Error updating share metrics:", e);
+    }
+
+    showToast("Versículo compartilhado! +5 pontos 🙌✨");
   };
 
   const getGreeting = () => {

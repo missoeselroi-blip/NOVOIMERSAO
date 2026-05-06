@@ -18,7 +18,9 @@ import {
   collection,
   query,
   where,
-  getDocs
+  getDocs,
+  serverTimestamp,
+  increment
 } from 'firebase/firestore';
 import { auth, db } from '../lib/firebase';
 
@@ -83,6 +85,7 @@ interface AuthContextType {
   updateMetrics: (updates: Partial<Metrics>) => Promise<void>;
   updateSectionTime: (sectionId: string, seconds: number) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
+  addPoints: (points: number, activity?: string) => Promise<void>;
   toggleFavorite: (favorite: Omit<Favorite, 'id'>) => Promise<void>;
   addStudy: (study: { title: string; content: string; verseReference?: string; bibleVersion?: string }) => Promise<void>;
   isInitialLoading: boolean;
@@ -208,7 +211,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 await updateDoc(userDocRef, { role: 'admin' });
               }
               
-              // Update lastActive
+              // Update lastActive and increment accesses (once per session)
+              // We use a sessionStorage flag to only increment once per tab/session
+              const sessionChecked = sessionStorage.getItem(`session_started_${firebaseUser.uid}`);
+              if (!sessionChecked) {
+                const metricsDocRef = doc(db, 'metrics', firebaseUser.uid);
+                const metricsDoc = await getDoc(metricsDocRef);
+                if (metricsDoc.exists()) {
+                  const mData = metricsDoc.data();
+                  await updateDoc(metricsDocRef, { 
+                    accesses: (mData.accesses || 0) + 1 
+                  });
+                  
+                  // Award daily access points (once per day)
+                  const lastAccessDate = mData.lastAccess ? (mData.lastAccess as any).toDate().toDateString() : '';
+                  const todayStr = new Date().toDateString();
+                  if (lastAccessDate !== todayStr) {
+                    await addPoints(10, 'daily_access');
+                  }
+                } else {
+                  await setDoc(metricsDocRef, {
+                    accesses: 1,
+                    totalTime: 0,
+                    forumParticipations: 0,
+                    shares: 0,
+                    gamesPlayed: 0,
+                    membershipMonths: 0,
+                    sectionTimes: {},
+                    lastAccess: serverTimestamp()
+                  });
+                  await addPoints(10, 'daily_access');
+                }
+                sessionStorage.setItem(`session_started_${firebaseUser.uid}`, 'true');
+              }
+
               await updateDoc(userDocRef, {
                 lastActive: new Date().toISOString()
               });
@@ -323,11 +359,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         let rankId = data.rankId || 1;
         const points = data.points || 0;
         
-        // Promotion logic: Marinheiro (1) to Cabo (2)
-        // Let's assume Cabo requires 500 points.
-        if (rankId === 1 && points >= 500) {
-          rankId = 2;
-          updateDoc(doc.ref, { rankId });
+        // Comprehensive Promotion Logic (Point-based for all 12 ranks)
+        // This ensures users are promoted as they earn points from any source
+        let newRankId = 1;
+        if (points >= 20000) newRankId = 12;
+        else if (points >= 15000) newRankId = 11;
+        else if (points >= 10000) newRankId = 10;
+        else if (points >= 7500) newRankId = 9;
+        else if (points >= 5000) newRankId = 8;
+        else if (points >= 4000) newRankId = 7;
+        else if (points >= 3000) newRankId = 6;
+        else if (points >= 2000) newRankId = 5;
+        else if (points >= 1500) newRankId = 4;
+        else if (points >= 1000) newRankId = 3;
+        else if (points >= 500) newRankId = 2;
+        
+        // Only update if it's a promotion (newRankId > current rankId)
+        if (newRankId > rankId) {
+          updateDoc(doc.ref, { 
+            rankId: newRankId,
+            updatedAt: new Date().toISOString()
+          });
+          rankId = newRankId;
         }
         
         setCareerProgress({ ...data, rankId });
@@ -545,6 +598,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const addPoints = async (points: number, activity?: string) => {
+    if (!user || !db) return;
+    const careerDocRef = doc(db, 'careerProgress', user.id);
+    try {
+      const careerDoc = await getDoc(careerDocRef);
+      if (careerDoc.exists()) {
+        await updateDoc(careerDocRef, { 
+          points: increment(points),
+          activityPoints: increment(points),
+          lastActivity: activity || 'general',
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        await setDoc(careerDocRef, {
+          userId: user.id,
+          name: user.name || 'Membro',
+          avatar: user.avatar || user.photoURL || '',
+          points: points,
+          activityPoints: points,
+          rankId: 1,
+          stars: 0,
+          authorized: false,
+          lastActivity: activity || 'general',
+          updatedAt: new Date().toISOString()
+        });
+      }
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `careerProgress/${user.id}`);
+    }
+  };
+
   const logout = async () => {
     if (!auth) return;
     try {
@@ -597,6 +681,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateMetrics, 
     updateSectionTime,
     updateUser,
+    addPoints,
     toggleFavorite,
     addStudy,
     isInitialLoading 
@@ -615,6 +700,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateMetrics,
     updateSectionTime,
     updateUser,
+    addPoints,
     toggleFavorite,
     addStudy,
     isInitialLoading

@@ -467,32 +467,34 @@ export default function TheologyPage({ onNavigate }: TheologyPageProps) {
         
         if (careerDoc.exists()) {
           const careerData = careerDoc.data();
-          const bibleRacePoints = careerData.bibleRacePoints || 0;
-          const evangelismPoints = careerData.evangelismPoints || 0;
-          const storytellingPoints = careerData.storytellingPoints || 0;
-          await updateDoc(careerDocRef, { 
-            theologyPoints: grandTotal,
-            points: grandTotal + bibleRacePoints + evangelismPoints + storytellingPoints,
-            name: user.name,
-            avatar: user.photoURL,
-            updatedAt: new Date().toISOString()
-          });
-        } else {
-          await setDoc(careerDocRef, {
-            userId: user.id,
-            name: user.name,
-            avatar: user.photoURL,
-            theologyPoints: grandTotal,
-            bibleRacePoints: 0,
-            evangelismPoints: 0,
-            storytellingPoints: 0,
-            points: grandTotal,
-            rankId: 1,
-            stars: 0,
-            authorized: false,
-            updatedAt: new Date().toISOString()
-          });
-        }
+          // Calculate theology points diff
+          const oldTheologyPoints = careerData.theologyPoints || 0;
+        const theologyDiff = grandTotal - oldTheologyPoints;
+
+        await updateDoc(careerDocRef, { 
+          theologyPoints: grandTotal,
+          points: increment(theologyDiff),
+          name: user.name,
+          avatar: user.photoURL,
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        await setDoc(careerDocRef, {
+          userId: user.id,
+          name: user.name,
+          avatar: user.photoURL,
+          theologyPoints: grandTotal,
+          activityPoints: 0,
+          bibleRacePoints: 0,
+          evangelismPoints: 0,
+          storytellingPoints: 0,
+          points: grandTotal,
+          rankId: 1,
+          stars: 0,
+          authorized: false,
+          updatedAt: new Date().toISOString()
+        });
+      }
       }
     } catch (error) {
       console.error("Error syncing points to career:", error);

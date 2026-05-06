@@ -60,7 +60,7 @@ interface BiblePageProps {
 }
 
 export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps) {
-  const { user, addStudy } = useAuth();
+  const { user, addStudy, addPoints } = useAuth();
   const { 
     annotations, 
     generalNotes, 
@@ -278,8 +278,15 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     if (!selectedBook) return;
     const verseId = `${selectedVersion}_${selectedBook}_${selectedChapter}_${v.verse}`;
     const bookName = books.find(b => b.pk === selectedBook)?.name || '';
+    const wasFavorite = annotations[verseId]?.isFavorite;
     await toggleFavorite(verseId, v.text, `${bookName} ${selectedChapter}:${v.verse}`);
-    showToast(annotations[verseId]?.isFavorite ? "Removido dos favoritos" : "Adicionado aos favoritos! ❤️", "info");
+    
+    if (!wasFavorite) {
+      await addPoints(5, 'favorite_verse');
+      showToast("Adicionado aos favoritos! ❤️ +5 pontos", "info");
+    } else {
+      showToast("Removido dos favoritos", "info");
+    }
   };
 
   const sendToPost = (v: BibleVerse) => {
@@ -439,6 +446,9 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
 
       const result = await geminiService.generateText(prompt, "Você é um pastor e teólogo bíblico altamente qualificado.");
       setCommentary(result || "Não foi possível gerar o comentário.");
+      if (result) {
+        await addPoints(10, 'ia_commentary');
+      }
     } catch (error) {
       console.error("Error generating commentary:", error);
       showToast("Erro ao gerar comentário com IA.", "error");
@@ -466,7 +476,8 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         verseReference: reference,
         bibleVersion: selectedVersion
       });
-      showToast("Estudo salvo com sucesso!", "success");
+      await addPoints(15, 'save_study');
+      showToast("Estudo salvo com sucesso! +15 pontos", "success");
     } catch (error) {
       console.error("Error saving study:", error);
       showToast("Erro ao salvar estudo.", "error");

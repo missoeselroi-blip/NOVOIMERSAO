@@ -68,7 +68,7 @@ import html2canvas from 'html2canvas';
 
 // Force rebuild
 const GamesPage: React.FC = () => {
-  const { user, loginWithGoogle } = useAuth();
+  const { user, loginWithGoogle, addPoints } = useAuth();
   const { showToast } = useToast();
   const navigate = useNavigate();
   
@@ -713,6 +713,7 @@ const GamesPage: React.FC = () => {
     }
 
     if (user) {
+      await addPoints(30, 'quiz_finish');
       const userRef = doc(db, 'quizLeaderboard', user.id);
       const userSnap = await getDoc(userRef);
       
@@ -764,6 +765,8 @@ const GamesPage: React.FC = () => {
   const handleOtherGameFinish = async (gameName: string, gameScore: number) => {
     setActiveGame(null);
     if (!user) return;
+    
+    await addPoints(15, `game_${gameName}`);
     
     const userRef = doc(db, 'quizLeaderboard', user.id);
     const userSnap = await getDoc(userRef);
