@@ -365,12 +365,11 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const getGameTitle = (score: number) => {
     if (score <= 100) return 'Novo Convertido';
     if (score <= 300) return 'Discípulo';
-    if (score <= 600) return 'Evangelista';
-    if (score <= 1000) return 'Missionário';
-    if (score <= 2000) return 'Mestre';
-    if (score <= 4000) return 'Teólogo';
-    if (score <= 7000) return 'Doutor';
-    return 'Lenda da Fé';
+    if (score <= 500) return 'Evangelista';
+    if (score <= 700) return 'Mestre';
+    if (score <= 1000) return 'Profeta';
+    if (score <= 1300) return 'Pastor';
+    return 'Apóstolo';
   };
 
   const getGreeting = () => {
