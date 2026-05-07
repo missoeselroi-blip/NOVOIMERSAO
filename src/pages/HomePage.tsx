@@ -981,7 +981,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
               <div className="space-y-3">
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Título</span>
-                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{getGameTitle(careerProgress.points || 0)}</span>
+                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{RANKS.find(r => r.id === careerProgress.rankId)?.name || 'Novo Convertido'}</span>
                 </div>
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Patente</span>
