@@ -108,6 +108,23 @@ export const LoginPage: React.FC = () => {
         </div>
 
         <div className="space-y-6">
+          <button 
+            onClick={handleGoogleLogin}
+            className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm mb-6"
+          >
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
+            Entrar com o Google
+          </button>
+
+          <div className="relative py-4">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-stone-100 dark:border-zinc-800"></div>
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-zinc-900 px-4 text-stone-400">Ou entre com</span>
+            </div>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegistering && (
               <div className="space-y-2">
@@ -173,23 +190,6 @@ export const LoginPage: React.FC = () => {
               {isRegistering ? 'Já tem uma conta? Entre aqui' : 'Não tem uma conta? Cadastre-se'}
             </button>
           </form>
-
-          <div className="relative py-4">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-stone-100 dark:border-zinc-800"></div>
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-white dark:bg-zinc-900 px-4 text-stone-400">Ou entre com</span>
-            </div>
-          </div>
-
-          <button 
-            onClick={handleGoogleLogin}
-            className="w-full py-4 px-6 bg-white dark:bg-zinc-800 border border-stone-200 dark:border-zinc-700 rounded-2xl flex items-center justify-center gap-3 hover:bg-stone-50 dark:hover:bg-zinc-700 transition-all font-bold shadow-sm"
-          >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5" referrerPolicy="no-referrer" />
-            Continuar com Google
-          </button>
 
           <div className="mt-6 text-center">
             <p className="text-[10px] text-stone-400 dark:text-zinc-500 uppercase tracking-widest mb-1">
