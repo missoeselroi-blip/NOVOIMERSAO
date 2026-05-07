@@ -827,7 +827,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   ];
 
   const commentaryVersions = [
-    'NVI', 'ARA', 'ACF', 'Nova Vida', 'ARC', 'KJV', 'Almeida Século 21', 'NTLH'
+    'NVI', 'ARA', 'ACF', 'Nova Vida', 'KJV', 'Almeida Século 21', 'NTLH'
   ];
 
   const handleSuggestCommentators = async () => {
@@ -2386,7 +2386,7 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
           prompt += `Se "${query || 'Geral'}" for uma referência bíblica (ex: João 3:16), forneça o texto bíblico exato da passagem na versão/tradução "${searchSource}". 
           Se for um tema (ex: Amor, Fé), forneça os principais versículos sobre este tema usando o texto exato da versão/tradução "${searchSource}".
           Se a versão for em outro idioma (como KJV em inglês ou Reina Valera em espanhol), forneça o texto no idioma original da versão e, em seguida, forneça uma tradução ou explicação em Português do Brasil.
-          Se a versão for em português (como ARC, NVI, NVT, ARA, ACF, Nova Vida, Bíblia Viva), forneça o texto exato em Português do Brasil e um breve comentário explicativo.`;
+          Se a versão for em português (como NVI, NVT, ARA, ACF, Nova Vida), forneça o texto exato em Português do Brasil e um breve comentário explicativo.`;
         } else if (searchSource === 'Todas as Bíblias') {
           prompt += `Forneça um comentário bíblico consolidado e profundo sobre a passagem ou tema: ${query || 'Geral'}. 
           Sua pesquisa deve se concentrar exclusivamente em Bíblias de Estudo (como Shedd, Thompson, Genebra, Pentecostal, NAA, NVT, etc.). 
@@ -5712,9 +5712,9 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                         <h4 className="text-xs font-bold text-stone-500 dark:text-stone-400 mb-3 uppercase tracking-wider">Selecione as Versões para Comparar</h4>
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 max-h-[200px] overflow-y-auto pr-2 custom-scrollbar">
                           {[
-                            'Almeida Revista e Corrigida (ARC)', 'Almeida Revista Atualizada (ARA)', 'Almeida Corrigida Fiel (ACF)', 'Almeida século 21',
+                            'Almeida Revista Atualizada (ARA)', 'Almeida Corrigida Fiel (ACF)', 'Almeida século 21',
                             'Nova Almeida Atualizada (NAA)', 'Nova Versão Transformadora (NVT)', 'Nova Versão Internacional (NVI)', 'Nova Vida',
-                            'Tradução Brasileira', 'Bíblia Viva', 'Bíblia de Jerusalém', 'Bíblia Pastoral', 'Bíblia da CNBB',
+                            'Bíblia de Jerusalém', 'Bíblia Pastoral', 'Bíblia da CNBB',
                             'Bíblia Judaica Completa', 'Bíblia Judaica E A Bíblia Cristã',
                             'King James Version (EN)', 'New King James Version (EN)', 'New International Version (EN)', 'English Standard Version (EN)',
                             'New American Standard Bible (EN)', 'New Living Translation (EN)', 'New Revised Standard Version (EN)',

@@ -78,7 +78,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   
   // State
   const [versions, setVersions] = useState<BibleVersion[]>([]);
-  const [selectedVersion, setSelectedVersion] = useState<string>(lastState?.version || 'ARA'); // Default to ARA (Portuguese)
+  const [selectedVersion, setSelectedVersion] = useState<string>(lastState?.version || 'NVIPT'); // Default to NVIPT (Portuguese)
   const [books, setBooks] = useState<BibleBook[]>([]);
   const [selectedBook, setSelectedBook] = useState<number>(lastState?.book || 1); // Default to Genesis
   const [selectedChapter, setSelectedChapter] = useState<number>(lastState?.chapter || 1);
@@ -129,7 +129,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         const v = await bibleService.getVersions();
         // Filter for requested versions
         const requestedVersions = [
-          'ARA', 'NTLH', 'NVIPT', 'ARC', 'BV', 'KJA', 'ACF'
+          'ARA', 'NAA', 'NTLH', 'NVIPT', 'KJA', 'ACF'
         ];
         const filteredVersions = v.filter(ver => requestedVersions.includes(ver.short_name.toUpperCase()));
         setVersions(filteredVersions.length > 0 ? filteredVersions : v);

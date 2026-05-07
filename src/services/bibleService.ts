@@ -92,11 +92,10 @@ export const bibleService = {
 
           if (apiVersions.length > 0) {
             // Ensure ARC and BV are in the list if it's a Portuguese list
-            const requestedShortNames = ['ARA', 'ARC', 'NVIPT', 'NTLH', 'BV', 'KJA', 'ACF'];
+            const requestedShortNames = ['ARA', 'NAA', 'NVIPT', 'NTLH', 'KJA', 'ACF'];
             const fallbackPortuguese = [
-              { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" },
-              { id: 6, name: "Bíblia Viva", short_name: "BV", language: "Português" },
-              { id: 2, name: "Nova Versão Internacional (PT)", short_name: "NVIPT", language: "Português" }
+              { id: 10, name: "Nova Almeida Atualizada", short_name: "NAA", language: "Português" },
+              { id: 2, name: "Nova Versão Internacional", short_name: "NVIPT", language: "Português" }
             ];
 
             // If some of our favorites are missing, inject them
@@ -116,12 +115,10 @@ export const bibleService = {
       // Fallback to common versions if API fails entirely
       return [
         { id: 1, name: "Almeida Revista e Atualizada", short_name: "ARA", language: "Português" },
-        { id: 10, name: "Almeida Revista e Corrigida", short_name: "ARC", language: "Português" },
-        { id: 2, name: "Nova Versão Internacional (PT)", short_name: "NVIPT", language: "Português" },
+        { id: 10, name: "Nova Almeida Atualizada", short_name: "NAA", language: "Português" },
+        { id: 2, name: "Nova Versão Internacional", short_name: "NVIPT", language: "Português" },
         { id: 5, name: "Nova Tradução na Linguagem de Hoje", short_name: "NTLH", language: "Português" },
-        { id: 6, name: "Bíblia Viva", short_name: "BV", language: "Português" },
         { id: 14, name: "King James Atualizada", short_name: "KJA", language: "Português" },
-        { id: 11, name: "Almeida Corrigida Fiel", short_name: "ACF", language: "Português" },
         { id: 8, name: "King James Version (Inglês)", short_name: "KJV", language: "Inglês" }
       ];
     } catch (error) {

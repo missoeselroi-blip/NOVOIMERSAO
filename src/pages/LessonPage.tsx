@@ -147,7 +147,7 @@ Conteúdo: ${lesson.content}`;
   const { user } = useAuth();
   const autorAudioRef = useRef<HTMLAudioElement | null>(null);
 
-  const bibleVersions = ["NVI", "ACF", "ARA", "KJV", "NTLH"];
+  const bibleVersions = ["NVI", "ACF", "NAA", "ARA", "KJV", "NTLH"];
 
   const leaderGuideContent = selectedLesson?.leaderGuide || "";
 

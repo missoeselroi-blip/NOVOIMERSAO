@@ -150,11 +150,21 @@ function AppContent() {
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
   const [pendingTab, setPendingTab] = useState<string | null>(null);
 
+  const [isFirebaseUnavailable, setIsFirebaseUnavailable] = useState(isProjectSuspended.value);
+
   useEffect(() => {
-    if (isProjectSuspended.value) {
-      showToast("Conexão com o servidor restabelecida!", "success");
-    }
-  }, [isProjectSuspended.value, showToast]);
+    // Inscreve-se para mudanças no status do Firebase
+    const unsubscribe = isProjectSuspended.subscribe((isSuspended) => {
+      setIsFirebaseUnavailable(isSuspended);
+      if (isSuspended) {
+        showToast("O servidor do Banco de Dados está indisponível no momento. O App funcionará em modo limitado.", "error");
+      } else {
+        showToast("Conexão com o servidor restabelecida!", "success");
+      }
+    });
+
+    return unsubscribe;
+  }, [showToast]);
 
   useEffect(() => {
     if (user && pendingTab) {

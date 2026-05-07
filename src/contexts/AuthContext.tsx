@@ -22,7 +22,7 @@ import {
   serverTimestamp,
   increment
 } from 'firebase/firestore';
-import { auth, db } from '../lib/firebase';
+import { auth, db, isProjectSuspended } from '../lib/firebase';
 
 interface Favorite {
   verse: string;
@@ -150,9 +150,15 @@ const handleFirestoreError = (error: unknown, operationType: OperationType, path
     throw new Error(JSON.stringify(errInfo));
   }
   
-  // For offline errors, we don't want to crash the app
-  if (errorMessage.includes('client is offline') || errorMessage.includes('offline')) {
-    console.warn("Firestore is operating in offline mode.");
+  // For offline errors or unavailable errors, we don't want to crash the app
+  if (errorMessage.includes('client is offline') || 
+      errorMessage.includes('offline') || 
+      errorMessage.includes('unavailable') ||
+      errorMessage.includes('Could not reach Cloud Firestore backend')) {
+    console.warn("Firestore is operating in offline mode or is unavailable.");
+    if (typeof isProjectSuspended !== 'undefined' && !isProjectSuspended.value) {
+      isProjectSuspended.value = true;
+    }
     return;
   }
   

@@ -23,8 +23,26 @@ export const db = initializeFirestore(app, {
   experimentalForceLongPolling: true,
 }, (firebaseConfig as any).firestoreDatabaseId || '(default)');
 
-// Variável global para rastrear se o projeto parece estar suspenso
-export const isProjectSuspended = { value: false };
+// Variável para rastrear se o projeto parece estar indisponível
+let suspendedValue = false;
+const statusListeners: ((val: boolean) => void)[] = [];
+
+export const isProjectSuspended = {
+  get value() { return suspendedValue; },
+  set value(val: boolean) {
+    if (suspendedValue !== val) {
+      suspendedValue = val;
+      statusListeners.forEach(l => l(val));
+    }
+  },
+  subscribe: (listener: (val: boolean) => void) => {
+    statusListeners.push(listener);
+    return () => {
+      const index = statusListeners.indexOf(listener);
+      if (index > -1) statusListeners.splice(index, 1);
+    };
+  }
+};
 
 // Teste de conexão detalhado
 async function testConnection() {
@@ -33,11 +51,11 @@ async function testConnection() {
     // Forçamos uma requisição direta ao servidor
     await getDocFromServer(doc(db, '_connection_test_', 'test'));
     console.log('✅ Firestore conectado com sucesso!');
-    isProjectSuspended.value = false; // Reset the flag if successful
+    isProjectSuspended.value = false;
   } catch (error: any) {
     if (error.code === 'permission-denied' || error.code === 'not-found') {
       console.log('✅ Firestore conectado com sucesso! (O servidor respondeu).');
-      isProjectSuspended.value = false; // Server responded, so it's not suspended
+      isProjectSuspended.value = false;
     } else {
       console.group('❌ Detalhes do Erro de Conexão:');
       console.error('Código:', error.code);
@@ -45,7 +63,7 @@ async function testConnection() {
       console.groupEnd();
       
       if (error.message?.includes('offline') || error.code === 'unavailable' || error.message?.includes('suspended')) {
-        console.warn('⚠️ O projeto Firebase parece estar suspenso ou indisponível: ' + firebaseConfig.projectId);
+        console.warn('⚠️ O projeto Firebase parece estar indisponível ou em modo offline: ' + firebaseConfig.projectId);
         isProjectSuspended.value = true;
       }
     }
