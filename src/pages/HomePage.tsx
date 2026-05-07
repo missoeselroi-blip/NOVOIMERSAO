@@ -75,7 +75,7 @@ import { SaveToNotebookModal } from '../components/SaveToNotebookModal';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../lib/firebase';
-import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
+import { collection, addDoc, doc, updateDoc, increment, onSnapshot } from 'firebase/firestore';
 import { RANKS } from '../types/forum';
 
 import { ShareButtons } from '../components/ShareButtons';
@@ -251,6 +251,20 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
   const { user, toggleFavorite, addPoints, careerProgress } = useAuth();
+  const [userQuizStats, setUserQuizStats] = useState<any>(null);
+  
+  useEffect(() => {
+    if (!user) return;
+    const q = doc(db, 'quizLeaderboard', user.id);
+    const unsubscribe = onSnapshot(q, (docSnap) => {
+      if (docSnap.exists()) {
+        setUserQuizStats(docSnap.data());
+      }
+    }, (error) => {
+      console.error("Error fetching quiz stats:", error);
+    });
+    return () => unsubscribe();
+  }, [user]);
   const { share } = useShare();
   const { balance, consumeCredits } = useCredits();
   const { saveToNotebook } = useNotebook();
@@ -980,7 +994,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
               <div className="space-y-3">
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Título</span>
-                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{getGameTitle(careerProgress.points || 0)}</span>
+                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{getGameTitle(userQuizStats?.totalScore || 0)}</span>
                 </div>
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Patente</span>
