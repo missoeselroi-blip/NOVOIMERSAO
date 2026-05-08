@@ -165,11 +165,23 @@ const GamesPage: React.FC = () => {
         if (userEntry) {
           setUserRank({ ...userEntry, rank: entries.indexOf(userEntry) + 1 });
           setCredits((userEntry as any).credits ?? 50);
-          if ((userEntry as any).totalScore === undefined || userEntry.score > 100) {
-            const cappedScore = Math.min(userEntry.score || 0, 100);
+          if ((userEntry as any).totalScore === undefined) {
             updateDoc(doc(db, 'quizLeaderboard', user.id), {
-              score: cappedScore,
-              totalScore: cappedScore + (userEntry.whoAmIScore || 0) + (userEntry.timelineScore || 0) + (userEntry.crosswordScore || 0) + (userEntry.hangmanScore || 0) + ((userEntry as any).wordSearchScore || 0) + ((userEntry as any).cryptogramScore || 0) + ((userEntry as any).anagramScore || 0)
+              totalScore: (userEntry.score || 0) + 
+                (userEntry.whoAmIScore || 0) + 
+                (userEntry.timelineScore || 0) + 
+                (userEntry.crosswordScore || 0) + 
+                (userEntry.hangmanScore || 0) + 
+                ((userEntry as any).wordSearchScore || 0) + 
+                ((userEntry as any).cryptogramScore || 0) + 
+                ((userEntry as any).anagramScore || 0) + 
+                ((userEntry as any).riddlesScore || 0) + 
+                ((userEntry as any).panoramaScore || 0) +
+                ((userEntry as any).sonOfManScore || 0) +
+                ((userEntry as any).davidScore || 0) +
+                ((userEntry as any).abrahamScore || 0) +
+                ((userEntry as any).mosesScore || 0) +
+                ((userEntry as any).paulScore || 0)
             });
           }
         } else {
@@ -179,11 +191,23 @@ const GamesPage: React.FC = () => {
               const data = docSnap.data() as any;
               setUserRank(data as LeaderboardEntry);
               setCredits(data.credits ?? 50);
-              if (data.totalScore === undefined || data.score > 100) {
-                const cappedScore = Math.min(data.score || 0, 100);
+              if (data.totalScore === undefined) {
                 updateDoc(doc(db, 'quizLeaderboard', user.id), {
-                  score: cappedScore,
-                  totalScore: cappedScore + (data.whoAmIScore || 0) + (data.timelineScore || 0) + (data.crosswordScore || 0) + (data.hangmanScore || 0) + (data.wordSearchScore || 0) + (data.cryptogramScore || 0) + (data.anagramScore || 0)
+                  totalScore: (data.score || 0) + 
+                    (data.whoAmIScore || 0) + 
+                    (data.timelineScore || 0) + 
+                    (data.crosswordScore || 0) + 
+                    (data.hangmanScore || 0) + 
+                    (data.wordSearchScore || 0) + 
+                    (data.cryptogramScore || 0) + 
+                    (data.anagramScore || 0) + 
+                    (data.riddlesScore || 0) + 
+                    (data.panoramaScore || 0) +
+                    (data.sonOfManScore || 0) +
+                    (data.davidScore || 0) +
+                    (data.abrahamScore || 0) +
+                    (data.mosesScore || 0) +
+                    (data.paulScore || 0)
                 });
               }
             }
@@ -356,12 +380,30 @@ const GamesPage: React.FC = () => {
               if (userSnap.exists()) {
                 const data = userSnap.data() as any;
                 const battlesWon = data.battlesWon || 0;
-                const currentScore = Math.min(data.score || 0, 100);
+                const currentScore = data.score || 0;
                 const panoramaScore = data.panoramaScore || 0;
+                const whoAmIScore = data.whoAmIScore || 0;
+                const timelineScore = data.timelineScore || 0;
+                const crosswordScore = data.crosswordScore || 0;
+                const hangmanScore = data.hangmanScore || 0;
+                const wordSearchScore = data.wordSearchScore || 0;
+                const cryptogramScore = data.cryptogramScore || 0;
+                const anagramScore = data.anagramScore || 0;
+                const riddlesScore = data.riddlesScore || 0;
+                const sonOfManScore = data.sonOfManScore || 0;
+                const davidScore = data.davidScore || 0;
+                const abrahamScore = data.abrahamScore || 0;
+                const mosesScore = data.mosesScore || 0;
+                const paulScore = data.paulScore || 0;
+
+                const newTotalScore = currentScore + battlesWon + 1 + panoramaScore + 
+                  whoAmIScore + timelineScore + crosswordScore + hangmanScore + 
+                  wordSearchScore + cryptogramScore + anagramScore + riddlesScore +
+                  sonOfManScore + davidScore + abrahamScore + mosesScore + paulScore;
+
                 updateDoc(userRef, { 
-                  score: currentScore,
                   battlesWon: battlesWon + 1,
-                  totalScore: currentScore + battlesWon + 1 + panoramaScore
+                  totalScore: newTotalScore
                 });
               }
             });
@@ -729,10 +771,21 @@ const GamesPage: React.FC = () => {
       let anagramScore = 0;
       let riddlesScore = 0;
 
+      let sonOfManScore = 0;
+      let davidScore = 0;
+      let abrahamScore = 0;
+      let mosesScore = 0;
+      let paulScore = 0;
+
       if (userSnap.exists()) {
         const data = userSnap.data() as any;
         previousScore = data.score || 0;
         panoramaScore = data.panoramaScore || 0;
+        sonOfManScore = data.sonOfManScore || 0;
+        davidScore = data.davidScore || 0;
+        abrahamScore = data.abrahamScore || 0;
+        mosesScore = data.mosesScore || 0;
+        paulScore = data.paulScore || 0;
         whoAmIScore = data.whoAmIScore || 0;
         timelineScore = data.timelineScore || 0;
         crosswordScore = data.crosswordScore || 0;
@@ -748,7 +801,7 @@ const GamesPage: React.FC = () => {
         if (finalScore > 0) trend = 'up';
       }
 
-      const newTotalScore = finalScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore;
+      const newTotalScore = finalScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore + panoramaScore + sonOfManScore + davidScore + abrahamScore + mosesScore + paulScore;
 
       await setDoc(userRef, {
         name: user.name || 'Usuário',
@@ -781,6 +834,11 @@ const GamesPage: React.FC = () => {
     let cryptogramScore = 0;
     let anagramScore = 0;
     let riddlesScore = 0;
+    let sonOfManScore = 0;
+    let davidScore = 0;
+    let abrahamScore = 0;
+    let mosesScore = 0;
+    let paulScore = 0;
     let currentCredits = credits;
 
     if (userSnap.exists()) {
@@ -795,6 +853,11 @@ const GamesPage: React.FC = () => {
       cryptogramScore = (data as any).cryptogramScore || 0;
       anagramScore = (data as any).anagramScore || 0;
       riddlesScore = (data as any).riddlesScore || 0;
+      sonOfManScore = (data as any).sonOfManScore || 0;
+      davidScore = (data as any).davidScore || 0;
+      abrahamScore = (data as any).abrahamScore || 0;
+      mosesScore = (data as any).mosesScore || 0;
+      paulScore = (data as any).paulScore || 0;
       currentCredits = (data as any).credits ?? 50;
     }
 
@@ -808,7 +871,7 @@ const GamesPage: React.FC = () => {
     if (gameName === 'anagram') anagramScore = gameScore;
     if (gameName === 'riddles') riddlesScore = gameScore;
 
-    const newTotalScore = previousScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore;
+    const newTotalScore = previousScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore + panoramaScore + sonOfManScore + davidScore + abrahamScore + mosesScore + paulScore;
 
     await setDoc(userRef, {
       name: user.name || 'Usuário',
@@ -1130,7 +1193,11 @@ const GamesPage: React.FC = () => {
                         (entry.whoAmIScore || 0) + 
                         (entry.timelineScore || 0) + 
                         (entry.crosswordScore || 0) + 
-                        (entry.hangmanScore || 0)
+                        (entry.hangmanScore || 0) +
+                        ((entry as any).wordSearchScore || 0) +
+                        ((entry as any).cryptogramScore || 0) +
+                        ((entry as any).anagramScore || 0) +
+                        ((entry as any).riddlesScore || 0)
                       );
                       return (
                         <tr 
@@ -1955,7 +2022,21 @@ const GamesPage: React.FC = () => {
                     </thead>
                     <tbody>
                       {leaderboard.map((entry, index) => {
-                        const otherGamesScore = (entry.whoAmIScore || 0) + (entry.timelineScore || 0) + (entry.crosswordScore || 0) + (entry.hangmanScore || 0) + (entry.wordSearchScore || 0) + (entry.cryptogramScore || 0) + (entry.anagramScore || 0) + (entry.riddlesScore || 0) + (entry.sonOfManScore || 0) + (entry.davidScore || 0) + (entry.abrahamScore || 0) + (entry.mosesScore || 0) + (entry.paulScore || 0);
+                        const otherGamesScore = (entry.whoAmIScore || 0) + 
+                          (entry.timelineScore || 0) + 
+                          (entry.crosswordScore || 0) + 
+                          (entry.hangmanScore || 0) + 
+                          (entry.wordSearchScore || 0) + 
+                          (entry.cryptogramScore || 0) + 
+                          (entry.anagramScore || 0) + 
+                          (entry.riddlesScore || 0) + 
+                          (entry.sonOfManScore || 0) + 
+                          (entry.davidScore || 0) + 
+                          (entry.abrahamScore || 0) + 
+                          (entry.mosesScore || 0) + 
+                          (entry.paulScore || 0) +
+                          (entry.panoramaScore || 0) +
+                          (entry.battlesWon || 0);
                         return (
                         <tr 
                           key={entry.userId}

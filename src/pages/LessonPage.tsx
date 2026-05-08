@@ -148,6 +148,8 @@ Conteúdo: ${lesson.content}`;
   const autorAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const bibleVersions = ["NVI", "ACF", "NAA", "ARA", "KJV", "NTLH"];
+  const handleCloseBibleModal = () => setBibleModal(prev => ({ ...prev, isOpen: false }));
+  const closeModal = () => setBibleModal(prev => ({ ...prev, isOpen: false }));
 
   const leaderGuideContent = selectedLesson?.leaderGuide || "";
 
@@ -169,7 +171,7 @@ Conteúdo: ${lesson.content}`;
   };
 
   const handleNavigateBible = async (direction: 'prev' | 'next') => {
-    // Simple logic to navigate chapters if possible, otherwise just a placeholder
+    const handleCloseBibleModal = () => setBibleModal(prev => ({ ...prev, isOpen: false }));
     // For a real app, we'd parse the reference properly
     showToast("Navegação de capítulos em desenvolvimento...", "info");
   };
@@ -177,13 +179,13 @@ Conteúdo: ${lesson.content}`;
   const processedContent = React.useMemo(() => {
     if (!selectedLesson || !selectedLesson.content) return "";
     // Regex to match biblical references like "João 3:16", "1 Coríntios 13:1-8", "TG 4:8", etc.
-    const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
+    const bibleRegex = /((?:(?:\d\s)?[A-ZÀ-Ü][A-ZÀ-Üa-zà-ÿ]{1,}))\s*\d+:\d+(?:-\d+)?/g;
     return selectedLesson.content.replace(bibleRegex, (match) => `**${match}**`);
   }, [selectedLesson]);
 
   const processedLeaderGuide = React.useMemo(() => {
     if (!selectedLesson || !selectedLesson.leaderGuide) return "";
-    const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
+    const bibleRegex = /((?:(?:\d\s)?[A-ZÀ-Ü][A-ZÀ-Üa-zà-ÿ]{1,}))\s*\d+:\d+(?:-\d+)?/g;
     return selectedLesson.leaderGuide.replace(bibleRegex, (match) => `**${match}**`);
   }, [selectedLesson]);
 
@@ -794,9 +796,11 @@ O nome do usuário é ${user?.name || 'amigo'}.
                         rehypePlugins={[rehypeRaw]}
                         components={{
                           strong: ({node, ...props}) => {
-                            const content = String(props.children);
+                            const content = Array.isArray(props.children) 
+                              ? props.children.map(c => typeof c === 'string' ? c : (typeof c === 'object' && 'props' in c ? (c as any).props.children : '')).join('') 
+                              : String(props.children);
                             // Improved regex for biblical references including abbreviations
-                            const bibleRegex = /((?:[123]\s)?[A-Z][A-Za-zà-ÿ]{1,})\s\d+:\d+(?:-\d+)?/g;
+                            const bibleRegex = /((?:(?:\d\s)?[A-ZÀ-Ü][A-ZÀ-Üa-zà-ÿ]{1,}))\s*\d+:\d+(?:-\d+)?/g;
                             if (content.match(bibleRegex)) {
                               return (
                                 <button 
@@ -1019,18 +1023,18 @@ O nome do usuário é ${user?.name || 'amigo'}.
               animate={{ scale: 1, y: 0 }}
               className="bg-white dark:bg-zinc-900 w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[70vh]"
             >
-              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/10">
-                <div className="flex items-center gap-3">
-                  <Book className="text-emerald-600" size={24} />
-                  <div>
-                    <h3 className="text-xl font-black tracking-tight">{bibleModal.reference}</h3>
+              <div className="p-6 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/10 gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Book className="text-emerald-600 flex-shrink-0" size={24} />
+                  <div className="truncate">
+                    <h3 className="text-xl font-black tracking-tight truncate">{bibleModal.reference}</h3>
                     <div className="flex items-center gap-2 mt-1">
                       {bibleVersions.map(v => (
                         <button
                           key={v}
                           onClick={() => fetchBibleText(bibleModal.reference, v)}
                           className={cn(
-                            "px-2 py-0.5 rounded text-[10px] font-bold transition-all",
+                            "px-2 py-0.5 rounded text-[10px] font-bold transition-all flex-shrink-0",
                             bibleModal.version === v 
                               ? "bg-emerald-600 text-white" 
                               : "bg-stone-200 dark:bg-zinc-800 text-stone-500"
@@ -1042,7 +1046,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                     </div>
                   </div>
                 </div>
-                <button onClick={() => setBibleModal(prev => ({ ...prev, isOpen: false }))} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full transition-colors">
+                <button onClick={closeModal} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full transition-colors flex-shrink-0">
                   <X size={20} />
                 </button>
               </div>
@@ -1091,24 +1095,25 @@ O nome do usuário é ${user?.name || 'amigo'}.
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[130] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-[130] bg-white dark:bg-zinc-950 overflow-hidden"
           >
             <motion.div
-              initial={{ scale: 0.9, y: 20 }}
-              animate={{ scale: 1, y: 0 }}
-              className="bg-white dark:bg-zinc-900 w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden flex flex-col max-h-[90vh]"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full h-full flex flex-col"
             >
               <div className="p-4 md:p-8 border-b border-stone-100 dark:border-zinc-800 flex items-center justify-between bg-emerald-50/50 dark:bg-emerald-900/10">
                 <div className="flex items-center gap-4">
                   <button 
                     onClick={() => setShowLeaderGuide(false)}
-                    className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full transition-colors"
+                    className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-full transition-colors flex items-center gap-2"
                   >
                     <ChevronLeft size={24} />
+                    <span className="font-bold text-sm">Voltar</span>
                   </button>
                   <div>
                     <h3 className="text-xl md:text-2xl font-black tracking-tight">GUIA DO LÍDER</h3>
-                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">Lição 12 – ÂNIMO DOBRE PARTE I</p>
+                    <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">{selectedLesson?.title}</p>
                   </div>
                 </div>
 

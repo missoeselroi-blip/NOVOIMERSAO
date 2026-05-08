@@ -376,6 +376,27 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     showToast("Versículo compartilhado! +5 pontos 🙌✨");
   };
 
+  const calculateTotalScore = (stats: any) => {
+    if (!stats) return 0;
+    // Sum everything exhaustively to avoid inconsistencies
+    return (stats.score || 0) +
+      (stats.whoAmIScore || 0) +
+      (stats.timelineScore || 0) +
+      (stats.crosswordScore || 0) +
+      (stats.hangmanScore || 0) +
+      (stats.wordSearchScore || 0) +
+      (stats.cryptogramScore || 0) +
+      (stats.anagramScore || 0) +
+      (stats.riddlesScore || 0) +
+      (stats.panoramaScore || 0) +
+      (stats.sonOfManScore || 0) +
+      (stats.davidScore || 0) +
+      (stats.abrahamScore || 0) +
+      (stats.mosesScore || 0) +
+      (stats.paulScore || 0) +
+      (stats.battlesWon || 0);
+  };
+
   const getGameTitle = (score: number) => {
     if (score <= 100) return 'Novo Convertido';
     if (score <= 300) return 'Discípulo';
@@ -903,7 +924,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             transition={{ delay: 0.2 }}
             className="space-y-3"
           >
-            <h1 className="text-4xl md:text-7xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
+            <h1 className="text-2xl md:text-4xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
               Início
             </h1>
             <div className="h-1.5 w-24 bg-emerald-500 mx-auto rounded-full shadow-lg shadow-emerald-500/50" />
@@ -994,7 +1015,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
               <div className="space-y-3">
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Título</span>
-                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{getGameTitle(userQuizStats?.totalScore || 0)}</span>
+                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{getGameTitle(calculateTotalScore(userQuizStats))}</span>
                 </div>
                 <div className="flex items-center justify-center md:justify-start gap-3">
                   <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Patente</span>
