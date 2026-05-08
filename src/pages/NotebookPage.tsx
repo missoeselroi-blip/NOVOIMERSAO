@@ -29,6 +29,7 @@ import { cn } from '../types';
 import { useToast } from '../components/Toast';
 import { AudioSearchButton } from '../components/AudioSearchButton';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
+import { TextToSpeechButton } from '../components/TextToSpeechButton';
 import { geminiService } from '../services/geminiService';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import jsPDF from 'jspdf';
@@ -792,6 +793,10 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                     >
                       <Printer size={20} />
                     </button>
+                    <TextToSpeechButton 
+                      text={note.content} 
+                      className="text-stone-600 hover:bg-stone-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+                    />
                     <button 
                       onClick={() => handleShare(note)}
                       className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-xl transition-colors"
