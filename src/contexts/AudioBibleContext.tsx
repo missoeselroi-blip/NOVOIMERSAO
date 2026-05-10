@@ -18,7 +18,7 @@ const BOOK_SLUGS: { [key: number]: string } = {
   5: "Deuteronomio",
   6: "Josue",
   7: "Juizes",
-  8: "Ruth", // Updated from Rute to Ruth
+  8: "Rute", // Updated from Rute to Ruth
   9: "1Samuel",
   10: "2Samuel",
   11: "1Reis",
@@ -87,7 +87,7 @@ const VT_BOOKS = [
   { pk: 5, name: "Deuteronômio", chapters: 34 },
   { pk: 6, name: "Josué", chapters: 24 },
   { pk: 7, name: "Juízes", chapters: 21 },
-  { pk: 8, name: "Ruth", chapters: 4 },
+  { pk: 8, name: "Rute", chapters: 4 },
   { pk: 9, name: "1 Samuel", chapters: 31 },
   { pk: 10, name: "2 Samuel", chapters: 24 },
   { pk: 11, name: "1 Reis", chapters: 22 },
