@@ -28,7 +28,7 @@ const BOOK_SLUGS: { [key: number]: string } = {
   15: "Esdras",
   16: "Neemias",
   17: "Ester",
-  18: "Job", // Updated from Jo to Job
+  18: "Jó", // Updated from Jo to Job
   19: "Salmos",
   20: "Proverbios",
   21: "Eclesiastes",
@@ -97,7 +97,7 @@ const VT_BOOKS = [
   { pk: 15, name: "Esdras", chapters: 10 },
   { pk: 16, name: "Neemias", chapters: 13 },
   { pk: 17, name: "Ester", chapters: 10 },
-  { pk: 18, name: "Job", chapters: 42 },
+  { pk: 18, name: "Jó", chapters: 42 },
   { pk: 19, name: "Salmos", chapters: 150 },
   { pk: 20, name: "Provérbios", chapters: 31 },
   { pk: 21, name: "Eclesiastes", chapters: 12 },
