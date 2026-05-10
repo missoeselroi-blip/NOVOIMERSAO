@@ -27,7 +27,8 @@ import {
   Square,
   UserCheck,
   Loader2,
-  Headphones
+  Headphones,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -702,6 +703,14 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   >
                     <FileText className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Resumo</span>
+                  </button>
+                  <button 
+                    onClick={() => navigate('/quiz-celula', { state: { lesson: selectedLesson } })} 
+                    className="p-1.5 md:p-2 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" 
+                    title="Quiz Célula"
+                  >
+                    <Zap className="w-4 h-4 md:w-[18px] md:h-[18px]" />
+                    <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Quiz</span>
                   </button>
                 </div>
               </div>

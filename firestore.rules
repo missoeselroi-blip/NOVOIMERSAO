@@ -586,6 +586,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    match /quizCellLeaderboard/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isOwner(userId) && isValidQuizLeaderboard(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
     match /studies/{studyId} {
       allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create: if isAuthenticated() && isValidStudy(request.resource.data);

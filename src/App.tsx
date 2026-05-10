@@ -107,6 +107,7 @@ const StoryGame = lazyWithRetry(() => import('./pages/StoryGame'));
 const NewsPage = lazyWithRetry(() => import('./pages/NewsPage'));
 const TruthDetectorPage = lazyWithRetry(() => import('./pages/TruthDetectorPage'));
 const SpokenBiblePage = lazyWithRetry(() => import('./pages/SpokenBiblePage'));
+const QuizPage = lazyWithRetry(() => import('./pages/QuizPage'));
 
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
@@ -280,6 +281,7 @@ function AppContent() {
     { id: 'news', label: 'Sinais', subtitle: 'Sinais da Vinda de Cristo', icon: <Newspaper size={20} />, component: <NewsPage /> },
     { id: 'truth-detector', label: 'Fato ou Fake', subtitle: 'Detector de Verdade', icon: <ShieldCheck size={20} />, component: <TruthDetectorPage /> },
     { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage /> },
+    { id: 'quiz-celula', label: 'Quiz Célula', subtitle: 'Desafio da Lição', icon: <Zap size={20} />, component: <QuizPage />, hidden: true },
     { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
     { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
