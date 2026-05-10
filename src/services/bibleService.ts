@@ -167,7 +167,7 @@ export const bibleService = {
     if (normalizedName.includes("esdras")) return "Esdras";
     if (normalizedName.includes("neemias")) return "Neemias";
     if (normalizedName.includes("ester")) return "Ester";
-    if (normalizedName.includes("jo")) return "Jó";
+    if (normalizedName === "jo" || normalizedName === "o livro de jo") return "Jó";
     if (normalizedName.includes("salmos")) return "Salmos";
     if (normalizedName.includes("proverbios")) return "Provérbios";
     if (normalizedName.includes("eclesiastes")) return "Eclesiastes";
@@ -192,7 +192,7 @@ export const bibleService = {
     if (normalizedName.includes("mateus")) return "Mateus";
     if (normalizedName.includes("marcos")) return "Marcos";
     if (normalizedName.includes("lucas")) return "Lucas";
-    if (normalizedName.includes("joao") && !normalizedName.includes("epistola")) return "João";
+    if (normalizedName.includes("joao") && !normalizedName.includes("epistola") && !normalizedName.includes("apocalipse")) return "João";
     if (normalizedName.includes("atos")) return "Atos";
     if (normalizedName.includes("romanos")) return "Romanos";
     if (normalizedName.includes("1 corintios") || normalizedName.includes("primeira epistola") && normalizedName.includes("corintios")) return "1 Coríntios";
