@@ -367,7 +367,7 @@ function AppContent() {
               className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
             />
-            <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Início</span>
+            <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Imersão Bíblica IA</span>
           </div>
 
           {/* Desktop Nav */}

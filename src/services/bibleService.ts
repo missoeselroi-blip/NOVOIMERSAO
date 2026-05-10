@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const fetchWithFallback = async (path: string) => {
+const fetchWithFallback = async (path: string, retries = 3): Promise<any> => {
   // Clean path to avoid double slashes
   const cleanPath = path.startsWith('/') ? path.substring(1) : path;
   
@@ -19,7 +19,12 @@ const fetchWithFallback = async (path: string) => {
         continue;
       }
       return response;
-    } catch (e) {
+    } catch (e: any) {
+      if (e.response?.status === 429 && retries > 0) {
+        console.warn(`[BibleService] Endpoint ${url} hit 429, retrying in ${2000 * (4 - retries)}ms...`);
+        await new Promise(r => setTimeout(r, 2000 * (4 - retries)));
+        return fetchWithFallback(path, retries - 1);
+      }
       console.warn(`[BibleService] Endpoint ${url} failed`);
       continue;
     }
@@ -55,6 +60,9 @@ export interface SearchResult {
 }
 
 let versionsCache: BibleVersion[] | null = null;
+let booksCache: { [version: string]: BibleBook[] } = {};
+let chaptersCache: { [key: string]: BibleVerse[] } = {};
+let searchCache: { [key: string]: SearchResult[] } = {};
 
 export const bibleService = {
   getVersions: async (): Promise<BibleVersion[]> => {
@@ -357,14 +365,17 @@ export const bibleService = {
   },
 
   getBooks: async (version: string): Promise<BibleBook[]> => {
+    if (booksCache[version]) return booksCache[version];
     try {
       const response = await fetchWithFallback(`get-books/${version}/`);
       if (Array.isArray(response.data)) {
-        return response.data.map((b: any, index: number) => ({
+        const books = response.data.map((b: any, index: number) => ({
           pk: b.pk || b.id || (index + 1),
           name: bibleService.shortenBookName(b.name || b.title || `Livro ${index + 1}`),
           chapters: b.chapters || b.chapter_count || 0
         }));
+        booksCache[version] = books;
+        return books;
       }
       throw new Error("Invalid response format");
     } catch (error) {
@@ -442,14 +453,18 @@ export const bibleService = {
   },
 
   getChapter: async (version: string, bookId: number, chapter: number): Promise<BibleVerse[]> => {
+    const key = `${version}-${bookId}-${chapter}`;
+    if (chaptersCache[key]) return chaptersCache[key];
     try {
       const response = await fetchWithFallback(`get-chapter/${version}/${bookId}/${chapter}/`);
       if (Array.isArray(response.data)) {
-        return response.data.map((v: any, index: number) => ({
+        const versos = response.data.map((v: any, index: number) => ({
           pk: v.pk || v.id || (index + 1),
           verse: v.verse || v.number || (index + 1),
           text: v.text || v.content || ""
         }));
+        chaptersCache[key] = versos;
+        return versos;
       }
       throw new Error("Invalid response format");
     } catch (error) {
@@ -478,16 +493,20 @@ export const bibleService = {
   },
 
   search: async (version: string, query: string): Promise<SearchResult[]> => {
+    const key = `${version}-${query}`;
+    if (searchCache[key]) return searchCache[key];
     try {
       const response = await fetchWithFallback(`search/${version}/?search=${encodeURIComponent(query)}`);
       if (Array.isArray(response.data)) {
-        return response.data.map((res: any, index: number) => ({
+        const results = response.data.map((res: any, index: number) => ({
           pk: res.pk || res.id || (index + 1),
           verse: res.verse || res.number || 0,
           text: res.text || res.content || "",
           book: res.book || res.book_name || "",
           chapter: res.chapter || res.chapter_number || 0
         }));
+        searchCache[key] = results;
+        return results;
       }
       return [];
     } catch (error) {
