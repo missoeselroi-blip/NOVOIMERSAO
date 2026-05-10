@@ -192,7 +192,7 @@ export const bibleService = {
     if (normalizedName.includes("mateus")) return "Mateus";
     if (normalizedName.includes("marcos")) return "Marcos";
     if (normalizedName.includes("lucas")) return "Lucas";
-    if (normalizedName.includes("joao") && !normalizedName.includes("epistola") && !normalizedName.includes("apocalipse")) return "João";
+    if (normalizedName.includes("joao") && !normalizedName.includes("epistola") && !normalizedName.includes("apocalipse") && !normalizedName.startsWith("1") && !normalizedName.startsWith("2") && !normalizedName.startsWith("3")) return "João";
     if (normalizedName.includes("atos")) return "Atos";
     if (normalizedName.includes("romanos")) return "Romanos";
     if (normalizedName.includes("1 corintios") || normalizedName.includes("primeira epistola") && normalizedName.includes("corintios")) return "1 Coríntios";
