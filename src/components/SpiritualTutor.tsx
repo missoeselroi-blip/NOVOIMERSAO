@@ -37,6 +37,7 @@ import { SaveToNotebookModal } from './SaveToNotebookModal';
 import { db } from '../lib/firebase';
 import { collection, addDoc } from 'firebase/firestore';
 import { lessons } from '../data/lessons_static';
+import { STUDY_BIBLES, COMMENTARIES, DICTIONARIES, ENCYCLOPEDIAS, REGISTERED_AUTHORS } from '../data/tutor_knowledge_static';
 
 interface Message {
   role: 'user' | 'model';
@@ -183,14 +184,42 @@ export const SpiritualTutor: React.FC = () => {
   const { share } = useShare();
   const location = useLocation();
   const navigate = useNavigate();
-  const knowledgeBase = lessons.map(l => `[${l.title} - ${l.theme || ''}]: ${l.content}`).join('\n\n');
+  const lessonKnowledge = lessons.map(l => `[Lição: ${l.title}]: ${l.content}`).join('\n\n');
+  const authorsKnowledge = REGISTERED_AUTHORS.map(a => `[Autor: ${a.name}]: Obras principais: ${a.works.join(', ')}`).join('\n');
+  const studyBiblesKnowledge = STUDY_BIBLES.join(', ');
+  const commentariesKnowledge = COMMENTARIES.join(', ');
+  const dictionariesKnowledge = DICTIONARIES.join(', ');
+  const encyclopediasKnowledge = ENCYCLOPEDIAS.join(', ');
 
-  const systemInstruction = `Você é o Tutor de Imersão, um guia espiritual e assistente especializado no aplicativo Imersão Bíblica IA.
-BASE DE CONHECIMENTO (Use estas lições para responder com profundidade):
-${knowledgeBase}
+  const systemInstruction = `Você é o Tutor de Imersão, um mentor espiritual, erudito bíblico e assistente especializado do aplicativo Imersão Bíblica IA.
 
-DIRETRIZES DE RESPOSTA:
-Sua missão é ajudar os usuários a navegar no app, encontrar recursos e crescer espiritualmente.
+Diferente do botão 'AUTOR' das lições (que foca apenas na visão do autor daquela lição específica), você, como TUTOR, tem acesso a uma vasta gama de recursos teológicos e acadêmicos.
+
+BASE DE CONHECIMENTO AMPLIADA:
+1. LIÇÕES DO APP:
+${lessonKnowledge}
+
+2. AUTORES CADASTRADOS E SUAS OBRAS:
+${authorsKnowledge}
+
+3. BÍBLIAS DE ESTUDO INTEGRADAS:
+${studyBiblesKnowledge}
+
+4. COMENTÁRIOS BÍBLICOS:
+${commentariesKnowledge}
+
+5. DICIONÁRIOS BÍBLICOS:
+${dictionariesKnowledge}
+
+6. ENCICLOPÉDIAS BÍBLICAS:
+${encyclopediasKnowledge}
+
+DIRETRIZES DE RESPOSTA DO TUTOR:
+- Sua missão é fornecer respostas teológicas profundas usando TODA a base de conhecimento acima, não se limitando apenas às lições.
+- Se o usuário perguntar sobre um autor, cite suas obras e sua linha de pensamento.
+- Se perguntar sobre um tema, cruze informações de comentários, enciclopédias e dicionários.
+- Sempre fundamente suas respostas na Bíblia Sagrada.
+- Ajude o usuário a navegar no app e encontrar os recursos físicos (Bíblias, Dicionários) mencionados nas abas de Imersão.
 1. Seja sempre encorajador, bíblico e prático.
 2. Ao explicar um recurso, forneça um passo a passo de como encontrá-lo.
 3. SEMPRE inclua sugestões de navegação no final da sua resposta usando o formato: <suggestions>[{"label": "Nome", "path": "/rota"}]</suggestions>.

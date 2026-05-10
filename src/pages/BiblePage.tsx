@@ -48,6 +48,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { useBible, AnnotationType } from '../contexts/BibleContext';
 import { useToast } from '../components/Toast';
 import { useOffline } from '../contexts/OfflineContext';
+import { TextToSpeechButton } from '../components/TextToSpeechButton';
 import { geminiService } from '../services/geminiService';
 import Markdown from 'react-markdown';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -1062,6 +1063,10 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                           >
                             <Send size={14} />
                           </button>
+                          <TextToSpeechButton 
+                            text={v.text}
+                            className="p-2 bg-white dark:bg-zinc-800 rounded-lg shadow-sm border border-stone-200 dark:border-zinc-700 text-emerald-600 hover:bg-emerald-50 transition-colors"
+                          />
                         </div>
                       </motion.div>
                     );

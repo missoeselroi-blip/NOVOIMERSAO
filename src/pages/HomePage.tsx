@@ -924,7 +924,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
             transition={{ delay: 0.2 }}
             className="space-y-3"
           >
-            <h1 className="text-2xl md:text-4xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
+            <h1 className="text-3xl md:text-5xl font-display font-black text-white tracking-tighter drop-shadow-2xl uppercase">
               Início
             </h1>
             <div className="h-1.5 w-24 bg-emerald-500 mx-auto rounded-full shadow-lg shadow-emerald-500/50" />

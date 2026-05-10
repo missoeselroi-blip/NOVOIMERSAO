@@ -41,6 +41,7 @@ import { SpeechGenerator } from '../components/SpeechGenerator';
 import { useAuth } from '../contexts/AuthContext';
 import { useOffline } from '../contexts/OfflineContext';
 import { useNotebook } from '../contexts/NotebookContext';
+import { TextToSpeechButton } from '../components/TextToSpeechButton';
 import { lessons, Lesson } from '../data/lessons_static';
 import html2pdf from 'html2pdf.js';
 
@@ -674,9 +675,10 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   <button onClick={handleSave} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Salvar no Caderno">
                     <StickyNote className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
-                  <button onClick={handleListen} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Ouvir">
-                    <Headphones className="w-4 h-4 md:w-[18px] md:h-[18px]" />
-                  </button>
+                  <TextToSpeechButton 
+                    text={selectedLesson.content}
+                    className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0 text-stone-600 dark:text-zinc-400"
+                  />
                   <button onClick={openAutor} className="p-1.5 md:p-2 bg-[#BC6C25] text-white hover:bg-[#A15B1F] rounded-xl transition-colors flex items-center gap-1 md:gap-2 px-2 md:px-3 shrink-0" title="Autor">
                     <UserCheck className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                     <span className="text-[9px] md:text-[10px] font-bold uppercase hidden sm:inline">Autor</span>

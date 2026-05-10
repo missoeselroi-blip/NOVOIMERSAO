@@ -50,7 +50,9 @@ import {
   Glasses,
   Sparkles,
   Headphones,
-  Anchor
+  Anchor,
+  Layout,
+  ChevronDown
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from './types';
@@ -294,7 +296,7 @@ function AppContent() {
     { id: 'missionary', label: 'Missões', subtitle: 'Impacto Global', icon: <Globe size={20} />, component: <MissionaryPage onNavigate={handleNavigate} />, hidden: true },
     { id: 'missionary-results', label: 'Resultados Missões', subtitle: 'Relatórios de campo', icon: <Calendar size={20} />, component: <MissionaryBulkResults onBack={() => handleNavigate('missionary')} />, hidden: true },
     { id: 'redacao', label: 'Redação', subtitle: 'Escrita inspirada', icon: <Pencil size={20} />, component: <RedacaoPage />, hidden: true },
-    { id: 'profile', label: 'Perfil', subtitle: 'Sua conta e preferências', icon: <User size={20} />, component: <ProfilePage />, hidden: true },
+    { id: 'profile', label: 'Perfil', subtitle: 'Sua conta e preferências', icon: <User size={20} />, component: <ProfilePage /> },
     { id: 'admin', label: 'Painel ADM', subtitle: 'Administração do Sistema', icon: <ShieldCheck size={20} />, component: <AdminPage />, hidden: true },
     { id: 'greatest-story', label: 'Jogo das Histórias', subtitle: 'Uma Jornada Imersiva', icon: <Sparkles size={20} />, component: <StoryGame />, hidden: true },
   ];
@@ -365,30 +367,25 @@ function AppContent() {
               className="w-8 h-8 object-contain"
               referrerPolicy="no-referrer"
             />
-            <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Imersão Bíblica IA</span>
+            <span className="font-display text-2xl font-bold tracking-tight text-emerald-900 dark:text-emerald-400">Início</span>
           </div>
 
           {/* Desktop Nav */}
-          <div className="hidden md:flex items-center gap-6">
-            {navItems.filter(item => !item.hidden).map((item) => {
+          <div className="hidden md:flex items-center gap-4 lg:gap-6">
+            {navItems.filter(item => !item.hidden).slice(0, 6).map((item) => {
               return (
                 <button
                   key={`desktop-${item.id}`}
                   onClick={() => handleNavigate(item.id)}
                   className={cn(
-                    "flex items-center gap-2 text-sm font-medium transition-colors hover:text-emerald-600 relative py-2 group",
+                    "flex items-center gap-2 text-sm font-bold transition-colors hover:text-emerald-600 relative py-2 group whitespace-nowrap",
                     effectiveActiveTab === item.id ? "text-emerald-600" : "text-zinc-500"
                   )}
                 >
                   <div className="relative">
                     {item.icon}
-                    {/* Tooltip */}
-                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 px-3 py-1.5 bg-zinc-900 dark:bg-zinc-800 text-white text-[10px] font-black rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none whitespace-nowrap z-[100] shadow-xl border border-white/10 translate-y-2 group-hover:translate-y-0 uppercase tracking-widest">
-                      {item.label}
-                      <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-zinc-900 dark:border-t-zinc-800" />
-                    </div>
                   </div>
-                  <span className="hidden lg:block">{item.label}</span>
+                  <span className="hidden xl:block">{item.label}</span>
                   {effectiveActiveTab === item.id && (
                     <motion.div 
                       layoutId="activeTabDesktop"
@@ -398,6 +395,38 @@ function AppContent() {
                 </button>
               );
             })}
+            
+            {/* More Menu Dropdown */}
+            <div className="relative group">
+              <button className="flex items-center gap-2 text-sm font-bold text-zinc-500 hover:text-emerald-600 py-2 transition-colors">
+                <Layout size={18} />
+                <span className="hidden xl:block">Explorar</span>
+                <ChevronDown size={14} />
+              </button>
+              
+              <div className="absolute right-0 top-full pt-2 opacity-0 translate-y-2 pointer-events-none group-hover:opacity-100 group-hover:translate-y-0 group-hover:pointer-events-auto transition-all z-50">
+                <div className="bg-white dark:bg-zinc-900 rounded-2xl shadow-2xl border border-stone-200 dark:border-zinc-800 p-2 min-w-[240px] grid grid-cols-1 md:grid-cols-2 gap-1 max-h-[70vh] overflow-y-auto">
+                  {navItems.filter(item => !item.hidden).slice(6).concat(navItems.filter(item => item.hidden && !['admin'].includes(item.id))).map((item) => (
+                    <button
+                      key={`dropdown-${item.id}`}
+                      onClick={() => handleNavigate(item.id)}
+                      className={cn(
+                        "flex items-center gap-3 px-4 py-3 text-xs font-bold rounded-xl transition-all",
+                        effectiveActiveTab === item.id 
+                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20" 
+                          : "text-stone-600 dark:text-zinc-400 hover:bg-stone-100 dark:hover:bg-zinc-800"
+                      )}
+                    >
+                      {item.icon}
+                      <div className="text-left">
+                        <p className="leading-none mb-1">{item.label}</p>
+                        {item.subtitle && <p className="text-[9px] opacity-60 font-normal">{item.subtitle}</p>}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
             
             <div className="flex items-center gap-2 bg-app-surface/50 border border-app-border p-1 rounded-full">
               <button

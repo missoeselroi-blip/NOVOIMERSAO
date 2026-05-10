@@ -68,6 +68,7 @@ import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';
+import { TextToSpeechButton } from '../components/TextToSpeechButton';
 import { useAccessibility } from '../contexts/AccessibilityContext';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -3380,14 +3381,10 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
               </div>
 
               <div className="p-6 border-t border-stone-100 dark:border-zinc-800 bg-stone-50 dark:bg-zinc-800/50 flex gap-3">
-                <button 
-                  onClick={() => handleListen(creationPopup.content)}
-                  disabled={isGeneratingSpeech}
-                  className="flex-1 py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
-                  Ouvir
-                </button>
+                <TextToSpeechButton 
+                  text={creationPopup.content}
+                  className="flex-1 py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all"
+                />
                 <button 
                   onClick={() => {
                     copyToClipboard(creationPopup.content);
@@ -3703,14 +3700,10 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                         <Save size={18} />
                         Salvar no Caderno
                       </button>
-                      <button
-                        onClick={() => handleListen(verseContent)}
-                        disabled={isGeneratingSpeech}
-                        className="flex-1 min-w-[150px] py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                      >
-                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
-                        Ouvir
-                      </button>
+                      <TextToSpeechButton 
+                        text={verseContent}
+                        className="flex-1 min-w-[150px] py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all"
+                      />
                       <button
                         onClick={() => handleDownloadElement(verseResultRef.current, `Versiculo_${verseSearch}`)}
                         className="flex-1 min-w-[150px] py-3 bg-stone-100 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 font-bold rounded-xl hover:bg-stone-200 flex items-center justify-center gap-2 transition-all"
@@ -3864,14 +3857,10 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                         <Copy size={18} />
                         Copiar
                       </button>
-                      <button
-                        onClick={() => handleListen(result)}
-                        disabled={isGeneratingSpeech}
-                        className="flex-1 py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
-                      >
-                        {isGeneratingSpeech ? <Loader2 size={18} className="animate-spin" /> : <Volume2 size={18} />}
-                        Ouvir
-                      </button>
+                      <TextToSpeechButton 
+                        text={result}
+                        className="flex-1 py-3 bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 font-bold rounded-xl hover:bg-amber-200 flex items-center justify-center gap-2 transition-all"
+                      />
                       <button
                         onClick={() => {
                           handleDownloadResult();
@@ -4175,14 +4164,10 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                     </div>
                     
                     <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => handleListen(result)}
-                        disabled={isGeneratingSpeech}
-                        className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all disabled:opacity-50"
-                      >
-                        {isGeneratingSpeech ? <Loader2 size={14} className="animate-spin" /> : <Volume2 size={14} />}
-                        Ouvir
-                      </button>
+                      <TextToSpeechButton 
+                        text={result}
+                        className="px-4 py-2 bg-stone-50 dark:bg-zinc-800 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl hover:bg-stone-100 flex items-center gap-2 border border-stone-100 dark:border-zinc-700 transition-all"
+                      />
                       {result && !isOffline && (
                         <button 
                           onClick={handleDownloadOffline}

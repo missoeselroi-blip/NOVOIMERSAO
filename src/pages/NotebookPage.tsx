@@ -794,8 +794,8 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                       <Printer size={20} />
                     </button>
                     <TextToSpeechButton 
-                      text={note.content} 
-                      className="text-stone-600 hover:bg-stone-50 dark:hover:bg-zinc-800 rounded-xl transition-colors"
+                      text={`${note.title}. ${note.content}`} 
+                      className="text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors"
                     />
                     <button 
                       onClick={() => handleShare(note)}
@@ -803,18 +803,6 @@ export default function NotebookPage({ onSearchWiki }: NotebookPageProps) {
                       title="Compartilhar"
                     >
                       <Share2 size={20} />
-                    </button>
-                    <button 
-                      onClick={() => handleListen(`${note.title}. ${note.content}`)}
-                      disabled={isGeneratingSpeech}
-                      className="p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-xl transition-colors disabled:opacity-50"
-                      title="Ouvir"
-                    >
-                      {isGeneratingSpeech && pendingSpeechText === `${note.title}. ${note.content}` ? (
-                        <Loader2 size={20} className="animate-spin" />
-                      ) : (
-                        <Volume2 size={20} />
-                      )}
                     </button>
                     {onSearchWiki && (
                       <button 

@@ -54,8 +54,12 @@ export interface SearchResult {
   chapter: number;
 }
 
+let versionsCache: BibleVersion[] | null = null;
+
 export const bibleService = {
   getVersions: async (): Promise<BibleVersion[]> => {
+    if (versionsCache) return versionsCache;
+
     try {
       // Try multiple possible endpoints for translations
       const endpoints = [
@@ -105,6 +109,7 @@ export const bibleService = {
               }
             });
 
+            versionsCache = apiVersions;
             return apiVersions;
           }
         } catch (e) {
@@ -113,7 +118,7 @@ export const bibleService = {
       }
       
       // Fallback to common versions if API fails entirely
-      return [
+      const fallbacks = [
         { id: 1, name: "Almeida Revista e Atualizada", short_name: "ARA", language: "Português" },
         { id: 10, name: "Nova Almeida Atualizada", short_name: "NAA", language: "Português" },
         { id: 2, name: "Nova Versão Internacional", short_name: "NVIPT", language: "Português" },
@@ -121,6 +126,8 @@ export const bibleService = {
         { id: 14, name: "King James Atualizada", short_name: "KJA", language: "Português" },
         { id: 8, name: "King James Version (Inglês)", short_name: "KJV", language: "Inglês" }
       ];
+      versionsCache = fallbacks;
+      return fallbacks;
     } catch (error) {
       console.error('Error fetching Bible versions:', error);
       return [];
