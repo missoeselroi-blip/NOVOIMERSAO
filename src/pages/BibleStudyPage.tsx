@@ -672,6 +672,7 @@ export default function BibleStudyPage({ deepThinking, setDeepThinking, onNaviga
   const outlineRef = useRef<HTMLDivElement>(null);
   const storiesTheaterRef = useRef<HTMLDivElement>(null);
   const bibleResultRef = useRef<HTMLDivElement>(null);
+  const leaderGuideRef = useRef<HTMLDivElement>(null);
   const verseResultRef = useRef<HTMLDivElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
 
@@ -2472,8 +2473,11 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
   };
 
   const handleDownloadElement = async (element: HTMLElement | null, title: string) => {
-    if (!element) return;
-    showToast("Preparando seu arquivo... Ficou lindo! 📄💎", 'info');
+    if (!element) {
+      console.warn("Element not found for download:", title);
+      return;
+    }
+    showToast(`Preparando seu arquivo ${title}... Ficou lindo! 📄💎`, 'info');
     try {
       const opt = {
         margin:       15,
@@ -2514,6 +2518,10 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
   };
 
   const handleDownloadResult = () => {
+    if (showLeaderGuide && leaderGuide) {
+      handleDownloadElement(leaderGuideRef.current, 'Guia_do_Lider');
+      return;
+    }
     let title = 'Estudo_Biblico';
     if (activeTab === 'creation-tool') {
       if (creationType === 'lesson') title = showLeaderGuide ? 'Guia_do_Lider' : 'Licao_Celula';
@@ -2546,6 +2554,9 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
   };
 
   const getShareData = () => {
+    if (showLeaderGuide && leaderGuide) {
+      return { title: 'Guia do Líder', text: leaderGuide, url: window.location.href + '?guide=true' };
+    }
     let contentToShare = result;
     let titleToShare = 'Comentário Bíblico';
 
@@ -4379,7 +4390,7 @@ Utilize as seguintes fontes como base adicional: ${sourcesStr}. Use Markdown par
                       <button onClick={() => setShowLeaderGuide(false)} className={cn("px-6 py-2 rounded-full font-bold transition-all", !showLeaderGuide ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}>Lição</button>
                       <button onClick={() => setShowLeaderGuide(true)} className={cn("px-6 py-2 rounded-full font-bold transition-all", showLeaderGuide ? "bg-emerald-600 text-white" : "bg-stone-100 dark:bg-zinc-800 text-stone-500")}>Guia do Líder</button>
                     </div>
-                    <div ref={bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
+                    <div ref={showLeaderGuide ? leaderGuideRef : bibleResultRef} className="bg-white dark:bg-zinc-900 p-8 md:p-12 rounded-3xl border border-stone-200 dark:border-zinc-800 shadow-lg prose dark:prose-invert max-w-none">
                       <ExpandableMarkdown content={showLeaderGuide ? leaderGuide : lessonResult} onSearch={handleWikiSearch} />
                     </div>
                     <div className="flex flex-wrap gap-3">

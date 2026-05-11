@@ -64,8 +64,25 @@ const LessonPage: React.FC = () => {
   useEffect(() => {
     if (location.state?.offlineContent) {
       setSelectedLesson(location.state.offlineContent);
+      return;
     }
-  }, [location.state]);
+    
+    // Check for query parameters for sharing links
+    const params = new URLSearchParams(location.search);
+    const idParam = params.get('id');
+    const guideParam = params.get('guide');
+    
+    if (idParam) {
+      const lesson = lessons.find(l => l.id.toString() === idParam);
+      if (lesson) {
+        setSelectedLesson(lesson);
+        if (guideParam === 'true') {
+          // Add a small delay to ensure modal open animation triggers nicely after state init
+          setTimeout(() => setShowLeaderGuide(true), 100);
+        }
+      }
+    }
+  }, [location.state, location.search]);
   
   useEffect(() => {
     setSummary(null);
@@ -192,9 +209,15 @@ Conteúdo: ${lesson.content}`;
   }, [selectedLesson]);
 
   const handleShare = () => {
-    const url = window.location.href;
+    let url = window.location.href.split('?')[0];
+    if (selectedLesson) {
+      url += `?id=${selectedLesson.id}`;
+    }
+    if (showLeaderGuide) {
+      url += (url.includes('?') ? '&' : '?') + 'guide=true';
+    }
     navigator.clipboard.writeText(url).then(() => {
-      showToast("Link da lição copiado para a área de transferência!", "success");
+      showToast(showLeaderGuide ? "Link do Guia do Líder copiado!" : "Link da lição copiado para a área de transferência!", "success");
     }).catch(err => {
       console.error('Could not copy text: ', err);
       showToast("Não foi possível copiar o link.", "error");
@@ -203,7 +226,10 @@ Conteúdo: ${lesson.content}`;
 
   const handleSave = () => {
     if (selectedLesson) {
-      saveToNotebook(selectedLesson.title, selectedLesson.content);
+      saveToNotebook(
+        showLeaderGuide ? `Guia do Líder - ${selectedLesson.title}` : selectedLesson.title,
+        (showLeaderGuide ? selectedLesson.leaderGuide : selectedLesson.content) || ""
+      );
     }
   };
 
@@ -215,8 +241,13 @@ Conteúdo: ${lesson.content}`;
   };
 
   const handleDownload = () => {
-    if (!selectedLesson || !selectedLesson.content || !selectedLesson.title) {
+    if (!selectedLesson || !selectedLesson.title) {
       showToast("Conteúdo da lição incompleto para download.", "error");
+      return;
+    }
+    const contentToDownload = showLeaderGuide ? selectedLesson.leaderGuide : selectedLesson.content;
+    if (!contentToDownload) {
+      showToast("Conteúdo incompleto para download.", "error");
       return;
     }
 
@@ -226,7 +257,7 @@ Conteúdo: ${lesson.content}`;
     element.className = 'pdf-container';
     
     // Improved Markdown to HTML conversion for the PDF with better styling
-    const htmlContent = (selectedLesson.content || "")
+    const htmlContent = (contentToDownload || "")
       .replace(/^# (.*$)/gm, '<h1 style="font-size: 28pt; font-weight: 800; margin-bottom: 20pt; color: #065f46; text-align: center; text-transform: uppercase; border-bottom: 3px solid #065f46; padding-bottom: 10pt;">$1</h1>')
       .replace(/^## (.*$)/gm, '<h2 style="font-size: 20pt; font-weight: 700; margin-top: 24pt; margin-bottom: 12pt; color: #047857; border-left: 5px solid #059669; padding-left: 10pt;">$1</h2>')
       .replace(/^### (.*$)/gm, '<h3 style="font-size: 16pt; font-weight: 600; margin-top: 18pt; margin-bottom: 8pt; color: #059669;">$1</h3>')
@@ -241,7 +272,7 @@ Conteúdo: ${lesson.content}`;
         <div style="text-align: center; margin-bottom: 40pt; border-bottom: 2px solid #e5e7eb; padding-bottom: 20pt;">
           <div style="font-size: 10pt; color: #059669; font-weight: 800; letter-spacing: 2pt; margin-bottom: 5pt; text-transform: uppercase;">Material de Estudo</div>
           <h1 style="color: #065f46; margin: 0; font-size: 32pt; font-weight: 900; letter-spacing: -1pt;">IMERSÃO BÍBLICA IA</h1>
-          <p style="color: #6b7280; font-size: 14pt; margin-top: 10pt; font-style: italic;">Lição: ${selectedLesson.title || "Sem Título"}</p>
+          <p style="color: #6b7280; font-size: 14pt; margin-top: 10pt; font-style: italic;">${showLeaderGuide ? 'Guia do Líder - ' : 'Lição: '}${selectedLesson.title || "Sem Título"}</p>
         </div>
         
         <div class="content" style="font-size: 11pt;">
@@ -267,7 +298,7 @@ Conteúdo: ${lesson.content}`;
     
     const opt = {
       margin: 0,
-      filename: `Licao_${(selectedLesson.title || "Licao").replace(/\s+/g, '_')}.pdf`,
+      filename: `${showLeaderGuide ? 'Guia_do_Lider' : 'Licao'}_${(selectedLesson.title || "Material").replace(/\s+/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
