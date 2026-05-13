@@ -78,6 +78,11 @@ export const LoginPage: React.FC = () => {
             <div className="text-xs text-red-800 dark:text-red-400 leading-relaxed">
               <p className="font-bold mb-1">Erro de Acesso</p>
               <p>{error}</p>
+              {error.includes('suspended') && (
+                <p className="mt-2 text-[10px] font-bold opacity-80 bg-red-100 dark:bg-red-900/40 p-2 rounded-lg">
+                  ⚠️ NOTA: A chave do Google para este App está suspensa. O dono do projeto precisa reativá-la no Google Cloud Console ou solicitar ao AI Studio um novo projeto.
+                </p>
+              )}
             </div>
           </div>
         )}

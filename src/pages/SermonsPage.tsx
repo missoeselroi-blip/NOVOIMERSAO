@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { auth, db, storage } from '../lib/firebase';
-import { useAuthState } from 'react-firebase-hooks/auth';
+import { useAuth } from '../contexts/AuthContext';
 import { 
   collection, addDoc, query, where, orderBy, 
   onSnapshot, deleteDoc, doc, serverTimestamp, 
@@ -57,7 +57,7 @@ interface UserSermon {
 }
 
 const SermonsPage = () => {
-  const [user] = useAuthState(auth);
+  const { user } = useAuth();
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'recommended' | 'my-sermons' | 'recorder'>('recommended');
   const [activeVideo, setActiveVideo] = useState<string | null>(null);

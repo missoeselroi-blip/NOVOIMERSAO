@@ -1,6 +1,4 @@
 import React, { createContext, useContext, useState, useRef, useEffect, ReactNode } from 'react';
-import { storage } from '../lib/firebase';
-import { ref, getDownloadURL } from 'firebase/storage';
 import { useToast } from '../components/Toast';
 
 export interface AudioBibleBook {
@@ -240,22 +238,27 @@ export function AudioBibleProvider({ children }: { children: ReactNode }) {
     setAudioUrl(null);
 
     const paths = getPaths(book, chapter);
+    const audioBaseUrl = import.meta.env.VITE_AUDIO_BASE_URL || '';
     
+    // Tenta encontrar a URL válida do áudio testando o carregamento (HEAD request)
     for (const path of paths) {
       try {
-        const storageRef = ref(storage, path);
-        const url = await getDownloadURL(storageRef);
-        setAudioUrl(url);
-        setIsLoadingAudio(false);
-        setIsPlaying(true);
-        return;
+        const fullUrl = audioBaseUrl ? `${audioBaseUrl}/${path}` : `/${path}`;
+        const response = await fetch(fullUrl, { method: 'HEAD' });
+        
+        if (response.ok) {
+          setAudioUrl(fullUrl);
+          setIsLoadingAudio(false);
+          setIsPlaying(true);
+          return;
+        }
       } catch (e) {
-        // continue searching
+        // Se falhar (ex: erro de rede/CORS), continua procurando
       }
     }
     
     setIsLoadingAudio(false);
-    showToast(`Áudio do capítulo ${chapter} não encontrado.`, "error");
+    showToast(`O áudio do capítulo ${chapter} não está disponível. Você pode subir os arquivos na pasta "public/audio" ou configurar a variável "VITE_AUDIO_BASE_URL".`, "error");
   };
 
   const nextChapter = () => {

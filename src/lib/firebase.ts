@@ -62,8 +62,11 @@ async function testConnection() {
       console.error('Mensagem:', error.message);
       console.groupEnd();
       
-      if (error.message?.includes('offline') || error.code === 'unavailable' || error.message?.includes('suspended')) {
-        console.warn('⚠️ O projeto Firebase parece estar indisponível ou em modo offline: ' + firebaseConfig.projectId);
+      if (error.message?.includes('offline') || error.code === 'unavailable' || error.message?.includes('suspended') || error.message?.includes('permission-denied')) {
+        console.warn('⚠️ O projeto Firebase parece estar indisponível, suspenso ou em modo offline: ' + firebaseConfig.projectId);
+        if (error.message?.includes('suspended')) {
+          console.error('🛑 A Chave de API (API Key) deste projeto foi SUSPENSA pelo Google. Isso geralmente ocorre por violação de termos ou necessidade de confirmação manual no console GCP.');
+        }
         isProjectSuspended.value = true;
       }
     }
