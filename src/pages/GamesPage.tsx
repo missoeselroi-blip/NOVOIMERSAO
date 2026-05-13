@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { AvatarManager } from '../components/AvatarManager';
 import { 
   Trophy, 
   Timer, 
@@ -96,6 +97,7 @@ const GamesPage: React.FC = () => {
   const [userRank, setUserRank] = useState<LeaderboardEntry | null>(null);
   const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(true);
   const [isLoadingBattleLeaderboard, setIsLoadingBattleLeaderboard] = useState(true);
+  const [isLoadingPanorama, setIsLoadingPanorama] = useState(true);
   const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [timerActive, setTimerActive] = useState(false);
@@ -150,121 +152,70 @@ const GamesPage: React.FC = () => {
 
   // Fetch Leaderboard
   useEffect(() => {
-    const q = query(collection(db, 'quizLeaderboard'), orderBy('totalScore', 'desc'), limit(10));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const entries = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        userId: doc.id,
-        battlesWon: (doc.data() as any).battlesWon || 0
-      })) as LeaderboardEntry[];
-      setLeaderboard(entries);
-      setIsLoadingLeaderboard(false);
-
-      if (user) {
-        const userEntry = entries.find(e => e.userId === user.id);
-        if (userEntry) {
-          setUserRank({ ...userEntry, rank: entries.indexOf(userEntry) + 1 });
-          setCredits((userEntry as any).credits ?? 50);
-          if ((userEntry as any).totalScore === undefined) {
-            updateDoc(doc(db, 'quizLeaderboard', user.id), {
-              totalScore: (userEntry.score || 0) + 
-                (userEntry.whoAmIScore || 0) + 
-                (userEntry.timelineScore || 0) + 
-                (userEntry.crosswordScore || 0) + 
-                (userEntry.hangmanScore || 0) + 
-                ((userEntry as any).wordSearchScore || 0) + 
-                ((userEntry as any).cryptogramScore || 0) + 
-                ((userEntry as any).anagramScore || 0) + 
-                ((userEntry as any).riddlesScore || 0) + 
-                ((userEntry as any).panoramaScore || 0) +
-                ((userEntry as any).sonOfManScore || 0) +
-                ((userEntry as any).davidScore || 0) +
-                ((userEntry as any).abrahamScore || 0) +
-                ((userEntry as any).mosesScore || 0) +
-                ((userEntry as any).paulScore || 0)
-            });
-          }
-        } else {
-          // Fetch user rank if not in top 10
-          getDoc(doc(db, 'quizLeaderboard', user.id)).then(docSnap => {
-            if (docSnap.exists()) {
-              const data = docSnap.data() as any;
-              setUserRank(data as LeaderboardEntry);
-              setCredits(data.credits ?? 50);
-              if (data.totalScore === undefined) {
-                updateDoc(doc(db, 'quizLeaderboard', user.id), {
-                  totalScore: (data.score || 0) + 
-                    (data.whoAmIScore || 0) + 
-                    (data.timelineScore || 0) + 
-                    (data.crosswordScore || 0) + 
-                    (data.hangmanScore || 0) + 
-                    (data.wordSearchScore || 0) + 
-                    (data.cryptogramScore || 0) + 
-                    (data.anagramScore || 0) + 
-                    (data.riddlesScore || 0) + 
-                    (data.panoramaScore || 0) +
-                    (data.sonOfManScore || 0) +
-                    (data.davidScore || 0) +
-                    (data.abrahamScore || 0) +
-                    (data.mosesScore || 0) +
-                    (data.paulScore || 0)
-                });
+    let interval: any;
+    const fetchLeaderboards = async () => {
+      try {
+        const resStats = await fetch('/api/games/leaderboard');
+        if (resStats.ok) {
+          const entries = await resStats.json();
+          setLeaderboard(entries);
+          setIsLoadingLeaderboard(false);
+          
+          if (user) {
+            const userEntry = entries.find((e: any) => e.userId === user.id);
+            if (userEntry) {
+              setUserRank({ ...userEntry, rank: entries.indexOf(userEntry) + 1 });
+              setCredits(userEntry.credits ?? 50);
+            } else {
+              const resUser = await fetch(`/api/games/leaderboard/${user.id}`);
+              if (resUser.ok) {
+                const uData = await resUser.json();
+                if (uData) {
+                  setUserRank(uData);
+                  setCredits(uData.credits ?? 50);
+                }
               }
             }
-          });
+          }
         }
-      }
-    });
 
-    return () => unsubscribe();
+        const resBattles = await fetch('/api/games/leaderboard?type=battlesWon');
+        if (resBattles.ok) {
+          const entries = await resBattles.json();
+          setBattleLeaderboard(entries);
+          setIsLoadingBattleLeaderboard(false);
+        }
+
+        const resPanorama = await fetch('/api/games/leaderboard?type=panoramaScore');
+        if (resPanorama.ok) {
+          const entries = await resPanorama.json();
+          const filtered = entries.filter((e: any) => (e.panoramaScore || 0) > 0);
+          setPanoramaLeaderboard(filtered.slice(0, 10));
+          if (typeof setIsLoadingPanorama === 'function') {
+            setIsLoadingPanorama(false);
+          } else {
+            console.error("setIsLoadingPanorama is not a function");
+          }
+        } else {
+            console.error("Failed to fetch panorama leaderboard. Status:", resPanorama.status);
+            if (typeof setIsLoadingPanorama === 'function') setIsLoadingPanorama(false);
+        }
+
+      } catch (err: any) {
+        console.error("Failed to fetch SQLite leaderboards:", err.message || err);
+      }
+    };
+
+    fetchLeaderboards();
+    interval = setInterval(fetchLeaderboards, 15000);
+    return () => clearInterval(interval);
   }, [user]);
 
   // Fetch Total Users
   useEffect(() => {
-    const q = query(collection(db, 'users'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      setTotalUsers(snapshot.size);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Fetch Battle Leaderboard
-  useEffect(() => {
-    const q = query(collection(db, 'quizLeaderboard'), orderBy('battlesWon', 'desc'), limit(10));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const entries = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        userId: doc.id,
-        battlesWon: (doc.data() as any).battlesWon || 0
-      })) as LeaderboardEntry[];
-      setBattleLeaderboard(entries);
-      setIsLoadingBattleLeaderboard(false);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // Fetch Panorama Leaderboard
-  useEffect(() => {
-    const q = query(collection(db, 'quizLeaderboard'), orderBy('panoramaScore', 'desc'), limit(20));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      let entries = snapshot.docs.map(doc => ({
-        ...doc.data(),
-        userId: doc.id,
-        panoramaScore: (doc.data() as any).panoramaScore || 0,
-        panoramaTime: (doc.data() as any).panoramaTime || 0
-      })) as LeaderboardEntry[];
-      
-      // Sort in memory by score desc, then time asc
-      entries.sort((a, b) => {
-        if ((b.panoramaScore || 0) !== (a.panoramaScore || 0)) {
-          return (b.panoramaScore || 0) - (a.panoramaScore || 0);
-        }
-        return (a.panoramaTime || 0) - (b.panoramaTime || 0);
-      });
-      
-      setPanoramaLeaderboard(entries.slice(0, 10));
-    });
-    return () => unsubscribe();
+    // simplified since we don't have a count endpoint
+    setTotalUsers(1);
+    return () => {};
   }, []);
 
   // Timer Logic
@@ -314,11 +265,17 @@ const GamesPage: React.FC = () => {
             getDoc(userRef).then((userSnap) => {
               if (userSnap.exists()) {
                 const lData = userSnap.data() as any;
-                updateDoc(userRef, {
-                  battlesWon: (lData.battlesWon || 0) + 5,
-                  totalScore: (lData.totalScore || 0) + 5,
-                  updatedAt: serverTimestamp()
-                });
+                // Update SQLite leaderboard
+                fetch('/api/games/leaderboard', {
+                  method: 'PUT',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    userId: user.id,
+                    name: user.name || 'Membro',
+                    battlesWon: 5,
+                    totalScore: 5
+                  })
+                }).catch(e => console.error(e));
               }
             });
           }
@@ -375,38 +332,16 @@ const GamesPage: React.FC = () => {
         if (data.status === 'finished' && user && data.winners?.includes(user.id)) {
           if (!processedRooms.current.has(roomId)) {
             processedRooms.current.add(roomId);
-            const userRef = doc(db, 'quizLeaderboard', user.id);
-            getDoc(userRef).then((userSnap) => {
-              if (userSnap.exists()) {
-                const data = userSnap.data() as any;
-                const battlesWon = data.battlesWon || 0;
-                const currentScore = data.score || 0;
-                const panoramaScore = data.panoramaScore || 0;
-                const whoAmIScore = data.whoAmIScore || 0;
-                const timelineScore = data.timelineScore || 0;
-                const crosswordScore = data.crosswordScore || 0;
-                const hangmanScore = data.hangmanScore || 0;
-                const wordSearchScore = data.wordSearchScore || 0;
-                const cryptogramScore = data.cryptogramScore || 0;
-                const anagramScore = data.anagramScore || 0;
-                const riddlesScore = data.riddlesScore || 0;
-                const sonOfManScore = data.sonOfManScore || 0;
-                const davidScore = data.davidScore || 0;
-                const abrahamScore = data.abrahamScore || 0;
-                const mosesScore = data.mosesScore || 0;
-                const paulScore = data.paulScore || 0;
-
-                const newTotalScore = currentScore + battlesWon + 1 + panoramaScore + 
-                  whoAmIScore + timelineScore + crosswordScore + hangmanScore + 
-                  wordSearchScore + cryptogramScore + anagramScore + riddlesScore +
-                  sonOfManScore + davidScore + abrahamScore + mosesScore + paulScore;
-
-                updateDoc(userRef, { 
-                  battlesWon: battlesWon + 1,
-                  totalScore: newTotalScore
-                });
-              }
-            });
+            fetch('/api/games/leaderboard', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: user.id,
+                name: user.name || 'Membro',
+                battlesWon: 1,
+                totalScore: 1
+              })
+            }).catch(e => console.error(e));
           }
         }
         
@@ -724,15 +659,16 @@ const GamesPage: React.FC = () => {
           // Add 5 points to the winner's Quiz ranking
           if (winners[0].userId === user.id && !processedCups.current.has(cupId)) {
             processedCups.current.add(cupId);
-            const winnerRef = doc(db, 'quizLeaderboard', winners[0].userId);
-            const winnerSnap = await getDoc(winnerRef);
-            if (winnerSnap.exists()) {
-               const wData = winnerSnap.data() as any;
-               await updateDoc(winnerRef, {
-                 battlesWon: (wData.battlesWon || 0) + 5,
-                 totalScore: (wData.totalScore || 0) + 5
-               });
-            }
+            fetch('/api/games/leaderboard', {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                userId: user.id,
+                name: user.name || 'Membro',
+                battlesWon: 5,
+                totalScore: 5
+              })
+            }).catch(e => console.error(e));
           }
         } else {
           // Next round
@@ -756,62 +692,17 @@ const GamesPage: React.FC = () => {
 
     if (user) {
       await addPoints(5, 'quiz_finish');
-      const userRef = doc(db, 'quizLeaderboard', user.id);
-      const userSnap = await getDoc(userRef);
-      
-      let trend: 'up' | 'down' | 'same' = 'same';
-      let previousScore = 0;
-      let panoramaScore = 0;
-      let whoAmIScore = 0;
-      let timelineScore = 0;
-      let crosswordScore = 0;
-      let hangmanScore = 0;
-      let wordSearchScore = 0;
-      let cryptogramScore = 0;
-      let anagramScore = 0;
-      let riddlesScore = 0;
-
-      let sonOfManScore = 0;
-      let davidScore = 0;
-      let abrahamScore = 0;
-      let mosesScore = 0;
-      let paulScore = 0;
-
-      if (userSnap.exists()) {
-        const data = userSnap.data() as any;
-        previousScore = data.score || 0;
-        panoramaScore = data.panoramaScore || 0;
-        sonOfManScore = data.sonOfManScore || 0;
-        davidScore = data.davidScore || 0;
-        abrahamScore = data.abrahamScore || 0;
-        mosesScore = data.mosesScore || 0;
-        paulScore = data.paulScore || 0;
-        whoAmIScore = data.whoAmIScore || 0;
-        timelineScore = data.timelineScore || 0;
-        crosswordScore = data.crosswordScore || 0;
-        hangmanScore = data.hangmanScore || 0;
-        wordSearchScore = data.wordSearchScore || 0;
-        cryptogramScore = data.cryptogramScore || 0;
-        anagramScore = data.anagramScore || 0;
-        riddlesScore = data.riddlesScore || 0;
-        
-        if (finalScore > previousScore) trend = 'up';
-        else if (finalScore < previousScore) trend = 'down';
-      } else {
-        if (finalScore > 0) trend = 'up';
-      }
-
-      const newTotalScore = finalScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore + panoramaScore + sonOfManScore + davidScore + abrahamScore + mosesScore + paulScore;
-
-      await setDoc(userRef, {
-        name: user.name || 'Usuário',
-        avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-        score: finalScore,
-        totalScore: newTotalScore,
-        lastScore: finalScore,
-        trend: trend,
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+      try {
+        await fetch('/api/games/leaderboard', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userId: user.id,
+            name: user.name || 'Membro',
+            totalScore: finalScore
+          })
+        });
+      } catch(e) { console.error(e); }
     }
   };
 
@@ -821,76 +712,26 @@ const GamesPage: React.FC = () => {
     
     await addPoints(5, `game_${gameName}`);
     
-    const userRef = doc(db, 'quizLeaderboard', user.id);
-    const userSnap = await getDoc(userRef);
+    // Calculate panorama specific score
+    let panoramaIncrement = 0;
+    if (gameName === 'panorama') panoramaIncrement = gameScore;
     
-    let previousScore = 0;
-    let panoramaScore = 0;
-    let whoAmIScore = 0;
-    let timelineScore = 0;
-    let crosswordScore = 0;
-    let hangmanScore = 0;
-    let wordSearchScore = 0;
-    let cryptogramScore = 0;
-    let anagramScore = 0;
-    let riddlesScore = 0;
-    let sonOfManScore = 0;
-    let davidScore = 0;
-    let abrahamScore = 0;
-    let mosesScore = 0;
-    let paulScore = 0;
-    let currentCredits = credits;
-
-    if (userSnap.exists()) {
-      const data = userSnap.data() as LeaderboardEntry;
-      previousScore = data.score || 0;
-      panoramaScore = data.panoramaScore || 0;
-      whoAmIScore = data.whoAmIScore || 0;
-      timelineScore = data.timelineScore || 0;
-      crosswordScore = data.crosswordScore || 0;
-      hangmanScore = data.hangmanScore || 0;
-      wordSearchScore = (data as any).wordSearchScore || 0;
-      cryptogramScore = (data as any).cryptogramScore || 0;
-      anagramScore = (data as any).anagramScore || 0;
-      riddlesScore = (data as any).riddlesScore || 0;
-      sonOfManScore = (data as any).sonOfManScore || 0;
-      davidScore = (data as any).davidScore || 0;
-      abrahamScore = (data as any).abrahamScore || 0;
-      mosesScore = (data as any).mosesScore || 0;
-      paulScore = (data as any).paulScore || 0;
-      currentCredits = (data as any).credits ?? 50;
+    try {
+      await fetch('/api/games/leaderboard', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          name: user.name || 'Membro',
+          totalScore: gameScore, // It will be incremented
+          panoramaScore: panoramaIncrement
+        })
+      });
+      showToast(`Pontuação salva no ranking geral!`, 'success');
+    } catch (e) {
+      console.error(e);
+      showToast(`Erro ao salvar pontuação.`, 'error');
     }
-
-    // Update the specific game score
-    if (gameName === 'whoami') whoAmIScore = gameScore;
-    if (gameName === 'timeline') timelineScore = gameScore;
-    if (gameName === 'crossword') crosswordScore = gameScore;
-    if (gameName === 'hangman') hangmanScore = gameScore;
-    if (gameName === 'wordsearch') wordSearchScore = gameScore;
-    if (gameName === 'cryptogram') cryptogramScore = gameScore;
-    if (gameName === 'anagram') anagramScore = gameScore;
-    if (gameName === 'riddles') riddlesScore = gameScore;
-
-    const newTotalScore = previousScore + whoAmIScore + timelineScore + crosswordScore + hangmanScore + wordSearchScore + cryptogramScore + anagramScore + riddlesScore + panoramaScore + sonOfManScore + davidScore + abrahamScore + mosesScore + paulScore;
-
-    await setDoc(userRef, {
-      name: user.name || 'Usuário',
-      avatar: user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`,
-      totalScore: newTotalScore,
-      whoAmIScore,
-      timelineScore,
-      crosswordScore,
-      hangmanScore,
-      wordSearchScore,
-      cryptogramScore,
-      anagramScore,
-      riddlesScore,
-      credits: currentCredits,
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-    
-    setCredits(currentCredits);
-    showToast(`Pontuação salva no ranking geral!`, 'success');
   };
 
   const handleSpendCredits = async (amount: number) => {
@@ -1051,14 +892,7 @@ const GamesPage: React.FC = () => {
         {user && activeGame === null && (
           <div className="bg-white dark:bg-zinc-900 rounded-3xl p-6 shadow-xl border border-stone-200 dark:border-zinc-800 mb-8 flex flex-col md:flex-row items-center gap-6">
             <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-amber-400 to-amber-600 p-1">
-                <img 
-                  src={user.photoURL || user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.id}`} 
-                  alt="Avatar" 
-                  className="w-full h-full rounded-full bg-white dark:bg-zinc-800 object-cover"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
+              <AvatarManager size="w-24 h-24" />
               <div className="absolute -bottom-2 -right-2 bg-amber-500 text-white p-2 rounded-xl shadow-lg border-2 border-white dark:border-zinc-900">
                 <Crown size={16} />
               </div>

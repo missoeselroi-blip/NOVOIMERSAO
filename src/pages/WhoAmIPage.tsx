@@ -16,6 +16,10 @@ export default function WhoAmIPage({ onNavigate }: { onNavigate?: (tab: string, 
 
   useEffect(() => {
     const fetchImage = async () => {
+      if (!navigator.onLine) {
+        console.warn('App is offline, skipping Firebase Storage image fetch.');
+        return;
+      }
       try {
         const imageRef = ref(storage, 'Foto/1777479638006.png');
         const url = await getDownloadURL(imageRef);

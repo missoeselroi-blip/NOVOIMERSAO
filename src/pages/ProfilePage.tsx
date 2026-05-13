@@ -30,6 +30,8 @@ import { cn } from '../types';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { THEOLOGY_SUBJECTS } from '../constants/theology';
 import { Medal } from '../components/Medal';
+import { UserSetupModal } from '../components/UserSetupModal';
+import { AvatarManager } from '../components/AvatarManager';
 import { generateCertificate } from '../lib/certificateGenerator';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -40,6 +42,7 @@ export default function ProfilePage() {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<'info' | 'favorites' | 'notes' | 'audios' | 'settings' | 'stats' | 'achievements'>('info');
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [theologyProgress, setTheologyProgress] = useState<any>(null);
 
   const getRankTitle = (score: number) => {
@@ -139,13 +142,11 @@ export default function ProfilePage() {
           <UserIcon size={200} />
         </div>
         
-        <div className="w-32 h-32 bg-emerald-600 rounded-full flex items-center justify-center text-white text-5xl font-bold shadow-2xl shadow-emerald-600/20 overflow-hidden relative group">
-          {user.avatar || user.photoURL ? (
-            <img src={user.avatar || user.photoURL} alt={user.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-          ) : (
-            <UserIcon size={64} />
-          )}
+        <div className="w-32 h-32 flex items-center justify-center">
+            <AvatarManager size="w-32 h-32" />
         </div>
+
+        {isAvatarModalOpen && <UserSetupModal onClose={() => setIsAvatarModalOpen(false)} />}
 
         <div className="text-center md:text-left space-y-2 flex-1">
           <h2 className="text-4xl font-bold font-display">{user.name}</h2>

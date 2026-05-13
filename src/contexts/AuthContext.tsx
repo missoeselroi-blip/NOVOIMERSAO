@@ -44,6 +44,7 @@ interface User {
   email: string;
   photoURL?: string;
   avatar?: string;
+  avatarIndex?: number;
   joinDate: string;
   lastActive?: string;
   role: 'admin' | 'user';
@@ -57,6 +58,7 @@ interface User {
     gold: number;
     trophy: number;
   };
+  displayNameSet?: boolean;
 }
 
 interface Metrics {
@@ -75,7 +77,6 @@ interface AuthContextType {
   metrics: Metrics;
   theologyProgress: any;
   evangelismProgress: any;
-  careerProgress: any;
   notes: any[];
   certificates: any[];
   loginWithGoogle: () => Promise<void>;
@@ -85,6 +86,7 @@ interface AuthContextType {
   updateMetrics: (updates: Partial<Metrics>) => Promise<void>;
   updateSectionTime: (sectionId: string, seconds: number) => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
+  cycleAvatar: () => Promise<void>;
   addPoints: (points: number, activity?: string) => Promise<void>;
   toggleFavorite: (favorite: Omit<Favorite, 'id'>) => Promise<void>;
   addStudy: (study: { title: string; content: string; verseReference?: string; bibleVersion?: string }) => Promise<void>;
@@ -171,7 +173,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [theologyProgress, setTheologyProgress] = useState<any>(null);
   const [evangelismProgress, setEvangelismProgress] = useState<any>(null);
-  const [careerProgress, setCareerProgress] = useState<any>(null);
   const [lastCheck, setLastCheck] = useState<string | null>(null);
   const [notes, setNotes] = useState<any[]>([]);
 
@@ -221,6 +222,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (userDoc.exists()) {
               userData = userDoc.data() as User;
               
+              // Sync to SQLite
+              fetch('/api/sync-user', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: userData.id,
+                  name: userData.name || userData.displayName,
+                  email: userData.email,
+                  avatar_url: userData.avatar || userData.photoURL
+                })
+              }).catch(e => console.error(e));
+
               // Auto-assign admin role to specific email
               if (firebaseUser.email === 'missoeselroi@gmail.com' && userData.role !== 'admin') {
                 userData.role = 'admin';
@@ -325,37 +338,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!user || !db) return;
 
-    const checkAndResetMonthly = async () => {
-      const now = new Date();
-      const monthId = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
-      
-      const careerDocRef = doc(db, 'careerProgress', user.id);
-      const careerDoc = await getDoc(careerDocRef);
-      
-      if (careerDoc.exists()) {
-        const data = careerDoc.data();
-        const lastReset = data.lastReset || '0000-00';
-        
-        if (lastReset !== monthId) {
-          // Save current stats to history
-          const historyDocRef = doc(db, 'careerProgress', user.id, 'monthlyHistory', lastReset);
-          await setDoc(historyDocRef, {
-            points: data.points || 0,
-            rankId: data.rankId || 1,
-            savedAt: new Date().toISOString()
-          });
-          
-          // Reset current stats
-          await updateDoc(careerDocRef, {
-            points: 0,
-            lastReset: monthId
-          });
-        }
-      }
-    };
-    
-    checkAndResetMonthly();
-
     const theologyUnsub = onSnapshot(doc(db, 'theologyProgress', user.id), (doc) => {
       if (doc.exists()) setTheologyProgress(doc.data());
     }, (error) => {
@@ -366,42 +348,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (doc.exists()) setEvangelismProgress(doc.data());
     }, (error) => {
       handleFirestoreError(error, OperationType.GET, `evangelismProgress/${user.id}`);
-    });
-
-    const careerUnsub = onSnapshot(doc(db, 'careerProgress', user.id), async (snapshot) => {
-      if (snapshot.exists()) {
-        const data = snapshot.data();
-        let rankId = data.rankId || 1;
-        const weeklyPoints = data.weeklyPoints || 0;
-        const currentWeekId = getWeekId(new Date());
-        const lastPromotionCheck = data.lastPromotionCheck || getWeekId(new Date());
-
-        // Se mudou a semana, processa promoção/regressão
-        if (lastPromotionCheck !== currentWeekId) {
-          let newRankId = rankId;
-          
-          if (weeklyPoints >= 300) {
-            // PROMOÇÃO
-            newRankId = Math.min(rankId + 1, 12);
-          } else if (weeklyPoints < 200) {
-            // REGRESSÃO
-            newRankId = Math.max(rankId - 1, 1);
-          }
-          // Caso entre 200 e 299, newRankId continua sendo rankId (MANUTENÇÃO)
-
-          await updateDoc(snapshot.ref, {
-            rankId: newRankId,
-            weeklyPoints: 0,
-            lastPromotionCheck: currentWeekId,
-            updatedAt: new Date().toISOString()
-          });
-          rankId = newRankId;
-        }
-        
-        setCareerProgress({ ...data, rankId });
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, `careerProgress/${user.id}`);
     });
 
     const notesQuery = query(collection(db, 'notes'), where('userId', '==', user.id));
@@ -449,7 +395,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       theologyUnsub();
       evangelismUnsub();
-      careerUnsub();
       notesUnsub();
       certsUnsub();
       metricsUnsub();
@@ -543,16 +488,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await updateDoc(userDocRef, updates);
       
+      // Sync to SQLite locally
+      fetch('/api/sync-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: user.id,
+          name: updates.name || user.name,
+          email: user.email,
+          avatar_url: updates.avatar || updates.photoURL || user.avatar || user.photoURL
+        })
+      }).catch(e => console.error(e));
+
       // Sync avatar if it's being updated
       const newAvatar = updates.avatar || updates.photoURL;
       if (newAvatar) {
-        // Sync with careerProgress
-        const careerDocRef = doc(db, 'careerProgress', user.id);
-        await updateDoc(careerDocRef, { 
-          avatar: newAvatar,
-          name: updates.name || user.name 
-        }).catch(() => {});
-        
         // Sync with bibleRaceProgress
         const raceProgressRef = doc(db, 'bibleRaceProgress', user.id);
         await updateDoc(raceProgressRef, { 
@@ -613,52 +563,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const addPoints = async (points: number, activity?: string) => {
-    if (!user || !db) return;
-    const careerDocRef = doc(db, 'careerProgress', user.id);
-    // As per user request: "5 pontos para todas as atividades realizadas no App"
-    const fixedPoints = 5;
-    
-    try {
-      const careerDoc = await getDoc(careerDocRef);
-      if (careerDoc.exists()) {
-        await updateDoc(careerDocRef, { 
-          points: increment(fixedPoints),
-          weeklyPoints: increment(fixedPoints),
-          activityPoints: increment(fixedPoints),
-          lastActivity: activity || 'general',
-          updatedAt: new Date().toISOString()
-        });
-      } else {
-        await setDoc(careerDocRef, {
-          userId: user.id,
-          name: user.name || 'Membro',
-          avatar: user.avatar || user.photoURL || '',
-          points: fixedPoints,
-          weeklyPoints: fixedPoints,
-          activityPoints: fixedPoints,
-          rankId: 1,
-          authorized: false,
-          lastPromotionCheck: getWeekId(new Date()),
-          lastActivity: activity || 'general',
-          updatedAt: new Date().toISOString()
-        });
-      }
-    } catch (error) {
-      handleFirestoreError(error, OperationType.UPDATE, `careerProgress/${user.id}`);
-    }
-  };
-
-  const logout = async () => {
-    if (!auth) return;
-    try {
-      await signOut(auth);
-      setUser(null);
-    } catch (error) {
-      console.error("Error logging out:", error);
-    }
-  };
-
   const updateMetrics = async (updates: Partial<Metrics>) => {
     if (!user || !db) return;
     const metricsDocRef = doc(db, 'metrics', user.id);
@@ -686,12 +590,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const cycleAvatar = async () => {
+    if (!user || !db) return;
+    const nextIndex = ((user.avatarIndex || 0) + 1) % 3;
+    let avatarUrl = '';
+    if (nextIndex === 0) {
+      avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=man-${Math.random()}`;
+    } else if (nextIndex === 1) {
+      avatarUrl = `https://api.dicebear.com/7.x/adventurer/svg?seed=woman-${Math.random()}`;
+    } else {
+      avatarUrl = `https://api.dicebear.com/7.x/notionists/svg?seed=animal-${Math.random()}`;
+    }
+    
+    await updateUser({ avatar: avatarUrl, avatarIndex: nextIndex });
+  };
+
+  const addPoints = async (points: number, activity?: string) => {
+    // Career logic removed
+  };
+
+  const logout = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      setUser(null);
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   const value = useMemo(() => ({ 
     user, 
     metrics, 
     theologyProgress,
     evangelismProgress,
-    careerProgress,
     notes,
     certificates,
     loginWithGoogle, 
@@ -701,6 +633,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateMetrics, 
     updateSectionTime,
     updateUser,
+    cycleAvatar,
     addPoints,
     toggleFavorite,
     addStudy,
@@ -710,7 +643,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     metrics, 
     theologyProgress,
     evangelismProgress,
-    careerProgress,
     notes,
     certificates,
     loginWithGoogle,
@@ -720,6 +652,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateMetrics,
     updateSectionTime,
     updateUser,
+    cycleAvatar,
     addPoints,
     toggleFavorite,
     addStudy,

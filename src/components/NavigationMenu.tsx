@@ -7,7 +7,6 @@ const navItems = [
   { id: 'bible', label: 'Bíblia Online', icon: <Book size={20} />, path: '/bible' },
   { id: 'study', label: 'Estudo Bíblico', icon: <BookOpen size={20} />, path: '/study' },
   { id: 'notebook', label: 'Esboço', icon: <FileText size={20} />, path: '/notebook' },
-  { id: 'career', label: 'Treinamentos', icon: <GraduationCap size={20} />, path: '/career' },
   { id: 'posts', label: 'Posts', icon: <Newspaper size={20} />, path: '/posts' },
   { id: 'quiz', label: 'Jogos', icon: <Zap size={20} />, path: '/quiz' },
   { id: 'contact', label: 'Contato', icon: <Mail size={20} />, path: '/contact' },

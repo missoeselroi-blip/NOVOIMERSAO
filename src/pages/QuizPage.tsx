@@ -18,7 +18,7 @@ interface Question {
 interface RankingEntry {
   userId: string;
   name: string;
-  score: number;
+  totalScore: number;
 }
 
 const QuizPage: React.FC = () => {
@@ -55,13 +55,11 @@ const QuizPage: React.FC = () => {
 
   const fetchRanking = async () => {
     try {
-      const q = query(collection(db, 'quizCellLeaderboard'), orderBy('score', 'desc'), limit(5));
-      const querySnapshot = await getDocs(q);
-      const rankingData = querySnapshot.docs.map(doc => ({
-        userId: doc.id,
-        ...doc.data()
-      })) as RankingEntry[];
-      setRanking(rankingData);
+      const res = await fetch('/api/games/leaderboard');
+      if (res.ok) {
+        const rankingData = await res.json();
+        setRanking(rankingData);
+      }
     } catch (e) {
       console.error("Error fetching ranking", e);
     }
@@ -70,22 +68,15 @@ const QuizPage: React.FC = () => {
   const saveScore = async (finalScore: number) => {
     if (!user) return;
     try {
-      const userRef = doc(db, 'quizCellLeaderboard', user.id);
-      const userDoc = await getDoc(userRef);
-      if (userDoc.exists()) {
-        await updateDoc(userRef, {
-            score: Math.max(finalScore, userDoc.data().score),
-            name: user.name || 'Usuário',
-            updatedAt: new Date().toISOString()
-        });
-      } else {
-        await setDoc(userRef, {
-            userId: user.id,
-            name: user.name || 'Usuário',
-            score: finalScore,
-            updatedAt: new Date().toISOString()
-        });
-      }
+      await fetch('/api/games/leaderboard', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          name: user.name || 'Usuário',
+          totalScore: finalScore,
+        })
+      });
       fetchRanking();
     } catch (e) {
       console.error("Error saving score", e);
@@ -194,7 +185,7 @@ const QuizPage: React.FC = () => {
                 {ranking.map((entry, index) => (
                     <div key={entry.userId} className="flex justify-between items-center bg-zinc-700/50 p-2 rounded">
                         <span>{index + 1}. {entry.name}</span>
-                        <span className="font-bold text-emerald-400">{entry.score} pts</span>
+                        <span className="font-bold text-emerald-400">{entry.totalScore} pts</span>
                     </div>
                 ))}
               </div>

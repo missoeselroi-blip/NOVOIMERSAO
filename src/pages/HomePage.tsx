@@ -442,7 +442,6 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
     { id: 'truth-detector', label: 'Fato ou Fake', desc: 'Detector de Verdade.', icon: <ShieldCheck size={20} className="text-[#3B82F6]" />, color: 'bg-[#3B82F6]/10 shadow-[#3B82F6]/5', image: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'bible-race', label: 'Corrida Bíblica', desc: 'A Jornada da Palavra.', icon: <Trophy size={20} className="text-[#5B8A9A]" />, color: 'bg-[#5B8A9A]/10 shadow-[#5B8A9A]/5', image: 'https://images.unsplash.com/photo-1552674605-171ff3ea36f0?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'notebook', label: 'Meu Caderno', desc: 'Suas anotações.', icon: <StickyNote size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1517842645767-c639042777db?auto=format&fit=crop&q=80&w=400&h=300' },
-    { id: 'career', label: 'Carreira', desc: 'Crescimento ministerial.', icon: <Trophy size={20} className="text-[#606C38]" />, color: 'bg-[#606C38]/10 shadow-[#606C38]/5', image: 'https://picsum.photos/seed/soldier-salute/400/300' },
     { id: 'store', label: 'Livros', desc: 'Biblioteca selecionada.', icon: <Library size={20} className="text-[#D4A373]" />, color: 'bg-[#D4A373]/10 shadow-[#D4A373]/5', image: 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'posts', label: 'Post', desc: 'Artes com IA.', icon: <ImageIcon size={20} className="text-[#E2725B]" />, color: 'bg-[#E2725B]/10 shadow-[#E2725B]/5', image: 'https://images.unsplash.com/photo-1492724441997-5dc865305da7?auto=format&fit=crop&q=80&w=400&h=300' },
     { id: 'credits', label: 'Créditos', desc: 'Gerencie seus créditos.', icon: <Sparkles size={20} className="text-[#8A9A5B]" />, color: 'bg-[#8A9A5B]/10 shadow-[#8A9A5B]/5', image: 'https://images.unsplash.com/photo-1621416894569-0f39ed31d247?auto=format&fit=crop&q=80&w=400&h=300' },
@@ -991,41 +990,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
       </div>
 
       {/* Rank Congratulation */}
-      {user && careerProgress && (
-        <motion.div 
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="mb-12 p-8 rounded-[2.5rem] bg-gradient-to-br from-emerald-600 to-emerald-800 text-white shadow-xl relative overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <Trophy size={100} />
-          </div>
-          <div className="relative z-10 flex flex-col md:flex-row items-center gap-6">
-            <div className="w-24 h-24 rounded-full border-4 border-white/20 p-1 bg-white/10">
-               <img 
-                 src={user.avatar || RANKS.find(r => r.id === careerProgress.rankId)?.image} 
-                 alt="" 
-                 className="w-full h-full rounded-full object-cover" 
-                 referrerPolicy="no-referrer"
-               />
-            </div>
-            <div className="text-center md:text-left space-y-2">
-              <h3 className="text-2xl font-black tracking-tight">Parabéns, {user.name.split(' ')[0]}! 🎉</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-center md:justify-start gap-3">
-                  <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Título</span>
-                  <span className="text-white font-black underline decoration-emerald-400 decoration-2 underline-offset-4">{getGameTitle(calculateTotalScore(userQuizStats))}</span>
-                </div>
-                <div className="flex items-center justify-center md:justify-start gap-3">
-                  <span className="bg-white/10 w-20 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-white text-center flex-shrink-0">Patente</span>
-                  <span className="text-white font-black uppercase tracking-wider text-sm">{RANKS.find(r => r.id === careerProgress.rankId)?.name} — {RANKS.find(r => r.id === careerProgress.rankId)?.category}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      )}
+      {/* Removed the rank congratulatory banner as per user request */}
 
       {/* Daily Verse Section */}
       <motion.div 

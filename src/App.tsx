@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
+import { AvatarManager } from './components/AvatarManager';
 import { lazyWithRetry } from './utils/lazyWithRetry';
 import { 
   HashRouter as Router,
@@ -75,7 +76,6 @@ const BibleStudyPage = lazyWithRetry(() => import('./pages/BibleStudyPage'));
 const StorePage = lazyWithRetry(() => import('./pages/StorePage'));
 const PostsPage = lazyWithRetry(() => import('./pages/PostsPage'));
 const ForumPage = lazyWithRetry(() => import('./pages/ForumPage'));
-const CareerPage = lazyWithRetry(() => import('./pages/CareerPage'));
 const WhoAmIPage = lazyWithRetry(() => import('./pages/WhoAmIPage'));
 const ContactPage = lazyWithRetry(() => import('./pages/ContactPage'));
 const NotebookPage = lazyWithRetry(() => import('./pages/NotebookPage'));
@@ -109,6 +109,7 @@ const TruthDetectorPage = lazyWithRetry(() => import('./pages/TruthDetectorPage'
 const SpokenBiblePage = lazyWithRetry(() => import('./pages/SpokenBiblePage'));
 const QuizPage = lazyWithRetry(() => import('./pages/QuizPage'));
 
+import { UserSetupModal } from './components/UserSetupModal';
 import { ToastProvider, useToast } from './components/Toast';
 import { CreditProvider, useCredits } from './contexts/CreditContext';
 import { OfflineProvider, useOffline } from './contexts/OfflineContext';
@@ -229,7 +230,7 @@ function AppContent() {
   }
 
   const handleNavigate = (tabId: string, state?: any) => {
-    const protectedTabs = ['theology', 'career', 'notebook', 'journal'];
+    const protectedTabs = ['theology', 'notebook', 'journal'];
     if (protectedTabs.includes(tabId) && !user) {
       setPendingTab(tabId);
       setIsAuthModalOpen(true);
@@ -283,7 +284,6 @@ function AppContent() {
     { id: 'quiz', label: 'JOGOS', subtitle: 'Desafios Bíblicos', icon: <Zap size={20} />, component: <GamesPage /> },
     { id: 'quiz-celula', label: 'Quiz Célula', subtitle: 'Desafio da Lição', icon: <Zap size={20} />, component: <QuizPage />, hidden: true },
     { id: 'bible-race', label: 'Corrida Bíblica', subtitle: 'A Jornada da Palavra', icon: <Trophy size={20} />, component: <BibleRacePage /> },
-    { id: 'career', label: 'Carreira', subtitle: 'Sua jornada ministerial', icon: <Medal size={20} />, component: <CareerPage /> },
     { id: 'store', label: 'Livros', subtitle: 'Livros e recursos', icon: <Library size={20} />, component: <StorePage /> },
     { id: 'who-am-i', label: 'Quem Somos?', subtitle: 'Nossa história', icon: <User size={20} />, component: <WhoAmIPage onNavigate={handleNavigate} /> },
     { id: 'donate', label: 'Doe', subtitle: 'Apoie a obra', icon: <Heart size={20} />, component: <DonatePage /> },
@@ -307,8 +307,10 @@ function AppContent() {
   const activeComponent = activeItem?.component || <HomePage onNavigate={handleNavigate} deepThinking={deepThinking} setDeepThinking={setDeepThinking} />;
 
   return (
-    <div className={cn(
-      "min-h-screen transition-colors duration-700 relative overflow-hidden bg-app-bg text-app-text",
+    <>
+      {user && !user.displayNameSet && <UserSetupModal isInitial onClose={() => {}} />}
+      <div className={cn(
+        "min-h-screen transition-colors duration-700 relative overflow-hidden bg-app-bg text-app-text",
       fontFamily === 'dyslexic' ? 'font-dyslexic' : 
       fontFamily === 'serif' ? 'font-serif' : 
       fontFamily === 'mono' ? 'font-mono' : 'font-sans',
@@ -741,15 +743,9 @@ function AppContent() {
                     )}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <img 
-                          src={user.avatar || user.photoURL} 
-                          alt={user.name} 
-                          className="w-10 h-10 rounded-full border-2 border-emerald-500"
-                          referrerPolicy="no-referrer"
-                        />
+                        <AvatarManager size="w-10 h-10" />
                         <div>
                           <p className="text-sm font-bold">{user.name}</p>
-                          <p className="text-[10px] text-stone-400 uppercase tracking-widest">Membro da Marinha</p>
                         </div>
                       </div>
                       <button
@@ -947,6 +943,7 @@ function AppContent() {
         </div>
       </footer>
     </div>
+    </>
   );
 }
 

@@ -9,6 +9,7 @@ import OpenAI from 'openai';
 import axios from 'axios';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getDb } from './db.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -149,6 +150,239 @@ async function startServer() {
   app.use('/api', (req, res, next) => {
     console.log(`[API] ${req.method} ${req.url}`);
     next();
+  });
+
+  // Local SQLite API
+  app.post('/api/sync-user', async (req, res) => {
+    const { id, name, email, avatar_url } = req.body;
+    try {
+      const dbSQLite = await getDb();
+      await dbSQLite.run(
+        `INSERT INTO users (id, name, email, avatar_url) VALUES (?, ?, ?, ?)
+         ON CONFLICT(id) DO UPDATE SET name=excluded.name, email=excluded.email, avatar_url=excluded.avatar_url`,
+        [id, name, email, avatar_url]
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      console.error(e);
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/career/progress/:userId', async (req, res) => {
+    try {
+      const dbSQLite = await getDb();
+      const progress = await dbSQLite.get('SELECT * FROM career_progress WHERE user_id = ?', [req.params.userId]);
+      if (!progress) {
+        return res.json({ points: 0, weekly_points: 0, authorized: false });
+      }
+      res.json({
+        userId: progress.user_id,
+        points: progress.points,
+        weeklyPoints: progress.weekly_points,
+        authorized: Boolean(progress.authorized),
+        rankId: progress.rank_id,
+        lastPromotionCheck: progress.last_promotion_check,
+        trend: progress.trend,
+        avatar: progress.avatar,
+        name: progress.name,
+        activityPoints: progress.activity_points,
+        lastActivity: progress.last_activity,
+        lastReset: progress.last_reset,
+        updatedAt: progress.updated_at
+      });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put('/api/career/progress', async (req, res) => {
+    const { userId, rankId, weeklyPoints, lastPromotionCheck, trend, lastReset } = req.body;
+    try {
+      const dbSQLite = await getDb();
+      await dbSQLite.run(
+        `UPDATE career_progress SET 
+         rank_id = coalesce(?, rank_id), 
+         weekly_points = coalesce(?, weekly_points), 
+         last_promotion_check = coalesce(?, last_promotion_check), 
+         trend = coalesce(?, trend),
+         last_reset = coalesce(?, last_reset),
+         updated_at = CURRENT_TIMESTAMP
+         WHERE user_id = ?`,
+        [rankId, weeklyPoints, lastPromotionCheck, trend, lastReset, userId]
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/career/history', async (req, res) => {
+    const { userId, monthId, points, rankId } = req.body;
+    try {
+      const dbSQLite = await getDb();
+      await dbSQLite.run(
+        `INSERT INTO career_progress_history (user_id, month_id, points, rank_id) 
+         VALUES (?, ?, ?, ?) ON CONFLICT DO NOTHING`,
+         [userId, monthId, points, rankId]
+      );
+      res.json({ success: true });
+    } catch(e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/career/progress', async (req, res) => {
+    const { userId, pointsToAdd } = req.body;
+    if (!userId || !pointsToAdd) return res.status(400).json({ error: 'Missing userId or pointsToAdd' });
+    try {
+      const dbSQLite = await getDb();
+      // Insert if not exists
+      await dbSQLite.run(
+        `INSERT INTO career_progress (user_id, points, weekly_points, authorized) VALUES (?, ?, ?, 0)
+         ON CONFLICT(user_id) DO UPDATE SET 
+         points = points + excluded.points,
+         weekly_points = weekly_points + excluded.points`,
+        [userId, pointsToAdd, pointsToAdd]
+      );
+      
+      const updated = await dbSQLite.get('SELECT * FROM career_progress WHERE user_id = ?', [userId]);
+      res.json(updated);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/career/leaderboard', async (req, res) => {
+    try {
+      const dbSQLite = await getDb();
+      const leaderboard = await dbSQLite.all(`
+        SELECT u.id, u.name as displayName, u.avatar_url as photoURL, 
+               c.points, c.weekly_points as weeklyPoints, c.rank_id as rankId, 
+               c.authorized, c.stars
+        FROM career_progress c
+        LEFT JOIN users u ON c.user_id = u.id
+        ORDER BY c.points DESC
+      `);
+      const mapped = leaderboard.map(l => ({
+        id: l.id || 'unknown',
+        name: l.displayName || 'Membro da Marinha',
+        avatar: l.photoURL || '',
+        points: l.points,
+        rankId: l.rankId || 1,
+        weeklyPoints: l.weeklyPoints,
+        stars: l.stars || 0,
+        authorized: l.authorized === 1
+      }));
+      res.json(mapped);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/games/leaderboard', async (req, res) => {
+    try {
+      const type = req.query.type || 'totalScore';
+      let orderBy = 'total_score';
+      if (type === 'battlesWon') orderBy = 'battles_won';
+      if (type === 'panoramaScore') orderBy = 'panorama_score';
+      
+      const dbSQLite = await getDb();
+      console.log(`[API Leaderboard] Querying with order: ${orderBy}`);
+      const leaderboard = await dbSQLite.all(`SELECT * FROM quiz_leaderboard ORDER BY ${orderBy} DESC LIMIT 20`);
+      
+      const formatted = leaderboard.map(l => ({
+        userId: l.user_id,
+        name: l.name,
+        avatar: l.avatar,
+        totalScore: l.total_score,
+        questionsAnswered: l.questions_answered,
+        battlesWon: l.battles_won,
+        panoramaScore: l.panorama_score
+      }));
+      res.json(formatted);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.put('/api/games/leaderboard', async (req, res) => {
+    const { userId, name, avatar, totalScore, questionsAnswered, battlesWon, panoramaScore } = req.body;
+    try {
+      const dbSQLite = await getDb();
+      await dbSQLite.run(`
+        INSERT INTO quiz_leaderboard (user_id, name, avatar, total_score, questions_answered, battles_won, panorama_score)
+        VALUES (?, ?, ?, COALESCE(?,0), COALESCE(?,0), COALESCE(?,0), COALESCE(?,0))
+        ON CONFLICT(user_id) DO UPDATE SET
+          name = COALESCE(excluded.name, name),
+          avatar = COALESCE(excluded.avatar, avatar),
+          total_score = total_score + COALESCE(excluded.total_score, 0),
+          questions_answered = questions_answered + COALESCE(excluded.questions_answered, 0),
+          battles_won = battles_won + COALESCE(excluded.battles_won, 0),
+          panorama_score = panorama_score + COALESCE(excluded.panorama_score, 0),
+          updated_at = CURRENT_TIMESTAMP
+      `, [userId, name, avatar, totalScore, questionsAnswered, battlesWon, panoramaScore]);
+      res.json({ success: true });
+    } catch(e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/games/leaderboard/:userId', async (req, res) => {
+    try {
+      const dbSQLite = await getDb();
+      const user = await dbSQLite.get(`SELECT * FROM quiz_leaderboard WHERE user_id = ?`, [req.params.userId]);
+      if (!user) return res.json(null);
+      res.json({
+        userId: user.user_id,
+        name: user.name,
+        avatar: user.avatar,
+        totalScore: user.total_score,
+        questionsAnswered: user.questions_answered,
+        battlesWon: user.battles_won,
+        panoramaScore: user.panorama_score
+      });
+    } catch(e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+  
+  app.post('/api/games/score', async (req, res) => {
+    const { userId, gameName, score } = req.body;
+    try {
+      const dbSQLite = await getDb();
+      await dbSQLite.run('INSERT INTO game_scores (user_id, game_name, score) VALUES (?, ?, ?)', [userId, gameName, score]);
+      // Also update career points automatically
+      await dbSQLite.run(
+        `INSERT INTO career_progress (user_id, points, weekly_points, authorized) VALUES (?, ?, ?, 0)
+         ON CONFLICT(user_id) DO UPDATE SET 
+         points = points + excluded.points,
+         weekly_points = weekly_points + excluded.points`,
+        [userId, score, score]
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  app.post('/api/quiz/score', async (req, res) => {
+    const { userId, quizId, score } = req.body;
+    try {
+      const dbSQLite = await getDb();
+      await dbSQLite.run('INSERT INTO quiz_scores (user_id, quiz_id, score) VALUES (?, ?, ?)', [userId, quizId, score]);
+      // Also update career points automatically
+      await dbSQLite.run(
+        `INSERT INTO career_progress (user_id, points, weekly_points, authorized) VALUES (?, ?, ?, 0)
+         ON CONFLICT(user_id) DO UPDATE SET 
+         points = points + excluded.points,
+         weekly_points = weekly_points + excluded.points`,
+        [userId, score, score]
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
   });
 
   // API Routes
