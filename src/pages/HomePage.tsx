@@ -250,7 +250,7 @@ export default function HomePage({ onNavigate, deepThinking, setDeepThinking }: 
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
-  const { user, toggleFavorite, addPoints, careerProgress } = useAuth();
+  const { user, toggleFavorite, addPoints } = useAuth();
   const [userQuizStats, setUserQuizStats] = useState<any>(null);
   
   useEffect(() => {

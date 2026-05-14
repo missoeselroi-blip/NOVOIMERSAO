@@ -35,7 +35,7 @@ const RULES = [
 ];
 
 export default function ForumPage() {
-  const { user, addPoints, careerProgress } = useAuth();
+  const { user, addPoints } = useAuth();
   const { fontFamily, fontSize, lineHeight } = useAccessibility();
   const { saveTrack } = useAudioBox();
   const { showToast } = useToast();
@@ -75,7 +75,7 @@ export default function ForumPage() {
     }
 
     try {
-      const currentRank = RANKS.find(r => r.id === (careerProgress?.rankId || 1))?.name || 'Recruta';
+      const currentRank = 'Recruta';
       
       await addDoc(collection(db, 'forumPosts'), {
         author: user.name,

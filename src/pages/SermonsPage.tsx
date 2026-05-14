@@ -90,7 +90,7 @@ const SermonsPage = () => {
 
     const q = query(
       collection(db, 'userSermons'),
-      where('userId', '==', user.uid),
+      where('userId', '==', user.id),
       orderBy('createdAt', 'desc')
     );
 
@@ -180,14 +180,14 @@ const SermonsPage = () => {
 
     try {
       const fileExt = recorderType === 'video' ? 'webm' : 'webm';
-      const fileName = `sermons/${user.uid}/${Date.now()}.${fileExt}`;
+      const fileName = `sermons/${user.id}/${Date.now()}.${fileExt}`;
       const fileRef = ref(storage, fileName);
       
       await uploadBytes(fileRef, mediaBlob);
       const downloadUrl = await getDownloadURL(fileRef);
 
       await addDoc(collection(db, 'userSermons'), {
-        userId: user.uid,
+        userId: user.id,
         title: sermonTitle,
         notes: sermonNotes,
         mediaUrl: downloadUrl,

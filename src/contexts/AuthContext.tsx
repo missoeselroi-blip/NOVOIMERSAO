@@ -228,7 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   id: userData.id,
-                  name: userData.name || userData.displayName,
+                  name: userData.name,
                   email: userData.email,
                   avatar_url: userData.avatar || userData.photoURL
                 })
@@ -308,7 +308,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setUser(null);
           setTheologyProgress(null);
           setEvangelismProgress(null);
-          setCareerProgress(null);
           setNotes([]);
           setCertificates([]);
           setMetrics({

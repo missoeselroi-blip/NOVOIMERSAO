@@ -6,6 +6,7 @@ import { geminiService } from '../services/geminiService';
 import { Lesson } from '../data/lessons_static';
 import { cn } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../components/Toast';
 import { db } from '../lib/firebase';
 import { doc, getDoc, setDoc, updateDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
@@ -37,21 +38,23 @@ const QuizPage: React.FC = () => {
   const [ranking, setRanking] = useState<RankingEntry[]>([]);
   const [feedback, setFeedback] = useState<'correct' | 'wrong' | null>(null);
 
+  const { showToast } = useToast();
+
   useEffect(() => {
     if (!lesson) navigate('/lesson');
     fetchRanking();
   }, [lesson, navigate]);
 
   useEffect(() => {
-    if (view === 'active' && timer > 0 && selectedAnswer === null) {
+    if (view === 'active' && timer > 0 && selectedAnswer === null && questions.length > 0) {
       const interval = setInterval(() => setTimer((t) => t - 1), 1000);
       return () => clearInterval(interval);
-    } else if (view === 'active' && timer === 0 && selectedAnswer === null) {
+    } else if (view === 'active' && timer === 0 && selectedAnswer === null && questions.length > 0) {
       setScore(s => s - 10);
       const timeoutAnswer = -1;
       handleAnswer(timeoutAnswer); // Time out
     }
-  }, [timer, view, selectedAnswer]);
+  }, [timer, view, selectedAnswer, questions]);
 
   const fetchRanking = async () => {
     try {
@@ -105,11 +108,20 @@ const QuizPage: React.FC = () => {
       
       const response = await geminiService.generateText(prompt);
       const cleanedResponse = response.replace(/```json|```/g, '').trim();
-      setQuestions(JSON.parse(cleanedResponse));
+      let parsed = JSON.parse(cleanedResponse);
+      if (!Array.isArray(parsed) && parsed.questions) {
+        parsed = parsed.questions;
+      }
+      if (!Array.isArray(parsed) || parsed.length === 0) {
+        throw new Error("Invalid format returned by AI");
+      }
+      setQuestions(parsed);
       setLoading(false);
     } catch (error) {
       console.error("Error:", error);
       setLoading(false);
+      setView('rules');
+      showToast("Erro ao gerar o quiz. O modelo de IA produziu um formato inválido. Tente novamente.", 'error');
     }
   };
 
@@ -196,7 +208,7 @@ const QuizPage: React.FC = () => {
       
       {view === 'active' && loading ? (
         <div className="flex items-center justify-center flex-1">Carregando...</div>
-      ) : view === 'active' && (
+      ) : view === 'active' && questions.length > 0 ? (
         <div className="flex flex-col flex-1 justify-center">
           <div className="flex justify-between items-center mb-8">
             <span className="text-xl font-bold">Pergunta {currentQuestionIndex + 1}/{questions.length}</span>
@@ -226,7 +238,7 @@ const QuizPage: React.FC = () => {
             ))}
           </div>
         </div>
-      )}
+      ) : null}
       
       {view === 'finished' && (
         <div className="flex flex-col items-center justify-center flex-1">
