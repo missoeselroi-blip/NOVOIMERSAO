@@ -54,8 +54,8 @@ const getDB = () => {
 };
 const saveDB = (db) => localStorage.setItem('mock_db', JSON.stringify(db));
 
-const listeners = new Set();
-const notify = (path) => {
+const listeners = new Set<Function>();
+const notify = (path: string) => {
     listeners.forEach(l => l(path));
 };
 

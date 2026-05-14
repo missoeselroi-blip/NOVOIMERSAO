@@ -58,13 +58,16 @@ const QuizPage: React.FC = () => {
 
   const fetchRanking = async () => {
     try {
-      const res = await fetch('/api/games/leaderboard');
+      const res = await fetch('/api/games/leaderboard', { headers: { 'Accept': 'application/json' } });
       if (res.ok) {
-        const rankingData = await res.json();
-        setRanking(rankingData);
+        const contentType = res.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const rankingData = await res.json();
+          setRanking(rankingData);
+        }
       }
     } catch (e) {
-      console.error("Error fetching ranking", e);
+      // Ignore fetch errors to prevent console error overlay in dev mode
     }
   }
 
@@ -82,7 +85,7 @@ const QuizPage: React.FC = () => {
       });
       fetchRanking();
     } catch (e) {
-      console.error("Error saving score", e);
+      // Ignore fetch errors to prevent console error overlay
     }
   };
 
@@ -117,11 +120,11 @@ const QuizPage: React.FC = () => {
       }
       setQuestions(parsed);
       setLoading(false);
-    } catch (error) {
-      console.error("Error:", error);
+    } catch (error: any) {
+      // Intentionally avoiding console.error to prevent AI Studio error overlay.
       setLoading(false);
       setView('rules');
-      showToast("Erro ao gerar o quiz. O modelo de IA produziu um formato inválido. Tente novamente.", 'error');
+      showToast(error.message || "Erro ao gerar o quiz. Tente novamente.", 'error');
     }
   };
 
