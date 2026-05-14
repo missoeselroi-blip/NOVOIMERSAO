@@ -8,14 +8,10 @@ const __dirname = path.dirname(__filename);
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.API_KEY || env.GEMINI_API_KEY || env.VITE_GEMINI_API_KEY || "";
 
   return {
     plugins: [react()],
     define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(GEMINI_API_KEY),
-      'import.meta.env.VITE_GEMINI_API_KEY': JSON.stringify(GEMINI_API_KEY),
       'import.meta.env.VITE_STRIPE_PUBLIC_KEY': JSON.stringify(process.env.VITE_STRIPE_PUBLIC_KEY || env.VITE_STRIPE_PUBLIC_KEY || ""),
     },
     server: {

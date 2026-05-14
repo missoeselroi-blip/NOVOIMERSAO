@@ -64,7 +64,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ShareButtons } from '../components/ShareButtons';
 import { MarkdownRenderer } from '../components/MarkdownRenderer';
 import { AudioSearchButton } from '../components/AudioSearchButton';
-import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
+import { Type, ThinkingLevel } from "../services/geminiService";
 import { geminiService } from '../services/geminiService';
 import { cn } from '../types';
 import { AudioConfirmationModal } from '../components/AudioConfirmationModal';

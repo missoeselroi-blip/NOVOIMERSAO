@@ -1,18 +1,93 @@
-import { GoogleGenAI, Modality, ThinkingLevel, Type } from "@google/genai";
-export { GoogleGenAI, Modality, ThinkingLevel, Type };
+export enum Modality {
+  TEXT = "TEXT",
+  IMAGE = "IMAGE",
+  AUDIO = "AUDIO"
+}
+
+export enum ThinkingLevel {
+  MINIMAL = "MINIMAL",
+  LOW = "LOW",
+  HIGH = "HIGH"
+}
+
+export enum Type {
+  STRING = "STRING",
+  NUMBER = "NUMBER",
+  INTEGER = "INTEGER",
+  BOOLEAN = "BOOLEAN",
+  ARRAY = "ARRAY",
+  OBJECT = "OBJECT"
+}
+
+export class GoogleGenAI {}
 
 const getAI = () => {
-  const apiKey = process.env.GEMINI_API_KEY;
-
-  if (!apiKey || apiKey === "undefined" || apiKey === "null") {
-    throw new Error("Chave de API não encontrada. Por favor, adicione GEMINI_API_KEY em 'Settings > Secrets' no seu painel de controle. 🔑");
-  }
-
-  // Debug log to help user verify the key (masked for security)
-  const maskedKey = `${apiKey.substring(0, 4)}...${apiKey.substring(apiKey.length - 4)}`;
-  console.log(`🔑 Gemini API Key detected (Masked): ${maskedKey} | Length: ${apiKey.length}`);
-  
-  return new GoogleGenAI({ apiKey });
+  return {
+    models: {
+      generateContent: async ({ model, contents, config }: any) => {
+        const response = await fetch('/api/gemini/generateContent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model, contents, config })
+        });
+        if (!response.ok) {
+           const errText = await response.text();
+           try {
+             const json = JSON.parse(errText);
+             throw new Error(json.error || 'Gemini error');
+           } catch(e) {
+             throw new Error(errText);
+           }
+        }
+        return response.json();
+      }
+    },
+    chats: {
+      create: ({ model, config, history }: any) => {
+        return {
+          sendMessage: async ({ message }: any) => {
+            const response = await fetch('/api/gemini/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ model, config, history, message })
+            });
+            if (!response.ok) {
+               const errText = await response.text();
+               try {
+                 const json = JSON.parse(errText);
+                 throw new Error(json.error || 'Gemini error');
+               } catch(e) {
+                 throw new Error(errText);
+               }
+            }
+            return response.json();
+          },
+          sendMessageStream: async ({ message }: any) => {
+            const response = await fetch('/api/gemini/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ model, config, history, message })
+            });
+            if (!response.ok) {
+               const errText = await response.text();
+               try {
+                 const json = JSON.parse(errText);
+                 throw new Error(json.error || 'Gemini error');
+               } catch(e) {
+                 throw new Error(errText);
+               }
+            }
+            const data = await response.json();
+            return {
+              async *[Symbol.asyncIterator]() {
+                yield data;
+              }
+            };
+          }
+        };
+      }
+    }
+  };
 };
 
 const MAX_RETRIES = 5; // Increased from 3

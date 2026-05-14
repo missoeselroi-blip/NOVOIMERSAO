@@ -6,6 +6,7 @@ import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Stripe from 'stripe';
 import OpenAI from 'openai';
+import { GoogleGenAI, Modality, ThinkingLevel, Type } from '@google/genai';
 import axios from 'axios';
 import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
@@ -69,9 +70,12 @@ async function startServer() {
   // Initialize AI Clients
   const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
   const stabilityApiKey = process.env.STABILITY_API_KEY;
+  const geminiApiKey = process.env.GEMINI_API_KEY;
+  const gemini = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
 
   if (!process.env.OPENAI_API_KEY) console.warn('⚠️ OPENAI_API_KEY is missing');
   if (!process.env.STABILITY_API_KEY) console.warn('⚠️ STABILITY_API_KEY is missing');
+  if (!geminiApiKey) console.warn('⚠️ GEMINI_API_KEY is missing');
 
   // Stripe Webhook - MUST be before express.json()
   app.post('/api/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
@@ -150,6 +154,38 @@ async function startServer() {
   app.use('/api', (req, res, next) => {
     console.log(`[API] ${req.method} ${req.url}`);
     next();
+  });
+
+  // Gemini API Proxy
+  app.post('/api/gemini/generateContent', async (req, res) => {
+    if (!gemini) return res.status(500).json({ error: 'Gemini API is not configured on the server.' });
+    try {
+      const { model, contents, config } = req.body;
+      const response = await gemini.models.generateContent({ model, contents, config });
+      res.json({
+        text: response.text,
+        candidates: response.candidates
+      });
+    } catch (error: any) {
+      console.error("Gemini server error:", error);
+      res.status(error?.status || 500).json({ error: error.message || 'Gemini error' });
+    }
+  });
+
+  app.post('/api/gemini/chat', async (req, res) => {
+    if (!gemini) return res.status(500).json({ error: 'Gemini API is not configured on the server.' });
+    try {
+      const { model, config, history, message } = req.body;
+      const chat = gemini.chats.create({ model, config, history });
+      const response = await chat.sendMessage({ message });
+      res.json({
+        text: response.text,
+        candidates: response.candidates
+      });
+    } catch (error: any) {
+      console.error("Gemini server error:", error);
+      res.status(error?.status || 500).json({ error: error.message || 'Gemini error' });
+    }
   });
 
   // Local SQLite API
