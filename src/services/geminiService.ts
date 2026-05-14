@@ -2,42 +2,9 @@ import { GoogleGenAI, Modality, ThinkingLevel, Type } from "@google/genai";
 export { GoogleGenAI, Modality, ThinkingLevel, Type };
 
 const getAI = () => {
-  // Priority:
-  // 1. import.meta.env.VITE_GEMINI_API_KEY (Vite standard)
-  // 2. process.env.GEMINI_API_KEY (Defined in vite.config.ts)
-  // 3. window.GEMINI_API_KEY (Manual fallback)
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  const getValidKey = (key: any) => {
-    if (!key || typeof key !== 'string') return null;
-    // Remove quotes, whitespace, and invisible zero-width characters
-    const cleaned = key.trim()
-      .replace(/['"]/g, '')
-      .replace(/[\u200B-\u200D\uFEFF]/g, ''); 
-    
-    if (!cleaned || cleaned === "undefined" || cleaned === "null") return null;
-    return cleaned;
-  };
-
-  // Try multiple sources for the API key, prioritizing runtime injection
-  let apiKey = getValidKey((window as any).RUNTIME_ENV?.VITE_GEMINI_API_KEY);
-  
-  if (!apiKey) {
-    apiKey = getValidKey(import.meta.env.VITE_GEMINI_API_KEY);
-  }
-  
-  if (!apiKey) {
-    apiKey = getValidKey((process.env as any).GEMINI_API_KEY);
-  }
-
-  if (!apiKey) {
-    apiKey = getValidKey((process.env as any).VITE_GEMINI_API_KEY);
-  }
-  
-  if (!apiKey) {
-    apiKey = getValidKey((window as any).GEMINI_API_KEY);
-  }
-  
-  if (!apiKey) {
+  if (!apiKey || apiKey === "undefined" || apiKey === "null") {
     throw new Error("Chave de API não encontrada. Por favor, adicione GEMINI_API_KEY em 'Settings > Secrets' no seu painel de controle. 🔑");
   }
 
@@ -112,7 +79,7 @@ export const geminiService = {
   async generateText(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      const model = "gemini-3-flash-preview";
+      const model = "gemini-flash-latest";
       const response = await ai.models.generateContent({
         model: model,
         contents: prompt,
@@ -128,7 +95,7 @@ export const geminiService = {
   async generateFastText(prompt: string, systemInstruction?: string) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      const model = "gemini-3.1-flash-lite-preview";
+      const model = "gemini-3.1-flash-lite";
       const response = await ai.models.generateContent({
         model: model,
         contents: prompt,
@@ -144,7 +111,7 @@ export const geminiService = {
   async generateTextWithThought(prompt: string, systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      const model = "gemini-3-flash-preview";
+      const model = "gemini-flash-latest";
       const response = await ai.models.generateContent({
         model: model,
         contents: prompt,
@@ -174,7 +141,7 @@ export const geminiService = {
   async generateJSON<T>(prompt: string, systemInstruction?: string, responseSchema?: any): Promise<T> {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      const model = "gemini-3-flash-preview";
+      const model = "gemini-flash-latest";
       const response = await ai.models.generateContent({
         model: model,
         contents: prompt,
@@ -359,7 +326,7 @@ export const geminiService = {
   async searchNews(query: string) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite" : "gemini-flash-latest";
       const response = await ai.models.generateContent({
         model: model,
         contents: `Pesquise as notícias mais recentes sobre: "${query}". 
@@ -376,7 +343,7 @@ export const geminiService = {
   async factCheck(content: string, isImage: boolean = false) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite" : "gemini-flash-latest";
       const prompt = isImage 
         ? "Analise esta imagem e verifique se as informações nela contidas são verdadeiras ou fake news. Use o Google Search para validar os fatos."
         : `Analise o seguinte texto e verifique se é verdade ou fake news: "${content}". Use o Google Search para validar os fatos.`;
@@ -405,7 +372,7 @@ export const geminiService = {
     return withRetry(async () => {
       const ai = getAI();
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite-preview",
+        model: "gemini-3.1-flash-lite",
         contents: [
           { inlineData: { data: base64Audio, mimeType } },
           { text: "Transcreva este áudio exatamente como foi dito. Retorne apenas a transcrição, sem comentários adicionais." }
@@ -418,7 +385,7 @@ export const geminiService = {
   async chat(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite" : "gemini-flash-latest";
       const chat = ai.chats.create({
         model: model,
         config: {
@@ -449,8 +416,8 @@ export const geminiService = {
   async chatStream(message: string, history: any[] = [], systemInstruction?: string, deepThinking: boolean = false) {
     return withRetry(async (currentRetry) => {
       const ai = getAI();
-      // Use a fallback model if we've already retried a few times
-      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite-preview" : "gemini-3-flash-preview";
+      // Use a fallback model
+      const model = currentRetry <= 2 ? "gemini-3.1-flash-lite" : "gemini-flash-latest";
       
       const chat = ai.chats.create({
         model: model,
