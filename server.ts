@@ -4,6 +4,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
+
 import Stripe from 'stripe';
 import OpenAI from 'openai';
 import { GoogleGenAI, Modality, ThinkingLevel, Type } from '@google/genai';
@@ -67,11 +68,31 @@ async function startServer() {
   }
   const stripe = stripeSecretKey ? new Stripe(stripeSecretKey) : null;
 
+  const getValidKey = (key: any) => {
+    if (!key || typeof key !== 'string') return null;
+    const cleaned = key.trim().replace(/['"]/g, '').replace(/[\u200B-\u200D\uFEFF]/g, ''); 
+    if (!cleaned || cleaned === "undefined" || cleaned === "null" || cleaned === "MY_GEMINI_API_KEY" || cleaned === "AIzaSyBdP0lp68wHlKyfTd9qW0eS8KWFWyAprME") return null;
+    return cleaned;
+  };
+
   // Initialize AI Clients
   const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null;
   const stabilityApiKey = process.env.STABILITY_API_KEY;
-  const geminiApiKey = process.env.GEMINI_API_KEY;
+  
+  // Prefer AIza key if multiple are defined
+  let geminiApiKey = getValidKey(process.env.GEMINI_API_KEY);
+  if (!geminiApiKey || !geminiApiKey.startsWith('AIza')) {
+     const altKey = getValidKey(process.env.API_KEY) || getValidKey(process.env.VITE_GEMINI_API_KEY);
+     if (altKey && altKey.startsWith('AIza')) geminiApiKey = altKey;
+  }
+  if (!geminiApiKey) geminiApiKey = getValidKey(process.env.API_KEY) || getValidKey(process.env.VITE_GEMINI_API_KEY);
+  console.log("GEMINI_API_KEY from process.env:", process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0,5) + "... len:" + process.env.GEMINI_API_KEY.length : "missing");
+  console.log("VITE_GEMINI_API_KEY from process.env:", process.env.VITE_GEMINI_API_KEY ? process.env.VITE_GEMINI_API_KEY.substring(0,5) + "... len:" + process.env.VITE_GEMINI_API_KEY.length : "missing");
+  console.log("Cleaned geminiApiKey:", geminiApiKey ? geminiApiKey.substring(0,5) + "... len:" + geminiApiKey.length : "missing");
   const gemini = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
+  if (gemini) {
+    console.log("Gemini client initialized with API key:", geminiApiKey ? geminiApiKey.substring(0,5) + "... len:" + geminiApiKey.length : "missing");
+  }
 
   if (!process.env.OPENAI_API_KEY) console.warn('⚠️ OPENAI_API_KEY is missing');
   if (!process.env.STABILITY_API_KEY) console.warn('⚠️ STABILITY_API_KEY is missing');
@@ -156,6 +177,21 @@ async function startServer() {
     next();
   });
 
+  app.get('/api/debug/keys', (req, res) => {
+    // Collect all env vars that might be an API key (starts with AIza...)
+    const possibleKeys = Object.entries(process.env)
+        .filter(([_, value]) => value && value.startsWith('AIza'))
+        .map(([key, value]) => ({ key, prefix: value!.substring(0, 5) }));
+
+    res.json({
+      geminiApiKeyLen: geminiApiKey?.length || 0,
+      geminiApiKeyPrefix: geminiApiKey?.substring(0, 5) || 'none',
+      viteGeminiKeyLen: process.env.VITE_GEMINI_API_KEY?.length || 0,
+      geminiApiKeyLenActual: geminiApiKey?.length || 0,
+      possibleKeys: possibleKeys
+    });
+  });
+
   // Gemini API Proxy
   app.post('/api/gemini/generateContent', async (req, res) => {
     if (!gemini) return res.status(500).json({ error: 'Gemini API is not configured on the server.' });
@@ -167,11 +203,58 @@ async function startServer() {
         candidates: response.candidates
       });
     } catch (error: any) {
-      console.error("Gemini server error:", error);
-      res.status(error?.status || 500).json({ error: error.message || 'Gemini error' });
+      const statusCode = error?.status || 500;
+      if (statusCode !== 400 && !error?.message?.includes("API key not valid")) {
+        console.error("Gemini server error generateContent:", error);
+      }
+      res.status(statusCode).json({ error: error.message || 'Gemini error' });
     }
   });
 
+  app.post('/api/gemini/generateVideos', async (req, res) => {
+    if (!gemini) return res.status(500).json({ error: 'Gemini API is not configured on the server.' });
+    try {
+      const { model, prompt, config } = req.body;
+      const response = await gemini.models.generateVideos({ model, prompt, config });
+      res.json(response);
+    } catch (error: any) {
+      const statusCode = error?.status || 500;
+      if (statusCode !== 400 && !error?.message?.includes("API key not valid")) {
+        console.error("Gemini server error generateVideos:", error);
+      }
+      res.status(statusCode).json({ error: error.message || 'Gemini error' });
+    }
+  });
+
+  app.get('/api/gemini/downloadVideo', async (req, res) => {
+    if (!gemini) return res.status(500).json({ error: 'Gemini API is not configured on the server.' });
+    try {
+      const { uri } = req.query;
+      const response = await fetch(uri as string, {
+        headers: { 'x-goog-api-key': geminiApiKey }
+      });
+      if (!response.ok) throw new Error("Failed to download video");
+      res.setHeader('Content-Type', 'video/mp4');
+      const buffer = await response.arrayBuffer();
+      res.send(Buffer.from(buffer));
+    } catch (error: any) {
+      console.error("Gemini video download error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+  app.get('/api/gemini/operations/*', async (req, res) => {
+    if (!gemini) return res.status(500).json({ error: 'Gemini API is not configured on the server.' });
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/operations/${req.params[0]}`, {
+        headers: { 'x-goog-api-key': geminiApiKey }
+      });
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+       console.error("Gemini operation error:", error);
+       res.status(error?.status || 500).json({ error: error.message });
+    }
+  });
   app.post('/api/gemini/chat', async (req, res) => {
     if (!gemini) return res.status(500).json({ error: 'Gemini API is not configured on the server.' });
     try {
@@ -183,8 +266,11 @@ async function startServer() {
         candidates: response.candidates
       });
     } catch (error: any) {
-      console.error("Gemini server error:", error);
-      res.status(error?.status || 500).json({ error: error.message || 'Gemini error' });
+      const statusCode = error?.status || 500;
+      if (statusCode !== 400 && !error?.message?.includes("API key not valid")) {
+        console.error("Gemini server error chat:", error);
+      }
+      res.status(statusCode).json({ error: error.message || 'Gemini error' });
     }
   });
 
@@ -770,10 +856,10 @@ async function startServer() {
     `);
   });
 
-  // Only use production mode if NODE_ENV is production AND dist/index.html folder exists
+  // Only use production mode if index.html exists in dist
   const distPath = path.resolve(process.cwd(), 'dist');
   const distIndexHtml = path.resolve(distPath, 'index.html');
-  const isProd = process.env.NODE_ENV === 'production' && fs.existsSync(distIndexHtml);
+  const isProd = fs.existsSync(distIndexHtml);
   const PORT = Number(process.env.PORT) || 3000;
 
   try {
@@ -809,34 +895,34 @@ async function startServer() {
 
       try {
         let template;
-        if (!isProd && vite) {
-          const indexPath = path.resolve(process.cwd(), 'index.html');
-          if (!fs.existsSync(indexPath)) {
-            throw new Error(`Development index.html not found at ${indexPath}`);
-          }
+        console.log(`[Debug] Trying to serve. isProd: ${isProd}, vite defined: ${!!vite}`);
+        
+        // Always try to find an index.html, prefer dist then root
+        let indexPath = distIndexHtml;
+        if (!fs.existsSync(indexPath)) {
+          indexPath = path.resolve(process.cwd(), 'index.html');
+        }
+
+        if (vite) {
+          // Development / Vite mode
           template = fs.readFileSync(indexPath, 'utf-8');
           template = await vite.transformIndexHtml(url, template);
+        } else if (fs.existsSync(indexPath)) {
+          // Production / Static mode
+          template = fs.readFileSync(indexPath, 'utf-8');
         } else {
-          if (!fs.existsSync(distIndexHtml)) {
-            throw new Error(`Production index.html not found at ${distIndexHtml}`);
-          }
-          template = fs.readFileSync(distIndexHtml, 'utf-8');
+          throw new Error(`index.html not found at ${indexPath}`);
         }
 
         // Inject runtime environment variables for the frontend
         const runtimeEnv: Record<string, string> = {};
         
-        // Inject all VITE_ variables from process.env
+        // Inject all VITE_ variables from process.env except API keys
         Object.keys(process.env).forEach(key => {
-          if (key.startsWith('VITE_')) {
+          if (key.startsWith('VITE_') && !key.includes('GEMINI_API_KEY')) {
             runtimeEnv[key] = process.env[key] || "";
           }
         });
-
-        // Ensure GEMINI_API_KEY is also available if not prefixed
-        if (!runtimeEnv.VITE_GEMINI_API_KEY) {
-          runtimeEnv.VITE_GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-        }
 
         const envScript = `<script>window.RUNTIME_ENV = ${JSON.stringify(runtimeEnv)};</script>`;
         template = template.replace('</head>', `${envScript}</head>`);

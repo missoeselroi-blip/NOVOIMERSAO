@@ -392,8 +392,7 @@ const BibleRacePage: React.FC = () => {
     if (!progress || !currentChapterText) return;
     setIsLoadingText(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      const prompt = `Gere um quiz de 3 perguntas de múltipla escolha sobre o capítulo ${progress.currentBook} ${progress.currentChapter} da Bíblia. 
+      const dataText = await geminiService.generateText(`Gere um quiz de 3 perguntas de múltipla escolha sobre o capítulo ${progress.currentBook} ${progress.currentChapter} da Bíblia. 
       O texto do capítulo é: ${currentChapterText.substring(0, 2000)}.
       Retorne APENAS um JSON no formato:
       [
@@ -403,15 +402,8 @@ const BibleRacePage: React.FC = () => {
           "correctAnswer": 0,
           "explanation": "explicação curta"
         }
-      ]`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: { responseMimeType: "application/json" }
-      });
-
-      const questions = JSON.parse(response.text);
+      ]`);
+      const questions = JSON.parse(dataText);
       setQuizQuestions(questions);
       setCurrentQuizIndex(0);
       setQuizScore(0);
@@ -611,8 +603,7 @@ const BibleRacePage: React.FC = () => {
   const startTieBreaker = async () => {
     setIsLoadingText(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      const prompt = `Gere uma Avaliação Bíblica de desempate com 10 perguntas difíceis sobre a Bíblia inteira.
+      const dataText = await geminiService.generateText(`Gere uma Avaliação Bíblica de desempate com 10 perguntas difíceis sobre a Bíblia inteira.
       Retorne APENAS um JSON no formato:
       [
         {
@@ -621,15 +612,8 @@ const BibleRacePage: React.FC = () => {
           "correctAnswer": 0,
           "explanation": "explicação curta"
         }
-      ]`;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
-        config: { responseMimeType: "application/json" }
-      });
-
-      const questions = JSON.parse(response.text);
+      ]`);
+      const questions = JSON.parse(dataText);
       setQuizQuestions(questions);
       setCurrentQuizIndex(0);
       setQuizScore(0);

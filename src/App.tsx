@@ -178,10 +178,8 @@ function AppContent() {
   }, [user, pendingTab, navigate]);
 
   useEffect(() => {
-    const key = import.meta.env.VITE_GEMINI_API_KEY || (process.env as any).GEMINI_API_KEY;
-    if (!key) {
-      console.warn("⚠️ GEMINI_API_KEY não detectada no frontend. Verifique 'Settings > Secrets'.");
-    }
+    // Note: GEMINI_API_KEY is now securely managed via the backend proxy
+    // No frontend checks needed.
   }, []);
 
   useEffect(() => {

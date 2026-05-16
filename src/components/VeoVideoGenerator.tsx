@@ -37,32 +37,37 @@ export const VeoVideoGenerator: React.FC = () => {
     showToast("Gerando vídeo com Veo... Isso pode levar alguns minutos. 🎥⏳", "info");
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-      
-      let operation = await ai.models.generateVideos({
-        model: 'veo-3.1-fast-generate-preview',
-        prompt: prompt,
-        config: {
-          numberOfVideos: 1,
-          resolution: '720p',
-          aspectRatio: '16:9'
-        }
+      let operationRes = await fetch('/api/gemini/generateVideos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'veo-3.1-fast-generate-preview',
+          prompt: prompt,
+          config: {
+            numberOfVideos: 1,
+            resolution: '720p',
+            aspectRatio: '16:9'
+          }
+        })
       });
+      let operation = await operationRes.json();
 
       // Poll for completion
       while (!operation.done) {
         await new Promise(resolve => setTimeout(resolve, 10000));
-        operation = await ai.operations.getVideosOperation({operation: operation});
+        let opName = operation.name;
+        if (opName.startsWith('operations/')) {
+          opName = opName.substring(11);
+        }
+        const pollRes = await fetch(`/api/gemini/operations/${opName}`);
+        operation = await pollRes.json();
       }
 
       const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
       if (downloadLink) {
-        // Fetch video with API key
-        const response = await fetch(downloadLink, {
-          method: 'GET',
-          headers: {
-            'x-goog-api-key': process.env.GEMINI_API_KEY || "",
-          },
+        // Fetch video via proxy API
+        const response = await fetch(`/api/gemini/downloadVideo?uri=${encodeURIComponent(downloadLink)}`, {
+          method: 'GET'
         });
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
