@@ -71,7 +71,7 @@ async function startServer() {
   const getValidKey = (key: any) => {
     if (!key || typeof key !== 'string') return null;
     const cleaned = key.trim().replace(/['"]/g, '').replace(/[\u200B-\u200D\uFEFF]/g, ''); 
-    if (!cleaned || cleaned === "undefined" || cleaned === "null" || cleaned === "MY_GEMINI_API_KEY" || cleaned === "AIzaSyBdP0lp68wHlKyfTd9qW0eS8KWFWyAprME") return null;
+    if (!cleaned || cleaned === "undefined" || cleaned === "null" || cleaned === "MY_GEMINI_API_KEY") return null;
     return cleaned;
   };
 
@@ -80,12 +80,12 @@ async function startServer() {
   const stabilityApiKey = process.env.STABILITY_API_KEY;
   
   // Prefer AIza key if multiple are defined
-  let geminiApiKey = getValidKey(process.env.GEMINI_API_KEY);
+  let geminiApiKey = getValidKey(process.env.MY_GEMINI_API_KEY) || getValidKey(process.env.GEMINI_API_KEY);
   if (!geminiApiKey || !geminiApiKey.startsWith('AIza')) {
-     const altKey = getValidKey(process.env.API_KEY) || getValidKey(process.env.VITE_GEMINI_API_KEY);
+     const altKey = getValidKey(process.env.MY_GEMINI_API_KEY) || getValidKey(process.env.GEMINI_API_KEY) || getValidKey(process.env.API_KEY) || getValidKey(process.env.VITE_GEMINI_API_KEY);
      if (altKey && altKey.startsWith('AIza')) geminiApiKey = altKey;
   }
-  if (!geminiApiKey) geminiApiKey = getValidKey(process.env.API_KEY) || getValidKey(process.env.VITE_GEMINI_API_KEY);
+  if (!geminiApiKey) geminiApiKey = getValidKey(process.env.MY_GEMINI_API_KEY) || getValidKey(process.env.GEMINI_API_KEY) || getValidKey(process.env.API_KEY) || getValidKey(process.env.VITE_GEMINI_API_KEY);
   console.log("GEMINI_API_KEY from process.env:", process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0,5) + "... len:" + process.env.GEMINI_API_KEY.length : "missing");
   console.log("VITE_GEMINI_API_KEY from process.env:", process.env.VITE_GEMINI_API_KEY ? process.env.VITE_GEMINI_API_KEY.substring(0,5) + "... len:" + process.env.VITE_GEMINI_API_KEY.length : "missing");
   console.log("Cleaned geminiApiKey:", geminiApiKey ? geminiApiKey.substring(0,5) + "... len:" + geminiApiKey.length : "missing");

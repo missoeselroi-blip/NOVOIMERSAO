@@ -258,40 +258,26 @@ Conteúdo: ${lesson.content}`;
     
     // Improved Markdown to HTML conversion for the PDF with better styling
     const htmlContent = (contentToDownload || "")
-      .replace(/^# (.*$)/gm, '<h1 style="font-size: 28pt; font-weight: 800; margin-bottom: 20pt; color: #065f46; text-align: center; text-transform: uppercase; border-bottom: 3px solid #065f46; padding-bottom: 10pt;">$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2 style="font-size: 20pt; font-weight: 700; margin-top: 24pt; margin-bottom: 12pt; color: #047857; border-left: 5px solid #059669; padding-left: 10pt;">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 style="font-size: 16pt; font-weight: 600; margin-top: 18pt; margin-bottom: 8pt; color: #059669;">$1</h3>')
-      .replace(/^\* (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 6pt; list-style-type: disc;">$1</li>')
-      .replace(/^- (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 6pt; list-style-type: disc;">$1</li>')
+      .replace(/Imersão Bíblica/gi, '') // Remove the header as requested
+      .replace(/^# (.*$)/gm, '<h1 style="font-size: 16pt; font-weight: 800; margin-bottom: 10pt; color: #065f46; text-align: center; text-transform: uppercase;">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 style="font-size: 12pt; font-weight: 700; margin-top: 10pt; margin-bottom: 5pt; color: #047857;">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 style="font-size: 10pt; font-weight: 600; margin-top: 8pt; margin-bottom: 3pt; color: #059669;">$1</h3>')
+      .replace(/^\* (.*$)/gm, '<li style="margin-left: 15pt; margin-bottom: 2pt; list-style-type: disc; font-size: 8pt;">$1</li>')
+      .replace(/^- (.*$)/gm, '<li style="margin-left: 15pt; margin-bottom: 2pt; list-style-type: disc; font-size: 8pt;">$1</li>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong style="color: #064e3b;">$1</strong>')
-      .replace(/\n\n/g, '</p><p style="margin-bottom: 14pt; line-height: 1.7; page-break-inside: avoid;">')
+      .replace(/\n\n/g, '<div style="margin-bottom: 5pt;"></div>')
       .replace(/\n/g, '<br/>');
 
     element.innerHTML = `
-      <div style="padding: 20mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.7; background-color: #ffffff;">
-        <div style="text-align: center; margin-bottom: 40pt; border-bottom: 2px solid #e5e7eb; padding-bottom: 20pt;">
-          <div style="font-size: 10pt; color: #059669; font-weight: 800; letter-spacing: 2pt; margin-bottom: 5pt; text-transform: uppercase;">Material de Estudo</div>
-          <h1 style="color: #065f46; margin: 0; font-size: 32pt; font-weight: 900; letter-spacing: -1pt;">IMERSÃO BÍBLICA IA</h1>
-          <p style="color: #6b7280; font-size: 14pt; margin-top: 10pt; font-style: italic;">${showLeaderGuide ? 'Guia do Líder - ' : 'Lição: '}${selectedLesson.title || "Sem Título"}</p>
+      <div style="padding: 5mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.2; background-color: #ffffff;">
+        <div class="content" style="font-size: 8pt;">
+          ${htmlContent}
         </div>
         
-        <div class="content" style="font-size: 11pt;">
-          <p style="margin-bottom: 14pt; line-height: 1.7;">${htmlContent}</p>
-        </div>
-        
-        <div style="margin-top: 60pt; border-top: 1px solid #e5e7eb; padding-top: 30pt; text-align: center; page-break-inside: avoid;">
-          <p style="font-style: italic; color: #4b5563; font-size: 10pt; margin-bottom: 20pt;">
+        <div style="margin-top: 10pt; border-top: 1px solid #e5e7eb; padding-top: 5pt; text-align: center; page-break-inside: avoid;">
+          <p style="font-style: italic; color: #4b5563; font-size: 7pt; margin-bottom: 5pt;">
             "A palavra de Deus é viva e eficaz..." (Hebreus 4:12)
           </p>
-          <div style="display: flex; justify-content: center; gap: 40pt; margin-bottom: 30pt;">
-            <div style="text-align: center;">
-              <div style="font-weight: 800; color: #065f46; font-size: 9pt; text-transform: uppercase;">Igreja Betânia</div>
-              <div style="color: #6b7280; font-size: 8pt;">Ipatinga/MG</div>
-            </div>
-          </div>
-          <div style="font-size: 8pt; color: #9ca3af; letter-spacing: 0.5pt; text-transform: uppercase; font-weight: 600;">
-            Gerado em ${new Date().toLocaleDateString('pt-BR')} • © Imersão Bíblica IA
-          </div>
         </div>
       </div>
     `;
@@ -302,7 +288,7 @@ Conteúdo: ${lesson.content}`;
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      pagebreak: { mode: ['css', 'legacy'] }
     };
     
     // @ts-ignore

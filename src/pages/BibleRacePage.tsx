@@ -58,6 +58,7 @@ import {
 import { GoogleGenAI, Type } from "@google/genai";
 import Markdown from 'react-markdown';
 import { cn } from '../types';
+import { geminiService } from '../services/geminiService';
 
 // Constants for Bible Books in order
 const BIBLE_BOOKS = [
