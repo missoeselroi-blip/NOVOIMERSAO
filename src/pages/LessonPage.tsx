@@ -257,7 +257,12 @@ Conteúdo: ${lesson.content}`;
     element.className = 'pdf-container';
     
     // Improved Markdown to HTML conversion for the PDF with better styling
-    const htmlContent = (contentToDownload || "")
+    // Remove headers in markdown to prevent duplication while rendering them manually in HTML
+    let preparedContent = (contentToDownload || "")
+      .replace(/^# .*\n?/, '')
+      .replace(/^## .*\n?/, '');
+
+    const htmlContent = preparedContent
       .replace(/Imersão Bíblica/gi, '') // Remove the header as requested
       .replace(/^# (.*$)/gm, '<h1 style="font-size: 16pt; font-weight: 800; margin-bottom: 10pt; color: #065f46; text-align: center; text-transform: uppercase;">$1</h1>')
       .replace(/^## (.*$)/gm, '<h2 style="font-size: 12pt; font-weight: 700; margin-top: 10pt; margin-bottom: 5pt; color: #047857;">$1</h2>')
@@ -270,6 +275,9 @@ Conteúdo: ${lesson.content}`;
 
     element.innerHTML = `
       <div style="padding: 5mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.2; background-color: #ffffff;">
+        <div style="text-align: center; font-size: 14pt; font-weight: bold; color: #374151; margin-bottom: 10pt; border-bottom: 2px solid #065f46; padding-bottom: 5pt;">
+          Lição de Célula - ${selectedLesson.title}
+        </div>
         ${selectedLesson.theme ? `<h1 style="font-size: 16pt; font-weight: 800; margin-bottom: 20pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
         <div class="content" style="font-size: 8pt;">
           ${htmlContent}
@@ -318,26 +326,34 @@ Conteúdo: ${lesson.content}`;
     element.className = 'pdf-container';
     
     // Improved Markdown to HTML conversion for the PDF with better styling
-    const htmlContent = (contentToDownload || "")
+    // Remove headers in markdown to prevent duplication while rendering them manually in HTML
+    let preparedContent = (contentToDownload || "")
+      .replace(/^# .*\n?/, '')
+      .replace(/^## .*\n?/, '');
+
+    const htmlContent = preparedContent
       .replace(/Imersão Bíblica/gi, '') // Remove the header as requested
-      .replace(/^# (.*$)/gm, '<h1 style="font-size: 24pt; font-weight: 800; margin-bottom: 15pt; color: #065f46; text-align: center; text-transform: uppercase;">$1</h1>')
-      .replace(/^## (.*$)/gm, '<h2 style="font-size: 20pt; font-weight: 700; margin-top: 15pt; margin-bottom: 8pt; color: #047857;">$1</h2>')
-      .replace(/^### (.*$)/gm, '<h3 style="font-size: 18pt; font-weight: 600; margin-top: 12pt; margin-bottom: 5pt; color: #059669;">$1</h3>')
-      .replace(/^\* (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 5pt; list-style-type: disc; font-size: 14pt;">$1</li>')
-      .replace(/^- (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 5pt; list-style-type: disc; font-size: 14pt;">$1</li>')
+      .replace(/^# (.*$)/gm, '<h1 style="font-size: 22pt; font-weight: 800; margin-bottom: 15pt; color: #065f46; text-align: center; text-transform: uppercase;">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 style="font-size: 18pt; font-weight: 700; margin-top: 15pt; margin-bottom: 8pt; color: #047857;">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 style="font-size: 16pt; font-weight: 600; margin-top: 12pt; margin-bottom: 5pt; color: #059669;">$1</h3>')
+      .replace(/^\* (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 5pt; list-style-type: disc; font-size: 13pt;">$1</li>')
+      .replace(/^- (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 5pt; list-style-type: disc; font-size: 13pt;">$1</li>')
       .replace(/\*\*([^*]+)\*\*/g, '<strong style="color: #064e3b;">$1</strong>')
       .replace(/\n\n/g, '<div style="margin-bottom: 8pt;"></div>')
       .replace(/\n/g, '<br/>');
 
     element.innerHTML = `
       <div style="padding: 10mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.4; background-color: #ffffff;">
-        ${selectedLesson.theme ? `<h1 style="font-size: 24pt; font-weight: 800; margin-bottom: 25pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
-        <div class="content" style="font-size: 14pt;">
+        <div style="text-align: center; font-size: 18pt; font-weight: bold; color: #374151; margin-bottom: 15pt; border-bottom: 3px solid #065f46; padding-bottom: 10pt;">
+          Lição de célula - ${selectedLesson.title}
+        </div>
+        ${selectedLesson.theme ? `<h1 style="font-size: 22pt; font-weight: 800; margin-bottom: 25pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
+        <div class="content" style="font-size: 13pt;">
           ${htmlContent}
         </div>
         
         <div style="margin-top: 20pt; border-top: 1px solid #e5e7eb; padding-top: 10pt; text-align: center; page-break-inside: avoid;">
-          <p style="font-style: italic; color: #4b5563; font-size: 12pt; margin-bottom: 10pt;">
+          <p style="font-style: italic; color: #4b5563; font-size: 11pt; margin-bottom: 10pt;">
             "A palavra de Deus é viva e eficaz..." (Hebreus 4:12)
           </p>
         </div>
@@ -884,10 +900,17 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       .dark .bible-ref-link { background-color: #854d0e; color: #fef08a; }
                       .dark .bible-ref-link:hover { background-color: #a16207; }
                     `}</style>
+                    {selectedLesson.title && (
+                      <div className="text-center mb-2">
+                        <h1 className="text-lg font-bold text-stone-500 dark:text-stone-400 uppercase tracking-widest">
+                          {selectedLesson.title}
+                        </h1>
+                      </div>
+                    )}
                     {selectedLesson.theme && (
-                      <h1 className="text-2xl md:text-3xl font-black text-emerald-800 dark:text-emerald-400 mb-6 text-center">
+                      <h2 className="text-2xl md:text-3xl font-black text-emerald-800 dark:text-emerald-400 mb-6 text-center">
                         {selectedLesson.theme}
-                      </h1>
+                      </h2>
                     )}
                     <div className="text-stone-600 dark:text-zinc-400 leading-[2.2] mb-6">
                       <ReactMarkdown 
@@ -913,7 +936,7 @@ O nome do usuário é ${user?.name || 'amigo'}.
                           }
                         }}
                       >
-                        {processedContent}
+                        {selectedLesson.theme || selectedLesson.title ? processedContent.replace(/^# .*\n?/, '').replace(/^## .*\n?/, '') : processedContent}
                       </ReactMarkdown>
                     </div>
                     
