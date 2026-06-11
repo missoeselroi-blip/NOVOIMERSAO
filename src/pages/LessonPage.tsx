@@ -1232,6 +1232,9 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   <button onClick={handleDownload} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Baixar">
                     <Download size={18} />
                   </button>
+                  <button onClick={handleDownloadLarge} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Baixar PDF (Fonte Maior)">
+                    <Download size={22} className="text-emerald-600" />
+                  </button>
                   <button onClick={handleShare} className="p-2 hover:bg-emerald-100 dark:hover:bg-emerald-900/30 rounded-xl transition-colors shrink-0" title="Compartilhar">
                     <Share2 size={18} />
                   </button>
