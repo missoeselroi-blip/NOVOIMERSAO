@@ -362,7 +362,8 @@ const BibleRacePage: React.FC = () => {
     setIsLoadingText(true);
     try {
       const bookEn = BIBLE_BOOKS_EN[book] || book;
-      const url = `https://bible-api.com/${encodeURIComponent(bookEn)}+${chapter}?translation=${selectedVersion}`;
+      // Using the server-side proxy to avoid issues with direct external fetch
+      const url = `/api/bible-api/${encodeURIComponent(bookEn)}+${chapter}?translation=${selectedVersion}`;
       const response = await fetch(url);
       
       if (!response.ok) {

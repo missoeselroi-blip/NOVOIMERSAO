@@ -630,6 +630,25 @@ async function startServer() {
   });
 
   // Bible API Proxy
+  app.get('/api/bible-api/*', async (req, res) => {
+    const path = req.params[0];
+    const query = req.query;
+    const url = `https://bible-api.com/${path}`;
+    
+    console.log(`[BibleAPI Proxy] Fetching: ${url}`);
+    
+    try {
+      const response = await axios.get(url, { 
+        params: query,
+        headers: { 'Accept': 'application/json' }
+      });
+      res.json(response.data);
+    } catch (error: any) {
+      console.error(`[BibleAPI Proxy] Error (${url}):`, error.message);
+      res.status(error.response?.status || 500).json({ error: 'Failed to fetch from BibleApi' });
+    }
+  });
+
   app.get('/api/bible/*', async (req, res) => {
     const path = req.params[0];
     const query = req.query;

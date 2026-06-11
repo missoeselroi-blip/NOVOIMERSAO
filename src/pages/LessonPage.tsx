@@ -270,6 +270,7 @@ Conteúdo: ${lesson.content}`;
 
     element.innerHTML = `
       <div style="padding: 5mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.2; background-color: #ffffff;">
+        ${selectedLesson.theme ? `<h1 style="font-size: 16pt; font-weight: 800; margin-bottom: 20pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
         <div class="content" style="font-size: 8pt;">
           ${htmlContent}
         </div>
@@ -285,6 +286,67 @@ Conteúdo: ${lesson.content}`;
     const opt = {
       margin: 0,
       filename: `${showLeaderGuide ? 'Guia_do_Lider' : 'Licao'}_${(selectedLesson.title || "Material").replace(/\s+/g, '_')}.pdf`,
+      image: { type: 'jpeg', quality: 1.0 },
+      html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      pagebreak: { mode: ['css', 'legacy'] }
+    };
+    
+    // @ts-ignore
+    html2pdf().from(element).set(opt).save().then(() => {
+      showToast("Download concluído! 📄✨", "success");
+    }).catch(err => {
+      console.error('PDF error:', err);
+      showToast("Erro ao gerar PDF.", "error");
+    });
+  };
+
+  const handleDownloadLarge = () => {
+    if (!selectedLesson || !selectedLesson.title) {
+      showToast("Conteúdo da lição incompleto para download.", "error");
+      return;
+    }
+    const contentToDownload = showLeaderGuide ? selectedLesson.leaderGuide : selectedLesson.content;
+    if (!contentToDownload) {
+      showToast("Conteúdo incompleto para download.", "error");
+      return;
+    }
+
+    showToast("Gerando seu PDF (Fonte maior)... Quase pronto! 📄💎", 'info');
+
+    const element = document.createElement('div');
+    element.className = 'pdf-container';
+    
+    // Improved Markdown to HTML conversion for the PDF with better styling
+    const htmlContent = (contentToDownload || "")
+      .replace(/Imersão Bíblica/gi, '') // Remove the header as requested
+      .replace(/^# (.*$)/gm, '<h1 style="font-size: 24pt; font-weight: 800; margin-bottom: 15pt; color: #065f46; text-align: center; text-transform: uppercase;">$1</h1>')
+      .replace(/^## (.*$)/gm, '<h2 style="font-size: 20pt; font-weight: 700; margin-top: 15pt; margin-bottom: 8pt; color: #047857;">$1</h2>')
+      .replace(/^### (.*$)/gm, '<h3 style="font-size: 18pt; font-weight: 600; margin-top: 12pt; margin-bottom: 5pt; color: #059669;">$1</h3>')
+      .replace(/^\* (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 5pt; list-style-type: disc; font-size: 14pt;">$1</li>')
+      .replace(/^- (.*$)/gm, '<li style="margin-left: 20pt; margin-bottom: 5pt; list-style-type: disc; font-size: 14pt;">$1</li>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong style="color: #064e3b;">$1</strong>')
+      .replace(/\n\n/g, '<div style="margin-bottom: 8pt;"></div>')
+      .replace(/\n/g, '<br/>');
+
+    element.innerHTML = `
+      <div style="padding: 10mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.4; background-color: #ffffff;">
+        ${selectedLesson.theme ? `<h1 style="font-size: 24pt; font-weight: 800; margin-bottom: 25pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
+        <div class="content" style="font-size: 14pt;">
+          ${htmlContent}
+        </div>
+        
+        <div style="margin-top: 20pt; border-top: 1px solid #e5e7eb; padding-top: 10pt; text-align: center; page-break-inside: avoid;">
+          <p style="font-style: italic; color: #4b5563; font-size: 12pt; margin-bottom: 10pt;">
+            "A palavra de Deus é viva e eficaz..." (Hebreus 4:12)
+          </p>
+        </div>
+      </div>
+    `;
+    
+    const opt = {
+      margin: 0,
+      filename: `${showLeaderGuide ? 'Guia_do_Lider' : 'Licao'}_${(selectedLesson.title || "Material").replace(/\s+/g, '_')}_Grande.pdf`,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
@@ -684,6 +746,9 @@ O nome do usuário é ${user?.name || 'amigo'}.
                   <button onClick={handleDownload} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Baixar PDF">
                     <Download className="w-4 h-4 md:w-[18px] md:h-[18px]" />
                   </button>
+                  <button onClick={handleDownloadLarge} className="p-2.5 md:p-3 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Baixar PDF (Fonte Maior)">
+                    <Download className="w-6 h-6 md:w-[26px] md:h-[26px] text-emerald-600" />
+                  </button>
                   <button onClick={handleDownloadOffline} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title="Salvar Offline">
                     <WifiOff className="w-4 h-4 md:w-[18px] md:h-[18px] text-amber-600" />
                   </button>
@@ -819,6 +884,11 @@ O nome do usuário é ${user?.name || 'amigo'}.
                       .dark .bible-ref-link { background-color: #854d0e; color: #fef08a; }
                       .dark .bible-ref-link:hover { background-color: #a16207; }
                     `}</style>
+                    {selectedLesson.theme && (
+                      <h1 className="text-2xl md:text-3xl font-black text-emerald-800 dark:text-emerald-400 mb-6 text-center">
+                        {selectedLesson.theme}
+                      </h1>
+                    )}
                     <div className="text-stone-600 dark:text-zinc-400 leading-[2.2] mb-6">
                       <ReactMarkdown 
                         rehypePlugins={[rehypeRaw]}
