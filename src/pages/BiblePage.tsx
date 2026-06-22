@@ -87,6 +87,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>(lastState?.searchQuery || '');
+  const [searchVersion, setSearchVersion] = useState<string>(selectedVersion);
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [showVersionSelector, setShowVersionSelector] = useState<boolean>(false);
   const [showBookSelector, setShowBookSelector] = useState<boolean>(false);
@@ -401,7 +402,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
     
     setIsSearching(true);
     try {
-      const results = await bibleService.search(selectedVersion, searchQuery);
+      const results = await bibleService.search(searchVersion, searchQuery);
       setSearchResults(results);
     } catch (error) {
       console.error("Error searching Bible:", error);
@@ -596,6 +597,16 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
         setIsFullscreen(false);
       }
     }
+  };
+
+  const highlightText = (text: string, query: string) => {
+    if (!query) return text;
+    const parts = text.split(new RegExp(`(${query})`, 'gi'));
+    return parts.map((part, i) => 
+      part.toLowerCase() === query.toLowerCase() 
+        ? <mark key={i} className="bg-emerald-200 dark:bg-emerald-800 text-black dark:text-white rounded-sm">{part}</mark>                
+        : part
+    );
   };
 
   return (
@@ -963,7 +974,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                       <span className="text-xs font-black text-emerald-600 uppercase tracking-widest">{res.book} {res.chapter}:{res.verse}</span>
                       <ArrowRight size={16} className="text-stone-300 group-hover:text-emerald-500 transition-colors" />
                     </div>
-                    <p className="text-stone-700 dark:text-zinc-300 leading-relaxed italic">"{res.text}"</p>
+                    <p className="text-stone-700 dark:text-zinc-300 leading-relaxed italic">"{highlightText(res.text, searchQuery)}"</p>
                   </div>
                 ))}
               </div>
@@ -1435,7 +1446,7 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
               <div className="space-y-6">
                 <div>
                   <label className="text-xs font-black text-stone-400 uppercase tracking-widest mb-3 block">Busca nas Escrituras</label>
-                  <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); setShowSettings(false); }} className="relative flex gap-2">
+                  <form onSubmit={(e) => { e.preventDefault(); handleSearch(e); setShowSettings(false); }} className="grid grid-cols-[1fr,auto,auto] gap-2">
                     <input 
                       type="text" 
                       placeholder="Buscar por palavra ou frase..." 
@@ -1443,7 +1454,14 @@ export default function BiblePage({ isOverlay = false, onClose }: BiblePageProps
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 bg-stone-100 dark:bg-zinc-800 rounded-2xl border border-transparent focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 outline-none transition-all text-sm"
                     />
-                    <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-stone-400" />
+                    <select 
+                      value={searchVersion} 
+                      onChange={(e) => setSearchVersion(e.target.value)}
+                      className="py-3 px-3 bg-stone-100 dark:bg-zinc-800 rounded-2xl border border-transparent focus:border-emerald-500 outline-none text-sm font-bold"
+                    >
+                      {versions.map(v => <option key={v.short_name} value={v.short_name}>{v.short_name}</option>)}
+                    </select>
+                    <Search size={18} className="absolute left-3 top-4 text-stone-400" />
                     <button type="submit" className="px-4 py-3 bg-emerald-600 text-white rounded-2xl font-bold text-sm">Buscar</button>
                   </form>
                 </div>
