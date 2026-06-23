@@ -50,16 +50,57 @@ const LessonPage: React.FC = () => {
   const [selectedLesson, setSelectedLesson] = useState<Lesson | null>(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
   const [zoom, setZoom] = useState(1);
+  const [topMargin, setTopMargin] = useState(10);
+  const [bottomMargin, setBottomMargin] = useState(10);
   const [showNotes, setShowNotes] = useState(false);
   const [showAudio, setShowAudio] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
+  const [notes, setNotes] = useState<string>("");
+  const [notesHistory, setNotesHistory] = useState<string[]>([]);
+  const [showSummary, setShowSummary] = useState(false);
+  const [showLeaderGuide, setShowLeaderGuide] = useState(false);
+  const [showLeaderAudio, setShowLeaderAudio] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showAutor, setShowAutor] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [autorGreeting, setAutorGreeting] = useState<string | null>(null);
+  const [autorResponse, setAutorResponse] = useState("");
+  const [lastQuestion, setLastQuestion] = useState("");
+  const [isAutorLoading, setIsAutorLoading] = useState(false);
+  const [isAutorFullScreen, setIsAutorFullScreen] = useState(false);
+  const [isAutorPlaying, setIsAutorPlaying] = useState(false);
+  const [autorAudioUrl, setAutorAudioUrl] = useState<string | null>(null);
+  const [textQuery, setTextQuery] = useState('');
+  const [showDicaDeLideranca, setShowDicaDeLideranca] = useState(false);
+  const [isDicaDeLiderancaLoading, setIsDicaDeLiderancaLoading] = useState(false);
+  const [isDicaDeLiderancaFullScreen, setIsDicaDeLiderancaFullScreen] = useState(false);
+  const [dicaDeLiderancaResponse, setDicaDeLiderancaResponse] = useState("");
+  const [dicaDeLiderancaGreeting, setDicaDeLiderancaGreeting] = useState<string | null>(null);
+  const [dicaDeLiderancaAudioUrl, setDicaDeLiderancaAudioUrl] = useState<string | null>(null);
+  const [bibleModal, setBibleModal] = useState<{
+    isOpen: boolean;
+    reference: string;
+    version: string;
+    content: string;
+    loading: boolean;
+  }>({
+    isOpen: false,
+    reference: "",
+    version: "NVI",
+    content: "",
+    loading: false
+  });
   
   const navigate = useNavigate();
   const location = useLocation();
   const { showToast } = useToast();
   const { downloadMaterial, isOffline } = useOffline();
+  const { user } = useAuth();
+  const { saveToNotebook } = useNotebook();
 
   useEffect(() => {
     if (location.state?.offlineContent) {
@@ -87,12 +128,6 @@ const LessonPage: React.FC = () => {
   useEffect(() => {
     setSummary(null);
   }, [selectedLesson]);
-
-  const [summary, setSummary] = useState<string | null>(null);
-  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-  const [notes, setNotes] = useState<string>("");
-  const [notesHistory, setNotesHistory] = useState<string[]>([]);
-  const [showSummary, setShowSummary] = useState(false);
 
   const fetchLessonSummary = async (lesson: Lesson) => {
     setIsSummaryLoading(true);
@@ -127,43 +162,7 @@ Conteúdo: ${lesson.content}`;
       fetchLessonSummary(selectedLesson);
     }
   };
-  const [showLeaderGuide, setShowLeaderGuide] = useState(false);
-  const [showLeaderAudio, setShowLeaderAudio] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [showAutor, setShowAutor] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
-  const [autorGreeting, setAutorGreeting] = useState<string | null>(null);
-  const [autorResponse, setAutorResponse] = useState("");
-  const [lastQuestion, setLastQuestion] = useState("");
-  const [isAutorLoading, setIsAutorLoading] = useState(false);
-  const [isAutorFullScreen, setIsAutorFullScreen] = useState(false);
-  const [isAutorPlaying, setIsAutorPlaying] = useState(false);
-  const [autorAudioUrl, setAutorAudioUrl] = useState<string | null>(null);
-  const { saveToNotebook } = useNotebook();
-  const [textQuery, setTextQuery] = useState('');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
 
-  const [showDicaDeLideranca, setShowDicaDeLideranca] = useState(false);
-  const [isDicaDeLiderancaLoading, setIsDicaDeLiderancaLoading] = useState(false);
-  const [isDicaDeLiderancaFullScreen, setIsDicaDeLiderancaFullScreen] = useState(false);
-  const [dicaDeLiderancaResponse, setDicaDeLiderancaResponse] = useState("");
-  const [dicaDeLiderancaGreeting, setDicaDeLiderancaGreeting] = useState<string | null>(null);
-  const [dicaDeLiderancaAudioUrl, setDicaDeLiderancaAudioUrl] = useState<string | null>(null);
-  const [bibleModal, setBibleModal] = useState<{
-    isOpen: boolean;
-    reference: string;
-    version: string;
-    content: string;
-    loading: boolean;
-  }>({
-    isOpen: false,
-    reference: "",
-    version: "NVI",
-    content: "",
-    loading: false
-  });
-  const { user } = useAuth();
   const autorAudioRef = useRef<HTMLAudioElement | null>(null);
 
   const bibleVersions = ["NVI", "ACF", "NAA", "ARA", "KJV", "NTLH"];
@@ -277,6 +276,7 @@ Conteúdo: ${lesson.content}`;
       <div style="padding: 5mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.2; background-color: #ffffff;">
         <div style="text-align: center; font-size: 14pt; font-weight: bold; color: #374151; margin-bottom: 10pt; border-bottom: 2px solid #065f46; padding-bottom: 5pt;">
           Lição de Célula - ${selectedLesson.title}
+          ${selectedLesson.weekDescription ? `<br/><span style="font-size: 10pt; font-weight: normal;">${selectedLesson.weekDescription}</span>` : ''}
         </div>
         ${selectedLesson.theme ? `<h1 style="font-size: 16pt; font-weight: 800; margin-bottom: 20pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
         <div class="content" style="font-size: 8pt;">
@@ -292,7 +292,7 @@ Conteúdo: ${lesson.content}`;
     `;
     
     const opt = {
-      margin: 0,
+      margin: [topMargin, 10, bottomMargin, 10],
       filename: `${showLeaderGuide ? 'Guia_do_Lider' : 'Licao'}_${(selectedLesson.title || "Material").replace(/\s+/g, '_')}.pdf`,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true },
@@ -343,17 +343,18 @@ Conteúdo: ${lesson.content}`;
       .replace(/\n/g, '<br/>');
 
     element.innerHTML = `
-      <div style="padding: 10mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.4; background-color: #ffffff;">
-        <div style="text-align: center; font-size: 18pt; font-weight: bold; color: #374151; margin-bottom: 15pt; border-bottom: 3px solid #065f46; padding-bottom: 10pt;">
+      <div style="padding: 10mm; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1f2937; line-height: 1.2; background-color: #ffffff;">
+        <div style="text-align: center; font-size: 16pt; font-weight: bold; color: #374151; margin-bottom: 15pt; border-bottom: 2px solid #065f46; padding-bottom: 10pt;">
           Lição de célula - ${selectedLesson.title}
+          ${selectedLesson.weekDescription ? `<br/><span style="font-size: 12pt; font-weight: normal;">${selectedLesson.weekDescription}</span>` : ''}
         </div>
-        ${selectedLesson.theme ? `<h1 style="font-size: 22pt; font-weight: 800; margin-bottom: 25pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
-        <div class="content" style="font-size: 13pt;">
+        ${selectedLesson.theme ? `<h1 style="font-size: 20pt; font-weight: 800; margin-bottom: 20pt; color: #065f46; text-align: center; text-transform: uppercase;">${selectedLesson.theme}</h1>` : ''}
+        <div class="content" style="font-size: 12pt; break-inside: avoid;">
           ${htmlContent}
         </div>
         
-        <div style="margin-top: 20pt; border-top: 1px solid #e5e7eb; padding-top: 10pt; text-align: center; page-break-inside: avoid;">
-          <p style="font-style: italic; color: #4b5563; font-size: 11pt; margin-bottom: 10pt;">
+        <div style="margin-top: 20pt; border-top: 1px solid #e5e7eb; padding-top: 10pt; text-align: center; break-inside: avoid;">
+          <p style="font-style: italic; color: #4b5563; font-size: 10pt; margin-bottom: 5pt;">
             "A palavra de Deus é viva e eficaz..." (Hebreus 4:12)
           </p>
         </div>
@@ -361,7 +362,7 @@ Conteúdo: ${lesson.content}`;
     `;
     
     const opt = {
-      margin: 0,
+      margin: [topMargin, 10, bottomMargin, 10],
       filename: `${showLeaderGuide ? 'Guia_do_Lider' : 'Licao'}_${(selectedLesson.title || "Material").replace(/\s+/g, '_')}_Grande.pdf`,
       image: { type: 'jpeg', quality: 1.0 },
       html2canvas: { scale: 2, useCORS: true, letterRendering: true },
@@ -708,6 +709,11 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 <Glasses size={24} />
               </div>
               <span className="font-black text-lg text-stone-900 dark:text-white tracking-tighter">{lesson.title}</span>
+              {lesson.weekDescription && (
+                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mt-1 text-center px-2 leading-tight opacity-80">
+                  {lesson.weekDescription}
+                </span>
+              )}
               {lesson.theme && (
                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-600 mt-1 text-center px-2 leading-tight opacity-80">
                   {lesson.theme}
@@ -756,6 +762,13 @@ O nome do usuário é ${user?.name || 'amigo'}.
                 </div>
 
                 <div className="flex items-center gap-1 md:gap-2 flex-wrap justify-end">
+                  <div className="flex flex-col gap-0.5 mr-2">
+                    <label className="text-[8px] uppercase font-bold text-stone-400">Margens (mm)</label>
+                    <div className="flex gap-1">
+                       <input type="number" value={topMargin} onChange={e => setTopMargin(Number(e.target.value))} className="w-10 text-[10px] p-0.5 rounded border dark:bg-zinc-800" title="Topo"/>
+                       <input type="number" value={bottomMargin} onChange={e => setBottomMargin(Number(e.target.value))} className="w-10 text-[10px] p-0.5 rounded border dark:bg-zinc-800" title="Rodapé"/>
+                    </div>
+                  </div>
                   <button onClick={toggleFullScreen} className="p-1.5 md:p-2 hover:bg-stone-200 dark:hover:bg-zinc-700 rounded-xl transition-colors shrink-0" title={isFullScreen ? "Minimizar" : "Maximizar"}>
                     {isFullScreen ? <Minimize2 className="w-4 h-4 md:w-[18px] md:h-[18px]" /> : <Maximize2 className="w-4 h-4 md:w-[18px] md:h-[18px]" />}
                   </button>
